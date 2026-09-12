@@ -1,0 +1,1156 @@
+/* =============================================================
+   VANRITI · DADI — Premium customer conversational experience
+   Presentation-only. No business logic lives here (or in dadi.js):
+   every fact, safety decision and recommendation comes from Laravel.
+   Built on the shared storefront design tokens (--vr-*).
+   ============================================================= */
+
+.dadi-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    background:
+        radial-gradient(1200px 420px at 50% -8%, rgba(111, 135, 54, 0.10), transparent 62%),
+        radial-gradient(900px 380px at 100% 110%, rgba(38, 61, 37, 0.07), transparent 60%),
+        linear-gradient(180deg, #fff 0%, var(--vr-cream) 100%);
+}
+
+.dadi-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: radial-gradient(rgba(38, 61, 37, 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+}
+
+body.dadi-active .vr-footer {
+    display: none;
+}
+
+.dadi-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 40px) 18px 0;
+}
+
+/* ---------- Identity header ---------- */
+
+.dadi-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 14px;
+}
+
+.dadi-portrait {
+    flex: 0 0 auto;
+    width: 50px;
+    height: 50px;
+    position: relative;
+}
+
+.dadi-portrait-mark {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background:
+        radial-gradient(70% 70% at 32% 26%, rgba(255, 255, 255, 0.85), transparent 60%),
+        linear-gradient(145deg, #F2EEE0 0%, #DCE5C4 54%, #A9BD7E 100%);
+    border: 1px solid rgba(38, 61, 37, 0.16);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, var(--vr-shadow-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dadi-portrait-mark span {
+    font-family: var(--vr-font-sans);
+    font-weight: 800;
+    font-size: 21px;
+    color: var(--vr-green-dark);
+    letter-spacing: -0.02em;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.dadi-portrait-leaf {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    opacity: 0.85;
+}
+
+.dadi-portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid rgba(38, 61, 37, 0.16);
+    box-shadow: var(--vr-shadow-xs);
+    background: var(--vr-green-soft);
+}
+
+.dadi-identity {
+    min-width: 0;
+}
+
+.dadi-title {
+    margin: 0;
+    font-family: var(--vr-font-sans);
+    font-weight: 800;
+    font-size: clamp(20px, 4vw, 27px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--vr-green-dark);
+}
+
+/* ---------- Conversation stage ---------- */
+
+.dadi-stage {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 8px 0 26px;
+}
+
+.dadi-msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 88%;
+    animation: dadiRise 0.4s var(--vr-transition) both;
+}
+
+.dadi-msg.user {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.dadi-msg.dadi {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.dadi-msg-role {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vr-muted);
+    margin: 0 4px 5px;
+}
+
+.dadi-msg-inner {
+    padding: 12px 16px;
+    font-size: 15.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.dadi-msg.dadi .dadi-msg-inner {
+    background: #fff;
+    border: 1px solid var(--vr-border);
+    color: var(--vr-text);
+    border-radius: 4px 18px 18px 18px;
+    box-shadow: var(--vr-shadow-xs);
+}
+
+.dadi-msg.user .dadi-msg-inner {
+    background: var(--vr-green-deep);
+    color: var(--vr-cream);
+    border-radius: 18px 4px 18px 18px;
+    box-shadow: var(--vr-shadow-xs);
+}
+
+/* ---------- Thinking indicator ---------- */
+
+.dadi-msg.dadi .dadi-msg-inner.dadi-thinking-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px;
+}
+
+.dadi-typing {
+    display: inline-flex;
+    gap: 5px;
+}
+
+.dadi-typing i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--vr-green);
+    animation: dadiZzz 1.2s ease-in-out infinite;
+}
+
+.dadi-typing i:nth-child(2) {
+    animation-delay: 0.18s;
+}
+
+.dadi-typing i:nth-child(3) {
+    animation-delay: 0.36s;
+}
+
+.dadi-thinking-label {
+    font-size: 13px;
+    color: var(--vr-muted);
+}
+
+/* ---------- Recommendation cards ---------- */
+
+.dadi-recs {
+    align-self: stretch;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding: 4px 2px 10px;
+    margin: 2px 0 4px;
+    -webkit-overflow-scrolling: touch;
+    animation: dadiRise 0.4s var(--vr-transition) both;
+}
+
+.dadi-recs::-webkit-scrollbar {
+    height: 6px;
+}
+
+.dadi-recs::-webkit-scrollbar-thumb {
+    background: rgba(38, 61, 37, 0.16);
+    border-radius: var(--vr-radius-pill);
+}
+
+.dadi-card {
+    flex: 0 0 168px;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius);
+    overflow: hidden;
+    box-shadow: var(--vr-shadow-xs);
+    text-decoration: none;
+    color: inherit;
+    transition: transform var(--vr-transition), box-shadow var(--vr-transition), border-color var(--vr-transition);
+}
+
+.dadi-card:hover {
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    .dadi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--vr-shadow-md);
+        border-color: rgba(111, 135, 54, 0.5);
+    }
+}
+
+.dadi-card:focus-visible {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+.dadi-card-media {
+    flex: 0 0 auto;
+    display: block;
+    aspect-ratio: 4 / 4;
+    background: var(--vr-green-soft);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.dadi-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.dadi-card-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 13px 13px;
+}
+
+.dadi-card-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--vr-text);
+}
+
+.dadi-card-price {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+}
+
+.dadi-card-now {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--vr-green-dark);
+}
+
+.dadi-card-mrp {
+    font-size: 12px;
+    color: var(--vr-muted);
+    text-decoration: line-through;
+}
+
+.dadi-card-meta {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.dadi-card-stock {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: var(--vr-radius-pill);
+}
+
+.dadi-card-stock.is-available {
+    background: var(--vr-green-soft);
+    color: var(--vr-green);
+}
+
+.dadi-card-stock.is-unavailable {
+    background: #FBEAE1;
+    color: var(--vr-danger);
+}
+
+.dadi-card-why {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--vr-muted);
+}
+
+.dadi-card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--vr-green);
+    text-decoration: none;
+}
+
+.dadi-card-link:hover {
+    color: var(--vr-green-dark);
+    text-decoration: underline;
+}
+
+/* ---------- Card commerce actions ---------- */
+
+.dadi-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 2px 13px 13px;
+}
+
+.dadi-card-btn {
+    appearance: none;
+    width: 100%;
+    border: 1px solid var(--vr-green);
+    background: #fff;
+    color: var(--vr-green);
+    font-family: var(--vr-font-sans);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 10px 10px;
+    border-radius: var(--vr-radius-sm);
+    cursor: pointer;
+    transition: background var(--vr-transition-fast), color var(--vr-transition-fast), transform var(--vr-transition-fast), opacity var(--vr-transition-fast);
+}
+
+.dadi-card-btn:hover {
+    background: var(--vr-green);
+    color: #fff;
+}
+
+.dadi-card-btn:focus-visible {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+.dadi-card-btn-primary:focus-visible {
+    outline-color: var(--vr-green-dark);
+}
+
+.dadi-card-btn-primary {
+    background: linear-gradient(145deg, var(--vr-green) 0%, var(--vr-green-dark) 100%);
+    border-color: var(--vr-green-dark);
+    color: #fff;
+}
+
+.dadi-card-btn-primary:hover {
+    background: var(--vr-green-dark);
+    color: #fff;
+}
+
+.dadi-card-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.dadi-card-btn.is-busy {
+    opacity: 0.7;
+    cursor: progress;
+    transform: translateY(-1px);
+}
+
+.dadi-card-actions-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1px;
+}
+
+.dadi-card-status {
+    margin: 0;
+    padding: 0 13px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.dadi-card-status[hidden] {
+    display: none;
+}
+
+.dadi-card-status.is-success {
+    color: var(--vr-green);
+}
+
+.dadi-card-status.is-fail {
+    color: var(--vr-danger);
+}
+
+/* ---------- Empty / welcome state ---------- */
+
+.dadi-empty {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    padding: 24px 8px 30px;
+    animation: dadiRise 0.5s var(--vr-transition) both;
+}
+
+.dadi-empty-title {
+    margin: 0;
+    max-width: 520px;
+    font-weight: 800;
+    font-size: clamp(22px, 4.8vw, 29px);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--vr-green-dark);
+}
+
+.dadi-empty-copy {
+    max-width: 440px;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--vr-muted);
+}
+
+.dadi-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.dadi-chip {
+    appearance: none;
+    border: 1px solid rgba(38, 61, 37, 0.16);
+    background: #fff;
+    color: var(--vr-muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 13px;
+    border-radius: var(--vr-radius-pill);
+    box-shadow: none;
+    transition: border-color var(--vr-transition-fast), color var(--vr-transition-fast), background-color var(--vr-transition-fast);
+    cursor: pointer;
+}
+
+.dadi-chip:hover {
+    border-color: rgba(111, 135, 54, 0.55);
+    color: var(--vr-green-dark);
+    background: var(--vr-green-soft);
+}
+
+.dadi-chip:focus-visible {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+.dadi-chip:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ---------- Empty-state exit (first successful reply) ---------- */
+
+.dadi-empty.dadi-empty-leave {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.28s ease, transform 0.28s ease;
+    pointer-events: none;
+}
+
+/* ---------- Composer ---------- */
+
+.dadi-composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    margin: 0 -6px;
+    padding: 14px 6px
+        calc(14px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(247, 244, 234, 0) 0%, var(--vr-cream) 26%, var(--vr-cream) 100%);
+}
+
+.dadi-composer-field {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid var(--vr-border);
+    border-radius: 20px;
+    padding: 10px 10px 10px 18px;
+    box-shadow: var(--vr-shadow-md);
+    transition: border-color var(--vr-transition-fast), box-shadow var(--vr-transition-fast);
+}
+
+.dadi-composer-field:focus-within {
+    border-color: rgba(111, 135, 54, 0.6);
+    box-shadow: 0 0 0 4px rgba(111, 135, 54, 0.14), var(--vr-shadow-md);
+}
+
+.dadi-composer-input {
+    flex: 1 1 auto;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    resize: none;
+    font-family: var(--vr-font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--vr-text);
+    max-height: 132px;
+    padding: 5px 0 2px;
+}
+
+.dadi-composer-input::placeholder {
+    color: #8A9488;
+}
+
+.dadi-send {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #fff;
+    background: var(--vr-green);
+    box-shadow: 0 4px 12px rgba(38, 61, 37, 0.22);
+    transition: transform var(--vr-transition-spring), box-shadow var(--vr-transition), background-color var(--vr-transition-fast), opacity var(--vr-transition-fast);
+    cursor: pointer;
+}
+
+.dadi-send:hover:not(:disabled) {
+    background: var(--vr-green-dark);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 6px 14px rgba(38, 61, 37, 0.26);
+}
+
+.dadi-send:focus-visible {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+.dadi-send:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.dadi-composer-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px 0;
+}
+
+.dadi-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--vr-muted);
+}
+
+.dadi-count {
+    font-size: 11.5px;
+    color: var(--vr-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Errors ---------- */
+
+.dadi-error {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 8px 10px;
+    padding: 11px 14px;
+    border-radius: var(--vr-radius-sm);
+    background: #FCEAE2;
+    border: 1px solid rgba(179, 64, 46, 0.35);
+    color: #8E3526;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.dadi-error[hidden] {
+    display: none;
+}
+
+.dadi-error .dadi-error-icon {
+    font-size: 18px;
+    flex: 0 0 auto;
+}
+
+.dadi-error-retry {
+    flex: 0 0 auto;
+    border: 0;
+    background: var(--vr-green-dark);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: var(--vr-radius-pill);
+    padding: 7px 14px;
+    transition: background var(--vr-transition-fast), transform var(--vr-transition-fast);
+}
+
+.dadi-error-retry:hover {
+    background: var(--vr-green);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.dadi-error-retry:focus-visible {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+/* ---------- Locked state ---------- */
+
+.dadi-locked {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 4px 4px 0;
+    padding: 16px 18px;
+    background: #FCEAE2;
+    border: 1px solid rgba(179, 64, 46, 0.3);
+    border-radius: var(--vr-radius);
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: #743124;
+}
+
+.dadi-locked i {
+    font-size: 22px;
+    margin-top: 1px;
+}
+
+.dadi-locked strong {
+    color: #7E3327;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes dadiRise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes dadiZzz {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.55;
+    }
+    30% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dadi-page::before,
+    .dadi-msg,
+    .dadi-recs,
+    .dadi-empty,
+    .dadi-send,
+    .dadi-portrait-leaf,
+    .dadi-onboard,
+    .dadi-onboard-step,
+    .dadi-onboard-option,
+    .dadi-onboard-dot {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ---------- Onboarding (first visit, no conversation yet) ----------
+   The 3-step premium welcome: language choice, what you can talk about,
+   what happens when you talk to Dadi. Pure UI — the only persisted thing
+   is the validated language preference, via POST /dadi/onboarding.
+   --------------------------------------------------------------------- */
+
+/* The stage/composer can be toggled hidden from JS; the authored display
+   values would otherwise override the UA's [hidden] default. */
+.dadi-stage[hidden],
+.dadi-composer[hidden] {
+    display: none;
+}
+
+.dadi-onboard {
+    animation: dadiRise 0.5s var(--vr-transition) both;
+}
+
+.dadi-onboard-inner {
+    max-width: 560px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.dadi-onboard-head {
+    text-align: center;
+    padding: clamp(20px, 5vw, 44px) 0 22px;
+}
+
+.dadi-onboard-eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--vr-font-sans);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vr-green);
+}
+
+.dadi-onboard-title {
+    margin: 0;
+    font-family: var(--vr-font-sans);
+    font-size: clamp(22px, 4vw, 28px);
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--vr-green-dark);
+}
+
+.dadi-onboard-form {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-lg, 24px);
+    box-shadow: var(--vr-shadow-md);
+    padding: clamp(16px, 4vw, 28px);
+}
+
+.dadi-onboard-steps {
+    min-height: 268px;
+}
+
+.dadi-onboard-step {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    animation: dadiRise 0.35s var(--vr-transition) both;
+}
+
+.dadi-onboard-step-label {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 16px;
+    font-family: var(--vr-font-sans);
+    font-size: 16.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--vr-text);
+}
+
+.dadi-onboard-step-num {
+    flex: 0 0 auto;
+    min-width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-green-soft);
+    color: var(--vr-green-dark);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.dadi-onboard-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.dadi-onboard-option {
+    position: relative;
+    display: block;
+    cursor: pointer;
+}
+
+.dadi-onboard-option .dadi-onboard-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dadi-onboard-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 14px 15px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1.5px solid var(--vr-border);
+    border-radius: var(--vr-radius);
+    transition: border-color var(--vr-transition-fast), background var(--vr-transition-fast), box-shadow var(--vr-transition-fast), transform var(--vr-transition-fast);
+}
+
+.dadi-onboard-option-body strong {
+    font-size: 14.5px;
+    color: var(--vr-green-dark);
+}
+
+.dadi-onboard-option-body small {
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--vr-muted);
+}
+
+.dadi-onboard-option .dadi-onboard-radio:checked + .dadi-onboard-option-body {
+    border-color: var(--vr-green);
+    background: var(--vr-green-soft);
+    box-shadow: 0 0 0 4px rgba(111, 135, 54, 0.12);
+}
+
+.dadi-onboard-option .dadi-onboard-radio:focus-visible + .dadi-onboard-option-body {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+.dadi-onboard-option .dadi-onboard-radio:focus-visible:not(:checked) + .dadi-onboard-option-body {
+    border-color: var(--vr-green);
+}
+
+.dadi-onboard-option:hover .dadi-onboard-option-body {
+    border-color: rgba(111, 135, 54, 0.55);
+}
+
+.dadi-onboard-option:active .dadi-onboard-option-body {
+    transform: scale(0.985);
+}
+
+.dadi-onboard-other {
+    margin-top: 12px;
+    animation: dadiRise 0.3s var(--vr-transition) both;
+}
+
+.dadi-onboard-other-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--vr-muted);
+}
+
+.dadi-onboard-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: var(--vr-font-sans);
+    font-size: 14.5px;
+    color: var(--vr-text);
+    background: #fff;
+    border: 1.5px solid var(--vr-border);
+    border-radius: var(--vr-radius-sm);
+    transition: border-color var(--vr-transition-fast), box-shadow var(--vr-transition-fast);
+}
+
+.dadi-onboard-input:focus {
+    border-color: var(--vr-green);
+    box-shadow: 0 0 0 4px rgba(111, 135, 54, 0.14);
+    outline: none;
+}
+
+.dadi-onboard-list {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.dadi-onboard-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius);
+}
+
+.dadi-onboard-list-icon {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-green-soft);
+    color: var(--vr-green);
+    font-size: 17px;
+}
+
+.dadi-onboard-list-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dadi-onboard-list-body strong {
+    font-size: 14.5px;
+    color: var(--vr-green-dark);
+}
+
+.dadi-onboard-list-body small {
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--vr-muted);
+}
+
+.dadi-onboard-list-pillars {
+    grid-template-columns: 1fr 1fr;
+}
+
+.dadi-onboard-note {
+    margin: 0;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--vr-muted);
+}
+
+.dadi-onboard-trust {
+    margin: 2px 0 0;
+    padding: 12px 14px;
+    background: var(--vr-green-soft);
+    border-radius: var(--vr-radius-sm);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--vr-green-dark);
+    font-weight: 600;
+}
+
+.dadi-onboard-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--vr-border);
+}
+
+.dadi-onboard-dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dadi-onboard-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-border);
+    transition: width var(--vr-transition-fast), background var(--vr-transition-fast);
+}
+
+.dadi-onboard-dot.is-active {
+    width: 22px;
+    background: var(--vr-green);
+}
+
+.dadi-onboard-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dadi-onboard-back,
+.dadi-onboard-next,
+.dadi-onboard-start {
+    font-family: var(--vr-font-sans);
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: var(--vr-radius-pill);
+    cursor: pointer;
+    transition: background var(--vr-transition-fast), color var(--vr-transition-fast), transform var(--vr-transition-fast), opacity var(--vr-transition-fast), box-shadow var(--vr-transition-fast);
+}
+
+.dadi-onboard-back,
+.dadi-onboard-next {
+    padding: 10px 18px;
+    background: var(--vr-green-soft);
+    color: var(--vr-green-dark);
+    border: 1px solid transparent;
+}
+
+.dadi-onboard-next:hover {
+    background: #E4EBD4;
+}
+
+.dadi-onboard-back:hover {
+    background: #E4EBD4;
+}
+
+.dadi-onboard-start {
+    padding: 12px 22px;
+    color: var(--vr-cream);
+    background: linear-gradient(145deg, var(--vr-green) 0%, var(--vr-green-dark) 100%);
+    border: 1px solid var(--vr-green-dark);
+    box-shadow: var(--vr-shadow-xs);
+}
+
+.dadi-onboard-start:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--vr-shadow);
+}
+
+.dadi-onboard-back:focus-visible,
+.dadi-onboard-next:focus-visible,
+.dadi-onboard-start:focus-visible {
+    outline: 2px solid var(--vr-green);
+    outline-offset: 2px;
+}
+
+.dadi-onboard-error {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    background: #FCEAE2;
+    border: 1px solid rgba(179, 64, 46, 0.3);
+    border-radius: var(--vr-radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    color: #7E3327;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 991.98px) {
+    .dadi-composer {
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .dadi-shell {
+        padding-top: 18px;
+    }
+
+    .dadi-portrait {
+        width: 44px;
+        height: 44px;
+    }
+
+    .dadi-portrait-mark span {
+        font-size: 19px;
+    }
+
+    .dadi-empty {
+        padding-top: 18px;
+    }
+}
+
+@media (min-width: 992px) {
+    .dadi-stage {
+        padding-right: 6px;
+        padding-left: 6px;
+    }
+
+    .dadi-recs {
+        padding-right: 4px;
+        padding-left: 4px;
+    }
+}
+
+@media (max-width: 359.98px) {
+    .dadi-card {
+        flex-basis: 146px;
+    }
+
+    .dadi-msg {
+        max-width: 94%;
+    }
+}
+
+@media (max-width: 439.98px) {
+    .dadi-onboard-options,
+    .dadi-onboard-list-pillars {
+        grid-template-columns: 1fr;
+    }
+
+    .dadi-onboard-step {
+        min-height: auto;
+    }
+}
