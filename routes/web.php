@@ -72,11 +72,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit')->middleware('throttle:5,1');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit')->middleware('throttle:5,60');
-    Route::post('/auth/validate', [AuthController::class, 'validateFields'])->name('auth.validate');
+    Route::post('/auth/validate', [AuthController::class, 'validateFields'])->name('auth.validate')->middleware('throttle:60,1');
     Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:3,10');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:5,10');
     Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.store');
+    Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.store')->middleware('throttle:5,60');
 });
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

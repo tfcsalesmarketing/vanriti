@@ -4,6 +4,7 @@ use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Providers\DadiServiceProvider;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => CheckRole::class,
             'permission' => CheckPermission::class,
             'active' => EnsureUserIsActive::class,
+            'guest' => RedirectIfAuthenticated::class,
         ]);
 
         $middleware->validateCsrfTokens(except: ['checkout/verify']);

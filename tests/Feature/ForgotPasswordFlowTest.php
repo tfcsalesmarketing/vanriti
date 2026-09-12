@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Notifications\ResetPasswordNotification;
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -42,13 +43,42 @@ class ForgotPasswordFlowTest extends TestCase
         );
     }
 
-    public function test_forgot_password_for_unknown_email_does_not_reveal(): void
+    public function test_forgot_password_for_existing_email_succeeds_when_reset_email_fails_to_send(): void
+    {
+        Event::listen(MessageSending::class, fn () => throw new \RuntimeException('smtp unreachable'));
+
+        $user = User::factory()->create(['email' => 'mailfail-reset@example.com']);
+
+        $response = $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => 'mailfail-reset@example.com']);
+
+        $response->assertRedirect(route('password.request'));
+        $response->assertSessionHas('success');
+        $response->assertSessionMissing('errors');
+    }
+
+    public function test_forgot_password_accepts_five_requests_then_rate_limits(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->from(route('password.request'))
+                ->post(route('password.email'), ['email' => "rate$i@example.com"]);
+
+            $response->assertSessionHas('success');
+        }
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => 'rate-sixth@example.com'])
+            ->assertStatus(429);
+    }
+
+    public function test_forgot_password_for_unknown_email_does_not_reveal_existence(): void
     {
         $response = $this->from(route('password.request'))
             ->post(route('password.email'), ['email' => 'nobody@example.com']);
 
         $response->assertRedirect(route('password.request'));
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHas('success');
+        $response->assertSessionMissing('errors');
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'nobody@example.com']);
     }
 

@@ -117,6 +117,30 @@ class AuthLiveValidationTest extends TestCase
         $this->assertArrayHasKey('password', $response->json('errors'));
     }
 
+    public function test_register_password_without_number_fails_live(): void
+    {
+        $response = $this->postJson(route('auth.validate'), [
+            'context' => 'register',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('password', $response->json('errors'));
+    }
+
+    public function test_register_password_without_letter_fails_live(): void
+    {
+        $response = $this->postJson(route('auth.validate'), [
+            'context' => 'register',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('password', $response->json('errors'));
+    }
+
     public function test_register_confirmation_mismatch_fails_live(): void
     {
         $response = $this->postJson(route('auth.validate'), [
