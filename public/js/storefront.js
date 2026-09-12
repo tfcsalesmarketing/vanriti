@@ -401,4 +401,5 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     };
-});
+
+    });

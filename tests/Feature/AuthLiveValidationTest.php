@@ -72,6 +72,16 @@ class AuthLiveValidationTest extends TestCase
         $this->assertArrayHasKey('name', $response->json('errors'));
     }
 
+    public function test_register_empty_email_passes_live(): void
+    {
+        $response = $this->postJson(route('auth.validate'), [
+            'context' => 'register',
+            'email' => '',
+        ]);
+
+        $response->assertOk()->assertJson(['valid' => true]);
+    }
+
     public function test_register_duplicate_email_fails_live(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);

@@ -35,6 +35,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             SecurityHeaders::class,
         ]);
+
+        $trustedProxies = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))));
+        if ($trustedProxies !== []) {
+            $middleware->trustProxies(at: $trustedProxies);
+        }
+
+        $trustedHosts = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', '')))));
+        if ($trustedHosts !== []) {
+            $middleware->trustHosts(at: $trustedHosts, subdomains: true);
+        } else {
+            $middleware->trustHosts(subdomains: true);
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

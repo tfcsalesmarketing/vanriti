@@ -82,6 +82,33 @@ class ForgotPasswordFlowTest extends TestCase
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'nobody@example.com']);
     }
 
+    public function test_reset_email_link_uses_the_request_host(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'name' => 'Aarav Mehta',
+            'email' => 'hostlink@example.com',
+        ]);
+
+        $this->post(route('password.email'), ['email' => 'hostlink@example.com'])
+            ->assertSessionHas('success');
+
+        Notification::assertSentTo(
+            $user,
+            ResetPasswordNotification::class,
+            function (ResetPasswordNotification $notification) use ($user): bool {
+                $html = $notification->toMail($user)->render();
+                $expectedUrl = url(route('password.reset', [
+                    'token' => $notification->token,
+                    'email' => $user->email,
+                ], false));
+
+                return str_contains($html, $expectedUrl);
+            }
+        );
+    }
+
     public function test_reset_email_uses_premium_branded_template(): void
     {
         $user = User::factory()->create([

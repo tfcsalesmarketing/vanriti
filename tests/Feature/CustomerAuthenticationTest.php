@@ -9,6 +9,7 @@ use App\Models\Wishlist;
 use App\Services\CartService;
 use App\Services\WishlistService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
 
 class CustomerAuthenticationTest extends TestCase
@@ -17,7 +18,7 @@ class CustomerAuthenticationTest extends TestCase
 
     protected function guestCartCookie(array $data = []): array
     {
-        return \Illuminate\Support\Facades\Crypt::encryptString($data['session'] ?? 'cart_test_session');
+        return Crypt::encryptString($data['session'] ?? 'cart_test_session');
     }
 
     public function test_guest_cart_merges_into_user_cart_on_registration(): void
@@ -43,6 +44,7 @@ class CustomerAuthenticationTest extends TestCase
             ->post(route('register.submit'), [
                 'name' => 'Merge User',
                 'email' => 'merge@example.com',
+                'phone' => '9876543210',
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
             ])
@@ -79,6 +81,7 @@ class CustomerAuthenticationTest extends TestCase
             ->post(route('register.submit'), [
                 'name' => 'Wish User',
                 'email' => 'wish@example.com',
+                'phone' => '9876543210',
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
             ])

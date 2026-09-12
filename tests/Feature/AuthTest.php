@@ -47,6 +47,7 @@ class AuthTest extends TestCase
         $response = $this->post(route('register.submit'), [
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
+            'phone' => '9876543210',
             'password' => 'password123',
             'password_confirmation' => 'different',
         ]);
@@ -99,6 +100,7 @@ class AuthTest extends TestCase
         $this->post(route('register.submit'), [
             'name' => 'Jane Doe',
             'email' => 'welcome-notify@example.com',
+            'phone' => '9876543210',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ])->assertRedirect(route('account.dashboard'));
@@ -117,6 +119,7 @@ class AuthTest extends TestCase
         $response = $this->post(route('register.submit'), [
             'name' => 'Jane Doe',
             'email' => 'mailfail@example.com',
+            'phone' => '9876543210',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);

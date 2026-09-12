@@ -21,7 +21,10 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function __construct(protected CartService $cartService, protected WishlistService $wishlistService) {}
+    public function __construct(
+        protected CartService $cartService,
+        protected WishlistService $wishlistService,
+    ) {}
 
     public function showLogin(): View
     {
@@ -68,15 +71,21 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
             'password' => ['required', 'confirmed', $this->passwordRule()],
         ], $this->messages());
 
+        $phone = Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString();
+
+        $email = ! empty($data['email'] ?? null)
+            ? Str::lower(trim($data['email']))
+            : null;
+
         $user = User::create([
             'name' => $data['name'],
-            'email' => Str::lower(trim($data['email'])),
-            'phone' => ($data['phone'] ?? null) !== null ? Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString() : null,
+            'email' => $email,
+            'phone' => $phone,
             'password' => $data['password'],
             'status' => 'active',
         ]);
@@ -133,8 +142,8 @@ class AuthController extends Controller
 
             return [
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-                'phone' => ['nullable', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+                'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+                'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
                 'password' => $password,
                 'password_confirmation' => ['required', 'same:password'],
             ];
@@ -185,6 +194,7 @@ class AuthController extends Controller
             'password_confirmation.same' => 'The password confirmation does not match.',
             'name.required' => 'Please enter your full name.',
             'name.max' => 'Name must not exceed 255 characters.',
+            'phone.required' => 'Please enter your mobile number.',
             'phone.regex' => 'Please enter a valid 10-digit mobile number.',
         ];
     }

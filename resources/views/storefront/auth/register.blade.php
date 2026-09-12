@@ -21,13 +21,13 @@
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Email</label>
-                    <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-lg" autocomplete="email">
+                    <label class="form-label small fw-semibold">Mobile</label>
+                    <input type="tel" name="phone" value="{{ old('phone') }}" class="form-control form-control-lg" autocomplete="tel" inputmode="tel">
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Mobile (optional)</label>
-                    <input type="tel" name="phone" value="{{ old('phone') }}" class="form-control form-control-lg" autocomplete="tel" inputmode="tel">
+                    <label class="form-label small fw-semibold">Email <span class="fw-normal text-muted">(optional)</span></label>
+                    <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-lg" autocomplete="email">
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="mb-3">
