@@ -561,7 +561,7 @@ img { max-width: 100%; height: auto; }
 .vr-wish-btn:hover { background: #fff; border-color: var(--vr-green); color: var(--vr-green); transform: scale(1.1); }
 .vr-wish-btn.liked:hover { color: var(--vr-danger); border-color: var(--vr-danger); }
 
-.vr-card .card-body { padding: 1.15rem 1.15rem 1.25rem; display: flex; flex-direction: column; }
+.vr-card .card-body { padding: 1.15rem 1.15rem 1.25rem; flex: 1 1 auto; display: flex; flex-direction: column; }
 
 .vr-card .cat-name {
     font-size: 0.7rem;
@@ -598,6 +598,42 @@ img { max-width: 100%; height: auto; }
     font-size: 0.85rem;
     font-weight: 600;
     padding: 0.5rem 1rem;
+}
+
+.vr-card-qty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border: 1.5px solid var(--vr-green);
+    border-radius: var(--vr-radius-pill);
+    background: #fff;
+    padding: 0.15rem;
+    width: 100%;
+}
+.vr-card-qty button {
+    border: 0;
+    background: transparent;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1rem;
+    color: var(--vr-green-dark);
+    transition: all var(--vr-transition-fast);
+}
+.vr-card-qty button:hover:not(:disabled) { background: var(--vr-green-soft); color: var(--vr-green-dark); }
+.vr-card-qty button:disabled { opacity: 0.4; cursor: not-allowed; }
+.vr-card-qty input {
+    border: 0;
+    width: 44px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--vr-green-dark);
+    background: transparent;
 }
 
 /* ---------- Trust Bar ---------- */

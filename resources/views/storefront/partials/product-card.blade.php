@@ -12,6 +12,9 @@
     $wishlistService = app(App\Services\WishlistService::class);
     $liked = $wishlistService->has($product);
     $isNew = $product->created_at && $product->created_at->gte(now()->subDays(30));
+    $cartLineByProduct = $cartLineByProduct ?? collect();
+    $cartLine = $cartLineByProduct->get($product->id);
+    $cartQty = $cartLine?->quantity ?? 0;
 @endphp
 
 <div class="vr-card">
@@ -23,7 +26,7 @@
             <span class="vr-new-badge">NEW</span>
         @endif
 
-        <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="m-0">
+        <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="m-0 js-wishlist-form">
             @csrf
             <button type="submit" class="vr-wish-btn {{ $liked ? 'liked' : '' }}" title="{{ $liked ? 'Remove from wishlist' : 'Add to wishlist' }}" aria-label="Toggle wishlist">
                 <i class="bi {{ $liked ? 'bi-heart-fill' : 'bi-heart' }}"></i>
@@ -48,6 +51,7 @@
 
         <a href="{{ route('product.show', $product) }}" class="p-name d-block mb-1" title="{{ $product->name }}">{{ Str::limit($product->name, 100, '...') }}</a>
 
+        <div class="vr-card-tail mt-auto">
         @if ($reviewCount > 0)
             <div class="rating-stars small mb-1">
                 @for ($i = 1; $i <= 5; $i++)
@@ -77,15 +81,32 @@
             <span class="vr-stock-label in mt-1">Only {{ $available }} left</span>
         @endif
 
-        <form method="POST" action="{{ route('cart.add', $product) }}" class="mt-2">
-            @csrf
-            @if ($firstVariant)
-                <input type="hidden" name="variant_id" value="{{ $firstVariant->id }}">
-            @endif
-            <input type="hidden" name="quantity" value="1">
-            <button type="submit" class="btn btn-vr-outline vr-quick-add d-block w-100 js-add-cart" {{ $out ? 'disabled' : '' }}>
-                <i class="bi bi-bag-plus me-1"></i> Add to Cart
-            </button>
-        </form>
+        <div class="js-add-wrap {{ $cartQty > 0 ? 'd-none' : '' }}">
+            <form method="POST" action="{{ route('cart.add', $product) }}" class="mt-2">
+                @csrf
+                @if ($firstVariant)
+                    <input type="hidden" name="variant_id" value="{{ $firstVariant->id }}">
+                @endif
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-vr-outline vr-quick-add d-block w-100 js-add-cart" {{ $out ? 'disabled' : '' }}>
+                    <i class="bi bi-bag-plus me-1"></i> Add to Cart
+                </button>
+            </form>
+        </div>
+
+        <div class="js-qty-wrap {{ $cartQty > 0 ? '' : 'd-none' }}">
+            <form method="POST" action="{{ route('cart.update', '__ITEM__') }}" class="mt-2 js-card-qty-form"
+                  data-cart-item="{{ $cartLine ? $cartLine->id : '' }}"
+                  data-update-url="{{ route('cart.update', '__ITEM__') }}"
+                  data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
+                @csrf
+                <div class="vr-card-qty">
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="ri-subtract-line"></i></button>
+                    <input type="number" name="quantity" value="{{ $cartQty > 0 ? $cartQty : 1 }}" min="1" max="5" readonly aria-label="Quantity">
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="ri-add-line"></i></button>
+                </div>
+            </form>
+        </div>
+        </div>
     </div>
 </div>

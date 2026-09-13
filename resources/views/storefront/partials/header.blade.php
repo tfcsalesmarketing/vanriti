@@ -105,7 +105,9 @@
                 <a href="{{ route('wishlist.index') }}" class="vr-icon-link" title="Wishlist" aria-label="Wishlist">
                     <i class="bi bi-heart"></i>
                     @if ($wishCount > 0)
-                        <span class="vr-badge">{{ $wishCount }}</span>
+                        <span class="vr-badge js-wishlist-count">{{ $wishCount }}</span>
+                    @else
+                        <span class="vr-badge js-wishlist-count d-none">0</span>
                     @endif
                 </a>
                 <a href="{{ route('cart.index') }}" class="vr-icon-link position-relative" title="Cart" aria-label="Cart">

@@ -103,6 +103,8 @@ class CartController extends Controller
                 'message' => 'Added to cart.',
                 'redirect' => route('cart.index'),
                 'cartCount' => $this->cartService->count(),
+                'cartItemId' => $cartItem->id,
+                'quantity' => $cartItem->quantity,
                 'analytics' => $analytics,
             ]);
         }
@@ -136,7 +138,7 @@ class CartController extends Controller
         }
     }
 
-    public function update(Request $request, CartItem $cartItem): RedirectResponse
+    public function update(Request $request, CartItem $cartItem): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1|max:5',
@@ -145,15 +147,36 @@ class CartController extends Controller
         try {
             $this->cartService->updateQuantity($cartItem->id, (int) $validated['quantity']);
         } catch (\RuntimeException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart updated.',
+                'cartCount' => $this->cartService->count(),
+                'quantity' => (int) $validated['quantity'],
+            ]);
         }
 
         return redirect()->route('cart.index')->with('success', 'Cart updated.');
     }
 
-    public function remove(Request $request, CartItem $cartItem): RedirectResponse
+    public function remove(Request $request, CartItem $cartItem): RedirectResponse|JsonResponse
     {
         $this->cartService->remove($cartItem->id);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Item removed.',
+                'cartCount' => $this->cartService->count(),
+            ]);
+        }
 
         return back()->with('success', 'Item removed.');
     }
