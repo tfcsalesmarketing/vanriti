@@ -90,13 +90,15 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
-        try {
-            $user->notify(new WelcomeNotification);
-        } catch (\Throwable $e) {
-            Log::warning('Welcome email could not be delivered for newly registered user.', [
-                'email' => $user->email,
-                'error' => $e->getMessage(),
-            ]);
+        if (! empty($user->email)) {
+            try {
+                $user->notify(new WelcomeNotification);
+            } catch (\Throwable $e) {
+                Log::warning('Welcome email could not be delivered for newly registered user.', [
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         auth('web')->login($user);

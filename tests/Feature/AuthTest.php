@@ -148,6 +148,26 @@ class AuthTest extends TestCase
         $this->assertStringContainsString('eduse-uploadedfiles.s3.ap-south-1.amazonaws.com', $html);
     }
 
+    public function test_phone_only_registration_succeeds_without_welcome_email(): void
+    {
+        Notification::fake();
+        Log::spy();
+
+        $response = $this->post(route('register.submit'), [
+            'name' => 'Phone Only',
+            'phone' => '9876543210',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertRedirect(route('account.dashboard'));
+        $this->assertAuthenticated('web');
+        $this->assertDatabaseHas('users', ['phone' => '9876543210', 'email' => null]);
+
+        Notification::assertNothingSent();
+        Log::shouldNotHaveReceived('warning');
+    }
+
     public function test_authenticated_user_is_redirected_from_login(): void
     {
         $user = User::factory()->create();
