@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
 use App\Models\ShipmentTrackingEvent;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -74,6 +75,14 @@ class ShipmentController extends Controller
         }
 
         $shipment->update($shipmentUpdates);
+
+        // Keep the customer posted as the package moves through fulfilment.
+        if (in_array($data['status'], ['packed', 'shipped', 'out_for_delivery', 'delivered'], true)) {
+            $order = $shipment->order()->with('user')->first();
+            if ($order?->user) {
+                app(NotificationService::class)->orderStatusChanged($order, $data['status']);
+            }
+        }
 
         return redirect()->back()->with('success', 'Tracking event added.');
     }

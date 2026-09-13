@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProductVariant>
+ * @extends Factory<ProductVariant>
  */
 class ProductVariantFactory extends Factory
 {
@@ -29,10 +29,6 @@ class ProductVariantFactory extends Factory
             'stock' => $this->faker->numberBetween(10, 150),
             'low_stock_threshold' => 5,
             'weight' => $this->faker->randomElement(['50 g', '100 g', '150 ml', '200 ml']),
-            'dimensions' => null,
-            'image' => null,
-            'barcode' => null,
-            'hsn_code' => '3304',
             'gst_rate' => 18,
             'status' => 'active',
             'is_default' => false,

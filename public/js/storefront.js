@@ -371,40 +371,52 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ---- Wishlist toggle (AJAX, product cards) ----
-    document.querySelectorAll('.js-wishlist-form').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
+    document.addEventListener('click', function (e) {
+        var el = e.target;
+        var heart = el.closest ? el.closest('.vr-wish-btn') : null;
+        if (heart) {
             e.preventDefault();
-            var btn = form.querySelector('.vr-wish-btn');
-            if (btn) btn.disabled = true;
-            var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            e.stopPropagation();
+        }
+    });
 
-            fetch(form.action, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                body: new FormData(form)
-            }).then(function (r) {
-                return r.json().catch(function () { return { success: false, message: 'Something went wrong.' }; });
-            }).then(function (data) {
-                if (btn) btn.disabled = false;
-                if (!data.success) {
-                    toast(data.message || 'Could not update wishlist.', 'error');
-                    return;
-                }
-                var added = !!data.added;
-                if (typeof data.count !== 'undefined') setWishCount(data.count);
-                if (btn) {
-                    btn.classList.toggle('liked', added);
-                    var icon = btn.querySelector('i');
-                    if (icon) icon.className = 'bi ' + (added ? 'bi-heart-fill' : 'bi-heart');
-                    btn.title = added ? 'Remove from wishlist' : 'Add to wishlist';
-                    btn.setAttribute('aria-label', added ? 'Remove from wishlist' : 'Add to wishlist');
-                }
-                toast(added ? 'Added to wishlist.' : 'Removed from wishlist.');
-            }).catch(function () {
-                if (btn) btn.disabled = false;
-                toast('Could not update wishlist.', 'error');
-                form.submit();
-            });
+    document.addEventListener('submit', function (e) {
+        var el = e.target;
+        var form = el.closest ? el.closest('.js-wishlist-form') : null;
+        if (!form) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var btn = form.querySelector('.vr-wish-btn');
+        if (btn) btn.disabled = true;
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        var token = meta ? meta.getAttribute('content') : '';
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+            body: new FormData(form)
+        }).then(function (r) {
+            return r.json().catch(function () { return { success: false, message: 'Something went wrong.' }; });
+        }).then(function (data) {
+            if (btn) btn.disabled = false;
+            if (!data.success) {
+                toast(data.message || 'Could not update wishlist.', 'error');
+                return;
+            }
+            var added = !!data.added;
+            if (typeof data.count !== 'undefined') setWishCount(data.count);
+            if (btn) {
+                btn.classList.toggle('liked', added);
+                var icon = btn.querySelector('i');
+                if (icon) icon.className = 'bi ' + (added ? 'bi-heart-fill' : 'bi-heart');
+                btn.title = added ? 'Remove from wishlist' : 'Add to wishlist';
+                btn.setAttribute('aria-label', added ? 'Remove from wishlist' : 'Add to wishlist');
+            }
+            toast(added ? 'Added to wishlist.' : 'Removed from wishlist.');
+        }).catch(function () {
+            if (btn) btn.disabled = false;
+            toast('Could not update wishlist. Please try again.', 'error');
+            window.location.reload();
         });
     });
 

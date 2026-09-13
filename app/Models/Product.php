@@ -42,8 +42,7 @@ class Product extends Model
         'manufacturer_address',
         'country_of_origin',
         'shelf_life',
-        'expiry_info',
-        'video_url',
+
         'meta_title',
         'meta_description',
         'meta_keywords',

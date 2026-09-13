@@ -3,15 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
+use App\Jobs\PushOrderToShipMojo;
+use App\Jobs\SendMetaCapiPurchase;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\User;
-use App\Jobs\PushOrderToShipMojo;
-use App\Jobs\SendMetaCapiPurchase;
 use App\Services\Analytics\ConversionService;
 use App\Services\Analytics\EcommerceDataService;
 use App\Services\Analytics\MetaCapiService;
 use App\Services\CartService;
+use App\Services\NotificationService;
 use App\Services\OrderService;
 use App\Services\Payments\PaymentService;
 use App\Services\Payments\RazorpayGateway;
@@ -34,8 +35,7 @@ class CheckoutController extends Controller
         protected EcommerceDataService $ecommerceDataService,
         protected ConversionService $conversionService,
         protected MetaCapiService $metaCapiService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): View|RedirectResponse
     {
@@ -204,7 +204,7 @@ class CheckoutController extends Controller
                 $payment = $this->paymentService->createPayment($order, 'cod');
                 $this->paymentService->initialize($order, $payment, 'cod');
             } catch (\Throwable $e) {
-                return back()->withErrors(['checkout' => 'Payment initialisation failed: ' . $e->getMessage()])->withInput();
+                return back()->withErrors(['checkout' => 'Payment initialisation failed: '.$e->getMessage()])->withInput();
             }
 
             session()->forget('cart_coupon');
@@ -219,10 +219,14 @@ class CheckoutController extends Controller
 
             $this->dispatchMetaCapiPurchase($order, $request);
 
+            $this->notifyCustomer($order, 'orderPlaced');
+
             return redirect()->route('checkout.success', $order)->with('success', 'Order placed successfully!');
         }
 
         if ($validated['payment_method'] === 'razorpay') {
+            $this->notifyCustomer($order, 'orderPlaced');
+
             return $this->razorpayJsonResponse($order, $cart);
         }
 
@@ -262,7 +266,7 @@ class CheckoutController extends Controller
                 $this->paymentService->markFailed($payment, $e->getMessage());
             }
 
-            return back()->withErrors(['checkout' => 'Razorpay initialisation failed: ' . $e->getMessage()])->withInput();
+            return back()->withErrors(['checkout' => 'Razorpay initialisation failed: '.$e->getMessage()])->withInput();
         }
     }
 
@@ -363,7 +367,7 @@ class CheckoutController extends Controller
                 return redirect()->route('checkout.failed', $order);
             }
 
-            $gateway = new RazorpayGateway();
+            $gateway = new RazorpayGateway;
 
             if ($gateway->verify($payment, $request->all())) {
                 $this->paymentService->markPaid($payment);
@@ -386,12 +390,16 @@ class CheckoutController extends Controller
 
                 $this->dispatchMetaCapiPurchase($order, $request);
 
+                $this->notifyCustomer($order, 'paymentSuccessful');
+
                 return redirect()->route('checkout.success', $order);
             }
 
             $this->paymentService->markFailed($payment, 'Signature verification failed.');
 
             $this->forgetInFlightRazorpayOrder($order);
+
+            $this->notifyCustomer($order, 'paymentFailed');
 
             return redirect()->route('checkout.failed', $order);
         } catch (\Throwable $e) {
@@ -484,5 +492,24 @@ class CheckoutController extends Controller
         $order->load(['items', 'payments']);
 
         return view('storefront.checkout.pending', compact('order'));
+    }
+
+    /**
+     * Dispatch a customer-facing order notification, swallowing and logging any
+     * delivery failure so it never blocks or rolls back checkout.
+     */
+    protected function notifyCustomer(Order $order, string $method): void
+    {
+        try {
+            if ($order->user) {
+                app(NotificationService::class)->{$method}($order);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Order notification could not be delivered.', [
+                'order' => $order->order_number,
+                'method' => $method,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -53,17 +53,47 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         $superAdmin->permissions()->sync(Permission::all()->pluck('id'));
 
-        Role::updateOrCreate(['slug' => 'manager'], [
+        $manager = Role::updateOrCreate(['slug' => 'manager'], [
             'name' => 'Manager',
-            'description' => 'Manage products, orders, customers and content',
+            'description' => 'Manage catalogue, orders, customers and content',
             'is_system' => true,
         ]);
+        $manager->permissions()->sync(Permission::whereIn('slug', [
+            'view-dashboard',
+            'manage-products',
+            'manage-categories',
+            'manage-inventory',
+            'manage-orders',
+            'manage-shipments',
+            'manage-returns',
+            'manage-refunds',
+            'manage-customers',
+            'manage-coupons',
+            'manage-reviews',
+            'manage-blogs',
+            'manage-banners',
+            'manage-pages',
+            'manage-faqs',
+            'manage-newsletters',
+            'manage-media',
+            'view-reports',
+            'manage-activities',
+        ])->pluck('id'));
 
-        Role::updateOrCreate(['slug' => 'support'], [
+        $support = Role::updateOrCreate(['slug' => 'support'], [
             'name' => 'Support',
             'description' => 'Handle orders, returns and customer queries',
             'is_system' => true,
         ]);
+        $support->permissions()->sync(Permission::whereIn('slug', [
+            'view-dashboard',
+            'manage-orders',
+            'manage-shipments',
+            'manage-returns',
+            'manage-refunds',
+            'manage-customers',
+            'manage-reviews',
+        ])->pluck('id'));
 
         $super = Admin::updateOrCreate(
             ['email' => env('ADMIN_EMAIL', 'admin@vanriti.com')],

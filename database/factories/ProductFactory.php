@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
+ * @extends Factory<Product>
  */
 class ProductFactory extends Factory
 {
@@ -47,8 +48,7 @@ class ProductFactory extends Factory
             'manufacturer_address' => $this->faker->address(),
             'country_of_origin' => 'India',
             'shelf_life' => '24 months',
-            'expiry_info' => null,
-            'video_url' => null,
+
             'meta_title' => ucwords($name),
             'meta_description' => $this->faker->sentence(12),
             'meta_keywords' => implode(', ', $this->faker->words(5)),
@@ -65,7 +65,7 @@ class ProductFactory extends Factory
         return $this->state(fn () => ['status' => 'active']);
     }
 
-    public function category(\App\Models\Category $category): static
+    public function category(Category $category): static
     {
         return $this->afterCreating(function (Product $product) use ($category) {
             $product->categories()->syncWithoutDetaching([$category->id => ['is_primary' => true]]);

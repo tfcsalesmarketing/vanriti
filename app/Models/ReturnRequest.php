@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ReturnRequest extends Model
 {
@@ -16,7 +17,6 @@ class ReturnRequest extends Model
         'description',
         'status',
         'admin_note',
-        'customer_note',
         'requested_at',
         'processed_at',
     ];
@@ -44,7 +44,7 @@ class ReturnRequest extends Model
         return $this->hasMany(ReturnItem::class);
     }
 
-    public function refund(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function refund(): HasOne
     {
         return $this->hasOne(Refund::class);
     }

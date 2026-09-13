@@ -73,6 +73,7 @@
                     <li><a href="{{ route('info.privacy') }}">Privacy Policy</a></li>
                     <li><a href="{{ route('info.terms') }}">Terms &amp; Conditions</a></li>
                     <li><a href="{{ route('info.disclaimer') }}">Disclaimer</a></li>
+                    <li><a href="{{ route('sitemap') }}">Sitemap</a></li>
                 </ul>
             </div>
         </div>

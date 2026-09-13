@@ -5,17 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ReturnRequest;
+use App\Services\NotificationService;
 use App\Services\ShipMojoService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ShipMojoController extends Controller
 {
-    public function __construct(protected ShipMojoService $shipmojo)
-    {
-    }
+    public function __construct(protected ShipMojoService $shipmojo) {}
 
     // ── Push Order ─────────────────────────────────────────────────────────────
     public function pushOrder(Order $order): RedirectResponse
@@ -24,12 +23,12 @@ class ShipMojoController extends Controller
             $response = $this->shipmojo->pushOrder($order);
 
             if (($response['result'] ?? '0') === '1') {
-                return back()->with('success', 'Order pushed to ShipMojo successfully! Reference: ' . ($response['data']['reference_id'] ?? 'N/A'));
+                return back()->with('success', 'Order pushed to ShipMojo successfully! Reference: '.($response['data']['reference_id'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -41,12 +40,13 @@ class ShipMojoController extends Controller
 
             if (($response['result'] ?? '0') === '1') {
                 $data = $response['data'] ?? [];
-                return back()->with('success', 'Courier assigned! AWB: ' . ($data['awb_number'] ?? 'N/A') . ' via ' . ($data['courier_company'] ?? 'N/A'));
+
+                return back()->with('success', 'Courier assigned! AWB: '.($data['awb_number'] ?? 'N/A').' via '.($data['courier_company'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -58,12 +58,19 @@ class ShipMojoController extends Controller
 
             if (($response['result'] ?? '0') === '1') {
                 $data = $response['data'] ?? [];
-                return back()->with('success', 'Pickup scheduled! AWB: ' . ($data['awb_number'] ?? 'N/A'));
+
+                // Order is now with the courier: notify shipped with tracking info.
+                if (in_array($order->order_status, ['pending', 'confirmed', 'processing', 'packed'], true)) {
+                    $order->refresh()->load('user');
+                    app(NotificationService::class)->orderStatusChanged($order, 'shipped');
+                }
+
+                return back()->with('success', 'Pickup scheduled! AWB: '.($data['awb_number'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -77,9 +84,9 @@ class ShipMojoController extends Controller
                 return back()->with('success', 'Shipment cancelled in ShipMojo.');
             }
 
-            return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -96,7 +103,13 @@ class ShipMojoController extends Controller
             $response = $this->shipmojo->getLabel($shipment->awb_number);
 
             if (($response['result'] ?? '0') !== '1' || empty($response['data'][0]['label'])) {
-                return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Label not available'));
+                return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Label not available'));
+            }
+
+            // Labels generated means the order is packed and ready to dispatch.
+            if (in_array($order->order_status, ['pending', 'confirmed', 'processing', 'packed'], true)) {
+                $order->refresh()->load('user');
+                app(NotificationService::class)->orderStatusChanged($order, 'packed');
             }
 
             // Decode base64 PNG and return as download
@@ -106,9 +119,9 @@ class ShipMojoController extends Controller
 
             return response($imageData, 200)
                 ->header('Content-Type', 'image/png')
-                ->header('Content-Disposition', 'attachment; filename="label-' . $shipment->awb_number . '.png"');
+                ->header('Content-Disposition', 'attachment; filename="label-'.$shipment->awb_number.'.png"');
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -120,12 +133,19 @@ class ShipMojoController extends Controller
 
             if (($response['result'] ?? '0') === '1') {
                 $status = $response['data']['current_status'] ?? 'Unknown';
+
+                $shipment = $order->shipments()->latest()->first();
+                if ($shipment && in_array($shipment->status, ['out_for_delivery', 'delivered'], true)) {
+                    $order->refresh()->load('user');
+                    app(NotificationService::class)->orderStatusChanged($order, $shipment->status);
+                }
+
                 return back()->with('success', "Tracking synced! Current status: {$status}");
             }
 
-            return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -133,8 +153,8 @@ class ShipMojoController extends Controller
     public function pushReturnOrder(Request $request, ReturnRequest $returnRequest): RedirectResponse
     {
         $data = $request->validate([
-            'return_reason_id'  => 'required|integer',
-            'customer_request'  => 'required|in:REFUND,REPLACEMENT',
+            'return_reason_id' => 'required|integer',
+            'customer_request' => 'required|in:REFUND,REPLACEMENT',
         ]);
 
         try {
@@ -145,12 +165,12 @@ class ShipMojoController extends Controller
             );
 
             if (($response['result'] ?? '0') === '1') {
-                return back()->with('success', 'Return order pushed to ShipMojo! Reference: ' . ($response['data']['reference_id'] ?? 'N/A'));
+                return back()->with('success', 'Return order pushed to ShipMojo! Reference: '.($response['data']['reference_id'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: ' . ($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ShipMojo: ' . $e->getMessage());
+            return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
     }
 
@@ -159,6 +179,7 @@ class ShipMojoController extends Controller
     {
         try {
             $response = $this->shipmojo->getWarehouses();
+
             return response()->json($response);
         } catch (\Throwable $e) {
             return response()->json(['result' => '0', 'message' => $e->getMessage()]);
@@ -169,31 +190,32 @@ class ShipMojoController extends Controller
     public function rates(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'pickup_pincode'    => 'required|digits:6',
-            'delivery_pincode'  => 'required|digits:6',
-            'payment_type'      => 'required|in:PREPAID,COD',
-            'weight'            => 'required|numeric',
-            'order_amount'      => 'required|numeric',
+            'pickup_pincode' => 'required|digits:6',
+            'delivery_pincode' => 'required|digits:6',
+            'payment_type' => 'required|in:PREPAID,COD',
+            'weight' => 'required|numeric',
+            'order_amount' => 'required|numeric',
         ]);
 
         try {
             $response = $this->shipmojo->getRates([
-                'pickup_pincode'    => (int) $data['pickup_pincode'],
-                'delivery_pincode'  => (int) $data['delivery_pincode'],
-                'payment_type'      => $data['payment_type'],
-                'shipment_type'     => 'FORWARD',
-                'order_amount'      => (float) $data['order_amount'],
-                'type_of_package'   => 'SPS',
-                'rov_type'          => 'ROV_OWNER',
-                'cod_amount'        => '',
-                'weight'            => (float) $data['weight'],
-                'dimensions'        => [[
+                'pickup_pincode' => (int) $data['pickup_pincode'],
+                'delivery_pincode' => (int) $data['delivery_pincode'],
+                'payment_type' => $data['payment_type'],
+                'shipment_type' => 'FORWARD',
+                'order_amount' => (float) $data['order_amount'],
+                'type_of_package' => 'SPS',
+                'rov_type' => 'ROV_OWNER',
+                'cod_amount' => '',
+                'weight' => (float) $data['weight'],
+                'dimensions' => [[
                     'no_of_box' => '1',
-                    'length'    => setting('shipmojo_default_length', 20),
-                    'width'     => setting('shipmojo_default_width', 15),
-                    'height'    => setting('shipmojo_default_height', 10),
+                    'length' => setting('shipmojo_default_length', 20),
+                    'width' => setting('shipmojo_default_width', 15),
+                    'height' => setting('shipmojo_default_height', 10),
                 ]],
             ]);
+
             return response()->json($response);
         } catch (\Throwable $e) {
             return response()->json(['result' => '0', 'message' => $e->getMessage()]);
@@ -205,6 +227,7 @@ class ShipMojoController extends Controller
     {
         try {
             $response = $this->shipmojo->ping();
+
             return response()->json($response);
         } catch (\Throwable $e) {
             return response()->json(['result' => '0', 'message' => $e->getMessage()]);

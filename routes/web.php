@@ -22,24 +22,6 @@ use Illuminate\Support\Facades\Route;
 // ---------- Sitemap ----------
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
-// ---------- Robots.txt ----------
-Route::get('/robots.txt', fn () => response(
-    "User-agent: *\n".
-    "Allow: /\n".
-    "Disallow: /admin\n".
-    "Disallow: /checkout\n".
-    "Disallow: /account\n".
-    "Disallow: /cart\n".
-    "Disallow: /wishlist\n".
-    "Disallow: /login\n".
-    "Disallow: /register\n".
-    "Disallow: /forgot-password\n".
-    "Disallow: /reset-password\n\n".
-    'Sitemap: '.url('/sitemap.xml'),
-    200,
-    ['Content-Type' => 'text/plain']
-))->name('robots');
-
 // ---------- Home ----------
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
