@@ -11,6 +11,15 @@
 -- ---------------------------------------------------------------------
 DROP TABLE IF EXISTS `otp_codes`;
 
+-- Remove orphan records from the migrations table whose migration FILES were
+-- already deleted (Fast2SMS removal): create_otp_codes_table and
+-- add_phone_verified_at_to_users_table no longer exist on disk.
+DELETE FROM `migrations`
+WHERE `migration` IN (
+    '2026_09_12_000001_create_otp_codes_table',
+    '2026_09_12_000002_add_phone_verified_at_to_users_table'
+);
+
 -- ---------------------------------------------------------------------
 -- 2) DEAD / ORPHAN COLUMNS (never read or written by app code)
 -- ---------------------------------------------------------------------
