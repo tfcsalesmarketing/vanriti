@@ -37,8 +37,7 @@
         var form = document.getElementById('vrForgotForm');
         if (form && typeof window.vrLiveServerValidation === 'function') {
             window.vrLiveServerValidation(form, '{{ route('auth.validate') }}', {
-                context: 'forgot',
-                live: ['email']
+                context: 'forgot'
             });
         }
     });

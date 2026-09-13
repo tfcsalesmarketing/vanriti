@@ -520,30 +520,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ---- Live server-side validation (auth pages, reusable) ----
+    // ---- Server-side validation on submit (auth pages, reusable) ----
     window.vrLiveServerValidation = function (form, endpoint, opts) {
         opts = opts || {};
         var meta = document.querySelector('meta[name="csrf-token"]');
         var token = meta ? meta.getAttribute('content') : '';
-        var timers = {};
 
-        function formValue(formEl, name) {
-            var f = formEl.querySelector('[name="' + name + '"]');
-            return f ? f.value : '';
-        }
+        form.addEventListener('submit', function (e) {
+            var btn = form.querySelector('[type="submit"]');
+            var fields = Array.prototype.slice.call(form.elements).filter(function (el) {
+                var name = el.name || '';
+                return name && name !== '_token';
+            });
+            if (!fields.length) return;
 
-        function runCheck(input) {
+            if (btn) btn.disabled = true;
+
+            e.preventDefault();
+
             var payload = { _token: token, context: opts.context || '' };
-            payload[input.name] = input.value;
-            if ((input.name === 'password' || input.name === 'password_confirmation')) {
-                payload.password = formValue(form, 'password');
-                payload.password_confirmation = formValue(form, 'password_confirmation');
-            }
-            if (input.name === 'email' && input.value === '') {
-                payload.email = '';
-            }
+            fields.forEach(function (el) {
+                payload[el.name] = el.value;
+            });
 
-            return fetch(endpoint, {
+            fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': token,
@@ -554,30 +554,17 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(function (resp) { return resp.json(); })
                 .then(function (data) {
-                    if (!data || typeof data.valid === 'undefined') return;
-                    if (data.valid) {
-                        input.classList.remove('is-invalid');
-                        var fb = input.closest('.mb-3') ? input.parentElement.querySelector('.invalid-feedback') : null;
-                        if (fb) fb.textContent = '';
-                    } else if (data.errors && window.vrInlineErrors) {
-                        window.vrInlineErrors({ [input.name]: data.errors[input.name] || [] }, form);
+                    if (btn) btn.disabled = false;
+                    if (data && data.valid === false && data.errors && window.vrInlineErrors) {
+                        window.vrInlineErrors(data.errors, form);
+                        return;
                     }
+                    form.submit();
                 })
-                .catch(function () {});
-        }
-
-        document.querySelectorAll('input, select, textarea').forEach.call(form.elements, function (input) {
-            var name = input.name || '';
-            if (!name || name === '_token') return;
-            if (opts.fields && opts.fields.indexOf(name) === -1) return;
-
-            input.addEventListener('blur', function () { runCheck(input); });
-
-            input.addEventListener('input', function () {
-                if (opts.live && opts.live.indexOf(name) === -1) return;
-                clearTimeout(timers[name]);
-                timers[name] = setTimeout(function () { runCheck(input); }, 450);
-            });
+                .catch(function () {
+                    if (btn) btn.disabled = false;
+                    form.submit();
+                });
         });
     };
 

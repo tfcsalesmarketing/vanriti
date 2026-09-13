@@ -120,7 +120,7 @@ class AuthController extends Controller
 
         $subset = [];
         foreach ($rules as $field => $rule) {
-            if ($request->has($field)) {
+            if ($request->exists($field)) {
                 $subset[$field] = $rule;
             }
         }
@@ -138,7 +138,7 @@ class AuthController extends Controller
     {
         if ($context === 'register') {
             $password = ['required', $this->passwordRule()];
-            if ($request->has('password') && $request->has('password_confirmation')) {
+            if ($request->exists('password') && $request->exists('password_confirmation')) {
                 $password[] = 'confirmed';
             }
 
@@ -159,7 +159,7 @@ class AuthController extends Controller
 
         if ($context === 'reset') {
             $password = ['required', $this->passwordRule()];
-            if ($request->has('password') && $request->has('password_confirmation')) {
+            if ($request->exists('password') && $request->exists('password_confirmation')) {
                 $password[] = 'confirmed';
             }
 

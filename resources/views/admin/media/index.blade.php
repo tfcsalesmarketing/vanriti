@@ -12,16 +12,18 @@
 
 <div class="card mb-3">
     <div class="card-body">
-        <h6 class="fw-bold mb-3"><i class="bi bi-upload me-1"></i>Upload Image</h6>
+        <h6 class="fw-bold mb-3"><i class="bi bi-upload me-1"></i>Upload Images</h6>
         <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
             @csrf
             <div class="col-md-4">
-                <label for="name" class="form-label small text-muted">Image Name</label>
-                <input type="text" name="name" id="name" class="form-control form-control-sm" placeholder="e.g. Hero banner flower" maxlength="150" required>
+                <label for="name" class="form-label small text-muted">Image Name <span class="text-muted fw-normal">(optional)</span></label>
+                <input type="text" name="name" id="name" class="form-control form-control-sm" placeholder="e.g. Hero banner flower" maxlength="150">
+                <div class="form-text small">Applied when uploading a single image. Multiple uploads use each file's name.</div>
             </div>
             <div class="col-md-5">
-                <label for="image" class="form-label small text-muted">Image File</label>
-                <input type="file" name="image" id="image" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/gif" required>
+                <label for="images" class="form-label small text-muted">Image Files</label>
+                <input type="file" name="images[]" id="images" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+                <div class="form-text small">You can select multiple images at once.</div>
             </div>
             <div class="col-md-3">
                 <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i>Upload</button>

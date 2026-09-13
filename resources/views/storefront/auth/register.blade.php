@@ -67,8 +67,7 @@
         var form = document.getElementById('vrRegisterForm');
         if (form && typeof window.vrLiveServerValidation === 'function') {
             window.vrLiveServerValidation(form, '{{ route('auth.validate') }}', {
-                context: 'register',
-                live: ['email', 'phone']
+                context: 'register'
             });
         }
     });

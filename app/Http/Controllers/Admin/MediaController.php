@@ -28,27 +28,48 @@ class MediaController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:150',
-            'image' => 'required|image|mimes:jpeg,png,webp,gif|max:5120',
+            'name' => 'nullable|string|max:150',
+            'images' => ['required', 'array', 'min:1'],
+            'images.*' => ['image', 'mimes:jpeg,png,webp,gif', 'max:5120'],
         ]);
 
-        try {
-            $path = $request->file('image')->store('media', 's3');
+        $files = $request->file('images', []);
+        $single = count($files) === 1;
+        $uploaded = 0;
 
-            Media::create([
-                'name' => $validated['name'],
-                'file_name' => $request->file('image')->getClientOriginalName(),
-                'path' => $path,
-                'disk' => 's3',
-                'mime_type' => $request->file('image')->getClientMimeType(),
-                'size' => $request->file('image')->getSize(),
-                'admin_id' => auth('admin')->id(),
-            ]);
-        } catch (\Throwable $e) {
-            return back()->with('error', 'Image upload failed: '.$e->getMessage());
+        foreach ($files as $file) {
+            try {
+                $name = ($single && filled($validated['name'] ?? null))
+                    ? $validated['name']
+                    : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+                $path = $file->store('media', 's3');
+
+                Media::create([
+                    'name' => $name,
+                    'file_name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'disk' => 's3',
+                    'mime_type' => $file->getClientMimeType(),
+                    'size' => $file->getSize(),
+                    'admin_id' => auth('admin')->id(),
+                ]);
+
+                $uploaded++;
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
-        return back()->with('success', 'Image uploaded successfully.');
+        if ($uploaded === 0) {
+            return back()->with('error', 'No images could be uploaded. Please try again.');
+        }
+
+        $message = $uploaded === 1
+            ? 'Image uploaded successfully.'
+            : "{$uploaded} images uploaded successfully.";
+
+        return back()->with('success', $message);
     }
 
     public function destroy(Media $media): RedirectResponse

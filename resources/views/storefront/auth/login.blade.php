@@ -56,8 +56,7 @@
         var form = document.getElementById('vrLoginForm');
         if (form && typeof window.vrLiveServerValidation === 'function') {
             window.vrLiveServerValidation(form, '{{ route('auth.validate') }}', {
-                context: 'login',
-                live: ['email']
+                context: 'login'
             });
         }
     });

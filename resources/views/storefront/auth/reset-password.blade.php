@@ -54,8 +54,7 @@
         var form = document.getElementById('vrResetForm');
         if (form && typeof window.vrLiveServerValidation === 'function') {
             window.vrLiveServerValidation(form, '{{ route('auth.validate') }}', {
-                context: 'reset',
-                live: ['password', 'password_confirmation']
+                context: 'reset'
             });
         }
     });

@@ -217,13 +217,25 @@
             var removeBtn = preview.querySelector('.preview-remove');
 
             input.addEventListener('change', function () {
-                var file = input.files && input.files[0];
-                if (!file) {
+                if (!input.files || !input.files.length) {
                     preview.style.display = 'none';
                     fileName.classList.remove('active');
                     return;
                 }
+
+                var file = input.files[0];
+
+                if (input.multiple && input.files.length > 1) {
+                    var names = Array.prototype.slice.call(input.files).map(function (f) { return f.name; });
+                    fileName.textContent = input.files.length + ' files selected';
+                    fileName.title = names.join(', ');
+                    fileName.classList.add('active');
+                    preview.style.display = 'none';
+                    return;
+                }
+
                 fileName.textContent = file.name;
+                fileName.title = '';
                 fileName.classList.add('active');
                 if (file.type.startsWith('image/')) {
                     var reader = new FileReader();
