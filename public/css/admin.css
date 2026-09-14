@@ -197,11 +197,115 @@ body {
 .bg-cream { background: var(--vanriti-cream); }
 th.sortable { cursor: pointer; user-select: none; }
 
-.img-thumb {
-    width: 48px; height: 48px;
-    object-fit: cover;
+/* Dropzone */
+.btn-soft-success {
+    color: var(--vanriti-green);
+    border: 1px solid #cfddd0;
+    background: var(--vanriti-green-lighter);
     border-radius: 0.5rem;
+    font-weight: 600;
+}
+.btn-soft-success:hover {
+    color: #fff;
+    background: var(--vanriti-green-light);
+    border-color: var(--vanriti-green-light);
+}
+
+.badge-count {
+    background: var(--vanriti-green);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 0.3em 0.55em;
+    border-radius: 10rem;
+    font-weight: 600;
+}
+
+.upload-card {
     border: 1px solid #e7e4de;
+    border-radius: 1rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.03);
+}
+.upload-card .card-body { padding: 1.4rem 1.5rem; }
+
+.file-dropzone {
+    display: block;
+    width: 100%;
+}
+
+.file-dropzone-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    width: 100%;
+    min-height: 150px;
+    padding: 1.25rem;
+    border: 2px dashed #c9d3c9;
+    border-radius: 0.75rem;
+    background:
+        linear-gradient(180deg, #fbfaf6 0%, #f6f4ec 100%);
+    color: var(--vanriti-green-light);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.file-dropzone-box:hover,
+.file-dropzone.drag-over .file-dropzone-box {
+    border-color: var(--vanriti-green-light);
+    background: var(--vanriti-green-lighter);
+}
+
+.file-dropzone-box i {
+    font-size: 2.2rem;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+    color: var(--vanriti-green-light);
+}
+
+.file-dropzone.drag-over {
+    transform: scale(1.01);
+}
+
+.file-dropzone-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--vanriti-green);
+}
+
+.file-dropzone-hint {
+    font-size: 0.75rem;
+    color: #8b9183;
+}
+
+.file-dropzone.has-files,
+.file-dropzone.has-files .file-dropzone-box { min-height: auto; }
+
+.table-card {
+    border: 1px solid #e7e4de;
+    border-radius: 1rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.03);
+}
+.table-card .card-body { padding: 1.25rem 1.5rem; }
+
+.img-thumb {
+    width: 56px; height: 48px;
+    object-fit: cover;
+    border-radius: 0.6rem;
+    border: 1px solid #e7e4de;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.media-name-cell { min-width: 140px; }
+.media-secondary-cell { min-width: 130px; }
+
+.mime-badge {
+    font-size: 0.65rem;
+    background: var(--vanriti-green-lighter);
+    color: var(--vanriti-green-light);
+    border-radius: 0.35rem;
+    padding: 0.2em 0.5em;
+    font-weight: 600;
 }
 
 .table-responsive { overflow-x: auto; }

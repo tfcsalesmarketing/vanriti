@@ -105,6 +105,24 @@
         var name = input.getAttribute('name');
         if (!name) return true;
 
+        if (input.type === 'file') {
+            var hasFile = !!(input.files && input.files.length);
+            if (input.required && !hasFile) {
+                var wrapper = input.closest('.mb-3, .col-md-6, .col-md-4, .col-md-8, .col-md-12, .col-auto, .col-lg-6');
+                var labelText = name.replace(/\[\]/, '');
+                if (wrapper) {
+                    var label = wrapper.querySelector('.form-label');
+                    if (label) labelText = label.textContent;
+                }
+                labelText = labelText.replace('*', '').trim();
+                addFieldError(input, labelText + ' is required');
+                return false;
+            }
+            removeFieldError(input);
+            input.classList.add('is-valid');
+            return true;
+        }
+
         if (input.required && !val) {
             var wrapper = input.closest('.mb-3, .col-md-6, .col-md-4, .col-md-8, .col-md-12, .col-auto, .col-lg-6');
             var labelText = name;
@@ -257,6 +275,36 @@
             wrapper.appendChild(input);
 
             var isMultiple = !!input.multiple;
+            var isDropzone = !!input.dataset.dropzone;
+
+            var zoneBox = null;
+            if (isDropzone) {
+                wrapper.classList.add('file-dropzone');
+                zoneBox = document.createElement('label');
+                zoneBox.className = 'file-dropzone-box';
+                zoneBox.innerHTML = '<i class="bi bi-cloud-arrow-up"></i>'
+                    + '<span class="file-dropzone-title">Click to browse or drag &amp; drop images</span>'
+                    + '<small class="file-dropzone-hint">JPG, PNG, WEBP, GIF &middot; up to 5 MB each</small>';
+                wrapper.insertBefore(zoneBox, input);
+                zoneBox.appendChild(input);
+
+                ['dragenter', 'dragover', 'drop'].forEach(function (evt) {
+                    zoneBox.addEventListener(evt, function (e) { e.preventDefault(); e.stopPropagation(); });
+                    wrapper.addEventListener(evt, function (e) { e.preventDefault(); e.stopPropagation(); });
+                });
+                ['dragenter', 'dragover'].forEach(function (evt) {
+                    wrapper.addEventListener(evt, function () { wrapper.classList.add('drag-over'); });
+                });
+                ['dragleave', 'drop'].forEach(function (evt) {
+                    wrapper.addEventListener(evt, function () { wrapper.classList.remove('drag-over'); });
+                });
+                wrapper.addEventListener('drop', function (e) {
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+                        input.files = e.dataTransfer.files;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
 
             var preview = document.createElement('div');
             preview.className = 'file-upload-preview';
@@ -336,10 +384,15 @@
 
                 multiPreview.style.display = files.length ? 'block' : 'none';
                 fileName.textContent = files.length
-                    ? files.length + ' file(s) selected - add a name to each below'
+                    ? files.length + ' file(s) selected - add a secondary name to each below'
                     : '';
                 fileName.title = files.map(function (f) { return safeFileName(f.name); }).join(', ');
                 fileName.classList.toggle('active', files.length > 0);
+
+                if (zoneBox) {
+                    zoneBox.style.display = files.length ? 'none' : '';
+                    wrapper.classList.toggle('has-files', files.length > 0);
+                }
             }
 
             function removeAtIndex(idx) {
@@ -362,12 +415,16 @@
                     preview.style.display = 'none';
                     multiPreview.style.display = 'none';
                     fileName.classList.remove('active');
+                    if (zoneBox) zoneBox.style.display = '';
+                    wrapper.classList.remove('has-files');
                     return;
                 }
 
                 if (isMultiple) {
                     preview.style.display = 'none';
                     renderThumbs();
+                    if (zoneBox) zoneBox.style.display = 'none';
+                    wrapper.classList.add('has-files');
                     return;
                 }
 
@@ -391,6 +448,8 @@
                 input.value = '';
                 preview.style.display = 'none';
                 fileName.classList.remove('active');
+                if (zoneBox) zoneBox.style.display = '';
+                wrapper.classList.remove('has-files');
             });
         });
     }

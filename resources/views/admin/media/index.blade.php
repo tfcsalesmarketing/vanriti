@@ -6,30 +6,34 @@
 <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
     <div>
         <h5 class="mb-0 fw-bold">Media Library</h5>
-        <small class="text-muted">{{ $media->total() }} images total</small>
+        <small class="text-muted"><span class="badge badge-count">{{ $media->total() }}</span> images total</small>
     </div>
-    <a href="{{ route('admin.media.export') }}" class="btn btn-sm btn-outline-success">
+    <a href="{{ route('admin.media.export') }}" class="btn btn-sm btn-soft-success">
         <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
     </a>
 </div>
 
-<div class="card mb-3">
+<div class="card upload-card mb-3">
     <div class="card-body">
-        <h6 class="fw-bold mb-3"><i class="bi bi-upload me-1"></i>Upload Images</h6>
-        <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+        <div class="d-flex align-items-center justify-content-between mb-3 gap-2">
+            <h6 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-1 text-success"></i>Upload Images</h6>
+            <span class="small text-muted d-none d-sm-inline">Drop images below</span>
+        </div>
+        <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-3">
             @csrf
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label for="name" class="form-label small text-muted">Image Name <span class="text-muted fw-normal">(optional)</span></label>
-                <input type="text" name="name" id="name" class="form-control form-control-sm" placeholder="e.g. Hero banner flower" maxlength="150">
+                <input type="text" name="name" id="name" class="form-control" placeholder="e.g. Hero banner flower" maxlength="150">
                 <div class="form-text small">Applied to all selected images.</div>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-8">
                 <label for="images" class="form-label small text-muted">Image Files</label>
-                <input type="file" name="images[]" id="images" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
-                <div class="form-text small">Select one or more images. Optionally add a secondary name to each after selecting.</div>
+                <input type="file" name="images[]" id="images" class="d-none" accept="image/jpeg,image/png,image/webp,image/gif" multiple required data-dropzone>
             </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i>Upload</button>
+            <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-cloud-arrow-up me-1"></i>Upload Images
+                </button>
             </div>
         </form>
     </div>
@@ -37,17 +41,21 @@
 
 <div class="card table-card">
     <div class="card-body pb-0">
-        <form method="GET" action="{{ route('admin.media.index') }}" class="row g-2 align-items-end">
+        <div class="row g-2 align-items-center">
             <div class="col-md-4">
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Search by image name..." value="{{ request('q') }}">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control" placeholder="Search by name or file..." value="{{ request('q') }}" form="mediaSearch">
+                </div>
             </div>
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-sm btn-dark w-100"><i class="bi bi-search"></i></button>
+            <div class="col-md-2">
+                <button type="submit" form="mediaSearch" class="btn btn-sm btn-dark w-100"><i class="bi bi-search me-1"></i>Search</button>
             </div>
             <div class="col-md-2">
                 <a href="{{ route('admin.media.index') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
             </div>
-        </form>
+        </div>
+        <form id="mediaSearch" method="GET" action="{{ route('admin.media.index') }}" class="d-none"></form>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -69,22 +77,28 @@
                         <td>
                             <img src="{{ $item->url }}" alt="{{ $item->name }}" class="img-thumb" loading="lazy">
                         </td>
-                        <td class="fw-semibold small">{{ $item->name }}</td>
-                        <td class="small text-muted">{{ $item->secondary_name ?? '—' }}</td>
-                        <td class="small text-muted text-truncate" style="max-width:160px;" title="{{ $item->file_name }}">{{ $item->file_name }}</td>
-                        <td class="small">{{ $item->mime_type }}</td>
+                        <td class="fw-semibold small media-name-cell">{{ $item->name }}</td>
+                        <td class="small text-muted media-secondary-cell">
+                            @if ($item->secondary_name)
+                                <span class="mime-badge">{{ $item->secondary_name }}</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td class="small text-muted text-truncate" style="max-width:140px;" title="{{ $item->file_name }}">{{ $item->file_name }}</td>
+                        <td class="small"><span class="mime-badge">{{ $item->mime_type }}</span></td>
                         <td class="small">{{ $item->size_label }}</td>
                         <td class="small text-muted">
                             {{ $item->admin?->name ?? '—' }}
                             <div class="text-muted">{{ $item->created_at?->format('d M Y') }}</div>
                         </td>
                         <td class="text-end">
-                            <div class="d-flex gap-1 justify-content-end">
+                            <div class="d-inline-flex gap-1">
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-success copy-link"
+                                        class="btn btn-sm btn-soft-success copy-link"
                                         data-url="{{ $item->url }}"
                                         title="Copy link">
-                                    <i class="bi bi-link-45deg me-1"></i><span class="copy-label">Copy Link</span>
+                                    <i class="bi bi-link-45deg"></i><span class="copy-label ms-1">Copy Link</span>
                                 </button>
                                 <form method="POST" action="{{ route('admin.media.destroy', $item) }}" data-confirm="Delete this image? This cannot be undone.">
                                     @csrf
@@ -96,7 +110,10 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">No images found.</td>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-image d-block fs-3 mb-2 opacity-50"></i>
+                            No images found.
+                        </td>
                     </tr>
                 @endforelse
             </tbody>
