@@ -735,8 +735,13 @@
                     updateCartBadge(data.cartCount);
                 }
 
-                if (data.analytics && window.dataLayer) {
-                    window.dataLayer.push(data.analytics);
+                if (data.analytics) {
+                    if (window.dataLayer) {
+                        window.dataLayer.push(data.analytics);
+                    }
+                    if (window.vrMeta) {
+                        window.vrMeta.trackAddToCartFromGa4(data.analytics);
+                    }
                 }
 
                 if (buyNow && data.redirect) {

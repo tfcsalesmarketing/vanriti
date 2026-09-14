@@ -857,11 +857,40 @@ function verifyPayment(response, orderId) {
 </script>
 @endpush
 
+@php
+    $_metaInitiateItems = collect($checkoutEcommerce['items'] ?? [])
+        ->map(fn (array $item) => [
+            'id' => isset($item['item_id']) ? (string) $item['item_id'] : null,
+            'quantity' => (int) ($item['quantity'] ?? 1),
+            'item_price' => (float) ($item['price'] ?? 0),
+        ])
+        ->filter(fn (array $row) => $row['id'] !== null && $row['id'] !== '')
+        ->values()
+        ->all();
+
+    $_metaInitiatePayload = $_metaInitiateItems !== []
+        ? [
+            'content_ids' => collect($_metaInitiateItems)
+                ->pluck('id')
+                ->map(fn (string $id) => $id)
+                ->unique()
+                ->values()
+                ->all(),
+            'content_type' => 'product',
+            'value' => (float) ($checkoutEcommerce['value'] ?? 0),
+            'currency' => $checkoutEcommerce['currency'] ?? 'INR',
+            'contents' => $_metaInitiateItems,
+        ]
+        : null;
+@endphp
 @if ($beginCheckoutPayload)
     @push('scripts')
     <script>
     window.vrCheckoutAnalytics = {!! json_encode(['ecommerce' => $checkoutEcommerce], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
     window.dataLayer.push({!! json_encode($beginCheckoutPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+    @if ($_metaInitiatePayload && setting('meta_pixel_id'))
+    window.vrMeta.track('InitiateCheckout', {!! json_encode($_metaInitiatePayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+    @endif
     </script>
     @endpush
 @endif

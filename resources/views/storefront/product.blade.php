@@ -471,6 +471,32 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 </script>
 @endpush
 
+@php
+    $_metaViewItem = $viewItemPayload['ecommerce']['items'][0] ?? null;
+    $_metaViewContent = null;
+    if ($_metaViewItem && ! empty($_metaViewItem['item_id'])) {
+        $_metaViewContent = [
+            'content_ids' => [(string) $_metaViewItem['item_id']],
+            'content_type' => 'product',
+            'content_name' => (string) ($_metaViewItem['item_name'] ?? ''),
+            'value' => (float) $_metaViewItem['price'],
+            'currency' => 'INR',
+            'contents' => [[
+                'id' => (string) $_metaViewItem['item_id'],
+                'quantity' => 1,
+                'item_price' => (float) $_metaViewItem['price'],
+            ]],
+        ];
+    }
+@endphp
+@if ($_metaViewContent && setting('meta_pixel_id'))
+    @push('scripts')
+    <script>
+    window.vrMeta.track('ViewContent', {!! json_encode($_metaViewContent, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+    </script>
+    @endpush
+@endif
+
 @push('scripts')
 <script>
 (function () {

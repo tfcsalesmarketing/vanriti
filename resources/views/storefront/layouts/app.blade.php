@@ -101,6 +101,79 @@
         <noscript><img height="1" width="1" style="display:none"
         src="https://www.facebook.com/tr?id={{ setting('meta_pixel_id') }}&ev=PageView&noscript=1"
         /></noscript>
+        <script>
+        // Centralised Meta browser event helper (M3.2). Observational only: it
+        // verifies fbq exists, fails silently, and never alters commerce flow.
+        window.vrMeta = (function () {
+            function fire(event, payload, opts) {
+                try {
+                    if (typeof window.fbq !== 'function') {
+                        return false;
+                    }
+                    window.fbq('track', event, payload || {}, opts || {});
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function ecommerceOf(analytics) {
+                if (!analytics) {
+                    return null;
+                }
+                return analytics.ecommerce ? analytics.ecommerce : analytics;
+            }
+
+            function round2(value) {
+                var n = Number(value);
+                return isNaN(n) ? 0 : Math.round((n + Number.EPSILON) * 100) / 100;
+            }
+
+            // Builds the Meta AddToCart payload from the authoritative server
+            // GA4 add_to_cart analytics payload (SKU/quantity/price/value are
+            // all resolved server-side). Returns null when no valid SKU exists.
+            function fromGa4AddToCart(analytics) {
+                var ecommerce = ecommerceOf(analytics);
+                if (!ecommerce || !Array.isArray(ecommerce.items) || ecommerce.items.length === 0) {
+                    return null;
+                }
+                var item = ecommerce.items[0];
+                if (!item || item.item_id === undefined || item.item_id === null || item.item_id === '') {
+                    return null;
+                }
+                var quantity = Math.max(1, parseInt(item.quantity, 10) || 1);
+                var price = parseFloat(item.price) || 0;
+
+                return {
+                    content_ids: [String(item.item_id)],
+                    content_type: 'product',
+                    content_name: item.item_name || '',
+                    value: round2(ecommerce.value !== undefined ? ecommerce.value : price * quantity),
+                    currency: ecommerce.currency || 'INR',
+                    contents: [
+                        { id: String(item.item_id), quantity: quantity, item_price: price }
+                    ]
+                };
+            }
+
+            function track(event, payload, opts) {
+                return fire(event, payload, opts);
+            }
+
+            function trackAddToCartFromGa4(analytics) {
+                var payload = fromGa4AddToCart(analytics);
+                if (!payload) {
+                    return false;
+                }
+                return fire('AddToCart', payload, {});
+            }
+
+            return {
+                track: track,
+                trackAddToCartFromGa4: trackAddToCartFromGa4
+            };
+        })();
+        </script>
     @endif
 </head>
 <body class="has-mobile-bar">
@@ -179,6 +252,9 @@
     @if ($pendingAddToCart)
         <script>
         window.dataLayer.push({!! json_encode($pendingAddToCart, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+        @if (setting('meta_pixel_id'))
+        window.vrMeta.trackAddToCartFromGa4({!! json_encode($pendingAddToCart['ecommerce'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+        @endif
         </script>
     @endif
     @php

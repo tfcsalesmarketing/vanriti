@@ -80,6 +80,7 @@
             'value' => (float) $order->grand_total,
             'currency' => 'INR',
             'content_type' => 'product',
+            'content_ids' => $order->items->map(fn ($item) => (string) $item->sku)->filter()->values()->all(),
             'contents' => $order->items->map(fn ($item) => [
                 'id' => $item->sku,
                 'quantity' => $item->quantity,
