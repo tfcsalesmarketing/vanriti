@@ -14,6 +14,8 @@ class ProductFactory extends Factory
 {
     protected $model = Product::class;
 
+    protected static int $skuSequence = 0;
+
     public function definition(): array
     {
         $name = $this->faker->unique()->words(4, true);
@@ -23,7 +25,7 @@ class ProductFactory extends Factory
         return [
             'name' => ucwords($name),
             'slug' => Str::slug($name).'-'.strtolower(Str::random(4)),
-            'sku' => 'VR-'.strtoupper(Str::random(8)),
+            'sku' => fn () => 'VR-'.str_pad((string) ++static::$skuSequence, 8, '0', STR_PAD_LEFT),
             'barcode' => null,
             'short_description' => $this->faker->sentence(10),
             'description' => $this->faker->paragraphs(3, true),

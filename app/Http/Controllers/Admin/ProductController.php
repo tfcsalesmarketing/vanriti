@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -62,7 +61,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|unique:products,slug',
-            'sku' => 'nullable|unique:products,sku',
+            'sku' => 'required|string|max:255|unique:products,sku',
             'status' => 'required|in:draft,active,inactive',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
@@ -148,8 +147,8 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|unique:products,slug,' . $product->id,
-            'sku' => 'nullable|unique:products,sku,' . $product->id,
+            'slug' => 'nullable|unique:products,slug,'.$product->id,
+            'sku' => 'required|string|max:255|unique:products,sku,'.$product->id,
             'status' => 'required|in:draft,active,inactive',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
@@ -257,7 +256,7 @@ class ProductController extends Controller
             'sort_order' => $maxSort + 1,
         ]);
 
-        $this->logger->log('product_image_added', $product, 'Image added to "' . $product->name . '".');
+        $this->logger->log('product_image_added', $product, 'Image added to "'.$product->name.'".');
 
         return redirect()->back()->with('success', 'Image uploaded.');
     }
@@ -311,7 +310,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'sku' => 'nullable|unique:product_variants,sku,' . $variant->id,
+            'sku' => 'nullable|unique:product_variants,sku,'.$variant->id,
             'mrp' => 'required|numeric',
             'selling_price' => 'required|numeric|lte:mrp',
             'stock' => 'nullable|integer|min:0',
@@ -354,10 +353,19 @@ class ProductController extends Controller
                     continue;
                 }
 
+                $rawSku = $data['sku'] ?? null;
+                $sku = is_string($rawSku) ? strtoupper(trim($rawSku)) : null;
+                if ($sku === '') {
+                    $sku = null;
+                }
+                if ($sku === null) {
+                    continue;
+                }
+
                 $slug = Str::slug($data['name']);
 
                 Product::updateOrCreate(
-                    ['sku' => $data['sku'] ?? null],
+                    ['sku' => $sku],
                     [
                         'name' => $data['name'],
                         'slug' => $slug,
@@ -372,7 +380,7 @@ class ProductController extends Controller
                 if (! empty($data['category_slug'])) {
                     $category = Category::where('slug', $data['category_slug'])->first();
                     if ($category) {
-                        $product = Product::where('sku', $data['sku'])->first();
+                        $product = Product::where('sku', $sku)->first();
                         if ($product) {
                             $product->categories()->syncWithoutDetaching([$category->id]);
                         }
@@ -387,7 +395,7 @@ class ProductController extends Controller
 
         fclose($handle);
 
-        return redirect()->back()->with('success', $imported . ' products imported.');
+        return redirect()->back()->with('success', $imported.' products imported.');
     }
 
     public function export()
@@ -397,7 +405,7 @@ class ProductController extends Controller
             'stock', 'status', 'is_featured', 'barcode',
         ])->get();
 
-        $filename = 'products_export_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'products_export_'.now()->format('Y-m-d_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -446,7 +454,7 @@ class ProductController extends Controller
             $validated['type'],
             $product,
             $change,
-            $validated['reason'] ?? $validated['type'] . ' adjustment',
+            $validated['reason'] ?? $validated['type'].' adjustment',
             auth('admin')->user(),
         );
 

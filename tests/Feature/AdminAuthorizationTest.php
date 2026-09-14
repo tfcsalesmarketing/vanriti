@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Permission;
-use App\Models\Product;
 use App\Models\Role;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +26,7 @@ class AdminAuthorizationTest extends TestCase
 
         return [
             'name' => 'Test Admin Product',
+            'sku' => 'AUTH-TEST-001',
             'status' => 'active',
             'mrp' => 500,
             'selling_price' => 400,
