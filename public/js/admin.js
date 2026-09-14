@@ -109,10 +109,13 @@
             var hasFile = !!(input.files && input.files.length);
             if (input.required && !hasFile) {
                 var wrapper = input.closest('.mb-3, .col-md-6, .col-md-4, .col-md-8, .col-md-12, .col-auto, .col-lg-6');
-                var labelText = name.replace(/\[\]/, '');
-                if (wrapper) {
-                    var label = wrapper.querySelector('.form-label');
-                    if (label) labelText = label.textContent;
+                var labelText = input.dataset.requiredMsg || '';
+                if (!labelText) {
+                    labelText = name.replace(/\[\]/, '');
+                    if (wrapper) {
+                        var label = wrapper.querySelector('.form-label');
+                        if (label) labelText = label.textContent;
+                    }
                 }
                 labelText = labelText.replace('*', '').trim();
                 addFieldError(input, labelText + ' is required');

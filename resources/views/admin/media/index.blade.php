@@ -21,17 +21,16 @@
         </div>
         <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-3">
             @csrf
-            <div class="col-md-4">
-                <label for="name" class="form-label small text-muted">Image Name <span class="text-muted fw-normal">(optional)</span></label>
+            <div class="col-12">
+                <input type="file" name="images[]" id="images" class="d-none" accept="image/jpeg,image/png,image/webp,image/gif" multiple required data-dropzone data-required-msg="Please select at least one image">
+            </div>
+            <div class="col-md-6">
+                <label for="name" class="form-label small text-muted mb-1">Image Name <span class="text-muted fw-normal">(optional)</span></label>
                 <input type="text" name="name" id="name" class="form-control" placeholder="e.g. Hero banner flower" maxlength="150">
                 <div class="form-text small">Applied to all selected images.</div>
             </div>
-            <div class="col-md-8">
-                <label for="images" class="form-label small text-muted">Image Files</label>
-                <input type="file" name="images[]" id="images" class="d-none" accept="image/jpeg,image/png,image/webp,image/gif" multiple required data-dropzone>
-            </div>
-            <div class="col-12 d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary px-4">
+            <div class="col-md-6 d-flex align-items-end justify-content-md-end">
+                <button type="submit" class="btn btn-primary px-4 w-100 w-md-auto">
                     <i class="bi bi-cloud-arrow-up me-1"></i>Upload Images
                 </button>
             </div>
