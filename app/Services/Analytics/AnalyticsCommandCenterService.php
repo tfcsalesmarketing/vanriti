@@ -578,7 +578,7 @@ class AnalyticsCommandCenterService
         if ($tracking['capi_enabled']) {
             $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is enabled', 'detail' => 'Server-side delivery is active. Verify token validity and monitor the conversion ledger.'];
         } else {
-            $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is disabled', 'detail' => 'Expected until consent/privacy readiness is complete. Check Settings → SEO to enable.'];
+            $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is disabled', 'detail' => 'Intentionally disabled. CAPI activation is deferred until consent/privacy readiness is complete.'];
         }
 
         if ($tracking['gtm_configured']) {

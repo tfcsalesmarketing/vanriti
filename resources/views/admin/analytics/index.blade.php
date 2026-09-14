@@ -143,7 +143,7 @@
                 <div>
                     <div class="text-muted small">Tracking Coverage</div>
                     <div class="stat-value text-dark">
-                        {{ $report['executive']['coverage_percent'] === null ? '&mdash;' : $report['executive']['coverage_percent'].'%' }}
+                        {{ $report['executive']['coverage_percent'] === null ? '—' : $report['executive']['coverage_percent'].'%' }}
                     </div>
                     <div class="text-muted small">{{ $report['executive']['tracked_orders'] }}/{{ $report['executive']['orders'] }} tracked</div>
                 </div>

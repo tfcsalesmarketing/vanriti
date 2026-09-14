@@ -513,6 +513,8 @@ class AnalyticsCommandCenterTest extends TestCase
         $response->assertDontSee('1669655987915785');
         $response->assertSee('DISABLED');
         $response->assertSee('Conversions API is disabled');
+        $response->assertSee('Intentionally disabled. CAPI activation is deferred until consent/privacy readiness is complete.');
+        $response->assertDontSee('Check Settings');
     }
 
     public function test_missing_pixel_raises_critical_alert(): void
@@ -615,6 +617,21 @@ class AnalyticsCommandCenterTest extends TestCase
         $this->assertSame(1, $report['tracking']['tracked_orders']);
         $this->assertSame(1, $report['tracking']['untracked_orders']);
         $this->assertSame(50.0, $report['tracking']['coverage_percent']);
+    }
+
+    public function test_tracking_coverage_kpi_renders_em_dash_instead_of_literal_entity(): void
+    {
+        $response = $this->actingAs($this->manager(), 'admin')
+            ->get(route('admin.analytics'))
+            ->assertOk();
+
+        $html = $response->getContent();
+        $start = strpos($html, 'Tracking Coverage');
+        $this->assertNotFalse($start, 'Tracking Coverage KPI should be present');
+        $segment = substr($html, $start, 160);
+
+        $this->assertStringContainsString('—', $segment, 'KPI should render a real em dash when coverage has no denominator');
+        $this->assertStringNotContainsString('&amp;mdash;', $segment, 'KPI must not render the escaped literal string "&mdash;"');
     }
 
     /*
