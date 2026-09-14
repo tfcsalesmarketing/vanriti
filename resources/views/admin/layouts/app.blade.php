@@ -106,7 +106,7 @@
     <div class="admin-sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('js/admin.js') }}?v=1.1"></script>
+    <script src="{{ asset('js/admin.js') }}?v=1.2"></script>
     @stack('scripts')
 </body>
 </html>

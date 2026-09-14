@@ -285,7 +285,7 @@
             wrapper.appendChild(input);
 
             var isMultiple = !!input.multiple;
-            var isDropzone = !!input.dataset.dropzone;
+            var isDropzone = input.hasAttribute('data-dropzone');
 
             var zoneBox = null;
             if (isDropzone) {
