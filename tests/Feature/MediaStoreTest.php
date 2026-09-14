@@ -31,52 +31,69 @@ class MediaStoreTest extends TestCase
         $this->post(route('admin.media.store'))->assertRedirect(route('admin.login'));
     }
 
-    public function test_upload_applies_per_image_names(): void
+    public function test_shared_name_is_applied_to_all_images(): void
     {
         $response = $this->actingAs($this->admin(), 'admin')
             ->post(route('admin.media.store'), [
+                'name' => 'Hero Banner',
                 'images' => [
                     UploadedFile::fake()->image('hero.jpg', 100, 100),
                     UploadedFile::fake()->image('about.png', 80, 80),
                 ],
-                'names' => ['Hero Banner', 'About Us'],
             ]);
 
         $response->assertSessionHasNoErrors();
         $response->assertRedirect();
 
-        $this->assertDatabaseHas('media', ['name' => 'Hero Banner']);
-        $this->assertDatabaseHas('media', ['name' => 'About Us']);
+        $this->assertDatabaseHas('media', ['name' => 'Hero Banner', 'file_name' => 'hero.jpg']);
+        $this->assertDatabaseHas('media', ['name' => 'Hero Banner', 'file_name' => 'about.png']);
+        $this->assertSame(2, Media::count());
     }
 
-    public function test_blank_name_falls_back_to_file_name(): void
+    public function test_secondary_names_are_stored_per_image(): void
     {
         $this->actingAs($this->admin(), 'admin')
             ->post(route('admin.media.store'), [
+                'name' => 'Collection',
+                'images' => [
+                    UploadedFile::fake()->image('hero.jpg', 100, 100),
+                    UploadedFile::fake()->image('about.png', 80, 80),
+                ],
+                'secondary_names' => ['Hero Side', ''],
+            ]);
+
+        $this->assertDatabaseHas('media', ['name' => 'Collection', 'secondary_name' => 'Hero Side']);
+        $this->assertDatabaseHas('media', ['name' => 'Collection', 'file_name' => 'about.png', 'secondary_name' => null]);
+    }
+
+    public function test_blank_shared_name_falls_back_to_file_name(): void
+    {
+        $this->actingAs($this->admin(), 'admin')
+            ->post(route('admin.media.store'), [
+                'name' => '   ',
                 'images' => [
                     UploadedFile::fake()->image('flower-autumn.jpg', 100, 100),
                 ],
-                'names' => ['   '],
             ]);
 
         $this->assertDatabaseHas('media', ['name' => 'flower-autumn']);
     }
 
-    public function test_name_longer_than_150_chars_is_rejected(): void
+    public function test_secondary_name_longer_than_150_chars_is_rejected(): void
     {
         $response = $this->actingAs($this->admin(), 'admin')
             ->post(route('admin.media.store'), [
                 'images' => [
                     UploadedFile::fake()->image('hero.jpg', 100, 100),
                 ],
-                'names' => [str_repeat('a', 151)],
+                'secondary_names' => [str_repeat('a', 151)],
             ]);
 
-        $response->assertSessionHasErrors('names.0');
+        $response->assertSessionHasErrors('secondary_names.0');
         $this->assertSame(0, Media::count());
     }
 
-    public function test_mismatched_names_length_does_not_break_upload(): void
+    public function test_mismatched_secondary_names_length_does_not_break_upload(): void
     {
         $this->actingAs($this->admin(), 'admin')
             ->post(route('admin.media.store'), [
@@ -84,10 +101,10 @@ class MediaStoreTest extends TestCase
                     UploadedFile::fake()->image('first.jpg', 100, 100),
                     UploadedFile::fake()->image('second.jpg', 100, 100),
                 ],
-                'names' => ['First'],
+                'secondary_names' => ['First'],
             ]);
 
-        $this->assertDatabaseHas('media', ['name' => 'First']);
-        $this->assertDatabaseHas('media', ['name' => 'second']);
+        $this->assertDatabaseHas('media', ['name' => 'first', 'secondary_name' => 'First']);
+        $this->assertDatabaseHas('media', ['name' => 'second', 'secondary_name' => null]);
     }
 }

@@ -29,27 +29,31 @@ class MediaController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'name' => 'nullable|string|max:150',
             'images' => ['required', 'array', 'min:1'],
             'images.*' => ['image', 'mimes:jpeg,png,webp,gif', 'max:5120'],
-            'names' => ['nullable', 'array'],
-            'names.*' => ['nullable', 'string', 'max:150'],
+            'secondary_names' => ['nullable', 'array'],
+            'secondary_names.*' => ['nullable', 'string', 'max:150'],
         ]);
 
         $files = $request->file('images', []);
-        $names = $request->input('names', []);
+        $baseName = trim((string) ($validated['name'] ?? ''));
+        $secondaryNames = $request->input('secondary_names', []);
         $uploaded = 0;
 
         foreach ($files as $index => $file) {
             try {
-                $given = trim((string) ($names[$index] ?? ''));
-                $name = filled($given)
-                    ? $given
+                $name = filled($baseName)
+                    ? $baseName
                     : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+                $secondary = trim((string) ($secondaryNames[$index] ?? ''));
 
                 $path = $file->store('media', 's3');
 
                 Media::create([
                     'name' => $name,
+                    'secondary_name' => filled($secondary) ? $secondary : null,
                     'file_name' => $file->getClientOriginalName(),
                     'path' => $path,
                     'disk' => 's3',
@@ -92,11 +96,11 @@ class MediaController extends Controller
 
     public function export()
     {
-        $media = Media::query()->latest()->get(['name', 'path', 'disk']);
+        $media = Media::query()->latest()->get(['name', 'secondary_name', 'path', 'disk']);
 
-        $rows = [['Image Name', 'Link']];
+        $rows = [['Image Name', 'Secondary Name', 'Link']];
         foreach ($media as $item) {
-            $rows[] = [$item->name, $item->url];
+            $rows[] = [$item->name, $item->secondary_name ?? '', $item->url];
         }
 
         $filename = 'media_library_'.now()->format('Y-m-d_His').'.xlsx';
@@ -154,7 +158,7 @@ class MediaController extends Controller
             '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
             '<sheetViews><sheetView workbookViewId="0"/></sheetViews>',
             '<sheetFormatPr defaultRowHeight="15"/>',
-            '<cols><col min="1" max="1" width="40" customWidth="1"/><col min="2" max="2" width="90" customWidth="1"/></cols>',
+            '<cols><col min="1" max="1" width="40" customWidth="1"/><col min="2" max="2" width="40" customWidth="1"/><col min="3" max="3" width="90" customWidth="1"/></cols>',
             '<sheetData>',
         ];
 

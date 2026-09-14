@@ -18,10 +18,15 @@
         <h6 class="fw-bold mb-3"><i class="bi bi-upload me-1"></i>Upload Images</h6>
         <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
             @csrf
-            <div class="col-md-8">
+            <div class="col-md-3">
+                <label for="name" class="form-label small text-muted">Image Name <span class="text-muted fw-normal">(optional)</span></label>
+                <input type="text" name="name" id="name" class="form-control form-control-sm" placeholder="e.g. Hero banner flower" maxlength="150">
+                <div class="form-text small">Applied to all selected images.</div>
+            </div>
+            <div class="col-md-5">
                 <label for="images" class="form-label small text-muted">Image Files</label>
                 <input type="file" name="images[]" id="images" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
-                <div class="form-text small">Select one or more images, then add an optional name to each preview below.</div>
+                <div class="form-text small">Select one or more images. Optionally add a secondary name to each after selecting.</div>
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i>Upload</button>
@@ -50,6 +55,7 @@
                 <tr>
                     <th>Preview</th>
                     <th>Name</th>
+                    <th>Secondary Name</th>
                     <th>File</th>
                     <th>Type</th>
                     <th>Size</th>
@@ -64,7 +70,8 @@
                             <img src="{{ $item->url }}" alt="{{ $item->name }}" class="img-thumb" loading="lazy">
                         </td>
                         <td class="fw-semibold small">{{ $item->name }}</td>
-                        <td class="small text-muted text-truncate" style="max-width:220px;" title="{{ $item->file_name }}">{{ $item->file_name }}</td>
+                        <td class="small text-muted">{{ $item->secondary_name ?? '—' }}</td>
+                        <td class="small text-muted text-truncate" style="max-width:160px;" title="{{ $item->file_name }}">{{ $item->file_name }}</td>
                         <td class="small">{{ $item->mime_type }}</td>
                         <td class="small">{{ $item->size_label }}</td>
                         <td class="small text-muted">
@@ -89,7 +96,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">No images found.</td>
+                        <td colspan="8" class="text-center py-4 text-muted">No images found.</td>
                     </tr>
                 @endforelse
             </tbody>

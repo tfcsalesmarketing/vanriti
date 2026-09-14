@@ -292,13 +292,13 @@
                     thumb.innerHTML = '<div class="thumb-media">'
                         + '<img alt=""><button type="button" class="preview-remove" title="Remove file">&times;</button>'
                         + '<span class="thumb-name"></span></div>'
-                        + '<input type="text" name="names[]" class="form-control form-control-sm thumb-name-input" maxlength="150" placeholder="Image name (optional)">';
+                        + '<input type="text" name="secondary_names[]" class="form-control form-control-sm thumb-name-input" maxlength="150" placeholder="Secondary name (optional)">';
                 } else {
                     thumb.innerHTML = '<div class="thumb-media thumb-media-file">'
                         + '<i class="bi bi-file-earmark-image"></i>'
                         + '<button type="button" class="preview-remove" title="Remove file">&times;</button>'
                         + '<span class="thumb-name"></span></div>'
-                        + '<input type="text" name="names[]" class="form-control form-control-sm thumb-name-input" maxlength="150" placeholder="Image name (optional)">';
+                        + '<input type="text" name="secondary_names[]" class="form-control form-control-sm thumb-name-input" maxlength="150" placeholder="Secondary name (optional)">';
                 }
 
                 thumb.querySelector('.thumb-name').textContent = safeFileName(file.name);
