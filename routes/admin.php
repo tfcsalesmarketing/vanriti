@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -34,6 +35,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware(['admin.auth'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('permission:view-dashboard');
+
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics')->middleware('permission:view-reports');
 
         Route::middleware('permission:manage-products')->group(function () {
             Route::get('products/export', [ProductController::class, 'export'])->name('products.export');

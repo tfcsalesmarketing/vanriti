@@ -12,6 +12,16 @@
     </li>
     @endif
 
+    @if ($admin->hasPermission('view-reports'))
+    <li class="nav-heading">Analytics</li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.analytics') ? 'active' : '' }}"
+           href="{{ route('admin.analytics') }}">
+            <i class="bi bi-graph-up"></i><span>Analytics Command Center</span>
+        </a>
+    </li>
+    @endif
+
     @if ($admin->hasPermission(['manage-products', 'manage-categories', 'manage-inventory', 'review-dadi-product-profiles']))
     <li class="nav-heading">Catalogue</li>
     @endif
