@@ -34,11 +34,11 @@ class SettingController extends Controller
                 }
 
                 $value = Crypt::encryptString((string) $value);
+            } elseif (is_string($value) && trim($value) === '') {
+                $value = null;
             }
 
-            if ($value !== null) {
-                Setting::where('key', $setting->key)->update(['value' => $value]);
-            }
+            Setting::where('key', $setting->key)->update(['value' => $value]);
         }
 
         Cache::forget('settings');

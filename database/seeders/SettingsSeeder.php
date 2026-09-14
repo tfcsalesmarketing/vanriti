@@ -20,11 +20,11 @@ class SettingsSeeder extends Seeder
             ['general', 'store_address', 'VANRITI House, MG Road, Bengaluru, Karnataka 560001', 'Business Address', 'textarea'],
             ['general', 'gst_number', 'GSTINXXXXXXX', 'GST Number', 'text'],
 
-            ['general', 'facebook_url', 'https://facebook.com/vanriti', 'Facebook', 'url'],
-            ['general', 'instagram_url', 'https://instagram.com/vanriti', 'Instagram', 'url'],
-            ['general', 'twitter_url', 'https://twitter.com/vanriti', 'Twitter / X', 'url'],
-            ['general', 'youtube_url', 'https://youtube.com/@vanriti', 'YouTube', 'url'],
-            ['general', 'linkedin_url', 'https://linkedin.com/company/vanriti', 'LinkedIn', 'url'],
+            ['general', 'facebook_url', '', 'Facebook', 'url'],
+            ['general', 'instagram_url', '', 'Instagram', 'url'],
+            ['general', 'twitter_url', '', 'Twitter / X', 'url'],
+            ['general', 'youtube_url', '', 'YouTube', 'url'],
+            ['general', 'linkedin_url', '', 'LinkedIn', 'url'],
 
             ['shipping', 'shipping_charge', '49', 'Standard Shipping Charge', 'number'],
             ['shipping', 'free_shipping_threshold', '499', 'Free Shipping Above', 'number'],
