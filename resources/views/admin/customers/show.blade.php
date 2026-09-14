@@ -21,7 +21,7 @@
                 </div>
             </div>
             <div class="ms-auto">
-                <form method="POST" action="{{ route('admin.customers.toggle', $user->id) }}" onsubmit="return confirm('{{ $user->status === 'active' ? 'Deactivate' : 'Activate' }} this customer?')">
+                <form method="POST" action="{{ route('admin.customers.toggle', $user->id) }}" data-confirm="{{ $user->status === 'active' ? 'Deactivate' : 'Activate' }} this customer?">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-{{ $user->status === 'active' ? 'warning' : 'success' }}">
                         <i class="bi {{ $user->status === 'active' ? 'bi-person-x' : 'bi-person-check' }} me-1"></i>{{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}

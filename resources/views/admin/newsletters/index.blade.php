@@ -32,7 +32,7 @@
                         </td>
                         <td class="small text-muted">{{ $newsletter->subscribed_at?->format('d M Y H:i') ?: '—' }}</td>
                         <td class="text-end">
-                            <form method="POST" action="{{ route('admin.newsletters.destroy', $newsletter->id) }}" onsubmit="return confirm('Delete this subscription?')">
+                            <form method="POST" action="{{ route('admin.newsletters.destroy', $newsletter->id) }}" data-confirm="Delete this subscription?">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

@@ -207,7 +207,7 @@
             This will create a <strong>reverse pickup</strong> order in ShipMojo for return <strong>{{ $returnRequest->return_number }}</strong>.
             The customer's shipping address will be used as the pickup location.
         </p>
-        <form method="POST" action="{{ route('admin.returns.shipmojo.push', $returnRequest) }}">
+        <form method="POST" action="{{ route('admin.returns.shipmojo.push', $returnRequest) }}" data-confirm="Push return pickup request to ShipMojo?">
             @csrf
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
@@ -232,8 +232,7 @@
                     </select>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-sm btn-warning"
-                        onclick="return confirm('Push return pickup request to ShipMojo?')">
+                    <button type="submit" class="btn btn-sm btn-warning">
                         <i class="bi bi-cloud-upload me-1"></i> Push Return to ShipMojo
                     </button>
                 </div>

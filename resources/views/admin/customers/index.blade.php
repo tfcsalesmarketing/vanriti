@@ -64,7 +64,7 @@
                         <td class="text-end">
                             <div class="d-flex gap-1 justify-content-end">
                                 <a href="{{ route('admin.customers.show', $customer->id) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
-                                <form method="POST" action="{{ route('admin.customers.toggle', $customer->id) }}" onsubmit="return confirm('{{ $customer->status === 'active' ? 'Deactivate' : 'Activate' }} this customer?')">
+                                <form method="POST" action="{{ route('admin.customers.toggle', $customer->id) }}" data-confirm="{{ $customer->status === 'active' ? 'Deactivate' : 'Activate' }} this customer?">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-{{ $customer->status === 'active' ? 'warning' : 'success' }}" title="{{ $customer->status === 'active' ? 'Deactivate' : 'Activate' }}">
                                         <i class="bi {{ $customer->status === 'active' ? 'bi-person-x' : 'bi-person-check' }}"></i>

@@ -39,7 +39,7 @@
                         <td class="text-end">
                             <div class="d-flex gap-1 justify-content-end">
                                 <a href="{{ route('admin.main-categories.edit', $cat->slug) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                <form method="POST" action="{{ route('admin.main-categories.destroy', $cat->slug) }}" onsubmit="return confirm('Delete this main category?')">
+                                <form method="POST" action="{{ route('admin.main-categories.destroy', $cat->slug) }}" data-confirm="Delete this main category?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

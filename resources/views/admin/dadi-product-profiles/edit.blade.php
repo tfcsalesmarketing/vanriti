@@ -78,11 +78,11 @@
 @endif
 
 @if ($profile->status->value === 'pending_review')
-    <form method="POST" action="{{ route('admin.dadi.product-profiles.approve', $profile->id) }}" class="d-inline" onsubmit="return confirm('Approve this Dadi profile?')">
+    <form method="POST" action="{{ route('admin.dadi.product-profiles.approve', $profile->id) }}" class="d-inline" data-confirm="Approve this Dadi profile?">
         @csrf
         <button type="submit" class="btn btn-success mt-3"><i class="bi bi-check-lg me-1"></i>Approve</button>
     </form>
-    <form method="POST" action="{{ route('admin.dadi.product-profiles.reject', $profile->id) }}" class="d-inline" onsubmit="return confirm('Reject this Dadi profile?')">
+    <form method="POST" action="{{ route('admin.dadi.product-profiles.reject', $profile->id) }}" class="d-inline" data-confirm="Reject this Dadi profile?">
         @csrf
         <button type="submit" class="btn btn-outline-danger mt-3"><i class="bi bi-x-lg me-1"></i>Reject</button>
     </form>

@@ -52,7 +52,7 @@
                                     <input type="hidden" name="type" value="main">
                                 </form>
                             @endif
-                            <form method="POST" action="{{ route('admin.products.images.destroy', $img->id) }}" class="d-inline" onsubmit="return confirm('Delete image?')">
+                            <form method="POST" action="{{ route('admin.products.images.destroy', $img->id) }}" class="d-inline" data-confirm="Delete image?">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;"><i class="bi bi-x"></i></button>

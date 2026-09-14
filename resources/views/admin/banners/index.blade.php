@@ -64,7 +64,7 @@
                         <td class="text-end">
                             <div class="d-flex gap-1 justify-content-end">
                                 <a href="{{ route('admin.banners.edit', $banner) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                <form method="POST" action="{{ route('admin.banners.destroy', $banner) }}" onsubmit="return confirm('Delete this banner?')">
+                                <form method="POST" action="{{ route('admin.banners.destroy', $banner) }}" data-confirm="Delete this banner?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

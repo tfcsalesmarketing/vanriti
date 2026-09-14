@@ -102,7 +102,7 @@
                                         <button type="submit" class="btn btn-sm btn-outline-warning" title="Reject"><i class="bi bi-x-lg"></i></button>
                                     </form>
                                 @endif
-                                <form method="POST" action="{{ route('admin.reviews.destroy', $review->id) }}" onsubmit="return confirm('Delete this review?')">
+                                <form method="POST" action="{{ route('admin.reviews.destroy', $review->id) }}" data-confirm="Delete this review?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

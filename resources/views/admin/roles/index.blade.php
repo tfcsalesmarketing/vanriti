@@ -81,7 +81,7 @@
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editRole_{{ $role->id }}"><i class="bi bi-pencil"></i></button>
                             @if (!$role->is_system)
-                                <form method="POST" action="{{ route('admin.roles.destroy', $role->id) }}" class="d-inline" onsubmit="return confirm('Delete this role?')">
+                                <form method="POST" action="{{ route('admin.roles.destroy', $role->id) }}" class="d-inline" data-confirm="Delete this role?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

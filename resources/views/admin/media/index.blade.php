@@ -18,17 +18,12 @@
         <h6 class="fw-bold mb-3"><i class="bi bi-upload me-1"></i>Upload Images</h6>
         <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
             @csrf
-            <div class="col-md-4">
-                <label for="name" class="form-label small text-muted">Image Name <span class="text-muted fw-normal">(optional)</span></label>
-                <input type="text" name="name" id="name" class="form-control form-control-sm" placeholder="e.g. Hero banner flower" maxlength="150">
-                <div class="form-text small">Applied to all selected images when uploading multiple.</div>
-            </div>
-            <div class="col-md-5">
+            <div class="col-md-8">
                 <label for="images" class="form-label small text-muted">Image Files</label>
                 <input type="file" name="images[]" id="images" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
-                <div class="form-text small">You can select multiple images at once.</div>
+                <div class="form-text small">Select one or more images, then add an optional name to each preview below.</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i>Upload</button>
             </div>
         </form>
@@ -84,7 +79,7 @@
                                         title="Copy link">
                                     <i class="bi bi-link-45deg me-1"></i><span class="copy-label">Copy Link</span>
                                 </button>
-                                <form method="POST" action="{{ route('admin.media.destroy', $item) }}" onsubmit="return confirm('Delete this image? This cannot be undone.')">
+                                <form method="POST" action="{{ route('admin.media.destroy', $item) }}" data-confirm="Delete this image? This cannot be undone.">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

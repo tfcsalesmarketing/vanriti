@@ -205,7 +205,7 @@
                                             <input type="hidden" name="gst_rate" value="{{ $variant->gst_rate }}">
                                             <input type="hidden" name="status" value="{{ $variant->status }}">
                                         </form>
-                                        <form method="POST" action="{{ route('admin.products.variants.destroy', $variant->id) }}" class="d-inline" onsubmit="return confirm('Delete variant?')">
+                                        <form method="POST" action="{{ route('admin.products.variants.destroy', $variant->id) }}" class="d-inline" data-confirm="Delete variant?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

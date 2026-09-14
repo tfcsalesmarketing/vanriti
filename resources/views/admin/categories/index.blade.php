@@ -40,7 +40,7 @@
                         <td class="text-end">
                             <div class="d-flex gap-1 justify-content-end">
                                 <a href="{{ route('admin.categories.edit', $cat->slug) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                <form method="POST" action="{{ route('admin.categories.destroy', $cat->slug) }}" onsubmit="return confirm('Delete this category?')">
+                                <form method="POST" action="{{ route('admin.categories.destroy', $cat->slug) }}" data-confirm="Delete this category?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
@@ -63,7 +63,7 @@
                             <td class="text-end">
                                 <div class="d-flex gap-1 justify-content-end">
                                     <a href="{{ route('admin.categories.edit', $child->slug) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                    <form method="POST" action="{{ route('admin.categories.destroy', $child->slug) }}" onsubmit="return confirm('Delete this category?')">
+                                    <form method="POST" action="{{ route('admin.categories.destroy', $child->slug) }}" data-confirm="Delete this category?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
@@ -86,7 +86,7 @@
                                 <td class="text-end">
                                     <div class="d-flex gap-1 justify-content-end">
                                         <a href="{{ route('admin.categories.edit', $gc->slug) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <form method="POST" action="{{ route('admin.categories.destroy', $gc->slug) }}" onsubmit="return confirm('Delete this category?')">
+                                        <form method="POST" action="{{ route('admin.categories.destroy', $gc->slug) }}" data-confirm="Delete this category?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

@@ -295,18 +295,16 @@
 
             {{-- 1. Push Order --}}
             @if (! $pushed)
-            <form method="POST" action="{{ route('admin.orders.shipmojo.push', $order) }}" class="d-inline">
+            <form method="POST" action="{{ route('admin.orders.shipmojo.push', $order) }}" class="d-inline" data-confirm="Push order {{ $order->order_number }} to ShipMojo?">
                 @csrf
-                <button type="submit" class="btn btn-sm btn-success"
-                    onclick="return confirm('Push order {{ $order->order_number }} to ShipMojo?')">
+                <button type="submit" class="btn btn-sm btn-success">
                     <i class="bi bi-cloud-upload me-1"></i> Push to ShipMojo
                 </button>
             </form>
             @else
-            <form method="POST" action="{{ route('admin.orders.shipmojo.push', $order) }}" class="d-inline">
+            <form method="POST" action="{{ route('admin.orders.shipmojo.push', $order) }}" class="d-inline" data-confirm="Re-push order to ShipMojo?">
                 @csrf
-                <button type="submit" class="btn btn-sm btn-outline-secondary"
-                    onclick="return confirm('Re-push order to ShipMojo?')">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-arrow-clockwise me-1"></i> Re-push
                 </button>
             </form>
@@ -314,10 +312,9 @@
 
             {{-- 2. Auto-Assign --}}
             @if ($pushed && ! $hasAwb)
-            <form method="POST" action="{{ route('admin.orders.shipmojo.auto-assign', $order) }}" class="d-inline">
+            <form method="POST" action="{{ route('admin.orders.shipmojo.auto-assign', $order) }}" class="d-inline" data-confirm="Auto-assign courier for this order?">
                 @csrf
-                <button type="submit" class="btn btn-sm btn-primary"
-                    onclick="return confirm('Auto-assign courier for this order?')">
+                <button type="submit" class="btn btn-sm btn-primary">
                     <i class="bi bi-lightning me-1"></i> Auto-Assign Courier
                 </button>
             </form>
@@ -325,10 +322,9 @@
 
             {{-- 3. Schedule Pickup --}}
             @if ($pushed && ! $hasAwb)
-            <form method="POST" action="{{ route('admin.orders.shipmojo.schedule-pickup', $order) }}" class="d-inline">
+            <form method="POST" action="{{ route('admin.orders.shipmojo.schedule-pickup', $order) }}" class="d-inline" data-confirm="Schedule pickup for this order?">
                 @csrf
-                <button type="submit" class="btn btn-sm btn-info text-white"
-                    onclick="return confirm('Schedule pickup for this order?')">
+                <button type="submit" class="btn btn-sm btn-info text-white">
                     <i class="bi bi-calendar-check me-1"></i> Schedule Pickup
                 </button>
             </form>
@@ -354,10 +350,9 @@
 
             {{-- 6. Cancel --}}
             @if ($hasAwb && ! in_array($shipment->status, ['delivered', 'returned']))
-            <form method="POST" action="{{ route('admin.orders.shipmojo.cancel', $order) }}" class="d-inline">
+            <form method="POST" action="{{ route('admin.orders.shipmojo.cancel', $order) }}" class="d-inline" data-confirm="Cancel this shipment in ShipMojo? This cannot be undone.">
                 @csrf
-                <button type="submit" class="btn btn-sm btn-outline-danger"
-                    onclick="return confirm('Cancel this shipment in ShipMojo? This cannot be undone.')">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-x-circle me-1"></i> Cancel Shipment
                 </button>
             </form>

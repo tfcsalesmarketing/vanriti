@@ -59,7 +59,7 @@
                             <div class="d-flex gap-1 justify-content-end">
                                 <a href="{{ route('admin.admins.edit', $admin->id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                                 @if (!$admin->is_super_admin && $admin->id !== auth('admin')->id())
-                                    <form method="POST" action="{{ route('admin.admins.destroy', $admin->id) }}" onsubmit="return confirm('Delete this admin?')">
+                                    <form method="POST" action="{{ route('admin.admins.destroy', $admin->id) }}" data-confirm="Delete this admin?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

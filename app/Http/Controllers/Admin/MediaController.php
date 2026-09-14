@@ -29,19 +29,21 @@ class MediaController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'nullable|string|max:150',
             'images' => ['required', 'array', 'min:1'],
             'images.*' => ['image', 'mimes:jpeg,png,webp,gif', 'max:5120'],
+            'names' => ['nullable', 'array'],
+            'names.*' => ['nullable', 'string', 'max:150'],
         ]);
 
         $files = $request->file('images', []);
-        $baseName = trim((string) ($validated['name'] ?? ''));
+        $names = $request->input('names', []);
         $uploaded = 0;
 
-        foreach ($files as $file) {
+        foreach ($files as $index => $file) {
             try {
-                $name = filled($baseName)
-                    ? $baseName
+                $given = trim((string) ($names[$index] ?? ''));
+                $name = filled($given)
+                    ? $given
                     : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
                 $path = $file->store('media', 's3');

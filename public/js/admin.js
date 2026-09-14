@@ -144,17 +144,64 @@
         }
     }, true);
 
+    // ── Custom Confirm Modal ──
+    function vrConfirm(message) {
+        return new Promise(function (resolve) {
+            var overlay = document.createElement('div');
+            overlay.className = 'vr-confirm-overlay';
+            overlay.innerHTML =
+                '<div class="vr-confirm-dialog">'
+                + '<div class="vr-confirm-header">'
+                +   '<div class="vr-confirm-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>'
+                +   '<h6 class="vr-confirm-title">Are you sure?</h6>'
+                + '</div>'
+                + '<div class="vr-confirm-body"></div>'
+                + '<div class="vr-confirm-actions">'
+                +   '<button type="button" class="btn btn-sm btn-light vr-confirm-cancel">Cancel</button>'
+                +   '<button type="button" class="btn btn-sm btn-danger vr-confirm-ok">Yes, proceed</button>'
+                + '</div>'
+                + '</div>';
+
+            overlay.querySelector('.vr-confirm-body').textContent = message;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(function () { overlay.classList.add('active'); });
+
+            function close(result) {
+                document.removeEventListener('keydown', keyHandler);
+                overlay.classList.remove('active');
+                setTimeout(function () { overlay.remove(); }, 200);
+                resolve(result);
+            }
+
+            function keyHandler(e) {
+                if (e.key === 'Escape') close(false);
+                if (e.key === 'Enter') close(true);
+            }
+
+            overlay.querySelector('.vr-confirm-ok').addEventListener('click', function () { close(true); });
+            overlay.querySelector('.vr-confirm-cancel').addEventListener('click', function () { close(false); });
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
+            document.addEventListener('keydown', keyHandler);
+            overlay.querySelector('.vr-confirm-ok').focus();
+        });
+    }
+
     // ── Single Submit Handler (validation + page loader) ──
+    function lockFormSubmit(form) {
+        form.dataset.preventDouble = '1';
+        showPageLoader();
+        form.querySelectorAll('[type="submit"]').forEach(function (btn) {
+            if (btn.disabled) return;
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+        });
+    }
+
     document.addEventListener('submit', function (e) {
         var form = e.target;
 
         if (form.dataset.preventDouble !== undefined) return;
-
-        if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return;
-        }
 
         // Live validation
         var firstInvalid = null;
@@ -171,19 +218,24 @@
             return;
         }
 
+        // Custom confirm dialog
+        if (form.dataset.confirm) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            vrConfirm(form.dataset.confirm).then(function (ok) {
+                if (!ok) return;
+                if (form.method && form.method.toUpperCase() === 'GET') { form.submit(); return; }
+                lockFormSubmit(form);
+                form.submit();
+            });
+            return;
+        }
+
         // Skip loader for GET forms
         if (form.method && form.method.toUpperCase() === 'GET') return;
 
         // Show page loader + disable buttons
-        form.dataset.preventDouble = '1';
-        showPageLoader();
-
-        form.querySelectorAll('[type="submit"]').forEach(function (btn) {
-            if (btn.disabled) return;
-            btn.dataset.originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-        });
+        lockFormSubmit(form);
     }, true);
 
     // ── Page restore (back button) ──
@@ -228,36 +280,63 @@
                 return div.textContent;
             }
 
-            function renderThumbs() {
-                multiPreview.innerHTML = '';
-                var files = Array.prototype.slice.call(input.files || []);
-                var imageCount = 0;
+            var nameMap = new Map();
 
-                files.forEach(function (file, idx) {
-                    if (!file.type || !file.type.startsWith('image/')) return;
-                    imageCount++;
+            function makeThumbCard(file, idx) {
+                var isImage = !!(file.type && file.type.startsWith('image/'));
 
-                    var thumb = document.createElement('div');
-                    thumb.className = 'file-upload-thumb';
-                    thumb.innerHTML = '<img alt=""><button type="button" class="preview-remove" title="Remove file">&times;</button><span class="thumb-name"></span>';
-                    thumb.querySelector('.thumb-name').textContent = safeFileName(file.name);
+                var thumb = document.createElement('div');
+                thumb.className = 'file-upload-thumb';
 
+                if (isImage) {
+                    thumb.innerHTML = '<div class="thumb-media">'
+                        + '<img alt=""><button type="button" class="preview-remove" title="Remove file">&times;</button>'
+                        + '<span class="thumb-name"></span></div>'
+                        + '<input type="text" name="names[]" class="form-control form-control-sm thumb-name-input" maxlength="150" placeholder="Image name (optional)">';
+                } else {
+                    thumb.innerHTML = '<div class="thumb-media thumb-media-file">'
+                        + '<i class="bi bi-file-earmark-image"></i>'
+                        + '<button type="button" class="preview-remove" title="Remove file">&times;</button>'
+                        + '<span class="thumb-name"></span></div>'
+                        + '<input type="text" name="names[]" class="form-control form-control-sm thumb-name-input" maxlength="150" placeholder="Image name (optional)">';
+                }
+
+                thumb.querySelector('.thumb-name').textContent = safeFileName(file.name);
+
+                var nameInput = thumb.querySelector('.thumb-name-input');
+                if (nameMap.has(file)) {
+                    nameInput.value = nameMap.get(file);
+                }
+                nameInput.addEventListener('input', function () {
+                    nameMap.set(file, nameInput.value);
+                });
+
+                if (isImage) {
                     var reader = new FileReader();
                     reader.onload = function (ev) {
                         thumb.querySelector('img').src = ev.target.result;
                     };
                     reader.readAsDataURL(file);
+                }
 
-                    thumb.querySelector('.preview-remove').addEventListener('click', function () {
-                        removeAtIndex(idx);
-                    });
+                thumb.querySelector('.preview-remove').addEventListener('click', function () {
+                    removeAtIndex(idx);
+                });
 
-                    multiPreview.appendChild(thumb);
+                return thumb;
+            }
+
+            function renderThumbs() {
+                multiPreview.innerHTML = '';
+                var files = Array.prototype.slice.call(input.files || []);
+
+                files.forEach(function (file, idx) {
+                    multiPreview.appendChild(makeThumbCard(file, idx));
                 });
 
                 multiPreview.style.display = files.length ? 'block' : 'none';
                 fileName.textContent = files.length
-                    ? files.length + (imageCount === files.length ? ' files selected' : ' file(s) selected (' + imageCount + ' image)')
+                    ? files.length + ' file(s) selected - add a name to each below'
                     : '';
                 fileName.title = files.map(function (f) { return safeFileName(f.name); }).join(', ');
                 fileName.classList.toggle('active', files.length > 0);

@@ -112,7 +112,7 @@
                             <div class="d-flex gap-1 justify-content-end">
                                 <a href="{{ route('admin.products.show', $product->slug) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
                                 <a href="{{ route('admin.products.edit', $product->slug) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                                <form method="POST" action="{{ route('admin.products.destroy', $product->slug) }}" onsubmit="return confirm('Delete this product?')">
+                                <form method="POST" action="{{ route('admin.products.destroy', $product->slug) }}" data-confirm="Delete this product?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
