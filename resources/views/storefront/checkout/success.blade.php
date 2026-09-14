@@ -84,7 +84,7 @@
             'contents' => $order->items->map(fn ($item) => [
                 'id' => $item->sku,
                 'quantity' => $item->quantity,
-                'price' => (float) $item->unit_price,
+                'item_price' => (float) $item->unit_price,
             ])->values()->all(),
             'transaction_id' => $order->order_number,
         ];

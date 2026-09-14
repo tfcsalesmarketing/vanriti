@@ -14,6 +14,20 @@ class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::saving(function (Product $product): void {
+            if (is_string($product->sku)) {
+                $product->sku = strtoupper(trim($product->sku));
+                if ($product->sku === '') {
+                    $product->sku = null;
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'name',
         'slug',

@@ -254,6 +254,127 @@ class MetaBrowserEventsTest extends TestCase
         $this->assertStringContainsString('"content_ids":'.json_encode($expected), $html);
     }
 
+    public function test_meta_purchase_contents_use_item_price_key_only_once(): void
+    {
+        $this->setPixelId();
+
+        $user = User::factory()->create();
+        $order = $this->makeOrder($user, 'cod', 'paid');
+        $item = $order->items()->first();
+
+        $html = $this->actingAs($user, 'web')->get(route('checkout.success', $order))->assertOk()->getContent();
+
+        // Meta-recommended contents key (id/quantity/item_price), matching the
+        // other Meta browser events and the server CAPI contents schema.
+        $this->assertSame(1, substr_count($html, '"item_price"'));
+        $this->assertStringContainsString(
+            '"contents":[{"id":"'.$item->sku.'","quantity":'.$item->quantity.',"item_price":'.(float) $item->unit_price.'}]',
+            $html
+        );
+    }
+
+    public function test_meta_purchase_event_id_is_deterministic_across_refresh(): void
+    {
+        $this->setPixelId();
+
+        $user = User::factory()->create();
+        $order = $this->makeOrder($user, 'cod', 'paid');
+
+        $first = $this->actingAs($user, 'web')->get(route('checkout.success', $order))->assertOk()->getContent();
+        $refresh = $this->actingAs($user, 'web')->get(route('checkout.success', $order))->assertOk()->getContent();
+
+        preg_match('/\{eventID: "([a-f0-9]{64})"\}/', $first, $m1);
+        preg_match('/\{eventID: "([a-f0-9]{64})"\}/', $refresh, $m2);
+
+        $this->assertNotEmpty($m1, 'Pixel Purchase eventID missing on first render.');
+        $this->assertNotEmpty($m2, 'Pixel Purchase eventID missing on refresh.');
+        $this->assertSame($m1[1], $m2[1]);
+    }
+
+    public function test_failed_add_exposes_no_meta_event_data(): void
+    {
+        $this->setPixelId();
+
+        $user = User::factory()->create();
+        $outOfStock = Product::factory()->active()->create([
+            'sku' => 'MBC-010',
+            'selling_price' => 100.00,
+            'stock' => 0,
+        ]);
+
+        $json = $this->actingAs($user, 'web')->postJson(route('cart.add', $outOfStock), ['quantity' => 1]);
+        $json->assertStatus(422);
+        $this->assertArrayNotHasKey('analytics', $json->json());
+        $this->assertStringNotContainsString('add_to_cart', $json->content());
+        $this->assertStringNotContainsString('fbq(', $json->content());
+    }
+
+    public function test_inactive_product_returns_404_without_meta_scripts(): void
+    {
+        $this->setPixelId();
+
+        $product = Product::factory()->create([
+            'sku' => 'MBC-011',
+            'selling_price' => 100.00,
+            'status' => 'inactive',
+        ]);
+
+        $response = $this->get(route('product.show', $product));
+        $response->assertNotFound();
+        $this->assertStringNotContainsString('vrMeta.track(\'ViewContent\'', $response->getContent());
+    }
+
+    public function test_native_handoff_with_malformed_pending_data_renders_safely(): void
+    {
+        $this->setPixelId();
+
+        $user = User::factory()->create();
+
+        // A degenerate handoff (GA4 wrapper present but items missing) must not
+        // break rendering and must not produce a Meta AddToCart.
+        $html = $this->actingAs($user, 'web')
+            ->withSession(['pending_add_to_cart' => ['event' => 'add_to_cart', 'ecommerce' => ['value' => 100.0, 'currency' => 'INR']]])
+            ->get(route('cart.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString("fbq('track', 'AddToCart'", $html);
+        $this->assertStringNotContainsString("vrMeta.track('AddToCart'", $html);
+        $this->assertStringNotContainsString('"content_ids":', $html);
+    }
+
+    public function test_checkout_initiate_checkout_uses_variant_sku_for_variant_cart_line(): void
+    {
+        $this->setPixelId();
+
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'sku' => 'MBC-012',
+            'name' => 'VANRITI Variant Wash',
+            'selling_price' => 120.00,
+            'stock' => 10,
+        ]);
+        $variant = ProductVariant::factory()->create([
+            'product_id' => $product->id,
+            'name' => 'Active Charcoal 100 ml',
+            'sku' => 'MBC-012-V100',
+            'selling_price' => 160.00,
+            'status' => 'active',
+            'is_default' => true,
+            'stock' => 5,
+        ]);
+
+        $cart = $this->seedCart($user, [['product' => $product, 'quantity' => 1]]);
+        $cart->items()->first()->update(['product_variant_id' => $variant->id, 'unit_price' => 160.00]);
+
+        $html = $this->actingAs($user, 'web')->get(route('checkout.index'))->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($html, 'vrMeta.track(\'InitiateCheckout\''));
+        $this->assertStringContainsString('"content_ids":["MBC-012-V100"]', $html);
+        $this->assertStringContainsString('"contents":[{"id":"MBC-012-V100","quantity":1,"item_price":160}]', $html);
+        $this->assertStringContainsString('"value":160', $html);
+    }
+
     protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus): Order
     {
         $product = Product::factory()->active()->create([
