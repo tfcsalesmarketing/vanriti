@@ -37,4 +37,18 @@ class TrackController extends Controller
 
         return view('storefront.track.index', compact('orders'));
     }
+
+    public function show(Order $order, Request $request): View|RedirectResponse
+    {
+        $mobile = trim((string) $request->query('mobile', ''));
+
+        if (! in_array($mobile, array_filter([$order->billing_mobile, $order->shipping_mobile]), true)) {
+            abort(403);
+        }
+
+        $order->load(['items', 'shipments.trackingEvents']);
+        $orders = collect([$order]);
+
+        return view('storefront.track.index', compact('orders'));
+    }
 }

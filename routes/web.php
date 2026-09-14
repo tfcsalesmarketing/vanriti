@@ -93,6 +93,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 // ---------- Track order ----------
 Route::get('/track', [TrackController::class, 'index'])->name('track');
 Route::post('/track', [TrackController::class, 'lookup'])->name('track.lookup');
+Route::get('/track/{order:order_number}', [TrackController::class, 'show'])->name('track.order')->middleware('signed');
 
 // ---------- Content ----------
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');

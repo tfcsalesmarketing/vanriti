@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\URL;
 
 class Order extends Model
 {
@@ -156,6 +157,20 @@ class Order extends Model
     public function isReturnable(): bool
     {
         return $this->order_status === 'delivered';
+    }
+
+    /**
+     * Guest-friendly signed tracking link (no login required). Safe to share via
+     * email / WhatsApp; expires after the given number of days.
+     */
+    public function guestTrackingUrl(int $expiresInDays = 30): string
+    {
+        $mobile = $this->shipping_mobile ?: $this->billing_mobile;
+
+        return URL::temporarySignedRoute('track.order', now()->addDays($expiresInDays), [
+            'order' => $this->order_number,
+            'mobile' => $mobile,
+        ]);
     }
 
     /**

@@ -2189,6 +2189,12 @@ img { max-width: 100%; height: auto; }
     border-radius: var(--vr-radius-sm);
 }
 
+.password-wrap input.is-invalid,
+.password-wrap input.was-validated:invalid {
+    padding-right: 4.6rem;
+    background-position: right 2.7rem center;
+}
+
 .vr-nav-logout-btn {
     background: none;
     border: 0;

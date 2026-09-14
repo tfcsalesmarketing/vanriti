@@ -18,7 +18,7 @@
             <div class="col-md-4">
                 <label for="name" class="form-label small text-muted">Image Name <span class="text-muted fw-normal">(optional)</span></label>
                 <input type="text" name="name" id="name" class="form-control form-control-sm" placeholder="e.g. Hero banner flower" maxlength="150">
-                <div class="form-text small">Applied when uploading a single image. Multiple uploads use each file's name.</div>
+                <div class="form-text small">Applied to all selected images when uploading multiple.</div>
             </div>
             <div class="col-md-5">
                 <label for="images" class="form-label small text-muted">Image Files</label>

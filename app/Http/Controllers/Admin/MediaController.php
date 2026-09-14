@@ -34,13 +34,13 @@ class MediaController extends Controller
         ]);
 
         $files = $request->file('images', []);
-        $single = count($files) === 1;
+        $baseName = trim((string) ($validated['name'] ?? ''));
         $uploaded = 0;
 
         foreach ($files as $file) {
             try {
-                $name = ($single && filled($validated['name'] ?? null))
-                    ? $validated['name']
+                $name = filled($baseName)
+                    ? $baseName
                     : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
                 $path = $file->store('media', 's3');
