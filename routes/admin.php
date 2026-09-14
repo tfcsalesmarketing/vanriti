@@ -109,6 +109,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::resource('banners', BannerController::class)->except(['show'])->middleware('permission:manage-banners');
+        Route::get('media/export', [MediaController::class, 'export'])->name('media.export')->middleware('permission:manage-media');
         Route::resource('media', MediaController::class)->only(['index', 'store', 'destroy'])->parameters(['media' => 'media'])->middleware('permission:manage-media');
         Route::resource('blogs', BlogController::class)->except(['show'])->middleware('permission:manage-blogs');
         Route::resource('pages', PageController::class)->except(['show'])->middleware('permission:manage-pages');

@@ -3,11 +3,14 @@
 @section('title', 'Media Library')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
     <div>
         <h5 class="mb-0 fw-bold">Media Library</h5>
         <small class="text-muted">{{ $media->total() }} images total</small>
     </div>
+    <a href="{{ route('admin.media.export') }}" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+    </a>
 </div>
 
 <div class="card mb-3">
