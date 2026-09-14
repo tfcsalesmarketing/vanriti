@@ -33,6 +33,24 @@
                     <li><i class="ri-mail-line"></i>{{ setting('store_email', '') }}</li>
                     <li><i class="ri-phone-line"></i>{{ setting('store_phone', '') }}</li>
                 </ul>
+                @php
+                    $_socials = array_filter([
+                        'facebook' => setting('facebook_url'),
+                        'instagram' => setting('instagram_url'),
+                        'twitter' => setting('twitter_url'),
+                        'youtube' => setting('youtube_url'),
+                        'linkedin' => setting('linkedin_url'),
+                    ]);
+                @endphp
+                @if ($_socials)
+                    <div class="vr-footer-social mt-3">
+                        @foreach ($_socials as $_handle => $_url)
+                            <a href="{{ $_url }}" class="vr-social-icon" aria-label="{{ ucfirst($_handle) }}" target="_blank" rel="noopener noreferrer">
+                                <i class="ri-{{ $_handle === 'twitter' ? 'twitter-x-line' : $_handle }}-line"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="col-lg-2">

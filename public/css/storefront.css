@@ -1877,6 +1877,32 @@ img { max-width: 100%; height: auto; }
     line-height: 1.4;
 }
 
+.vr-footer-social {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.vr-social-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #C6D2C2;
+    font-size: 1.05rem;
+    text-decoration: none;
+    transition: background var(--vr-transition-fast), color var(--vr-transition-fast), transform var(--vr-transition-fast);
+}
+
+.vr-social-icon:hover {
+    background: var(--vr-green);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
 .vr-footer-title {
     color: #fff;
     font-size: 0.8rem;
