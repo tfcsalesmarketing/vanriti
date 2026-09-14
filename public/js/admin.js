@@ -108,8 +108,9 @@
         if (input.type === 'file') {
             var hasFile = !!(input.files && input.files.length);
             if (input.required && !hasFile) {
-                var wrapper = input.closest('.mb-3, .col-md-6, .col-md-4, .col-md-8, .col-md-12, .col-auto, .col-lg-6');
+                var wrapper = input.closest('.mb-3, .col-md-6, .col-md-4, .col-md-8, .col-md-12, .col-12, .col-auto, .col-lg-6');
                 var labelText = input.dataset.requiredMsg || '';
+                var isFullMsg = !!input.dataset.requiredMsg;
                 if (!labelText) {
                     labelText = name.replace(/\[\]/, '');
                     if (wrapper) {
@@ -118,7 +119,7 @@
                     }
                 }
                 labelText = labelText.replace('*', '').trim();
-                addFieldError(input, labelText + ' is required');
+                addFieldError(input, isFullMsg ? labelText : labelText + ' is required');
                 return false;
             }
             removeFieldError(input);
@@ -234,7 +235,13 @@
         if (firstInvalid) {
             e.preventDefault();
             e.stopImmediatePropagation();
-            firstInvalid.focus();
+            var target = firstInvalid;
+            if (firstInvalid.type === 'file') {
+                var dw = firstInvalid.closest('.file-dropzone');
+                if (dw) target = dw;
+            }
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            try { firstInvalid.focus({ preventScroll: true }); } catch (err) {}
             showToast('Please fill in all required fields correctly.', 'error');
             return;
         }
@@ -291,17 +298,20 @@
                 wrapper.insertBefore(zoneBox, input);
                 zoneBox.appendChild(input);
 
-                ['dragenter', 'dragover', 'drop'].forEach(function (evt) {
-                    zoneBox.addEventListener(evt, function (e) { e.preventDefault(); e.stopPropagation(); });
-                    wrapper.addEventListener(evt, function (e) { e.preventDefault(); e.stopPropagation(); });
-                });
                 ['dragenter', 'dragover'].forEach(function (evt) {
-                    wrapper.addEventListener(evt, function () { wrapper.classList.add('drag-over'); });
+                    wrapper.addEventListener(evt, function (e) {
+                        e.preventDefault();
+                        wrapper.classList.add('drag-over');
+                    });
                 });
                 ['dragleave', 'drop'].forEach(function (evt) {
-                    wrapper.addEventListener(evt, function () { wrapper.classList.remove('drag-over'); });
+                    wrapper.addEventListener(evt, function (e) {
+                        e.preventDefault();
+                        wrapper.classList.remove('drag-over');
+                    });
                 });
                 wrapper.addEventListener('drop', function (e) {
+                    e.preventDefault();
                     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
                         input.files = e.dataTransfer.files;
                         input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -385,7 +395,7 @@
                     multiPreview.appendChild(makeThumbCard(file, idx));
                 });
 
-                multiPreview.style.display = files.length ? 'block' : 'none';
+                multiPreview.style.display = files.length ? 'flex' : 'none';
                 fileName.textContent = files.length
                     ? files.length + ' file(s) selected - add a secondary name to each below'
                     : '';

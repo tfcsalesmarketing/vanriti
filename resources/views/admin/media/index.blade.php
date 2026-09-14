@@ -29,10 +29,13 @@
                 <input type="text" name="name" id="name" class="form-control" placeholder="e.g. Hero banner flower" maxlength="150">
                 <div class="form-text small">Applied to all selected images.</div>
             </div>
-            <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-                <button type="submit" class="btn btn-primary px-4 w-100 w-md-auto">
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary px-4 w-100">
                     <i class="bi bi-cloud-arrow-up me-1"></i>Upload Images
                 </button>
+            </div>
+            <div class="col-md-2 d-flex align-items-end justify-content-md-end">
+                <span class="small text-muted">Max 5 MB each</span>
             </div>
         </form>
     </div>
