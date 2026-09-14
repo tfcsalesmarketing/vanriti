@@ -233,7 +233,8 @@ pre.nl2p { white-space: pre-wrap; word-break: break-word; }
     background: #f8f7f5;
 }
 
-.file-upload-preview .preview-remove {
+.file-upload-preview .preview-remove,
+.file-upload-thumb > .preview-remove {
     position: absolute;
     top: -6px;
     right: -6px;
@@ -253,7 +254,8 @@ pre.nl2p { white-space: pre-wrap; word-break: break-word; }
     transition: transform 0.15s ease;
 }
 
-.file-upload-preview .preview-remove:hover {
+.file-upload-preview .preview-remove:hover,
+.file-upload-thumb > .preview-remove:hover {
     transform: scale(1.15);
 }
 
@@ -271,6 +273,56 @@ pre.nl2p { white-space: pre-wrap; word-break: break-word; }
 
 .file-upload-loader.active {
     display: flex;
+}
+
+/* Multi-image thumbnail grid */
+.file-upload-thumbs {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.file-upload-thumb {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 2px solid #e7e4de;
+    background: #f8f7f5;
+    flex-shrink: 0;
+}
+
+.file-upload-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.file-upload-thumb .thumb-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2px 4px;
+    font-size: 0.58rem;
+    color: #fff;
+    background: rgba(0,0,0,0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.file-upload-thumb > .preview-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
 }
 
 .file-upload-loader .spinner-border {

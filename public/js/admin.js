@@ -204,10 +204,16 @@
             input.parentNode.insertBefore(wrapper, input);
             wrapper.appendChild(input);
 
+            var isMultiple = !!input.multiple;
+
             var preview = document.createElement('div');
             preview.className = 'file-upload-preview';
             preview.innerHTML = '<img src="" alt="Preview"><span class="preview-remove" title="Remove">&times;</span>';
             wrapper.appendChild(preview);
+
+            var multiPreview = document.createElement('div');
+            if (isMultiple) multiPreview.className = 'file-upload-thumbs';
+            wrapper.appendChild(multiPreview);
 
             var fileName = document.createElement('div');
             fileName.className = 'file-upload-name';
@@ -216,24 +222,77 @@
             var previewImg = preview.querySelector('img');
             var removeBtn = preview.querySelector('.preview-remove');
 
+            function safeFileName(name) {
+                var div = document.createElement('div');
+                div.textContent = name;
+                return div.textContent;
+            }
+
+            function renderThumbs() {
+                multiPreview.innerHTML = '';
+                var files = Array.prototype.slice.call(input.files || []);
+                var imageCount = 0;
+
+                files.forEach(function (file, idx) {
+                    if (!file.type || !file.type.startsWith('image/')) return;
+                    imageCount++;
+
+                    var thumb = document.createElement('div');
+                    thumb.className = 'file-upload-thumb';
+                    thumb.innerHTML = '<img alt=""><button type="button" class="preview-remove" title="Remove file">&times;</button><span class="thumb-name"></span>';
+                    thumb.querySelector('.thumb-name').textContent = safeFileName(file.name);
+
+                    var reader = new FileReader();
+                    reader.onload = function (ev) {
+                        thumb.querySelector('img').src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                    thumb.querySelector('.preview-remove').addEventListener('click', function () {
+                        removeAtIndex(idx);
+                    });
+
+                    multiPreview.appendChild(thumb);
+                });
+
+                multiPreview.style.display = files.length ? 'block' : 'none';
+                fileName.textContent = files.length
+                    ? files.length + (imageCount === files.length ? ' files selected' : ' file(s) selected (' + imageCount + ' image)')
+                    : '';
+                fileName.title = files.map(function (f) { return safeFileName(f.name); }).join(', ');
+                fileName.classList.toggle('active', files.length > 0);
+            }
+
+            function removeAtIndex(idx) {
+                var files = Array.prototype.slice.call(input.files || []);
+                files.splice(idx, 1);
+
+                if (typeof DataTransfer !== 'undefined') {
+                    var dt = new DataTransfer();
+                    files.forEach(function (f) { dt.items.add(f); });
+                    input.files = dt.files;
+                } else {
+                    input.value = '';
+                }
+
+                renderThumbs();
+            }
+
             input.addEventListener('change', function () {
                 if (!input.files || !input.files.length) {
                     preview.style.display = 'none';
+                    multiPreview.style.display = 'none';
                     fileName.classList.remove('active');
                     return;
                 }
 
-                var file = input.files[0];
-
-                if (input.multiple && input.files.length > 1) {
-                    var names = Array.prototype.slice.call(input.files).map(function (f) { return f.name; });
-                    fileName.textContent = input.files.length + ' files selected';
-                    fileName.title = names.join(', ');
-                    fileName.classList.add('active');
+                if (isMultiple) {
                     preview.style.display = 'none';
+                    renderThumbs();
                     return;
                 }
 
+                var file = input.files[0];
                 fileName.textContent = file.name;
                 fileName.title = '';
                 fileName.classList.add('active');
