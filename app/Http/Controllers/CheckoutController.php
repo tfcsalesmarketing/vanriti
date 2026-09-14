@@ -465,10 +465,11 @@ class CheckoutController extends Controller
             : null;
 
         // Browser Pixel Purchase receives the same deterministic event_id the
-        // server CAPI uses, so Meta deduplicates the two representations. Gated
-        // on the pre-existing paid/pending status rule so legacy behaviour is
-        // preserved for orders that render the Pixel but are not GA4-eligible.
-        $metaEventId = (setting('meta_pixel_id') && in_array($order->payment_status, ['paid', 'pending']))
+        // server CAPI uses, so Meta deduplicates the two representations. It is
+        // gated on the same authoritative purchaseEligible() rule as CAPI, so
+        // unverified/pending online orders never fire Purchase while COD
+        // remains eligible at order creation.
+        $metaEventId = (setting('meta_pixel_id') && $this->ecommerceDataService->purchaseEligible($order))
             ? $this->metaCapiService->eventId($order)
             : null;
 

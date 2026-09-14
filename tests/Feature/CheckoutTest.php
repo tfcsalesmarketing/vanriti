@@ -330,7 +330,7 @@ class CheckoutTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
-    public function test_purchase_event_fires_on_success_for_paid_and_pending_orders(): void
+    public function test_pixel_purchase_fires_for_paid_online_but_not_for_pending_orders(): void
     {
         Setting::updateOrCreate(['key' => 'meta_pixel_id'], [
             'value' => 'TEST1234',
@@ -339,20 +339,30 @@ class CheckoutTest extends TestCase
             'type' => 'text',
         ]);
 
-        foreach (['paid', 'pending'] as $paymentStatus) {
-            $user = User::factory()->create();
-            $order = $this->makePurchaseOrder($user, $paymentStatus);
+        // Paid online orders are purchase-eligible: browser Pixel Purchase fires.
+        $paidUser = User::factory()->create();
+        $paidOrder = $this->makePurchaseOrder($paidUser, 'paid');
 
-            $response = $this->actingAs($user, 'web')->get(route('checkout.success', $order));
+        $paidResponse = $this->actingAs($paidUser, 'web')->get(route('checkout.success', $paidOrder));
 
-            $response->assertOk();
-            $response->assertSee("fbq('init', 'TEST1234')", false);
-            $response->assertSee("fbq('track', 'Purchase'", false);
-            $response->assertSee('"transaction_id":"'.$order->order_number.'"', false);
-            $response->assertSee('"currency":"INR"', false);
-            $response->assertSee('"value":1600', false);
-            $response->assertSee('"id":"'.$order->items()->first()->sku.'"', false);
-        }
+        $paidResponse->assertOk();
+        $paidResponse->assertSee("fbq('init', 'TEST1234')", false);
+        $paidResponse->assertSee("fbq('track', 'Purchase'", false);
+        $paidResponse->assertSee('"transaction_id":"'.$paidOrder->order_number.'"', false);
+        $paidResponse->assertSee('"currency":"INR"', false);
+        $paidResponse->assertSee('"value":1600', false);
+        $paidResponse->assertSee('"id":"'.$paidOrder->items()->first()->sku.'"', false);
+
+        // Unverified/pending online orders are NOT purchase-eligible: the browser
+        // Pixel must never fire Purchase (identical to the CAPI gating rule).
+        $pendingUser = User::factory()->create();
+        $pendingOrder = $this->makePurchaseOrder($pendingUser, 'pending');
+
+        $pendingResponse = $this->actingAs($pendingUser, 'web')->get(route('checkout.success', $pendingOrder));
+
+        $pendingResponse->assertOk();
+        $pendingResponse->assertSee("fbq('init', 'TEST1234')", false);
+        $pendingResponse->assertDontSee("fbq('track', 'Purchase'", false);
     }
 
     public function test_purchase_event_not_fired_without_pixel_setting(): void

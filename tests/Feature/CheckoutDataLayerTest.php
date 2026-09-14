@@ -234,6 +234,26 @@ class CheckoutDataLayerTest extends TestCase
         $this->assertStringContainsString('"transaction_id":"'.$order->order_number.'"', $content);
     }
 
+    public function test_pending_online_order_never_fires_meta_pixel_purchase(): void
+    {
+        Setting::updateOrCreate(['key' => 'meta_pixel_id'], [
+            'value' => 'TEST1234',
+            'group' => 'seo',
+            'label' => 'Meta Pixel ID',
+            'type' => 'text',
+        ]);
+
+        $user = User::factory()->create();
+        $order = $this->makeOrder($user, 'razorpay', 'pending');
+
+        $content = $this->actingAs($user, 'web')->get(route('checkout.success', $order))->getContent();
+
+        // Pending online = still awaiting server-side payment verification: the
+        // browser Meta Pixel must not fire Purchase (identical to CAPI gating).
+        $this->assertStringNotContainsString("fbq('track', 'Purchase'", $content);
+        $this->assertSame(0, substr_count($content, '"event":"purchase"'));
+    }
+
     public function test_razorpay_server_verified_paid_order_fires_purchase_on_success(): void
     {
         Http::fake([
