@@ -88,7 +88,7 @@
                     <input type="hidden" name="variant_id" value="{{ $firstVariant->id }}">
                 @endif
                 <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="btn btn-vr-outline vr-quick-add d-block w-100 js-add-cart" {{ $out ? 'disabled' : '' }}>
+                <button type="submit" class="btn btn-vr vr-quick-add d-block w-100 js-add-cart" {{ $out ? 'disabled' : '' }}>
                     <i class="bi bi-bag-plus me-1"></i> Add to Cart
                 </button>
             </form>

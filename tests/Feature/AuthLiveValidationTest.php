@@ -41,6 +41,8 @@ class AuthLiveValidationTest extends TestCase
 
     public function test_login_valid_fields_pass_live(): void
     {
+        User::factory()->create(['email' => 'user@example.com', 'password' => 'secret123']);
+
         $response = $this->postJson(route('auth.validate'), [
             'context' => 'login',
             'email' => 'user@example.com',
@@ -48,6 +50,32 @@ class AuthLiveValidationTest extends TestCase
         ]);
 
         $response->assertOk()->assertJson(['valid' => true]);
+    }
+
+    public function test_login_unknown_email_fails_live(): void
+    {
+        $response = $this->postJson(route('auth.validate'), [
+            'context' => 'login',
+            'email' => 'nobody@example.com',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('email', $response->json('errors'));
+    }
+
+    public function test_login_wrong_password_fails_live(): void
+    {
+        User::factory()->create(['email' => 'user@example.com', 'password' => 'secret123']);
+
+        $response = $this->postJson(route('auth.validate'), [
+            'context' => 'login',
+            'email' => 'user@example.com',
+            'password' => 'wrongpassword',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('password', $response->json('errors'));
     }
 
     public function test_login_invalid_email_fails_live(): void

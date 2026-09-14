@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CheckoutRequest;
 use App\Jobs\PushOrderToShipMojo;
 use App\Jobs\SendMetaCapiPurchase;
+use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\User;
@@ -197,6 +198,27 @@ class CheckoutController extends Controller
             });
         } catch (\RuntimeException $e) {
             return $this->orderFailureResponse($user, $e);
+        }
+
+        if ($user) {
+            $isNew = $request->input('selected_address') === 'new'
+                || ! $request->has('selected_address');
+
+            if ($isNew && $this->isNewAddressForUser($user, $shipping)) {
+                $user->addresses()->create([
+                    'full_name' => $shipping['full_name'],
+                    'mobile' => $shipping['mobile'],
+                    'address_line1' => $shipping['address_line1'],
+                    'address_line2' => $shipping['address_line2'] ?? null,
+                    'landmark' => $shipping['landmark'] ?? null,
+                    'city' => $shipping['city'],
+                    'state' => $shipping['state'],
+                    'pincode' => $shipping['pincode'],
+                    'country' => $shipping['country'] ?? 'India',
+                    'type' => 'other',
+                    'is_default' => $user->addresses()->count() === 0,
+                ]);
+            }
         }
 
         if ($validated['payment_method'] === 'cod') {
@@ -511,5 +533,14 @@ class CheckoutController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    protected function isNewAddressForUser(User $user, array $shipping): bool
+    {
+        return ! Address::where('user_id', $user->id)
+            ->where('full_name', $shipping['full_name'])
+            ->where('address_line1', $shipping['address_line1'])
+            ->where('pincode', $shipping['pincode'])
+            ->exists();
     }
 }

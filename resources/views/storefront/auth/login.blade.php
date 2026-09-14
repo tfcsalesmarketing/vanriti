@@ -18,18 +18,18 @@
                         @csrf
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Email</label>
-                            <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-lg" autocomplete="email" autofocus>
-                            <div class="invalid-feedback"></div>
+                            <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-lg {{ $errors->has('email') ? 'is-invalid' : '' }}" autocomplete="email" autofocus>
+                            <div class="invalid-feedback">{{ $errors->first('email') }}</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Password</label>
                             <div class="password-wrap">
-                                <input type="password" name="password" class="form-control form-control-lg" autocomplete="current-password">
+                                <input type="password" name="password" class="form-control form-control-lg {{ $errors->has('password') ? 'is-invalid' : '' }}" autocomplete="current-password">
                                 <button type="button" class="password-toggle-btn" tabindex="-1" aria-label="Show password">
                                     <i class="ri-eye-line"></i>
                                 </button>
                             </div>
-                            <div class="invalid-feedback"></div>
+                            <div class="invalid-feedback">{{ $errors->first('password') }}</div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div class="form-check">

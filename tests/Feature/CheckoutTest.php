@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Cart;
+use App\Models\Coupon;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\Payment;
@@ -11,6 +12,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CheckoutTest extends TestCase
@@ -108,6 +110,154 @@ class CheckoutTest extends TestCase
         $this->assertSame(0, $cart->items()->count());
     }
 
+    public function test_cod_checkout_auto_saves_new_manually_entered_address(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 800.00,
+            'mrp' => 1000.00,
+            'gst_rate' => 18,
+            'stock' => 25,
+        ]);
+
+        Inventory::create([
+            'stockable_type' => Product::class,
+            'stockable_id' => $product->id,
+            'stock_on_hand' => $product->stock,
+            'low_stock_threshold' => $product->low_stock_threshold ?? 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $data = $this->addressData();
+        $data['selected_address'] = 'new';
+
+        $this->actingAs($user, 'web')->post(route('checkout.store'), $data)->assertRedirect();
+
+        $this->assertDatabaseHas('addresses', [
+            'user_id' => $user->id,
+            'full_name' => 'Aarav Mehta',
+            'mobile' => '9876543210',
+            'address_line1' => '42 MG Road',
+            'pincode' => '560038',
+            'city' => 'Bengaluru',
+            'state' => 'Karnataka',
+            'is_default' => true,
+        ]);
+    }
+
+    public function test_cod_checkout_without_address_list_auto_saves_shipping_address(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 500.00,
+            'mrp' => 600.00,
+            'gst_rate' => 0,
+            'stock' => 10,
+        ]);
+
+        Inventory::create([
+            'stockable_type' => Product::class,
+            'stockable_id' => $product->id,
+            'stock_on_hand' => $product->stock,
+            'low_stock_threshold' => $product->low_stock_threshold ?? 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        // No selected_address field at all (user has no saved addresses)
+        $this->actingAs($user, 'web')->post(route('checkout.store'), $this->addressData())->assertRedirect();
+
+        $this->assertDatabaseHas('addresses', [
+            'user_id' => $user->id,
+            'full_name' => 'Aarav Mehta',
+            'pincode' => '560038',
+        ]);
+    }
+
+    public function test_cod_checkout_does_not_duplicate_existing_address(): void
+    {
+        $user = User::factory()->create();
+        $existing = $user->addresses()->create([
+            'full_name' => 'Aarav Mehta',
+            'mobile' => '9876543210',
+            'address_line1' => '42 MG Road',
+            'address_line2' => 'Indiranagar',
+            'landmark' => 'Near Metro',
+            'city' => 'Bengaluru',
+            'state' => 'Karnataka',
+            'pincode' => '560038',
+            'country' => 'India',
+            'type' => 'home',
+        ]);
+        $product = Product::factory()->active()->create([
+            'selling_price' => 500.00,
+            'mrp' => 600.00,
+            'gst_rate' => 0,
+            'stock' => 10,
+        ]);
+
+        Inventory::create([
+            'stockable_type' => Product::class,
+            'stockable_id' => $product->id,
+            'stock_on_hand' => $product->stock,
+            'low_stock_threshold' => $product->low_stock_threshold ?? 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $data = $this->addressData();
+        $data['selected_address'] = 'new';
+
+        $this->actingAs($user, 'web')->post(route('checkout.store'), $data)->assertRedirect();
+
+        $this->assertSame(1, $user->addresses()->count());
+        $this->assertTrue($user->addresses()->firstOrFail()->is($existing));
+    }
+
+    public function test_cod_checkout_skips_auto_save_when_saved_address_selected(): void
+    {
+        $user = User::factory()->create();
+        $saved = $user->addresses()->create([
+            'full_name' => 'Preeti Sharma',
+            'mobile' => '9812345678',
+            'address_line1' => '15 Lajpat Nagar',
+            'address_line2' => null,
+            'landmark' => null,
+            'city' => 'New Delhi',
+            'state' => 'Delhi',
+            'pincode' => '110024',
+            'country' => 'India',
+            'type' => 'home',
+            'is_default' => true,
+        ]);
+        $product = Product::factory()->active()->create([
+            'selling_price' => 500.00,
+            'mrp' => 600.00,
+            'gst_rate' => 0,
+            'stock' => 10,
+        ]);
+
+        Inventory::create([
+            'stockable_type' => Product::class,
+            'stockable_id' => $product->id,
+            'stock_on_hand' => $product->stock,
+            'low_stock_threshold' => $product->low_stock_threshold ?? 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $data = $this->addressData();
+        $data['shipping_name'] = 'Preeti Sharma';
+        $data['shipping_address_line1'] = '15 Lajpat Nagar';
+        $data['shipping_pincode'] = '110024';
+        $data['selected_address'] = (string) $saved->id;
+
+        $this->actingAs($user, 'web')->post(route('checkout.store'), $data)->assertRedirect();
+
+        $this->assertSame(1, $user->addresses()->count());
+    }
+
     public function test_cod_checkout_with_coupon_applies_discount(): void
     {
         $user = User::factory()->create();
@@ -118,7 +268,7 @@ class CheckoutTest extends TestCase
             'stock' => 10,
         ]);
 
-        $coupon = \App\Models\Coupon::factory()->create([
+        $coupon = Coupon::factory()->create([
             'code' => 'FLAT100',
             'discount_type' => 'fixed',
             'discount_value' => 100,
@@ -198,10 +348,10 @@ class CheckoutTest extends TestCase
             $response->assertOk();
             $response->assertSee("fbq('init', 'TEST1234')", false);
             $response->assertSee("fbq('track', 'Purchase'", false);
-            $response->assertSee('"transaction_id":"' . $order->order_number . '"', false);
+            $response->assertSee('"transaction_id":"'.$order->order_number.'"', false);
             $response->assertSee('"currency":"INR"', false);
             $response->assertSee('"value":1600', false);
-            $response->assertSee('"id":"' . $order->items()->first()->sku . '"', false);
+            $response->assertSee('"id":"'.$order->items()->first()->sku.'"', false);
         }
     }
 
@@ -363,8 +513,8 @@ class CheckoutTest extends TestCase
 
     protected function fakeRazorpayOrder(): void
     {
-        \Illuminate\Support\Facades\Http::fake([
-            'api.razorpay.com/v1/orders' => \Illuminate\Support\Facades\Http::response([
+        Http::fake([
+            'api.razorpay.com/v1/orders' => Http::response([
                 'id' => 'order_EZ6G0001',
                 'amount' => 160000,
                 'currency' => 'INR',
@@ -381,7 +531,7 @@ class CheckoutTest extends TestCase
         ]);
 
         $order = Order::create([
-            'order_number' => 'VAN-0001-' . str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT),
+            'order_number' => 'VAN-0001-'.str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT),
             'user_id' => $user->id,
             'billing_name' => 'Aarav Mehta',
             'billing_mobile' => '9876543210',

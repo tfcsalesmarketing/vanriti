@@ -72,7 +72,7 @@
                 <div class="alert alert-danger py-2 small">{{ session('error') }}</div>
             @endif
 
-            <form method="POST" action="{{ route('admin.login.submit') }}">
+            <form method="POST" action="{{ route('admin.login.submit') }}" novalidate>
                 @csrf
                 <div class="mb-3">
                     <label for="email" class="form-label small fw-semibold">Email Address</label>

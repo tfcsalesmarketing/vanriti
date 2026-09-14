@@ -66,20 +66,20 @@ document.addEventListener('DOMContentLoaded', function () {
         fieldFeedback(root, input).textContent = msg;
     }
 
-    function clearFieldError(input) {
+    function clearFieldError(root, input) {
         if (!input) return;
         input.classList.remove('is-invalid');
-        var fb = input.parentElement.querySelector('.invalid-feedback');
+        var fb = fieldFeedback(root || document, input);
         if (fb) fb.textContent = '';
     }
 
     document.addEventListener('input', function (e) {
         var input = e.target;
         if (!input || !input.name) return;
-        clearFieldError(input);
+        clearFieldError(document, input);
         Array.from(input.form ? input.form.elements : []).forEach(function (el) {
             if (el && el.name && el.name.split('[')[0] === input.name.split('[')[0] && el !== input) {
-                clearFieldError(el);
+                clearFieldError(document, el);
             }
         });
     });
@@ -371,15 +371,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ---- Wishlist toggle (AJAX, product cards) ----
-    document.addEventListener('click', function (e) {
-        var el = e.target;
-        var heart = el.closest ? el.closest('.vr-wish-btn') : null;
-        if (heart) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    });
-
     document.addEventListener('submit', function (e) {
         var el = e.target;
         var form = el.closest ? el.closest('.js-wishlist-form') : null;

@@ -38,19 +38,22 @@ class AuthController extends Controller
             'password' => ['required'],
         ], $this->messages());
 
-        $credentials['email'] = Str::lower(trim($credentials['email']));
+        $email = Str::lower(trim($credentials['email']));
+        $user = User::where('email', $email)->first();
 
-        if (! auth('web')->attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            return back()->withErrors(
+                $user
+                    ? ['password' => 'The password you entered is incorrect.']
+                    : ['email' => 'No account found with this email address.']
+            )->onlyInput('email');
         }
-
-        $user = auth('web')->user();
 
         if ($user->status !== 'active') {
-            auth('web')->logout();
-
             return back()->withErrors(['email' => 'Your account has been suspended. Contact support.']);
         }
+
+        auth('web')->login($user, $request->boolean('remember'));
 
         $user->update(['last_login_at' => now()]);
         session()->regenerate();
@@ -129,6 +132,25 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['valid' => false, 'errors' => $validator->errors()->toArray()], 422);
+        }
+
+        if ($context === 'login' && $request->exists('email') && $request->exists('password')) {
+            $email = Str::lower(trim((string) $request->input('email')));
+            $user = User::where('email', $email)->first();
+
+            if (! $user) {
+                return response()->json([
+                    'valid' => false,
+                    'errors' => ['email' => ['No account found with this email address.']],
+                ], 422);
+            }
+
+            if (! Hash::check((string) $request->input('password'), $user->password)) {
+                return response()->json([
+                    'valid' => false,
+                    'errors' => ['password' => ['The password you entered is incorrect.']],
+                ], 422);
+            }
         }
 
         return response()->json(['valid' => true]);

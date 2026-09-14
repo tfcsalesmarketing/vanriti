@@ -608,9 +608,9 @@ img { max-width: 100%; height: auto; }
     align-items: center;
     justify-content: center;
     gap: 0.15rem;
-    border: 1.5px solid var(--vr-green);
+    border: 1.5px solid var(--vr-green-dark);
     border-radius: var(--vr-radius-pill);
-    background: #fff;
+    background: var(--vr-green-dark);
     padding: 0.15rem;
     width: 100%;
 }
@@ -623,11 +623,11 @@ img { max-width: 100%; height: auto; }
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    font-size: 1rem;
-    color: var(--vr-green-dark);
+    font-size: 1.1rem;
+    color: #fff;
     transition: all var(--vr-transition-fast);
 }
-.vr-card-qty button:hover:not(:disabled) { background: var(--vr-green-soft); color: var(--vr-green-dark); }
+.vr-card-qty button:hover:not(:disabled) { background: rgba(255,255,255,0.18); color: #fff; }
 .vr-card-qty button:disabled { opacity: 0.4; cursor: not-allowed; }
 .vr-card-qty input {
     border: 0;
@@ -635,7 +635,7 @@ img { max-width: 100%; height: auto; }
     text-align: center;
     font-weight: 800;
     font-size: 0.95rem;
-    color: var(--vr-green-dark);
+    color: #fff;
     background: transparent;
 }
 
@@ -2219,6 +2219,11 @@ img { max-width: 100%; height: auto; }
 .password-wrap input.was-validated:invalid {
     padding-right: 4.6rem;
     background-position: right 2.7rem center;
+}
+
+.password-wrap:has(> .form-control.is-invalid) ~ .invalid-feedback,
+.password-wrap:has(> .form-control.was-validated:invalid) ~ .invalid-feedback {
+    display: block;
 }
 
 .vr-nav-logout-btn {

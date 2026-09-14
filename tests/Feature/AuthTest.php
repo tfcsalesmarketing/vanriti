@@ -78,6 +78,17 @@ class AuthTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
+        $response->assertSessionHasErrors('password');
+        $this->assertGuest('web');
+    }
+
+    public function test_login_fails_when_email_does_not_exist(): void
+    {
+        $response = $this->post(route('login.submit'), [
+            'email' => 'nobody@example.com',
+            'password' => 'whatever123',
+        ]);
+
         $response->assertSessionHasErrors('email');
         $this->assertGuest('web');
     }

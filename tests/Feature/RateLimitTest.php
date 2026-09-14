@@ -20,7 +20,7 @@ class RateLimitTest extends TestCase
                     'email' => 'rate-target@example.com',
                     'password' => 'wrong-password',
                 ])
-                ->assertSessionHasErrors('email');
+                ->assertSessionHasErrors('password');
         }
 
         $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10'])
