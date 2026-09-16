@@ -67,7 +67,7 @@
                             <i class="bi bi-geo-alt-fill" style="color:var(--vr-green);font-size:1.2rem;margin-top:2px;"></i>
                             <div>
                                 <div class="fw-semibold small">Address</div>
-                                <span>{{ setting('store_address') }}</span>
+                                <span>{!! nl2br(e(setting('store_address'))) !!}</span>
                             </div>
                         </div>
                     @endif

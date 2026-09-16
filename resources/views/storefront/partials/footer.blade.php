@@ -29,7 +29,7 @@
                 </a>
                 <p class="vr-footer-about">{{ setting('store_tagline', 'PURE BY NATURE') }}. Handcrafted skincare, herbal teas and wellness essentials made with nature in mind.</p>
                 <ul class="list-unstyled vr-footer-contact mb-0">
-                    <li><i class="ri-map-pin-2-line"></i>{{ setting('store_address', '') }}</li>
+                    <li><i class="ri-map-pin-2-line"></i>{!! nl2br(e(setting('store_address', ''))) !!}</li>
                     <li><i class="ri-mail-line"></i>{{ setting('store_email', '') }}</li>
                     <li><i class="ri-phone-line"></i>{{ setting('store_phone', '') }}</li>
                 </ul>

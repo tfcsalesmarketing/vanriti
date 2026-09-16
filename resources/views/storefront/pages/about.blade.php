@@ -47,7 +47,7 @@
 
             <div class="small text-muted mb-0">
                 <span class="fw-semibold text-dark">{{ store_name() }}</span><br>
-                {{ setting('store_address', '') }}<br>
+                {!! nl2br(e(setting('store_address', ''))) !!}<br>
                 {{ setting('store_email', '') }} &middot; {{ setting('store_phone', '') }}
             </div>
         </div>
