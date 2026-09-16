@@ -23,7 +23,7 @@ class ReviewController extends Controller
             $query->whereHas('product', function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%");
             })->orWhere('title', 'like', "%{$q}%")
-              ->orWhere('comment', 'like', "%{$q}%");
+                ->orWhere('comment', 'like', "%{$q}%");
         }
 
         $reviews = $query->orderByDesc('created_at')->paginate(20)->withQueryString();

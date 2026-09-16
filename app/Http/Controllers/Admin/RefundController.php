@@ -19,8 +19,7 @@ class RefundController extends Controller
     public function __construct(
         protected RefundService $refundService,
         protected ActivityLogger $logger,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): View
     {

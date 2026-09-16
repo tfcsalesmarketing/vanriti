@@ -4,15 +4,14 @@ namespace App\Services\Payments;
 
 use App\Models\Order;
 use App\Models\Payment;
-use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
     public function gatewayFor(string $method): PaymentGateway
     {
         return match ($method) {
-            'cod' => new CashOnDeliveryGateway(),
-            'razorpay' => new RazorpayGateway(),
+            'cod' => new CashOnDeliveryGateway,
+            'razorpay' => new RazorpayGateway,
             default => throw new \InvalidArgumentException("Unsupported payment method: {$method}"),
         };
     }
@@ -29,7 +28,7 @@ class PaymentService
             ];
         }
 
-        $razorpay = new RazorpayGateway();
+        $razorpay = new RazorpayGateway;
         if ((bool) setting('online_payment_enabled', true)) {
             $methods['razorpay'] = [
                 'label' => 'Online Payment',
@@ -110,10 +109,10 @@ class PaymentService
         ]);
     }
 
-    public function markFailed(Payment $payment, string $reason = null): void
+    public function markFailed(Payment $payment, ?string $reason = null): void
     {
         $payment->update([
-            'status'    => 'failed',
+            'status' => 'failed',
             'failed_at' => now(),
         ]);
 

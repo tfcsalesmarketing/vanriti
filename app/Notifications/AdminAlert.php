@@ -10,9 +10,7 @@ class AdminAlert extends Notification
 {
     use Queueable;
 
-    public function __construct(public string $title, public string $message)
-    {
-    }
+    public function __construct(public string $title, public string $message) {}
 
     public function via(object $notifiable): array
     {

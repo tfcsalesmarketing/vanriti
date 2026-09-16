@@ -25,8 +25,7 @@ class OrderController extends Controller
     public function __construct(
         protected OrderService $orderService,
         protected ActivityLogger $logger,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): View
     {

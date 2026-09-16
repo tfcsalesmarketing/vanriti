@@ -25,8 +25,7 @@ class MetaCapiService
 
     public function __construct(
         protected EcommerceDataService $ecommerce,
-    ) {
-    }
+    ) {}
 
     /**
      * Deterministic, order-scoped Meta event_id shared by the browser Pixel

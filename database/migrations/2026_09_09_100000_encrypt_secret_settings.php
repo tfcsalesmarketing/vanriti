@@ -17,8 +17,9 @@ return new class extends Migration
         foreach ($rows as $row) {
             try {
                 Crypt::decryptString($row->value);
+
                 continue;
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 DB::table('settings')
                     ->where('id', $row->id)
                     ->update(['value' => Crypt::encryptString((string) $row->value)]);
@@ -39,7 +40,7 @@ return new class extends Migration
                 DB::table('settings')
                     ->where('id', $row->id)
                     ->update(['value' => Crypt::decryptString($row->value)]);
-            } catch (\Throwable) {
+            } catch (Throwable) {
             }
         }
     }

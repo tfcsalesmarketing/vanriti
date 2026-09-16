@@ -10,9 +10,7 @@ use Illuminate\View\View;
 
 class WishlistController extends Controller
 {
-    public function __construct(protected WishlistService $wishlistService)
-    {
-    }
+    public function __construct(protected WishlistService $wishlistService) {}
 
     public function index(): View
     {

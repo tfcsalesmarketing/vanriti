@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReturnRequest;
-use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
@@ -18,8 +17,7 @@ class ReturnController extends Controller
 
     public function __construct(
         protected RefundService $refundService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): View
     {

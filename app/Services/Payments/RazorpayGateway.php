@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 class RazorpayGateway implements PaymentGateway
 {
     protected string $keyId;
+
     protected string $keySecret;
 
     public function __construct()
@@ -76,7 +77,7 @@ class RazorpayGateway implements PaymentGateway
         return true;
     }
 
-    public function refund(Payment $payment, float $amount, string $reference = null): array
+    public function refund(Payment $payment, float $amount, ?string $reference = null): array
     {
         $response = Http::withBasicAuth($this->keyId, $this->keySecret)
             ->asJson()

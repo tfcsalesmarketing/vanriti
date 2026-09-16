@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Consent\ConsentService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\WelcomeNotification;
@@ -24,6 +25,7 @@ class AuthController extends Controller
     public function __construct(
         protected CartService $cartService,
         protected WishlistService $wishlistService,
+        protected ConsentService $consentService,
     ) {}
 
     public function showLogin(): View
@@ -61,6 +63,7 @@ class AuthController extends Controller
 
         $this->cartService->mergeGuestCartIntoUser($user);
         $this->wishlistService->mergeGuestIntoUser($user);
+        $this->consentService->mergeAnonymousIntoUser($user);
 
         return redirect()->intended(route('account.dashboard'));
     }
@@ -110,6 +113,7 @@ class AuthController extends Controller
 
         $this->cartService->mergeGuestCartIntoUser($user);
         $this->wishlistService->mergeGuestIntoUser($user);
+        $this->consentService->mergeAnonymousIntoUser($user);
 
         return redirect()->intended(route('account.dashboard'));
     }

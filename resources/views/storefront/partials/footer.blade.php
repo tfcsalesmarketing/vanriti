@@ -97,7 +97,7 @@
         </div>
 
         <div class="vr-footer-bottom">
-            <span>&copy; {{ date('Y') }} {{ store_name() }}. All rights reserved.</span>
+            <span>&copy; Copyright TFC Sales &amp; Marketing</span>
         </div>
     </div>
 </footer>

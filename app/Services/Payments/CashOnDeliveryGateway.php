@@ -22,7 +22,7 @@ class CashOnDeliveryGateway implements PaymentGateway
         return true;
     }
 
-    public function refund(Payment $payment, float $amount, string $reference = null): array
+    public function refund(Payment $payment, float $amount, ?string $reference = null): array
     {
         return [
             'status' => 'success',

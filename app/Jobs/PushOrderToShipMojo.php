@@ -16,16 +16,16 @@ class PushOrderToShipMojo implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 30; // seconds between retries
 
-    public function __construct(public Order $order)
-    {
-    }
+    public function __construct(public Order $order) {}
 
     public function handle(ShipMojoService $shipmojo): void
     {
         if (! (bool) setting('shipmojo_enabled', false)) {
             Log::info('ShipMojo: Auto-push skipped (disabled)', ['order' => $this->order->order_number]);
+
             return;
         }
 
@@ -34,8 +34,8 @@ class PushOrderToShipMojo implements ShouldQueue
 
             if (($response['result'] ?? '0') !== '1') {
                 Log::warning('ShipMojo: Auto-push returned failure', [
-                    'order'    => $this->order->order_number,
-                    'message'  => $response['message'] ?? 'Unknown error',
+                    'order' => $this->order->order_number,
+                    'message' => $response['message'] ?? 'Unknown error',
                 ]);
             }
 
@@ -43,7 +43,7 @@ class PushOrderToShipMojo implements ShouldQueue
             if ((bool) setting('shipmojo_auto_assign', true) && ($response['result'] ?? '0') === '1') {
                 $assignResponse = $shipmojo->autoAssign($this->order);
                 Log::info('ShipMojo: Auto-assign result', [
-                    'order'    => $this->order->order_number,
+                    'order' => $this->order->order_number,
                     'response' => $assignResponse,
                 ]);
             }

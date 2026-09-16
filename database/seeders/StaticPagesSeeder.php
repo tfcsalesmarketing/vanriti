@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Page;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class StaticPagesSeeder extends Seeder
 {

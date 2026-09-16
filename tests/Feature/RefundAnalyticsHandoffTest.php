@@ -99,10 +99,9 @@ class RefundAnalyticsHandoffTest extends TestCase
 
     protected function serviceWithGateway(PaymentGateway $gateway): RefundService
     {
-        $paymentService = new class($gateway) extends PaymentService {
-            public function __construct(private PaymentGateway $gateway)
-            {
-            }
+        $paymentService = new class($gateway) extends PaymentService
+        {
+            public function __construct(private PaymentGateway $gateway) {}
 
             public function gatewayFor(string $method): PaymentGateway
             {
@@ -165,10 +164,11 @@ class RefundAnalyticsHandoffTest extends TestCase
         $order = $this->deliveredOrder($user, $product);
         $refund = $this->makeRefund($order, $user);
 
-        $gateway = new class implements PaymentGateway {
+        $gateway = new class implements PaymentGateway
+        {
             public int $refundCalls = 0;
 
-            public function refund(Payment $payment, float $amount, string $reference = null): array
+            public function refund(Payment $payment, float $amount, ?string $reference = null): array
             {
                 $this->refundCalls++;
 
@@ -264,8 +264,9 @@ class RefundAnalyticsHandoffTest extends TestCase
         $order = $this->deliveredOrder($user, $product);
         $refund = $this->makeRefund($order, $user);
 
-        $gateway = new class implements PaymentGateway {
-            public function refund(Payment $payment, float $amount, string $reference = null): array
+        $gateway = new class implements PaymentGateway
+        {
+            public function refund(Payment $payment, float $amount, ?string $reference = null): array
             {
                 throw new \RuntimeException('Gateway rejected refund');
             }

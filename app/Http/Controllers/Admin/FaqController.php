@@ -20,6 +20,7 @@ class FaqController extends Controller
 
         $faqs->getCollection()->transform(function ($faq) {
             $faq->category_group = $faq->category ?: 'Uncategorized';
+
             return $faq;
         });
 

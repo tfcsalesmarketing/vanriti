@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Cart;
+use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Category;
 use App\Models\Refund;
 use App\Models\ReturnItem;
 use App\Models\ReturnRequest;

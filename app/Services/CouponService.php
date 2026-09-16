@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Cart;
 use App\Models\Coupon;
-use App\Models\Product;
 use App\Models\User;
 
 class CouponService

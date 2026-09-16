@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendMetaCapiPurchase;
 use App\Models\AnalyticsConversion;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
-use App\Jobs\SendMetaCapiPurchase;
 use App\Services\Analytics\ConversionService;
-use App\Services\Analytics\EcommerceDataService;
 use App\Services\Analytics\MetaCapiService;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,13 +43,13 @@ class MetaCapiTest extends TestCase
         config(['meta.api_version' => '26.0']);
         config(['meta.max_attempts' => 3]);
         config(['meta.delivery_category' => 'home_delivery']);
-        \App\Models\Setting::updateOrCreate(['key' => 'meta_pixel_id'], [
+        Setting::updateOrCreate(['key' => 'meta_pixel_id'], [
             'value' => 'TEST1234',
             'group' => 'seo',
             'label' => 'Meta Pixel ID',
             'type' => 'text',
         ]);
-        \App\Models\Setting::updateOrCreate(['key' => 'meta_capi_access_token'], [
+        Setting::updateOrCreate(['key' => 'meta_capi_access_token'], [
             'value' => 'secret_token',
             'group' => 'seo',
             'label' => 'Meta CAPI Access Token',
@@ -64,7 +64,7 @@ class MetaCapiTest extends TestCase
         ]);
     }
 
-    public function test_A_eligible_cod_purchase_delivers_exactly_one_server_conversion(): void
+    public function test_a_eligible_cod_purchase_delivers_exactly_one_server_conversion(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -87,7 +87,7 @@ class MetaCapiTest extends TestCase
         $this->assertEqualsWithDelta((float) $order->grand_total, $payload['custom_data']['value'], 0.01);
     }
 
-    public function test_B_eligible_razorpay_purchase_delivers_exactly_one_server_conversion(): void
+    public function test_b_eligible_razorpay_purchase_delivers_exactly_one_server_conversion(): void
     {
         $this->enableMeta();
         $this->enableRazorpay();
@@ -118,7 +118,7 @@ class MetaCapiTest extends TestCase
         $this->assertCount(1, $this->graphRecorded());
     }
 
-    public function test_C_unverified_razorpay_payment_generates_no_capi_purchase(): void
+    public function test_c_unverified_razorpay_payment_generates_no_capi_purchase(): void
     {
         $this->enableMeta();
         $this->enableRazorpay();
@@ -138,7 +138,7 @@ class MetaCapiTest extends TestCase
         $this->assertCount(0, $this->graphRecorded());
     }
 
-    public function test_D_cancelled_order_generates_no_capi_purchase(): void
+    public function test_d_cancelled_order_generates_no_capi_purchase(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -154,7 +154,7 @@ class MetaCapiTest extends TestCase
         $this->assertCount(0, $this->graphRecorded());
     }
 
-    public function test_E_failed_order_generates_no_capi_purchase(): void
+    public function test_e_failed_order_generates_no_capi_purchase(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -169,7 +169,7 @@ class MetaCapiTest extends TestCase
         $this->assertCount(0, $this->graphRecorded());
     }
 
-    public function test_F_refunded_order_generates_no_capi_purchase(): void
+    public function test_f_refunded_order_generates_no_capi_purchase(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -187,7 +187,7 @@ class MetaCapiTest extends TestCase
         $this->assertStringNotContainsString("fbq('track', 'Purchase'", $content);
     }
 
-    public function test_G_partially_refunded_order_generates_no_capi_purchase(): void
+    public function test_g_partially_refunded_order_generates_no_capi_purchase(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -201,7 +201,7 @@ class MetaCapiTest extends TestCase
         $this->assertCount(0, $this->graphRecorded());
     }
 
-    public function test_H_repeated_conversion_recording_and_delivery_are_idempotent(): void
+    public function test_h_repeated_conversion_recording_and_delivery_are_idempotent(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -223,7 +223,7 @@ class MetaCapiTest extends TestCase
         $this->assertSame('sent', AnalyticsConversion::first()->meta_state);
     }
 
-    public function test_I_browser_pixel_and_capi_use_the_same_event_id(): void
+    public function test_i_browser_pixel_and_capi_use_the_same_event_id(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -251,7 +251,7 @@ class MetaCapiTest extends TestCase
         $this->assertSame((string) $order->items()->first()->sku, $payload['custom_data']['contents'][0]['id']);
     }
 
-    public function test_J_capi_value_equals_canonical_grand_total(): void
+    public function test_j_capi_value_equals_canonical_grand_total(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -267,7 +267,7 @@ class MetaCapiTest extends TestCase
         $this->assertEqualsWithDelta((float) $order->grand_total, $payload['custom_data']['value'], 0.01);
     }
 
-    public function test_K_capi_currency_is_inr(): void
+    public function test_k_capi_currency_is_inr(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -282,7 +282,7 @@ class MetaCapiTest extends TestCase
         $this->assertSame('INR', $payload['custom_data']['currency']);
     }
 
-    public function test_L_capi_contents_match_canonical_order_items(): void
+    public function test_l_capi_contents_match_canonical_order_items(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -302,7 +302,7 @@ class MetaCapiTest extends TestCase
         $this->assertSame('home_delivery', $contents[0]['delivery_category']);
     }
 
-    public function test_M_no_access_token_appears_in_rendered_html(): void
+    public function test_m_no_access_token_appears_in_rendered_html(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -316,7 +316,7 @@ class MetaCapiTest extends TestCase
         $this->assertStringNotContainsString('access_token', $content);
     }
 
-    public function test_N_no_access_token_appears_in_javascript_or_datalayer(): void
+    public function test_n_no_access_token_appears_in_javascript_or_datalayer(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -337,7 +337,7 @@ class MetaCapiTest extends TestCase
         $this->assertStringNotContainsString('access_token', $success);
     }
 
-    public function test_O_no_plaintext_sensitive_user_data_is_transmitted_or_logged(): void
+    public function test_o_no_plaintext_sensitive_user_data_is_transmitted_or_logged(): void
     {
         $this->enableMeta();
         Http::fake([
@@ -369,7 +369,7 @@ class MetaCapiTest extends TestCase
         ]);
     }
 
-    public function test_P_capi_failure_does_not_fail_checkout(): void
+    public function test_p_capi_failure_does_not_fail_checkout(): void
     {
         $this->enableMeta();
         $this->enableRazorpay();
@@ -415,7 +415,7 @@ class MetaCapiTest extends TestCase
         $this->assertSame('failed', $ledger2->meta_state);
     }
 
-    public function test_Q_retry_behavior_is_bounded_and_idempotent(): void
+    public function test_q_retry_behavior_is_bounded_and_idempotent(): void
     {
         $this->enableMeta();
 
@@ -456,7 +456,7 @@ class MetaCapiTest extends TestCase
         $this->assertSame($recordedAfterRetry, count($this->graphRecorded()));
     }
 
-    public function test_R_v26_payload_adheres_to_current_capi_schema(): void
+    public function test_r_v26_payload_adheres_to_current_capi_schema(): void
     {
         $this->enableMeta();
         $this->fakeGraphSuccess();
@@ -468,7 +468,7 @@ class MetaCapiTest extends TestCase
         // Every website-event field v26 expects, including the required
         // client_user_agent, the browser client_ip_address, and a Test Events
         // code routed through the job's setting lookup.
-        \App\Models\Setting::updateOrCreate(['key' => 'meta_test_event_code'], ['value' => 'TEST-V26']);
+        Setting::updateOrCreate(['key' => 'meta_test_event_code'], ['value' => 'TEST-V26']);
         (new SendMetaCapiPurchase(
             $order,
             'https://vanriti.test/checkout/success/1',
@@ -508,7 +508,7 @@ class MetaCapiTest extends TestCase
         $this->assertArrayNotHasKey('product_id', $item);
     }
 
-    public function test_R2_phone_is_normalized_to_e164_with_leading_zero_stripped(): void
+    public function test_r2_phone_is_normalized_to_e164_with_leading_zero_stripped(): void
     {
         $this->enableMeta();
 
@@ -584,10 +584,10 @@ class MetaCapiTest extends TestCase
 
     protected function enableRazorpay(): void
     {
-        \App\Models\Setting::updateOrCreate(['key' => 'online_payment_enabled'], ['value' => '1']);
-        \App\Models\Setting::updateOrCreate(['key' => 'razorpay_enabled'], ['value' => '1']);
-        \App\Models\Setting::updateOrCreate(['key' => 'razorpay_key_id'], ['value' => 'rzp_test_key']);
-        \App\Models\Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => 'rzp_test_secret']);
+        Setting::updateOrCreate(['key' => 'online_payment_enabled'], ['value' => '1']);
+        Setting::updateOrCreate(['key' => 'razorpay_enabled'], ['value' => '1']);
+        Setting::updateOrCreate(['key' => 'razorpay_key_id'], ['value' => 'rzp_test_key']);
+        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => 'rzp_test_secret']);
     }
 
     protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus): Order

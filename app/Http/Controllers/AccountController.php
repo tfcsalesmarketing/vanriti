@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Address;
 use App\Models\Order;
-use App\Models\ReturnRequest;
 use App\Models\ReturnItem;
+use App\Models\ReturnRequest;
 use App\Models\Review;
-use App\Models\User;
 use App\Services\OrderService;
 use App\Services\RefundService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,9 +19,7 @@ use Illuminate\View\View;
 
 class AccountController extends Controller
 {
-    public function __construct(protected OrderService $orderService, protected RefundService $refundService)
-    {
-    }
+    public function __construct(protected OrderService $orderService, protected RefundService $refundService) {}
 
     public function dashboard(): View
     {
@@ -151,7 +149,7 @@ class AccountController extends Controller
                 'status' => 'pending',
                 'is_verified_purchase' => true,
             ]);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // SQLSTATE 23000 (integrity constraint) covers unique violations on
             // both MySQL (1062) and SQLite (19) without being driver-specific.
             if (($e->errorInfo[0] ?? null) === '23000'
@@ -175,7 +173,7 @@ class AccountController extends Controller
 
     public function createAddress(): View
     {
-        $address = new \App\Models\Address();
+        $address = new Address;
 
         return view('storefront.account.address-create', compact('address'));
     }

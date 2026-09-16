@@ -38,15 +38,15 @@ class InventoryController extends Controller
             ->withQueryString();
 
         $totalSkus = DB::table('products')
-                ->whereNotNull('sku')->where('sku', '!=', '')->count()
+            ->whereNotNull('sku')->where('sku', '!=', '')->count()
             + DB::table('product_variants')
                 ->whereNotNull('sku')->where('sku', '!=', '')->count();
 
         $outOfStock = DB::table('products')
-                ->whereNotNull('sku')->where('sku', '!=', '')
-                ->where(function ($q) {
-                    $q->whereNull('stock')->orWhere('stock', '<=', 0);
-                })->count()
+            ->whereNotNull('sku')->where('sku', '!=', '')
+            ->where(function ($q) {
+                $q->whereNull('stock')->orWhere('stock', '<=', 0);
+            })->count()
             + DB::table('product_variants')
                 ->whereNotNull('sku')->where('sku', '!=', '')
                 ->where(function ($q) {

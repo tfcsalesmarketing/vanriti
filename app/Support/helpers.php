@@ -23,7 +23,7 @@ if (! function_exists('secret_setting')) {
         if (is_string($value)) {
             try {
                 return Crypt::decryptString($value);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return $value;
             }
         }

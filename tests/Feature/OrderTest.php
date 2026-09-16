@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Cart;
 use App\Models\Coupon;
-use App\Models\CouponUsage;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;

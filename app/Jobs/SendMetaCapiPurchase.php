@@ -33,8 +33,7 @@ class SendMetaCapiPurchase implements ShouldQueue
         public ?string $fbc = null,
         public ?string $clientIpAddress = null,
         public ?string $clientUserAgent = null,
-    ) {
-    }
+    ) {}
 
     public function handle(MetaCapiService $meta): void
     {

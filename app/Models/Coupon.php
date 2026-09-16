@@ -63,7 +63,7 @@ class Coupon extends Model
             });
     }
 
-    public function isUsable(Carbon $at = null): bool
+    public function isUsable(?Carbon $at = null): bool
     {
         $at = $at ?? Carbon::now();
 

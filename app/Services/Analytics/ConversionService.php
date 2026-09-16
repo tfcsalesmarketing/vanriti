@@ -17,8 +17,7 @@ class ConversionService
 {
     public function __construct(
         protected EcommerceDataService $ecommerce,
-    ) {
-    }
+    ) {}
 
     /**
      * Record the canonical purchase conversion for an order if (and only if)

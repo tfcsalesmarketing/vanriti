@@ -22,7 +22,7 @@ interface PaymentGateway
     /**
      * Process a refund for a payment.
      */
-    public function refund(Payment $payment, float $amount, string $reference = null): array;
+    public function refund(Payment $payment, float $amount, ?string $reference = null): array;
 
     /**
      * @return array{key_id: string, currency: string}

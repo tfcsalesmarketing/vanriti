@@ -6,9 +6,8 @@ use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Refund;
 use App\Models\ReturnRequest;
-use App\Models\User;
+use App\Notifications\AdminAlert;
 use App\Notifications\OrderStatusNotification;
-use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
@@ -50,7 +49,7 @@ class NotificationService
     public function notifyAdmins(string $title, string $message, array $channels = ['database']): void
     {
         foreach (Admin::where('status', 'active')->get() as $admin) {
-            $admin->notify(new \App\Notifications\AdminAlert($title, $message));
+            $admin->notify(new AdminAlert($title, $message));
         }
     }
 }

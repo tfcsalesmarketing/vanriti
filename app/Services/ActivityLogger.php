@@ -58,12 +58,12 @@ class ActivityLogger
         $this->log('price_changed', $product, 'Price changed for "'.$product->name.'".', ['price' => $old], ['price' => $new], $admin);
     }
 
-    public function stockChanged(Admin $admin, mixed $stockable, $old, $new, string $reason = null): void
+    public function stockChanged(Admin $admin, mixed $stockable, $old, $new, ?string $reason = null): void
     {
         $this->log('stock_changed', $stockable, 'Stock updated. '.$reason, ['stock' => $old], ['stock' => $new], $admin);
     }
 
-    public function orderStatusChanged(Admin $admin, mixed $order, $old, $new, string $description = null): void
+    public function orderStatusChanged(Admin $admin, mixed $order, $old, $new, ?string $description = null): void
     {
         $this->log('order_status_changed', $order, $description, ['status' => $old], ['status' => $new], $admin);
     }

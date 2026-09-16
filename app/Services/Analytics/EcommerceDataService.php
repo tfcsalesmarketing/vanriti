@@ -117,8 +117,6 @@ class EcommerceDataService
      * Shared GA4 ecommerce core for the checkout funnel (currency, merchandise
      * value, items). Accepts the live cart or a persisted order so the COD
      * confirmation page can reuse the same contract after the cart is emptied.
-     *
-     * @param  Cart|Order  $source
      */
     public function checkoutEcommerce(Cart|Order $source): array
     {

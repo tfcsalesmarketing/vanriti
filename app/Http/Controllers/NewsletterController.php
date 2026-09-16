@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Newsletter;
-use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 
 class NewsletterController extends Controller
 {

@@ -60,7 +60,7 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:admins,email,' . $admin->id,
+            'email' => 'required|email|unique:admins,email,'.$admin->id,
             'phone' => 'nullable|string|max:255',
             'password' => 'nullable|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended',
@@ -75,7 +75,7 @@ class AdminUserController extends Controller
             'status' => $validated['status'],
         ];
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $data['password'] = $validated['password'];
         }
 

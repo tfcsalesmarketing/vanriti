@@ -33,9 +33,9 @@ class Shipment extends Model
     protected function casts(): array
     {
         return [
-            'shipped_at'         => 'datetime',
+            'shipped_at' => 'datetime',
             'estimated_delivery' => 'datetime',
-            'delivered_at'       => 'datetime',
+            'delivered_at' => 'datetime',
             'shipmojo_pushed_at' => 'datetime',
         ];
     }

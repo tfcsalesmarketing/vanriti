@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
@@ -52,7 +53,7 @@ class ProductSeeder extends Seeder
                 ]
             );
 
-            $category = \App\Models\Category::where('slug', $data['category_slug'])->first();
+            $category = Category::where('slug', $data['category_slug'])->first();
             if ($category) {
                 $product->categories()->syncWithoutDetaching([$category->id => ['is_primary' => true]]);
             }

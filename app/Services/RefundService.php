@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Order;
 use App\Models\Refund;
 use App\Models\RefundTransaction;
 use App\Models\ReturnRequest;
@@ -23,10 +22,9 @@ class RefundService
     public function __construct(
         protected PaymentService $paymentService,
         protected EcommerceDataService $ecommerce,
-    ) {
-    }
+    ) {}
 
-    public function createFromReturn(ReturnRequest $returnRequest, User $user, float $amount, string $type = 'full', string $reason = null): Refund
+    public function createFromReturn(ReturnRequest $returnRequest, User $user, float $amount, string $type = 'full', ?string $reason = null): Refund
     {
         $order = $returnRequest->order;
 
@@ -48,7 +46,7 @@ class RefundService
         });
     }
 
-    public function approve(Refund $refund, string $adminNote = null): Refund
+    public function approve(Refund $refund, ?string $adminNote = null): Refund
     {
         $refund->update([
             'status' => 'approved',
@@ -59,7 +57,7 @@ class RefundService
         return $refund;
     }
 
-    public function reject(Refund $refund, string $adminNote = null): Refund
+    public function reject(Refund $refund, ?string $adminNote = null): Refund
     {
         $refund->update([
             'status' => 'rejected',
@@ -77,7 +75,7 @@ class RefundService
         return $refund;
     }
 
-    public function complete(Refund $refund, string $gatewayReference = null): Refund
+    public function complete(Refund $refund, ?string $gatewayReference = null): Refund
     {
         if ($refund->status === 'completed') {
             return $refund;

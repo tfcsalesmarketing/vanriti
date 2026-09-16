@@ -12,9 +12,7 @@ class RefundStatusNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Refund $refund)
-    {
-    }
+    public function __construct(public Refund $refund) {}
 
     public function via(object $notifiable): array
     {

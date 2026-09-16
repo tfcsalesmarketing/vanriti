@@ -56,7 +56,7 @@ class PageController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:pages,slug,' . $page->id,
+            'slug' => 'nullable|string|unique:pages,slug,'.$page->id,
             'content' => 'nullable|string',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',

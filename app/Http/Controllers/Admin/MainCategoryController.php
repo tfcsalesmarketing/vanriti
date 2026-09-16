@@ -66,7 +66,7 @@ class MainCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:categories,slug,' . $main_category->id,
+            'slug' => 'nullable|string|unique:categories,slug,'.$main_category->id,
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:2048',
             'status' => 'required|in:active,inactive',

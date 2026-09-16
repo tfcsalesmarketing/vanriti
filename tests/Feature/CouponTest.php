@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\CouponUsage;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CouponService;
@@ -232,7 +233,7 @@ class CouponTest extends TestCase
             'first_order_only' => false,
         ]);
 
-        $order = \App\Models\Order::create([
+        $order = Order::create([
             'user_id' => $user->id,
             'order_number' => 'VAN-2026-000001',
             'billing_name' => 'A',

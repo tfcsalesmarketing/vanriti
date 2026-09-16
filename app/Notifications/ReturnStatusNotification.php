@@ -12,9 +12,7 @@ class ReturnStatusNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public ReturnRequest $returnRequest, public string $status = 'requested')
-    {
-    }
+    public function __construct(public ReturnRequest $returnRequest, public string $status = 'requested') {}
 
     public function via(object $notifiable): array
     {
