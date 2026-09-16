@@ -97,7 +97,7 @@
         </div>
 
         <div class="vr-footer-bottom">
-            <span>&copy; Copyright TFC Sales &amp; Marketing</span>
+            <span>Vanriti &copy; Copyright TFC Sales &amp; Marketing</span>
         </div>
     </div>
 </footer>
