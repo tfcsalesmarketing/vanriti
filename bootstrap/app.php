@@ -10,7 +10,9 @@ use App\Providers\DadiServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -49,7 +51,25 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Admin panel gets its own set of error pages (resources/views/admin/errors).
+        // Any other request (storefront) falls through to Laravel's default error
+        // views (resources/views/errors), which stay untouched.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('admin', 'admin/*')) {
+                return;
+            }
+
+            $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
+            $status = in_array($status, [400, 401, 402, 403, 404, 405, 419, 429, 500, 503], true)
+                ? $status
+                : 500;
+
+            $view = view()->exists("admin.errors.{$status}")
+                ? "admin.errors.{$status}"
+                : 'admin.errors.generic';
+
+            return response()->view($view, ['exception' => $e, 'status' => $status], $status);
+        });
     })
     ->withProviders([
         DadiServiceProvider::class,

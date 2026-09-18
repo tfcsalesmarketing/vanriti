@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AnalyticsCommandCenterService
 {
-    public const VERSION = '16';
+    public const VERSION = '17';
 
     protected const CACHE_TTL = 300;
 
