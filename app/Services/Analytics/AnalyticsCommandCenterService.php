@@ -350,10 +350,12 @@ class AnalyticsCommandCenterService
                 DB::raw('COALESCE(p.sku, oi.sku) as sku'),
                 DB::raw('SUM(oi.quantity) as units'),
                 DB::raw('SUM(oi.total_price) as revenue'),
-                DB::raw('COUNT(DISTINCT oi.order_id) as orders')
+                DB::raw('COUNT(DISTINCT oi.order_id) as orders'),
+                DB::raw('COALESCE(p.status, \'\') as status'),
+                DB::raw('COALESCE(p.stock, 0) as stock')
             )
             ->leftJoin('products as p', 'p.id', '=', 'oi.product_id')
-            ->groupBy('oi.product_id', DB::raw('COALESCE(p.name, oi.product_name)'), DB::raw('COALESCE(p.sku, oi.sku)'));
+            ->groupBy('oi.product_id', DB::raw('COALESCE(p.name, oi.product_name)'), DB::raw('COALESCE(p.sku, oi.sku)'), DB::raw('COALESCE(p.status, \'\')'), DB::raw('COALESCE(p.stock, 0)'));
     }
 
     protected function dadi(array $bounds): array
