@@ -33,10 +33,12 @@ class TestCredentialsSeeder extends Seeder
             [
                 'name' => 'Test Admin',
                 'password' => Hash::make(env('ADMIN_PASSWORD', 'Vanriti@2026')),
-                'is_super_admin' => true,
                 'status' => 'active',
             ]
         );
+
+        // is_super_admin is guarded; promote explicitly.
+        $admin->makeSuperAdmin();
 
         $superAdmin = Role::where('slug', 'super-admin')->first();
         if ($superAdmin && ! $admin->roles()->where('roles.id', $superAdmin->id)->exists()) {

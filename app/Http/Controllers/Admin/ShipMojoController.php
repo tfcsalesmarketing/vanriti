@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ReturnRequest;
-use App\Services\NotificationService;
 use App\Services\ShipMojoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ShipMojoController extends Controller
 {
@@ -26,7 +27,7 @@ class ShipMojoController extends Controller
                 return back()->with('success', 'Order pushed to ShipMojo successfully! Reference: '.($response['data']['reference_id'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
         } catch (\Throwable $e) {
             return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
@@ -44,7 +45,7 @@ class ShipMojoController extends Controller
                 return back()->with('success', 'Courier assigned! AWB: '.($data['awb_number'] ?? 'N/A').' via '.($data['courier_company'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
         } catch (\Throwable $e) {
             return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
@@ -59,16 +60,13 @@ class ShipMojoController extends Controller
             if (($response['result'] ?? '0') === '1') {
                 $data = $response['data'] ?? [];
 
-                // Order is now with the courier: notify shipped with tracking info.
-                if (in_array($order->order_status, ['pending', 'confirmed', 'processing', 'packed'], true)) {
-                    $order->refresh()->load('user');
-                    app(NotificationService::class)->orderStatusChanged($order, 'shipped');
-                }
+                // The service syncs the order to "shipped" and notifies the
+                // customer; no per-request notification here.
 
                 return back()->with('success', 'Pickup scheduled! AWB: '.($data['awb_number'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
         } catch (\Throwable $e) {
             return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
@@ -84,7 +82,7 @@ class ShipMojoController extends Controller
                 return back()->with('success', 'Shipment cancelled in ShipMojo.');
             }
 
-            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
         } catch (\Throwable $e) {
             return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
@@ -103,13 +101,18 @@ class ShipMojoController extends Controller
             $response = $this->shipmojo->getLabel($shipment->awb_number);
 
             if (($response['result'] ?? '0') !== '1' || empty($response['data'][0]['label'])) {
-                return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Label not available'));
+                return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
             }
 
             // Labels generated means the order is packed and ready to dispatch.
-            if (in_array($order->order_status, ['pending', 'confirmed', 'processing', 'packed'], true)) {
+            // The courier-assignment flow already moves the order to "packed",
+            // so only alert if it somehow had not yet reached that state.
+            if (in_array($order->order_status, ['pending', 'confirmed', 'processing'], true)) {
                 $order->refresh()->load('user');
-                app(NotificationService::class)->orderStatusChanged($order, 'packed');
+
+                if ($order->user) {
+                    app(\App\Services\NotificationService::class)->orderStatusChanged($order, 'packed');
+                }
             }
 
             // Decode base64 PNG and return as download
@@ -132,21 +135,206 @@ class ShipMojoController extends Controller
             $response = $this->shipmojo->syncTracking($order);
 
             if (($response['result'] ?? '0') === '1') {
-                $status = $response['data']['current_status'] ?? 'Unknown';
+                $status = $response['data']['current_status'] ?? $response['data']['status'] ?? 'Unknown';
 
-                $shipment = $order->shipments()->latest()->first();
-                if ($shipment && in_array($shipment->status, ['out_for_delivery', 'delivered'], true)) {
-                    $order->refresh()->load('user');
-                    app(NotificationService::class)->orderStatusChanged($order, $shipment->status);
-                }
+                // The service syncs the order status (shipped / out_for_delivery /
+                // delivered / cancelled) and notifies the customer on change.
 
                 return back()->with('success', "Tracking synced! Current status: {$status}");
             }
 
-            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
         } catch (\Throwable $e) {
             return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }
+    }
+
+    // ── Bulk Push to ShipMojo ─────────────────────────────────────────────────
+    public function bulkPush(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::whereKey($data['order_ids'])->get();
+
+        [$succeeded, $failed, $errors] = $this->runBulk(
+            $orders,
+            fn (Order $order) => $this->shipmojo->pushOrder($order)
+        );
+
+        return $this->bulkRedirect($succeeded, $failed, $errors, 'pushed to ShipMojo');
+    }
+
+    // ── Bulk Auto-Assign Courier ──────────────────────────────────────────────
+    public function bulkAutoAssign(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::with('shipments')->whereKey($data['order_ids'])->get();
+
+        [$succeeded, $failed, $errors] = $this->runBulk(
+            $orders,
+            function (Order $order) {
+                $shipment = $order->shipments()->latest()->first();
+
+                if (! $shipment?->isPushedToShipMojo()) {
+                    throw new \RuntimeException('Order has not been pushed to ShipMojo.');
+                }
+                if ($shipment->hasAwb()) {
+                    throw new \RuntimeException('Courier already assigned (AWB exists).');
+                }
+
+                return $this->shipmojo->autoAssign($order);
+            }
+        );
+
+        return $this->bulkRedirect($succeeded, $failed, $errors, 'courier assigned');
+    }
+
+    // ── Bulk Schedule Pickup ──────────────────────────────────────────────────
+    public function bulkSchedulePickup(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::with('shipments')->whereKey($data['order_ids'])->get();
+
+        [$succeeded, $failed, $errors] = $this->runBulk(
+            $orders,
+            function (Order $order) {
+                $shipment = $order->shipments()->latest()->first();
+
+                if (! $shipment?->isPushedToShipMojo()) {
+                    throw new \RuntimeException('Order has not been pushed to ShipMojo.');
+                }
+                if (! $shipment->hasAwb()) {
+                    throw new \RuntimeException('No AWB assigned; assign a courier first.');
+                }
+
+                return $this->shipmojo->schedulePickup($order);
+            }
+        );
+
+        return $this->bulkRedirect($succeeded, $failed, $errors, 'pickup scheduled');
+    }
+
+    // ── Bulk Download Labels (ZIP) ────────────────────────────────────────────
+    public function bulkLabels(Request $request): Response|JsonResponse|BinaryFileResponse|RedirectResponse
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::with('shipments')->whereKey($data['order_ids'])->get();
+
+        $labels = [];
+
+        foreach ($orders as $order) {
+            $shipment = $order->shipments()->latest()->first();
+
+            if (! $shipment?->awb_number) {
+                continue;
+            }
+
+            try {
+                $response = $this->shipmojo->getLabel($shipment->awb_number);
+
+                if (($response['result'] ?? '0') !== '1' || empty($response['data'][0]['label'])) {
+                    continue;
+                }
+
+                $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $response['data'][0]['label']);
+                $imageData = base64_decode((string) $base64, true);
+
+                if ($imageData !== false) {
+                    $labels[$order->order_number.'-'.$shipment->awb_number.'.png'] = $imageData;
+                }
+            } catch (\Throwable $e) {
+                //
+            }
+        }
+
+        if ($labels === []) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'No labels were available for the selected orders.'], 422);
+            }
+
+            return back()->with('error', 'No labels were available for the selected orders.');
+        }
+
+        if (! class_exists(\ZipArchive::class)) {
+            $first = array_key_first($labels);
+
+            return response($labels[$first], 200)
+                ->header('Content-Type', 'image/png')
+                ->header('Content-Disposition', 'attachment; filename="label-'.$first.'"');
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'sm_labels_').'.zip';
+
+        $zip = new \ZipArchive;
+        $zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+        foreach ($labels as $name => $content) {
+            $zip->addFromString($name, $content);
+        }
+
+        $zip->close();
+
+        return response()->download($tmp, 'shipmojo-labels-'.now()->format('Y-m-d-Hi').'.zip')
+            ->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Run a ShipMojo action against each order, collecting per-order results.
+     *
+     * @return array{0: int, 1: int, 2: array<int, string>}
+     */
+    protected function runBulk(iterable $orders, callable $action): array
+    {
+        $succeeded = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($orders as $order) {
+            try {
+                $response = $action($order);
+
+                if (($response['result'] ?? '0') === '1') {
+                    $succeeded++;
+                } else {
+                    $failed++;
+                    $errors[] = $order->order_number.': '.$this->shipmojo->errorMessage($response);
+                }
+            } catch (\Throwable $e) {
+                $failed++;
+                $errors[] = $order->order_number.': '.$e->getMessage();
+            }
+        }
+
+        return [$succeeded, $failed, $errors];
+    }
+
+    protected function bulkRedirect(int $succeeded, int $failed, array $errors, string $action): RedirectResponse
+    {
+        if ($failed === 0) {
+            return back()->with('success', "{$succeeded} order(s) {$action} successfully.");
+        }
+
+        $details = $errors !== [] ? ' '.implode(' | ', array_slice($errors, 0, 5)) : '';
+
+        return back()->with(
+            $succeeded === 0 ? 'error' : 'warning',
+            "{$succeeded} order(s) {$action}, {$failed} failed.{$details}"
+        );
     }
 
     // ── Push Return Order ──────────────────────────────────────────────────────
@@ -168,7 +356,7 @@ class ShipMojoController extends Controller
                 return back()->with('success', 'Return order pushed to ShipMojo! Reference: '.($response['data']['reference_id'] ?? 'N/A'));
             }
 
-            return back()->with('error', 'ShipMojo Error: '.($response['message'] ?? 'Unknown error'));
+            return back()->with('error', 'ShipMojo Error: '.$this->shipmojo->errorMessage($response));
         } catch (\Throwable $e) {
             return back()->with('error', 'ShipMojo: '.$e->getMessage());
         }

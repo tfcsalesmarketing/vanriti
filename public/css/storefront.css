@@ -2235,3 +2235,80 @@ img { max-width: 100%; height: auto; }
 
 .vr-nav-logout-btn:hover { background: rgba(179, 64, 46, 0.06); }
 .vr-nav-logout-btn:focus-visible { outline: 2px solid var(--vr-danger); outline-offset: -2px; }
+
+/* ---------- Custom Confirm / Alert Modal ---------- */
+.vr-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 50, 32, 0.55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.vr-confirm-overlay.active { opacity: 1; }
+
+.vr-confirm-dialog {
+    width: 100%;
+    max-width: 360px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+    padding: 1.25rem;
+    transform: translateY(10px) scale(0.97);
+    transition: transform 0.2s ease;
+}
+
+.vr-confirm-overlay.active .vr-confirm-dialog { transform: translateY(0) scale(1); }
+
+.vr-confirm-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.vr-confirm-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #fdeeec;
+    color: var(--vr-danger);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.vr-confirm-icon.vr-icon-primary { background: var(--vr-green-soft); color: var(--vr-green-dark); }
+
+.vr-confirm-icon.vr-icon-success { background: #e6f7ed; color: #198754; }
+
+.vr-confirm-icon.vr-icon-danger { background: #fdeeec; color: var(--vr-danger); }
+
+.vr-confirm-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--vr-text);
+}
+
+.vr-confirm-body {
+    font-size: 0.85rem;
+    color: var(--vr-muted);
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    word-break: break-word;
+}
+
+.vr-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}

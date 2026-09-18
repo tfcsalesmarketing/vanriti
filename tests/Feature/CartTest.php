@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Cart;
+use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -170,5 +171,72 @@ class CartTest extends TestCase
 
         $response->assertOk()
             ->assertJsonFragment(['cartCount' => 1, 'success' => true]);
+    }
+
+    public function test_coupon_discount_is_rendered_on_cart_page(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 1000.00,
+            'mrp' => 1000.00,
+            'gst_rate' => 0,
+            'stock' => 10,
+        ]);
+
+        Coupon::factory()->create([
+            'code' => 'FLAT100',
+            'discount_type' => 'fixed',
+            'discount_value' => 100,
+            'min_cart_value' => 0,
+            'first_order_only' => false,
+            'per_customer_limit' => 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+        $this->actingAs($user, 'web')
+            ->post(route('cart.coupon'), ['code' => 'FLAT100'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->actingAs($user, 'web')->get(route('cart.index'))
+            ->assertOk()
+            ->assertSee('FLAT100')
+            ->assertSee('100')
+            ->assertSee('900');
+    }
+
+    public function test_coupon_can_be_removed(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 1000.00,
+            'mrp' => 1000.00,
+            'gst_rate' => 0,
+            'stock' => 10,
+        ]);
+
+        Coupon::factory()->create([
+            'code' => 'FLAT100',
+            'discount_type' => 'fixed',
+            'discount_value' => 100,
+            'min_cart_value' => 0,
+            'first_order_only' => false,
+            'per_customer_limit' => 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+        $this->actingAs($user, 'web')->post(route('cart.coupon'), ['code' => 'FLAT100']);
+
+        $this->actingAs($user, 'web')
+            ->post(route('cart.coupon'), ['code' => ''])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertNull(session('cart_coupon'));
+
+        $this->actingAs($user, 'web')->get(route('cart.index'))
+            ->assertOk()
+            ->assertDontSee('FLAT100')
+            ->assertSee('1000');
     }
 }

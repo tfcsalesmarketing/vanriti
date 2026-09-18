@@ -8,6 +8,7 @@ use App\Jobs\SendMetaCapiPurchase;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\Analytics\ConversionService;
 use App\Services\Analytics\EcommerceDataService;
@@ -169,23 +170,44 @@ class CheckoutController extends Controller
             return $this->emptyCartResponse($user);
         }
 
+        $resumed = false;
+
         // Resume an abandoned Razorpay checkout before creating a new order so
         // a re-submission of the same cart never produces a duplicate pending
         // order (the cart is kept intact until payment is verified).
         if ($validated['payment_method'] === 'razorpay') {
-            if ($resumed = $this->resumableRazorpayOrder($user, $cart)) {
-                return $this->razorpayJsonResponse($resumed, $cart);
+            if ($existing = $this->resumableRazorpayOrder($user, $cart)) {
+                $resumed = true;
+
+                return $this->razorpayJsonResponse($existing, $cart);
             }
         }
 
         try {
-            $order = DB::transaction(function () use ($user, $cart, $orderData, $validated) {
+            $order = DB::transaction(function () use ($user, $cart, $orderData, $validated, &$resumed) {
                 // Serialise concurrent checkout submissions on this cart row so a
                 // double-submit cannot turn one cart into two orders.
                 $cart = Cart::query()->whereKey($cart->id)->lockForUpdate()->first() ?? $cart;
 
                 if (! $cart->items()->exists()) {
                     throw new \RuntimeException('Your cart is empty.');
+                }
+
+                // A concurrent request that already committed during the lock wait
+                // has produced a pending Razorpay order for this exact cart:
+                // resume it (stock was decremented once) instead of duplicating it.
+                if ($validated['payment_method'] === 'razorpay') {
+                    if ($existing = $this->resumableRazorpayOrderForCart($user, $cart)) {
+                        $resumed = true;
+
+                        session(['razorpay_inflight' => [
+                            'order_id' => $existing->id,
+                            'cart_id' => $cart->id,
+                            'cart_hash' => $this->razorpayCartHash($existing),
+                        ]]);
+
+                        return $existing;
+                    }
                 }
 
                 // For online payment the cart is intentionally NOT cleared here:
@@ -247,7 +269,9 @@ class CheckoutController extends Controller
         }
 
         if ($validated['payment_method'] === 'razorpay') {
-            $this->notifyCustomer($order, 'orderPlaced');
+            if (! $resumed) {
+                $this->notifyCustomer($order, 'orderPlaced');
+            }
 
             return $this->razorpayJsonResponse($order, $cart);
         }
@@ -263,10 +287,40 @@ class CheckoutController extends Controller
     protected function razorpayJsonResponse(Order $order, Cart $cart): JsonResponse|RedirectResponse
     {
         $payment = null;
+        $init = null;
 
         try {
-            $payment = $this->paymentService->createPayment($order, 'razorpay');
-            $init = $this->paymentService->initialize($order, $payment, 'razorpay');
+            DB::transaction(function () use ($order, $cart, &$payment, &$init) {
+                // Serialise Razorpay token creation on this cart row so that
+                // concurrent submissions — already collapsed onto a single order
+                // in store() — also share one Razorpay order id instead of
+                // creating multiple payment rows per checkout.
+                Cart::whereKey($cart->id)->lockForUpdate()->first();
+
+                $payment = $order->payments()
+                    ->where('method', 'razorpay')
+                    ->where('status', 'pending')
+                    ->whereNotNull('payment_reference')
+                    ->latest()
+                    ->first();
+
+                if ($payment) {
+                    $gateway = new RazorpayGateway;
+
+                    $init = [
+                        'id' => $payment->payment_reference,
+                        'gateway' => 'razorpay',
+                        'redirect_url' => null,
+                        'amount' => (float) $order->amount_due,
+                        'config' => $gateway->publicConfig(),
+                    ];
+
+                    return;
+                }
+
+                $payment = $this->paymentService->createPayment($order, 'razorpay');
+                $init = $this->paymentService->initialize($order, $payment, 'razorpay');
+            });
 
             session()->forget('cart_coupon');
             session(['razorpay_inflight' => [
@@ -321,10 +375,87 @@ class CheckoutController extends Controller
         if ($this->razorpayCartHash($order) !== $stored['cart_hash']) {
             session()->forget('razorpay_inflight');
 
+            // The cart changed before the customer returned: the old pending
+            // order can never be paid for as-is, so cancel it and give the
+            // stock back (prevents abandoned Razorpay orders from leaking stock).
+            $this->cancelAbandonedRazorpayCheckout($order);
+
             return null;
         }
 
         return $order;
+    }
+
+    /**
+     * Latest pending Razorpay order for a user that still matches the given cart
+     * exactly. Called after the cart row lock so a concurrent first submission
+     * (which committed while we waited) is resumed rather than duplicated.
+     */
+    protected function resumableRazorpayOrderForCart(User $user, Cart $cart): ?Order
+    {
+        $order = Order::where('user_id', $user->id)
+            ->where('payment_method', 'razorpay')
+            ->whereIn('payment_status', ['pending', 'processing'])
+            ->where('order_status', 'pending')
+            ->latest()
+            ->first();
+
+        if (! $order) {
+            return null;
+        }
+
+        if ($this->razorpayCartHash($order) !== $this->cartLineHash($cart)) {
+            $this->cancelAbandonedRazorpayCheckout($order);
+
+            return null;
+        }
+
+        return $order;
+    }
+
+    /**
+     * Cancel a Razorpay checkout whose payment was never confirmed, restoring
+     * the reserved stock. Best-effort: never throws into the checkout flow.
+     */
+    protected function cancelAbandonedRazorpayCheckout(Order $order): void
+    {
+        try {
+            if ($order->payment_method === 'razorpay'
+                && in_array($order->payment_status, ['pending', 'processing'], true)
+                && $order->order_status === 'pending') {
+                $this->orderService->cancelOrder($order, 'Checkout was not completed; payment cancelled and stock restored.');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not cancel an abandoned Razorpay checkout.', [
+                'order' => $order->order_number,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Mark a Razorpay payment as failed and immediately release the order's
+     * reserved stock by cancelling the still-open order. Without this a failed
+     * callback would leave the customer's stock reserved until the expiry sweep.
+     */
+    protected function failRazorpayCheckout(Order $order, Payment $payment, string $reason): void
+    {
+        $this->paymentService->markFailed($payment, $reason);
+
+        try {
+            if ($order->fresh()->isCancellable()) {
+                $this->orderService->cancelOrder($order, 'Payment was not completed; stock restored.');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not cancel a failed Razorpay checkout.', [
+                'order' => $order->order_number,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $this->forgetInFlightRazorpayOrder($order);
+
+        $this->notifyCustomer($order, 'paymentFailed');
     }
 
     /**
@@ -339,6 +470,22 @@ class CheckoutController extends Controller
             ->map(fn ($item) => [$item->product_id, $item->product_variant_id, $item->quantity])
             ->all();
 
+        return $this->lineRowsHash($rows);
+    }
+
+    protected function cartLineHash(Cart $cart): string
+    {
+        $rows = $cart->items()
+            ->orderBy('product_id')
+            ->get(['product_id', 'product_variant_id', 'quantity'])
+            ->map(fn ($item) => [$item->product_id, $item->product_variant_id, $item->quantity])
+            ->all();
+
+        return $this->lineRowsHash($rows);
+    }
+
+    protected function lineRowsHash(array $rows): string
+    {
         return hash('sha256', json_encode($rows));
     }
 
@@ -374,15 +521,27 @@ class CheckoutController extends Controller
     {
         $orderId = $request->input('order_id');
 
+        $order = $orderId ? Order::find($orderId) : null;
+
+        // Only the owner of an order may confirm its payment: without this a
+        // third party could flip another user's order to failed via the
+        // (CSRF-exempt) callback route.
+        if (! $order || $order->user_id !== auth('web')->id()) {
+            abort(403);
+        }
+
+        // The callback is Razorpay-specific; never let it touch COD orders.
+        if ($order->payment_method !== 'razorpay') {
+            abort(422);
+        }
+
         try {
             $request->validate([
                 'razorpay_order_id' => 'required|string',
                 'razorpay_payment_id' => 'required|string',
                 'razorpay_signature' => 'required|string',
-                'order_id' => 'required|integer|exists:orders,id',
             ]);
 
-            $order = Order::findOrFail($request->order_id);
             $payment = $order->payments()->latest()->first();
 
             if (! $payment) {
@@ -392,6 +551,30 @@ class CheckoutController extends Controller
             $gateway = new RazorpayGateway;
 
             if ($gateway->verify($payment, $request->all())) {
+                // Defence-in-depth: when the payment can be fetched from Razorpay,
+                // confirm it was actually captured for the order total. Only
+                // applies when the gateway returns the very payment we verified
+                // (id matches) — otherwise a best-effort fetch of a foreign/order
+                // object is ignored and the verified signature stands. A failed
+                // fetch also falls back to the signature so a transient gateway
+                // issue never blocks a legitimate payment.
+                $captured = $gateway->fetchPayment($request->input('razorpay_payment_id'));
+
+                if ($captured !== null && ($captured['id'] ?? null) === $request->input('razorpay_payment_id')) {
+                    if (($captured['status'] ?? '') !== 'captured') {
+                        $this->failRazorpayCheckout($order, $payment, 'Payment was not captured by the gateway.');
+
+                        return redirect()->route('checkout.failed', $order);
+                    }
+
+                    $expectedPaisa = (int) round((float) $order->amount_due * 100);
+                    if ((int) ($captured['amount'] ?? 0) !== $expectedPaisa) {
+                        $this->failRazorpayCheckout($order, $payment, 'Captured amount does not match the order total.');
+
+                        return redirect()->route('checkout.failed', $order);
+                    }
+                }
+
                 $this->paymentService->markPaid($payment);
 
                 // Payment is now confirmed: the customer's cart is released and
@@ -417,11 +600,7 @@ class CheckoutController extends Controller
                 return redirect()->route('checkout.success', $order);
             }
 
-            $this->paymentService->markFailed($payment, 'Signature verification failed.');
-
-            $this->forgetInFlightRazorpayOrder($order);
-
-            $this->notifyCustomer($order, 'paymentFailed');
+            $this->failRazorpayCheckout($order, $payment, 'Signature verification failed.');
 
             return redirect()->route('checkout.failed', $order);
         } catch (\Throwable $e) {

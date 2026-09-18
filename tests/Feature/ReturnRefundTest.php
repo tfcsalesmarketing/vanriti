@@ -6,7 +6,6 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\Refund;
 use App\Models\ReturnRequest;
 use App\Models\User;
 use App\Services\OrderService;
@@ -92,9 +91,9 @@ class ReturnRefundTest extends TestCase
             'order_item_id' => $orderItem->id,
         ]);
 
-        // Refund auto-created
-        $refund = Refund::where('return_request_id', $returnRequest->id)->firstOrFail();
-        $this->assertSame('requested', $refund->status);
+        // The refund is created only when an admin approves the return, not at
+        // submission time (prevents duplicate/over-eager refunds).
+        $this->assertDatabaseCount('refunds', 0);
     }
 
     public function test_guest_cannot_create_return_for_another_users_order(): void

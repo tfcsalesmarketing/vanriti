@@ -61,6 +61,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
             Route::post('orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
             Route::post('orders/{order}/notes', [OrderController::class, 'addNote'])->name('orders.notes');
+            // ShipMojo bulk actions
+            Route::post('orders/bulk/push', [ShipMojoController::class, 'bulkPush'])->name('orders.shipmojo.bulk.push');
+            Route::post('orders/bulk/auto-assign', [ShipMojoController::class, 'bulkAutoAssign'])->name('orders.shipmojo.bulk.auto-assign');
+            Route::post('orders/bulk/schedule-pickup', [ShipMojoController::class, 'bulkSchedulePickup'])->name('orders.shipmojo.bulk.schedule-pickup');
+            Route::post('orders/bulk/labels', [ShipMojoController::class, 'bulkLabels'])->name('orders.shipmojo.bulk.labels');
+            Route::post('orders/bulk/cancel', [OrderController::class, 'bulkCancel'])->name('orders.bulk.cancel');
             // ShipMojo
             Route::post('orders/{order}/shipmojo/push', [ShipMojoController::class, 'pushOrder'])->name('orders.shipmojo.push');
             Route::post('orders/{order}/shipmojo/auto-assign', [ShipMojoController::class, 'autoAssign'])->name('orders.shipmojo.auto-assign');

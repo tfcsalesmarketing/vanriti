@@ -70,7 +70,7 @@
                                         </form>
                                     @endif
                                     <form method="POST" action="{{ route('account.addresses.destroy', $address) }}"
-                                          onsubmit="return confirm('Remove this address?');" class="d-inline ms-auto">
+                                          data-confirm="Remove this address?" class="d-inline ms-auto">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete address">

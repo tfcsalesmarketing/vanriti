@@ -45,10 +45,18 @@
         document.body.appendChild(el);
     }
 
+    function hidePageLoader() {
+        var el = document.getElementById('vrPageLoader');
+        if (el) el.classList.remove('active');
+    }
+
     function showPageLoader() {
         createPageLoader();
         document.getElementById('vrPageLoader').classList.add('active');
     }
+
+    window.showPageLoader = showPageLoader;
+    window.hidePageLoader = hidePageLoader;
 
     // ── Toast helper ──
     function createToastContainer() {
@@ -166,47 +174,101 @@
         }
     }, true);
 
-    // ── Custom Confirm Modal ──
-    function vrConfirm(message) {
+    // ── Custom Modal (confirm & alert) ──
+    function buildVrModal(options) {
         return new Promise(function (resolve) {
             var overlay = document.createElement('div');
             overlay.className = 'vr-confirm-overlay';
+
+            var icon = options.icon || 'bi-exclamation-triangle-fill';
+            var iconClass = 'vr-confirm-icon' + (options.iconClass ? ' ' + options.iconClass : '');
+
+            var buttonsHtml = '';
+            if (!options.cancelOnly) {
+                buttonsHtml += '<button type="button" class="btn btn-sm btn-light vr-confirm-cancel">'
+                    + (options.cancelLabel || 'Cancel') + '</button>';
+            }
+            buttonsHtml += '<button type="button" class="btn btn-sm ' + (options.okClass || 'btn-danger')
+                + ' vr-confirm-ok">' + (options.okLabel || 'Yes, proceed') + '</button>';
+
             overlay.innerHTML =
                 '<div class="vr-confirm-dialog">'
                 + '<div class="vr-confirm-header">'
-                +   '<div class="vr-confirm-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>'
-                +   '<h6 class="vr-confirm-title">Are you sure?</h6>'
+                +   '<div class="' + iconClass + '"><i class="bi ' + icon + '"></i></div>'
+                +   '<h6 class="vr-confirm-title"></h6>'
                 + '</div>'
                 + '<div class="vr-confirm-body"></div>'
-                + '<div class="vr-confirm-actions">'
-                +   '<button type="button" class="btn btn-sm btn-light vr-confirm-cancel">Cancel</button>'
-                +   '<button type="button" class="btn btn-sm btn-danger vr-confirm-ok">Yes, proceed</button>'
-                + '</div>'
+                + '<div class="vr-confirm-actions">' + buttonsHtml + '</div>'
                 + '</div>';
 
-            overlay.querySelector('.vr-confirm-body').textContent = message;
+            overlay.querySelector('.vr-confirm-title').textContent = options.title || 'Are you sure?';
+            overlay.querySelector('.vr-confirm-body').textContent = options.message || '';
             document.body.appendChild(overlay);
             requestAnimationFrame(function () { overlay.classList.add('active'); });
 
-            function close(result) {
+            function close(value) {
                 document.removeEventListener('keydown', keyHandler);
                 overlay.classList.remove('active');
                 setTimeout(function () { overlay.remove(); }, 200);
-                resolve(result);
+                resolve(value);
             }
 
             function keyHandler(e) {
-                if (e.key === 'Escape') close(false);
-                if (e.key === 'Enter') close(true);
+                if (e.key === 'Escape') close(options.escapeValue !== undefined ? options.escapeValue : null);
+                if (e.key === 'Enter') close(options.enterValue !== undefined ? options.enterValue : true);
             }
 
             overlay.querySelector('.vr-confirm-ok').addEventListener('click', function () { close(true); });
-            overlay.querySelector('.vr-confirm-cancel').addEventListener('click', function () { close(false); });
-            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
+            if (!options.cancelOnly) {
+                overlay.querySelector('.vr-confirm-cancel').addEventListener('click', function () { close(false); });
+            }
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(options.backdropValue !== undefined ? options.backdropValue : null); });
             document.addEventListener('keydown', keyHandler);
             overlay.querySelector('.vr-confirm-ok').focus();
         });
     }
+
+    // Confirmation dialog: resolves true on confirm, false on cancel.
+    function vrConfirm(message, options) {
+        options = options || {};
+        return buildVrModal({
+            title: options.title,
+            message: message,
+            okLabel: options.okLabel,
+            cancelLabel: options.cancelLabel,
+            icon: options.icon,
+            iconClass: options.type === 'primary' ? 'vr-icon-primary'
+                : (options.type === 'success' ? 'vr-icon-success' : 'vr-icon-danger'),
+            okClass: options.type === 'primary' ? 'btn-primary'
+                : (options.type === 'success' ? 'btn-success' : 'btn-danger'),
+            enterValue: true,
+            escapeValue: false,
+            backdropValue: false
+        });
+    }
+
+    // Alert dialog: resolves true when dismissed.
+    function vrAlert(message, options) {
+        options = options || {};
+        var type = options.type || 'primary';
+        return buildVrModal({
+            title: options.title || 'Notice',
+            message: message,
+            okLabel: options.okLabel || 'OK',
+            cancelOnly: true,
+            icon: options.icon || 'bi-info-circle-fill',
+            iconClass: type === 'danger' ? 'vr-icon-danger'
+                : (type === 'success' ? 'vr-icon-success' : 'vr-icon-primary'),
+            okClass: type === 'danger' ? 'btn-danger'
+                : (type === 'success' ? 'btn-success' : 'btn-primary'),
+            enterValue: true,
+            escapeValue: true,
+            backdropValue: true
+        });
+    }
+
+    window.vrConfirm = vrConfirm;
+    window.vrAlert = vrAlert;
 
     // ── Single Submit Handler (validation + page loader) ──
     function lockFormSubmit(form) {

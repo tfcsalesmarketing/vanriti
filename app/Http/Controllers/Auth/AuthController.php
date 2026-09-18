@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
@@ -44,11 +45,10 @@ class AuthController extends Controller
         $user = User::where('email', $email)->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return back()->withErrors(
-                $user
-                    ? ['password' => 'The password you entered is incorrect.']
-                    : ['email' => 'No account found with this email address.']
-            )->onlyInput('email');
+            // Single generic message prevents email-enumeration via error wording.
+            return back()->withErrors([
+                'email' => 'These credentials do not match our records.',
+            ])->onlyInput('email');
         }
 
         if ($user->status !== 'active') {
@@ -78,11 +78,18 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+            'phone' => ['required', 'string', 'max:15', 'unique:users,phone', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
             'password' => ['required', 'confirmed', $this->passwordRule()],
         ], $this->messages());
 
         $phone = Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString();
+
+        // Prevent duplicate registrations on the same (normalized) phone number
+        // even when whitespace or dashes differ (e.g. "98765 43210" vs
+        // "9876543210").
+        if (User::where('phone', $phone)->exists()) {
+            return back()->withErrors(['phone' => 'This mobile number is already registered.'])->withInput();
+        }
 
         $email = ! empty($data['email'] ?? null)
             ? Str::lower(trim($data['email']))
@@ -140,19 +147,28 @@ class AuthController extends Controller
 
         if ($context === 'login' && $request->exists('email') && $request->exists('password')) {
             $email = Str::lower(trim((string) $request->input('email')));
-            $user = User::where('email', $email)->first();
 
-            if (! $user) {
+            // Per-credential rate limiter prevents live-validation from being used
+            // as a brute-force oracle. When the limit is hit, the request is
+            // rejected before any expensive Hash::check runs.
+            $throttleKey = 'auth-validate:'.hash('sha256', $email).':'.$request->ip();
+            if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
                 return response()->json([
                     'valid' => false,
-                    'errors' => ['email' => ['No account found with this email address.']],
-                ], 422);
+                    'errors' => ['password' => ['Too many attempts. Please wait a minute and try again.']],
+                ], 429);
             }
 
-            if (! Hash::check((string) $request->input('password'), $user->password)) {
+            RateLimiter::hit($throttleKey, 60);
+
+            $user = User::where('email', $email)->first();
+
+            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
+                $errorKey = $user ? 'password' : 'email';
+
                 return response()->json([
                     'valid' => false,
-                    'errors' => ['password' => ['The password you entered is incorrect.']],
+                    'errors' => [$errorKey => ['These credentials do not match our records.']],
                 ], 422);
             }
         }
@@ -171,7 +187,7 @@ class AuthController extends Controller
             return [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
-                'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+                'phone' => ['required', 'string', 'max:15', 'unique:users,phone', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
                 'password' => $password,
                 'password_confirmation' => ['required', 'same:password'],
             ];
@@ -224,6 +240,7 @@ class AuthController extends Controller
             'name.max' => 'Name must not exceed 255 characters.',
             'phone.required' => 'Please enter your mobile number.',
             'phone.regex' => 'Please enter a valid 10-digit mobile number.',
+            'phone.unique' => 'This mobile number is already registered.',
         ];
     }
 

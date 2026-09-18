@@ -24,7 +24,6 @@ class AdminFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'phone' => null,
             'avatar' => null,
-            'is_super_admin' => false,
             'status' => 'active',
             'remember_token' => Str::random(10),
         ];
@@ -32,6 +31,7 @@ class AdminFactory extends Factory
 
     public function superAdmin(): static
     {
-        return $this->state(fn () => ['is_super_admin' => true]);
+        // is_super_admin is guarded against mass assignment; promote explicitly.
+        return $this->afterCreating(fn (Admin $admin) => $admin->makeSuperAdmin());
     }
 }

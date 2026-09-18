@@ -12,8 +12,10 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\ShipMojoWebhookController;
 use App\Http\Controllers\TrackController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Page;
@@ -32,11 +34,11 @@ Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name
 
 // ---------- Cart ----------
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/add/{product:slug}', [CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/{cartItem}/update', [CartController::class, 'update'])->name('cart.update');
-Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
-Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+Route::post('/cart/add/{product:slug}', [CartController::class, 'add'])->name('cart.add')->middleware('throttle:30,1');
+Route::post('/cart/{cartItem}/update', [CartController::class, 'update'])->name('cart.update')->middleware('throttle:30,1');
+Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])->name('cart.remove')->middleware('throttle:30,1');
+Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon')->middleware('throttle:30,1');
+Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')->middleware('throttle:30,1');
 
 // ---------- Wishlist ----------
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
@@ -67,7 +69,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::post('/checkout/validate', [CheckoutController::class, 'validateFields'])->name('checkout.validate');
-    Route::post('/checkout/verify', [CheckoutController::class, 'verify'])->name('checkout.verify');
+    Route::post('/checkout/verify', [CheckoutController::class, 'verify'])->name('checkout.verify')->middleware('throttle:10,1');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::get('/checkout/failed/{order}', [CheckoutController::class, 'failed'])->name('checkout.failed');
     Route::get('/checkout/pending/{order}', [CheckoutController::class, 'pending'])->name('checkout.pending');
@@ -90,9 +92,19 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
 });
 
+// ---------- Payment gateway webhooks (server-to-server, signature verified) ----------
+Route::post('/razorpay/webhook', [RazorpayWebhookController::class, 'handle'])
+    ->name('razorpay.webhook')
+    ->middleware('throttle:120,1');
+
+// ---------- ShipMojo status webhook (server-to-server, secret verified) ----------
+Route::post('/shipmojo/webhook', [ShipMojoWebhookController::class, 'handle'])
+    ->name('shipmojo.webhook')
+    ->middleware('throttle:120,1');
+
 // ---------- Track order ----------
 Route::get('/track', [TrackController::class, 'index'])->name('track');
-Route::post('/track', [TrackController::class, 'lookup'])->name('track.lookup');
+Route::post('/track', [TrackController::class, 'lookup'])->name('track.lookup')->middleware('throttle:10,1');
 Route::get('/track/{order:order_number}', [TrackController::class, 'show'])->name('track.order')->middleware('signed');
 
 // ---------- Content ----------

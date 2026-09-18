@@ -31,6 +31,109 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.vrToast = toast;
 
+    // ---- Custom Confirm / Alert Modal ----
+    function buildVrModal(options) {
+        return new Promise(function (resolve) {
+            var overlay = document.createElement('div');
+            overlay.className = 'vr-confirm-overlay';
+
+            var icon = options.icon || 'bi-exclamation-triangle-fill';
+            var iconClass = 'vr-confirm-icon' + (options.iconClass ? ' ' + options.iconClass : '');
+
+            var buttonsHtml = '';
+            if (!options.cancelOnly) {
+                buttonsHtml += '<button type="button" class="btn btn-outline-secondary btn-sm vr-confirm-cancel">'
+                    + (options.cancelLabel || 'Cancel') + '</button>';
+            }
+            buttonsHtml += '<button type="button" class="btn btn-sm ' + (options.okClass || 'btn-danger')
+                + ' vr-confirm-ok">' + (options.okLabel || 'Yes, proceed') + '</button>';
+
+            overlay.innerHTML =
+                '<div class="vr-confirm-dialog">'
+                + '<div class="vr-confirm-header">'
+                +   '<div class="' + iconClass + '"><i class="bi ' + icon + '"></i></div>'
+                +   '<h6 class="vr-confirm-title"></h6>'
+                + '</div>'
+                + '<div class="vr-confirm-body"></div>'
+                + '<div class="vr-confirm-actions">' + buttonsHtml + '</div>'
+                + '</div>';
+
+            overlay.querySelector('.vr-confirm-title').textContent = options.title || 'Are you sure?';
+            overlay.querySelector('.vr-confirm-body').textContent = options.message || '';
+            document.body.appendChild(overlay);
+            requestAnimationFrame(function () { overlay.classList.add('active'); });
+
+            function close(value) {
+                document.removeEventListener('keydown', keyHandler);
+                overlay.classList.remove('active');
+                setTimeout(function () { overlay.remove(); }, 200);
+                resolve(value);
+            }
+
+            function keyHandler(e) {
+                if (e.key === 'Escape') close(options.escapeValue !== undefined ? options.escapeValue : null);
+                if (e.key === 'Enter') close(options.enterValue !== undefined ? options.enterValue : true);
+            }
+
+            overlay.querySelector('.vr-confirm-ok').addEventListener('click', function () { close(true); });
+            if (!options.cancelOnly) {
+                overlay.querySelector('.vr-confirm-cancel').addEventListener('click', function () { close(false); });
+            }
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(options.backdropValue !== undefined ? options.backdropValue : null); });
+            document.addEventListener('keydown', keyHandler);
+            overlay.querySelector('.vr-confirm-ok').focus();
+        });
+    }
+
+    // Confirmation dialog: resolves true on confirm, false on cancel.
+    window.vrConfirm = function (message, options) {
+        options = options || {};
+        return buildVrModal({
+            title: options.title,
+            message: message,
+            okLabel: options.okLabel,
+            cancelLabel: options.cancelLabel,
+            icon: options.icon,
+            iconClass: options.type === 'primary' ? 'vr-icon-primary'
+                : (options.type === 'success' ? 'vr-icon-success' : 'vr-icon-danger'),
+            okClass: options.type === 'primary' ? 'btn-success'
+                : (options.type === 'success' ? 'btn-success' : 'btn-danger'),
+            enterValue: true,
+            escapeValue: false,
+            backdropValue: false
+        });
+    };
+
+    // Alert dialog: resolves true when dismissed.
+    window.vrAlert = function (message, options) {
+        options = options || {};
+        var type = options.type || 'primary';
+        return buildVrModal({
+            title: options.title || 'Notice',
+            message: message,
+            okLabel: options.okLabel || 'OK',
+            cancelOnly: true,
+            icon: options.icon || 'bi-info-circle-fill',
+            iconClass: type === 'danger' ? 'vr-icon-danger'
+                : (type === 'success' ? 'vr-icon-success' : 'vr-icon-primary'),
+            okClass: type === 'danger' ? 'btn-danger'
+                : (type === 'success' ? 'btn-success' : 'btn-primary'),
+            enterValue: true,
+            escapeValue: true,
+            backdropValue: true
+        });
+    };
+
+    // Intercept forms carrying data-confirm.
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.dataset.confirm) return;
+        e.preventDefault();
+        window.vrConfirm(form.dataset.confirm).then(function (ok) {
+            if (ok) form.submit();
+        });
+    });
+
     // ---- Inline field errors (server-side validation) ----
     window.vrInlineErrors = function (errors, scope) {
         if (!errors || typeof errors !== 'object') return;

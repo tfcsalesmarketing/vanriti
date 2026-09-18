@@ -107,7 +107,7 @@
                         <a href="{{ route('shop.index') }}" class="vr-app-outline-btn py-2 px-3 text-decoration-none">
                             <i class="ri-arrow-left-line me-1"></i> Continue Shopping
                         </a>
-                        <form action="{{ route('cart.clear') }}" method="POST" onsubmit="return confirm('Clear all items from your cart?')">
+                        <form action="{{ route('cart.clear') }}" method="POST" data-confirm="Clear all items from your cart?">
                             @csrf
                             <button type="submit" class="btn btn-sm text-danger p-0">
                                 <i class="ri-delete-bin-line me-1"></i> Clear Cart

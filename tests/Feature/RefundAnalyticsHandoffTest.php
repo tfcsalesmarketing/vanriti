@@ -206,7 +206,7 @@ class RefundAnalyticsHandoffTest extends TestCase
 
         $this->assertSame(1, $gateway->refundCalls);
         $this->assertSame(1, RefundTransaction::where('refund_id', $refund->id)->where('status', 'success')->count());
-        $this->assertSame('refunded', $order->fresh()->payment_status);
+        $this->assertSame('partially_refunded', $order->fresh()->payment_status);
 
         $pending = cache()->get(RefundService::PENDING_REFUND_CACHE_KEY.$user->id);
         $this->assertIsArray($pending);

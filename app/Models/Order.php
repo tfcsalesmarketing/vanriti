@@ -149,6 +149,36 @@ class Order extends Model
         ]));
     }
 
+    public function getBillingAddressAttribute(): array
+    {
+        return [
+            'full_name' => $this->billing_name,
+            'mobile' => $this->billing_mobile,
+            'address_line1' => $this->billing_address_line1,
+            'address_line2' => $this->billing_address_line2,
+            'landmark' => $this->billing_landmark,
+            'city' => $this->billing_city,
+            'state' => $this->billing_state,
+            'pincode' => $this->billing_pincode,
+            'country' => $this->billing_country,
+        ];
+    }
+
+    public function getShippingAddressAttribute(): array
+    {
+        return [
+            'full_name' => $this->shipping_name,
+            'mobile' => $this->shipping_mobile,
+            'address_line1' => $this->shipping_address_line1,
+            'address_line2' => $this->shipping_address_line2,
+            'landmark' => $this->shipping_landmark,
+            'city' => $this->shipping_city,
+            'state' => $this->shipping_state,
+            'pincode' => $this->shipping_pincode,
+            'country' => $this->shipping_country,
+        ];
+    }
+
     public function isCancellable(): bool
     {
         return in_array($this->order_status, ['pending', 'confirmed', 'processing']);

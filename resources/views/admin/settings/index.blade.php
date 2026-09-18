@@ -50,6 +50,23 @@
                                     @endif
                                 </div>
                             @endforeach
+                            @if ($group === 'shipmojo')
+                                <div class="col-12">
+                                    <div class="alert alert-light border small mb-0">
+                                        <div class="fw-semibold mb-1"><i class="bi bi-broadcast me-1"></i>ShipMojo Webhook</div>
+                                        <span class="text-muted">Set this URL in your ShipMojo dashboard as the status callback:</span>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            <code class="bg-white px-2 py-1 rounded border w-100" id="shipmojo-webhook-url">{{ url('/shipmojo/webhook') }}</code>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('shipmojo-webhook-url').textContent)"><i class="bi bi-clipboard"></i></button>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">
+                                            ShipMojo must send the <code>public-key</code> header (set above), an HMAC-SHA256
+                                            signature in <code>x-shipmojo-signature</code> (body signed with the webhook secret),
+                                            and the order/shipment reference id. Statuses update orders and AWB/courier automatically.
+                                        </small>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

@@ -94,7 +94,7 @@
         @endif
 
         <div class="blog-content" style="line-height:1.8;font-size:1.05rem;">
-            {!! $blog->content !!}
+            {!! clean_html($blog->content) !!}
         </div>
 
         <div class="mt-5 pt-4 border-top">

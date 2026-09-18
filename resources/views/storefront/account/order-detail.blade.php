@@ -132,7 +132,7 @@
                             <p class="small text-muted mb-0">Orders can be cancelled before shipping.</p>
                         </div>
                         <form method="POST" action="{{ route('account.order.cancel', $order) }}"
-                              onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                              data-confirm="Are you sure you want to cancel this order?">
                             @csrf
                             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">Cancel Order</button>
                         </form>

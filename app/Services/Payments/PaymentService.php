@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Models\Order;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
@@ -111,6 +112,15 @@ class PaymentService
 
     public function markFailed(Payment $payment, ?string $reason = null): void
     {
+        if (in_array($payment->status, ['paid', 'refunded'], true)) {
+            Log::warning('Cannot fail an already settled payment.', [
+                'payment' => $payment->id,
+                'status' => $payment->status,
+            ]);
+
+            return;
+        }
+
         $payment->update([
             'status' => 'failed',
             'failed_at' => now(),

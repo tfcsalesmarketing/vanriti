@@ -178,7 +178,7 @@
             </h2>
             <div id="collapse-description" class="accordion-collapse collapse show" data-bs-parent="#vrProductAccordion">
                 <div class="accordion-body">
-                    <div>{!! $product->description ?: 'No description available.' !!}</div>
+                    <div>{!! $product->description ? clean_html($product->description) : 'No description available.' !!}</div>
                     @if ($product->net_quantity || $product->country_of_origin || $product->shelf_life)
                         <div class="row g-3 mt-3 small">
                             @if ($product->net_quantity)

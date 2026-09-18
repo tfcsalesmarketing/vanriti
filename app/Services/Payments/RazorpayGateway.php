@@ -77,6 +77,62 @@ class RazorpayGateway implements PaymentGateway
         return true;
     }
 
+    /**
+     * Validate an inbound Razorpay webhook by recomputing the HMAC-SHA256 of the
+     * raw request body with the configured webhook secret. Returns false when no
+     * secret is configured so an unconfigured store never trusts a callback.
+     */
+    public function verifyWebhookSignature(string $body, ?string $signature, ?string $secret = null): bool
+    {
+        $secret = $secret ?? (string) secret_setting('razorpay_webhook_secret', '');
+
+        if ($secret === '' || ! $signature) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $body, $secret);
+
+        return hash_equals($expected, $signature);
+    }
+
+    /**
+     * Fetch a payment from the Razorpay API and confirm it was captured for the
+     * expected amount. Returns null when the gateway is unreachable or the
+     * payment cannot be resolved, so the caller can fall back to the signature
+     * check instead of failing a legitimate callback over a network hiccup.
+     */
+    public function fetchPayment(string $paymentId): ?array
+    {
+        if ($this->keyId === '' || $this->keySecret === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::withBasicAuth($this->keyId, $this->keySecret)
+                ->get('https://api.razorpay.com/v1/payments/'.$paymentId);
+
+            if ($response->failed()) {
+                Log::warning('Razorpay payment fetch failed', [
+                    'payment_id' => $paymentId,
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            $data = $response->json();
+
+            return is_array($data) && isset($data['id']) ? $data : null;
+        } catch (\Throwable $e) {
+            Log::warning('Razorpay payment fetch error', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function refund(Payment $payment, float $amount, ?string $reference = null): array
     {
         $response = Http::withBasicAuth($this->keyId, $this->keySecret)

@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Dadi\DadiAttributionService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
@@ -59,13 +60,17 @@ class OrderService
             $rows = [];
 
             foreach ($cart->fresh()->items as $item) {
-                $product = $item->product;
+                // Row-lock the catalogue rows so concurrent orders cannot both
+                // pass the stock check for the last remaining unit (prevents
+                // overselling when two checkouts race).
+                $product = Product::query()->whereKey($item->product_id)->lockForUpdate()->first();
+
                 if (! $product || $product->status !== 'active') {
                     throw new \RuntimeException("{$item->product_name} is no longer available.");
                 }
 
                 $variant = $item->product_variant_id
-                    ? ProductVariant::where('id', $item->product_variant_id)->where('status', 'active')->first()
+                    ? ProductVariant::query()->where('id', $item->product_variant_id)->where('status', 'active')->lockForUpdate()->first()
                     : null;
 
                 $this->cartService->validateStock($product, $variant, $item->quantity);
@@ -306,6 +311,35 @@ class OrderService
                         $item->quantity,
                         "Stock restored for cancelled order {$order->order_number}"
                     );
+                }
+            }
+
+            // A paid order that is cancelled must produce a refund record for
+            // the finance team rather than silently keeping the customer's
+            // money. Pending/failed/abandoned payments are excluded.
+            if ($order->payment_status === 'paid' && (float) $order->amount_paid > 0) {
+                try {
+                    app(RefundService::class)->createForOrder(
+                        $order,
+                        $order->user,
+                        (float) $order->amount_paid,
+                        'full',
+                        $reason ?? 'Order cancelled'
+                    );
+
+                    app(NotificationService::class)->notifyAdmins(
+                        'Refund required',
+                        sprintf(
+                            'Order %s was cancelled after payment. A refund of %s needs processing.',
+                            $order->order_number,
+                            format_price((float) $order->amount_paid)
+                        )
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Could not queue an automatic refund for a cancelled paid order.', [
+                        'order' => $order->order_number,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
         });

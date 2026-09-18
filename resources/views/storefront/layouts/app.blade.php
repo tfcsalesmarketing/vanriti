@@ -21,7 +21,7 @@
             $_ogDefault = (string) setting('meta_title');
         }
     @endphp
-    <title>{!! $_seoTitle !!}</title>
+    <title>{{ $_seoTitle }}</title>
     <meta name="description" content="@yield('meta_description', setting('meta_description'))">
     <meta name="keywords" content="@yield('meta_keywords', setting('meta_keywords'))">
     <meta name="robots" content="@yield('robots', 'index, follow')">

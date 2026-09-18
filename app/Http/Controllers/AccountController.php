@@ -8,7 +8,6 @@ use App\Models\ReturnItem;
 use App\Models\ReturnRequest;
 use App\Models\Review;
 use App\Services\OrderService;
-use App\Services\RefundService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +18,7 @@ use Illuminate\View\View;
 
 class AccountController extends Controller
 {
-    public function __construct(protected OrderService $orderService, protected RefundService $refundService) {}
+    public function __construct(protected OrderService $orderService) {}
 
     public function dashboard(): View
     {
@@ -90,6 +89,18 @@ class AccountController extends Controller
             return back()->with('error', 'Please select at least one item to return.');
         }
 
+        // Reject an item that is already part of a non-rejected return request
+        // so the same order item cannot be returned (and refunded) twice.
+        $activeReturnIds = $order->returnRequests()->where('status', '!=', 'rejected')->pluck('id');
+
+        $alreadyReturning = ReturnItem::whereIn('return_request_id', $activeReturnIds)
+            ->whereIn('order_item_id', $orderItems->pluck('id'))
+            ->exists();
+
+        if ($alreadyReturning) {
+            return back()->with('error', 'Some of the selected items already have an active return request.');
+        }
+
         try {
             $returnRequest = DB::transaction(function () use ($user, $order, $orderItems, $request) {
                 $return = ReturnRequest::create([
@@ -102,18 +113,23 @@ class AccountController extends Controller
                     'requested_at' => now(),
                 ]);
 
-                $refundable = 0.0;
+                // Coupon discounts are shared across all items, so each item's
+                // refundable value is its pre-coupon line total scaled by the
+                // order's payable-to-subtotal ratio. Prevents over-refunding
+                // discounted orders. The refund itself is only created when an
+                // admin approves the return (see Admin\ReturnController).
+                $factor = (float) $order->subtotal > 0
+                    ? max(0.0, min(1.0, ((float) $order->subtotal - (float) $order->coupon_discount) / (float) $order->subtotal))
+                    : 1.0;
+
                 foreach ($orderItems as $item) {
-                    $refundable += (float) $item->total_price;
                     ReturnItem::create([
                         'return_request_id' => $return->id,
                         'order_item_id' => $item->id,
                         'quantity' => $item->quantity,
-                        'refund_amount' => $item->total_price,
+                        'refund_amount' => round((float) $item->total_price * $factor, 2),
                     ]);
                 }
-
-                $this->refundService->createFromReturn($return, $user, $refundable, 'partial', 'Return request submitted.');
 
                 return $return;
             });

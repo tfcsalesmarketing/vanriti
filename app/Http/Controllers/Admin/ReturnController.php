@@ -55,8 +55,13 @@ class ReturnController extends Controller
 
             $amount = round($returnRequest->items()->sum('refund_amount'), 2);
 
-            if ($amount > 0) {
-                $this->refundService->createFromReturn($returnRequest, $returnRequest->user, $amount, 'full', $returnRequest->reason);
+            // Only the approval creates the refund (submission no longer does),
+            // and only once even if approve is somehow replayed.
+            if ($amount > 0 && ! $returnRequest->refunds()->exists()) {
+                $paid = (float) $returnRequest->order->amount_paid;
+                $type = ($paid > 0 && $amount + 0.01 < $paid) ? 'partial' : 'full';
+
+                $this->refundService->createFromReturn($returnRequest, $returnRequest->user, $amount, $type, $returnRequest->reason);
             }
 
             app(NotificationService::class)->returnStatusChanged($returnRequest, 'approved');

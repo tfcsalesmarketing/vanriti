@@ -29,7 +29,7 @@
 </script>
 <div class="container py-5">
     <div style="background:#ffffff;border-radius:16px;box-shadow:0 8px 30px rgba(38,61,37,0.08);padding:2rem;">
-        {!! $page->content !!}
+        {!! clean_html($page->content) !!}
     </div>
 </div>
 @endsection

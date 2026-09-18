@@ -78,7 +78,9 @@ class AuthTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('password');
+        // Generic message under the email field prevents email-enumeration via
+        // distinct error keys.
+        $response->assertSessionHasErrors('email');
         $this->assertGuest('web');
     }
 

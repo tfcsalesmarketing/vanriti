@@ -201,13 +201,9 @@
             var card = trig.closest('.media-card');
             var form = document.getElementById('mediaDeleteForm_' + card.dataset.id);
             if (!form) return;
-            if (typeof vrConfirm === 'function') {
-                vrConfirm('Delete this image? This cannot be undone.').then(function (ok) {
-                    if (ok) form.submit();
-                });
-            } else if (window.confirm('Delete this image? This cannot be undone.')) {
-                form.submit();
-            }
+            window.vrConfirm('Delete this image? This cannot be undone.').then(function (ok) {
+                if (ok) form.submit();
+            });
         });
     });
 

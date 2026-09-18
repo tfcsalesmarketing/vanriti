@@ -17,10 +17,13 @@ class Admin extends Authenticatable
         'password',
         'phone',
         'avatar',
-        'is_super_admin',
         'status',
         'last_login_at',
         'last_login_ip',
+    ];
+
+    protected $guarded = [
+        'is_super_admin',
     ];
 
     protected $hidden = [
@@ -45,6 +48,15 @@ class Admin extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Allow explicitly promoting an admin to super-admin without exposing the
+     * flag to mass assignment (is_super_admin is guarded).
+     */
+    public function makeSuperAdmin(): void
+    {
+        $this->forceFill(['is_super_admin' => true])->save();
     }
 
     public function hasRole(string|array $roles): bool

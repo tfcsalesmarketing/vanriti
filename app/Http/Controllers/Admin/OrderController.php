@@ -8,6 +8,8 @@ use App\Models\Payment;
 use App\Services\ActivityLogger;
 use App\Services\NotificationService;
 use App\Services\OrderService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -22,6 +24,15 @@ class OrderController extends Controller
         'pending', 'processing', 'paid', 'failed', 'cancelled', 'refunded', 'partially_refunded',
     ];
 
+    protected array $tabs = [
+        'pending' => 'Pending Orders',
+        'assign_courier' => 'Assign Courier',
+        'ready_to_ship' => 'Ready to Ship',
+        'shipped' => 'Shipped',
+        'cancelled' => 'Cancelled',
+        'delivered' => 'Delivered',
+    ];
+
     public function __construct(
         protected OrderService $orderService,
         protected ActivityLogger $logger,
@@ -29,8 +40,22 @@ class OrderController extends Controller
 
     public function index(Request $request): View
     {
+        $activeTab = (string) $request->input('tab', 'pending');
+
+        if (! array_key_exists($activeTab, $this->tabs)) {
+            $activeTab = 'pending';
+        }
+
+        // Per-tab counts (independent of the active filter query).
+        $tabCounts = [];
+        foreach ($this->tabs as $key => $label) {
+            $countQuery = Order::query();
+            $this->applyTabScope($countQuery, $key);
+            $tabCounts[$key] = $countQuery->count();
+        }
+
         $orders = Order::query()
-            ->with(['user', 'items', 'payments'])
+            ->with(['user', 'items', 'payments', 'shipments'])
             ->withCount('items')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $q = $request->input('q');
@@ -53,7 +78,11 @@ class OrderController extends Controller
             })
             ->when($request->filled('date_to'), function ($query) use ($request) {
                 $query->whereDate('created_at', '<=', $request->input('date_to'));
-            })
+            });
+
+        $this->applyTabScope($orders, $activeTab);
+
+        $orders = $orders
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
@@ -62,7 +91,76 @@ class OrderController extends Controller
             'orders' => $orders,
             'orderStatuses' => $this->orderStatuses,
             'paymentStatuses' => $this->paymentStatuses,
+            'tabs' => $this->tabs,
+            'activeTab' => $activeTab,
+            'tabCounts' => $tabCounts,
         ]);
+    }
+
+    /**
+     * Scope the orders query to one pipeline tab. Uses order status (now kept in
+     * sync by ShipMojo webhooks) plus shipment state so existing rows without a
+     * synced order status still land on the right tab.
+     */
+    protected function applyTabScope(Builder $query, string $tab): Builder
+    {
+        switch ($tab) {
+            case 'pending':
+                $query->whereNotIn('order_status', ['cancelled', 'failed', 'delivered'])
+                    ->whereDoesntHave('shipments', function (Builder $q) {
+                        $q->whereNotNull('shipmojo_pushed_at');
+                    });
+                break;
+
+            case 'ready_to_ship':
+                $query->whereNotIn('order_status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'])
+                    ->whereHas('shipments', function (Builder $q) {
+                        $q->whereNotNull('shipmojo_pushed_at')
+                            ->whereNotNull('awb_number')
+                            ->whereNotIn('status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled']);
+                    });
+                break;
+
+            case 'assign_courier':
+                $query->whereNotIn('order_status', ['cancelled', 'failed', 'delivered'])
+                    ->whereHas('shipments', function (Builder $q) {
+                        $q->whereNotNull('shipmojo_pushed_at')
+                            ->whereNotIn('status', ['delivered', 'returning', 'returned', 'failed', 'cancelled']);
+                    })
+                    ->whereDoesntHave('shipments', function (Builder $q) {
+                        $q->whereNotNull('shipmojo_pushed_at')->whereNotNull('awb_number');
+                    });
+                break;
+
+            case 'shipped':
+                $query->where(function (Builder $q) {
+                    $q->whereIn('order_status', ['shipped', 'out_for_delivery'])
+                        ->orWhereHas('shipments', function (Builder $sq) {
+                            $sq->whereIn('status', ['shipped', 'out_for_delivery']);
+                        });
+                });
+                break;
+
+            case 'cancelled':
+                $query->where(function (Builder $q) {
+                    $q->whereIn('order_status', ['cancelled', 'failed'])
+                        ->orWhereHas('shipments', function (Builder $sq) {
+                            $sq->whereIn('status', ['returning', 'returned', 'failed', 'cancelled']);
+                        });
+                });
+                break;
+
+            case 'delivered':
+                $query->where(function (Builder $q) {
+                    $q->where('order_status', 'delivered')
+                        ->orWhereHas('shipments', function (Builder $sq) {
+                            $sq->whereIn('status', ['delivered']);
+                        });
+                });
+                break;
+        }
+
+        return $query;
     }
 
     public function show(Order $order): View
@@ -115,6 +213,52 @@ class OrderController extends Controller
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    public function bulkCancel(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::with('items')->whereKey($data['order_ids'])->get();
+
+        $succeeded = 0;
+        $errors = [];
+
+        foreach ($orders as $order) {
+            try {
+                $oldStatus = $order->order_status;
+
+                $this->orderService->cancelOrder($order, 'Cancelled via admin bulk action');
+
+                $this->logger->orderStatusChanged(
+                    auth('admin')->user(),
+                    $order,
+                    $oldStatus,
+                    'cancelled',
+                    "Order cancelled via admin bulk action."
+                );
+
+                if ($order->user) {
+                    app(NotificationService::class)->orderStatusChanged($order, 'cancelled');
+                }
+
+                $succeeded++;
+            } catch (\Throwable $e) {
+                $errors[] = $order->order_number.': '.$e->getMessage();
+            }
+        }
+
+        if ($errors === []) {
+            return redirect()->back()->with('success', "{$succeeded} order(s) cancelled successfully.");
+        }
+
+        return redirect()->back()->with(
+            $succeeded === 0 ? 'error' : 'warning',
+            "{$succeeded} order(s) cancelled, ".count($errors).' failed. '.implode(' | ', array_slice($errors, 0, 5))
+        );
     }
 
     public function updatePaymentStatus(Request $request, Order $order)

@@ -43,7 +43,7 @@ class CartController extends Controller
             $shipping = ['charge' => 0, 'eligible_for_free' => false, 'estimated_days' => '3-7'];
         }
 
-        $couponDiscount = 0;
+        $couponDiscount = (float) session('cart_coupon.discount', 0);
         $couponCode = session('cart_coupon.code');
 
         return view('storefront.cart.index', compact(
@@ -191,7 +191,7 @@ class CartController extends Controller
     public function applyCoupon(Request $request): RedirectResponse
     {
         $request->validate([
-            'code' => 'required|string|max:50',
+            'code' => 'nullable|string|max:50',
         ]);
 
         $code = strtoupper(trim($request->code));
@@ -221,6 +221,11 @@ class CartController extends Controller
             ],
         ]);
 
-        return back()->with('success', $result['message']);
+        $message = $result['message'];
+        if ($result['discount'] > 0) {
+            $message .= ' You saved '.format_price($result['discount']).'.';
+        }
+
+        return back()->with('success', $message);
     }
 }

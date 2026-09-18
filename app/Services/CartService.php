@@ -302,9 +302,18 @@ class CartService
                 'gst_rate' => $variant?->gst_rate ?? $product->gst_rate,
             ]);
 
-            $available = $variant ? $variant->stock : ($product->variants()->exists() ? $product->variants()->sum('stock') : $product->stock);
+            $available = $variant
+                ? (int) $variant->stock
+                : ($product->variants()->exists() ? (int) $product->variants()->where('status', 'active')->sum('stock') : (int) $product->stock);
+
+            if ($available <= 0) {
+                $item->delete();
+
+                continue;
+            }
+
             if ($item->quantity > $available) {
-                $item->update(['quantity' => max(1, (int) $available)]);
+                $item->update(['quantity' => $available]);
             }
         }
     }

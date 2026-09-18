@@ -30,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => RedirectIfAuthenticated::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: ['checkout/verify']);
+        $middleware->validateCsrfTokens(except: ['checkout/verify', 'razorpay/webhook', 'shipmojo/webhook']);
 
         $middleware->appendToGroup('web', [
             SecurityHeaders::class,

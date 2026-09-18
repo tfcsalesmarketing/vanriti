@@ -47,6 +47,7 @@ class SettingsSeeder extends Seeder
             ['payment', 'razorpay_enabled', '0', 'Razorpay Enabled', 'boolean'],
             ['payment', 'razorpay_key_id', '', 'Razorpay Key ID', 'text'],
             ['payment', 'razorpay_key_secret', '', 'Razorpay Key Secret', 'password'],
+            ['payment', 'razorpay_webhook_secret', '', 'Razorpay Webhook Secret', 'password'],
 
             ['seo', 'meta_title', 'VANRITI - Natural Beauty & Wellness Products', 'Default Meta Title', 'text'],
             ['seo', 'meta_description', 'Discover premium natural beauty, personal care, herbal and wellness products crafted with care.', 'Default Meta Description', 'text'],

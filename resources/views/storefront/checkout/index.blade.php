@@ -304,6 +304,21 @@
                             </h5>
 
                             <div class="mb-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-end-0"><i class="ri-coupon-3-line text-muted"></i></span>
+                                    <input type="text" name="code" class="form-control form-control-sm border-start-0" placeholder="Coupon code"
+                                           form="couponCheckoutForm" value="{{ $couponCode ?? '' }}">
+                                    @if ($couponCode)
+                                        <button type="submit" form="removeCouponForm" class="btn btn-sm btn-outline-secondary text-nowrap">
+                                            <i class="ri-close-line me-1"></i>Remove
+                                        </button>
+                                    @else
+                                        <button type="submit" form="couponCheckoutForm" class="btn vr-app-outline-btn btn-sm text-nowrap">Apply</button>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
                                 <div class="d-flex flex-column gap-2 max-h-48 overflow-y-auto" style="max-height: 200px;">
                                     @foreach ($cart->items as $ci)
                                         <div class="d-flex align-items-center gap-2 py-1">
@@ -364,6 +379,17 @@
                     </div>
                 </div>
             </form>
+
+            <form id="couponCheckoutForm" method="POST" action="{{ route('cart.coupon') }}" style="display:none;">
+                @csrf
+            </form>
+
+            @if ($couponCode)
+                <form id="removeCouponForm" method="POST" action="{{ route('cart.coupon') }}" style="display:none;">
+                    @csrf
+                    <input type="hidden" name="code" value="">
+                </form>
+            @endif
         @endif
     </div>
 </div>

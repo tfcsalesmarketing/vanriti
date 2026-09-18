@@ -86,7 +86,7 @@ class InventoryService
             $after = $before + $quantityChange;
 
             if ($after < 0 && $type === 'sale') {
-                $after = 0;
+                throw new \RuntimeException('Insufficient stock to complete this adjustment.');
             }
 
             $inventory->update(['stock_on_hand' => max(0, $after)]);

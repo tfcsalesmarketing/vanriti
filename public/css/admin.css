@@ -662,6 +662,12 @@ pre.nl2p { white-space: pre-wrap; word-break: break-word; }
     flex-shrink: 0;
 }
 
+.vr-confirm-icon.vr-icon-primary { background: #eaf3ec; color: #1e5c37; }
+
+.vr-confirm-icon.vr-icon-success { background: #e6f7ed; color: #198754; }
+
+.vr-confirm-icon.vr-icon-danger { background: #fdecec; color: #dc3545; }
+
 .vr-confirm-title {
     margin: 0;
     font-weight: 700;
