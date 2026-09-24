@@ -1,0 +1,656 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   STOREFRONT AUTHENTICATION STYLES (Login, Register, Forgot & Reset Password)
+   Brand: Vanriti ("Pure By Nature")
+   Aesthetic: Premium, Luxury Organic, Glassmorphism & High-end E-Commerce
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --vr-auth-primary: #263D25;
+    --vr-auth-primary-hover: #1e311e;
+    --vr-auth-accent: #00a884;
+    --vr-auth-accent-glow: rgba(0, 168, 132, 0.18);
+    --vr-auth-purple: #7c4dff;
+    --vr-auth-bg-dark: #192718;
+    --vr-auth-text-dark: #1b261b;
+    --vr-auth-text-muted: #627263;
+    --vr-auth-border: #e2e8e2;
+    --vr-auth-border-focus: #263D25;
+    --vr-auth-card-bg: rgba(255, 255, 255, 0.96);
+    --vr-auth-radius: 1.25rem;
+}
+
+/* ── Full-Bleed Auth Shell & Ambient Background Mesh ─────────────────── */
+.vr-auth-shell {
+    min-height: calc(100vh - 140px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    background-color: #f6f8f6;
+    background-image:
+        radial-gradient(900px 500px at 15% 10%, rgba(38, 61, 37, 0.09), transparent 70%),
+        radial-gradient(800px 450px at 85% 90%, rgba(0, 168, 132, 0.1), transparent 65%),
+        radial-gradient(600px 300px at 50% 50%, rgba(124, 77, 255, 0.05), transparent 60%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative background blur blobs */
+.vr-auth-shell::before,
+.vr-auth-shell::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.vr-auth-shell::before {
+    width: 320px;
+    height: 320px;
+    top: -60px;
+    left: -60px;
+    background: rgba(38, 61, 37, 0.12);
+}
+
+.vr-auth-shell::after {
+    width: 380px;
+    height: 380px;
+    bottom: -80px;
+    right: -80px;
+    background: rgba(0, 168, 132, 0.14);
+}
+
+/* ── Auth Card Master Container (Split / Dual-Panel) ─────────────────── */
+.vr-auth-container {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.vr-auth-container-narrow {
+    max-width: 480px !important;
+}
+
+.vr-auth-card {
+    width: 100% !important;
+    max-width: none !important;
+    border: 1px solid var(--vr-auth-border);
+    border-radius: var(--vr-auth-radius);
+    background: var(--vr-auth-card-bg);
+    box-shadow:
+        0 24px 64px -16px rgba(25, 39, 24, 0.14),
+        0 4px 16px -4px rgba(0, 0, 0, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+/* Grid Layout: Hero Panel + Form Panel */
+.vr-auth-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .vr-auth-container {
+        width: 70% !important;
+        max-width: 1100px !important;
+        margin: 0 auto !important;
+    }
+    .vr-auth-grid {
+        display: grid !important;
+        grid-template-columns: 42% 58% !important;
+    }
+}
+
+/* ── Hero Left Showcase Panel (Desktop) ──────────────────────────────── */
+.vr-auth-hero {
+    background: linear-gradient(145deg, #1b2f1a 0%, #263D25 50%, #162615 100%);
+    padding: 3rem 2.5rem;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.vr-auth-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background:
+        radial-gradient(circle at 80% 20%, rgba(0, 168, 132, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 10% 80%, rgba(124, 77, 255, 0.15) 0%, transparent 45%);
+    pointer-events: none;
+}
+
+.vr-auth-hero-brand {
+    position: relative;
+    z-index: 2;
+}
+
+.vr-auth-hero-kicker {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    color: #8ed6a3;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.vr-auth-hero-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+    color: #ffffff;
+}
+
+.vr-auth-hero-body {
+    position: relative;
+    z-index: 2;
+    margin: 2rem 0;
+}
+
+.vr-auth-feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.vr-auth-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.vr-auth-feature-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: rgba(142, 214, 163, 0.18);
+    border: 1px solid rgba(142, 214, 163, 0.3);
+    color: #8ed6a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.vr-auth-hero-footer {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 1.25rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.65);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vr-auth-hero-footer i {
+    color: #25D366;
+    font-size: 1.1rem;
+}
+
+/* ── Form Right Panel ────────────────────────────────────────────────── */
+.vr-auth-form-panel {
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+@media (min-width: 576px) {
+    .vr-auth-form-panel {
+        padding: 3rem 2.75rem;
+    }
+}
+
+/* ── Brand Header (Mobile & Centered Cards) ─────────────────────────── */
+.vr-auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.vr-kicker {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--vr-auth-primary);
+}
+
+.vr-brand {
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--vr-auth-text-dark);
+}
+
+.vr-auth-subtitle {
+    color: var(--vr-auth-text-muted);
+    font-size: 0.88rem;
+    margin-top: 0.35rem;
+}
+
+/* ── Step Progress Indicator (Registration) ─────────────────────────── */
+.vr-step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.vr-step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.vr-step-num {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #eaf1ea;
+    color: var(--vr-auth-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e0e8e0;
+    transition: all 0.3s ease;
+}
+
+.vr-step-item.active .vr-step-num {
+    background: var(--vr-auth-primary);
+    color: #ffffff;
+    border-color: var(--vr-auth-primary);
+    box-shadow: 0 0 0 4px rgba(38, 61, 37, 0.15);
+}
+
+.vr-step-item.completed .vr-step-num {
+    background: var(--vr-auth-accent);
+    color: #ffffff;
+    border-color: var(--vr-auth-accent);
+}
+
+.vr-step-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--vr-auth-text-muted);
+}
+
+.vr-step-item.active .vr-step-label {
+    color: var(--vr-auth-text-dark);
+    font-weight: 700;
+}
+
+.vr-step-connector {
+    flex: 1;
+    max-width: 60px;
+    height: 2px;
+    background: #e0e8e0;
+    margin: 0 0.75rem;
+    transition: background 0.3s ease;
+}
+
+.vr-step-connector.active {
+    background: var(--vr-auth-accent);
+}
+
+/* ── Premium Form Controls & Prefix Icons ───────────────────────────── */
+.vr-input-wrap {
+    position: relative;
+}
+
+.vr-input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8c9b8d;
+    font-size: 1.15rem;
+    transition: color 0.2s ease;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.vr-input-wrap .form-control {
+    padding-left: 2.85rem;
+    padding-right: 1rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    border: 1.5px solid var(--vr-auth-border);
+    background-color: #fbfcfb;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--vr-auth-text-dark);
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, transform 0.22s ease;
+}
+
+.vr-input-wrap .form-control:hover {
+    border-color: #c2d1c3;
+    background-color: #ffffff;
+}
+
+.vr-input-wrap .form-control:focus {
+    border-color: var(--vr-auth-primary);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(38, 61, 37, 0.12);
+    outline: none;
+}
+
+.vr-input-wrap .form-control:focus + .vr-input-icon,
+.vr-input-wrap:focus-within .vr-input-icon {
+    color: var(--vr-auth-primary);
+}
+
+/* Password field wrap override */
+.password-wrap {
+    position: relative;
+}
+
+.password-wrap .form-control {
+    padding-left: 2.85rem;
+    padding-right: 2.85rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #8c9b8d;
+    padding: 0.35rem 0.5rem;
+    font-size: 1.15rem;
+    cursor: pointer;
+    border-radius: 0.4rem;
+    transition: color 0.2s ease;
+    z-index: 5;
+}
+
+.password-toggle-btn:hover {
+    color: var(--vr-auth-text-dark);
+}
+
+/* Invalid State */
+.vr-input-wrap .form-control.is-invalid,
+.password-wrap .form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: none;
+}
+
+.vr-input-wrap .form-control.is-invalid:focus,
+.password-wrap .form-control.is-invalid:focus {
+    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.14);
+}
+
+/* ── Primary & Secondary Buttons ────────────────────────────────────── */
+.btn-vr {
+    background: linear-gradient(135deg, #263D25 0%, #1c2e1b 100%);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 8px 20px -6px rgba(38, 61, 37, 0.35);
+    transition: all 0.25s ease;
+}
+
+.btn-vr:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1f331e 0%, #152414 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -6px rgba(38, 61, 37, 0.45);
+}
+
+.btn-vr:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px -4px rgba(38, 61, 37, 0.3);
+}
+
+.btn-outline-vr {
+    border: 1.5px solid var(--vr-auth-primary);
+    color: var(--vr-auth-primary) !important;
+    background: transparent;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.25s ease;
+}
+
+.btn-outline-vr:hover:not(:disabled) {
+    background: rgba(38, 61, 37, 0.06);
+    color: var(--vr-auth-primary-hover) !important;
+    border-color: var(--vr-auth-primary-hover);
+    transform: translateY(-1px);
+}
+
+.vr-link-underline {
+    color: var(--vr-auth-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+    position: relative;
+}
+
+.vr-link-underline:hover {
+    color: var(--vr-auth-accent);
+}
+
+.vr-link-underline::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1.5px;
+    bottom: -2px;
+    left: 0;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.25s ease-out;
+}
+
+.vr-link-underline:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+/* ── WhatsApp OTP Panel & Trust Styling ──────────────────────────────── */
+.vr-otp-panel {
+    background: linear-gradient(180deg, #f5fbf7 0%, #edf7f1 100%);
+    border: 1.5px solid rgba(0, 168, 132, 0.22);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 12px 28px -16px rgba(0, 168, 132, 0.25);
+}
+
+.vr-otp-step-header {
+    text-align: center;
+}
+
+.vr-otp-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(37, 211, 102, 0.15), rgba(0, 168, 132, 0.12));
+    border: 2px solid rgba(37, 211, 102, 0.3);
+    font-size: 1.6rem;
+    color: #25D366;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 6px 16px -6px rgba(37, 211, 102, 0.3);
+}
+
+.vr-whatsapp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(37, 211, 102, 0.12);
+    border: 1px solid rgba(37, 211, 102, 0.28);
+    color: #127a3c;
+    padding: 0.25rem 0.65rem;
+    border-radius: 1rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* ── Large Centred OTP Digit Code Input ──────────────────────────────── */
+.vr-otp-input {
+    border-radius: 0.85rem !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.55em !important;
+    font-variant-numeric: tabular-nums;
+    text-indent: 0.55em;
+    background: #ffffff !important;
+    border: 2px solid rgba(0, 168, 132, 0.35) !important;
+    color: var(--vr-auth-text-dark) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+    transition: all 0.22s ease !important;
+}
+
+.vr-otp-input:focus {
+    border-color: #00a884 !important;
+    box-shadow: 0 0 0 4px rgba(0, 168, 132, 0.18), inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    outline: none;
+}
+
+/* Divider with label */
+.vr-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.25rem 0;
+}
+
+.vr-divider::before,
+.vr-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--vr-auth-border);
+}
+
+.vr-divider-label {
+    padding: 0 0.85rem;
+    color: var(--vr-auth-text-muted);
+    font-size: 0.76rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* Step Animations */
+@keyframes vrStepIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes vrStepOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.98);
+    }
+}
+
+.vr-reg-step-in {
+    animation: vrStepIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.vr-reg-step-out {
+    animation: vrStepOut 0.2s cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+/* Button Loading Spinner */
+.btn-vr.vr-loading,
+.btn-outline-vr.vr-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.btn-vr.vr-loading::after,
+.btn-outline-vr.vr-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1.2em;
+    height: 1.2em;
+    margin: -0.6em 0 0 -0.6em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: vrSpin 0.6s linear infinite;
+}
+
+@keyframes vrSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Responsive Breakpoints ─────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+    .vr-auth-hero {
+        display: none; /* Mobile/Tablet shows clean single card */
+    }
+
+    .vr-auth-container {
+        max-width: 500px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vr-auth-shell {
+        padding: 1.25rem 0.75rem;
+    }
+
+    .vr-auth-form-panel {
+        padding: 2rem 1.25rem;
+    }
+
+    .vr-otp-input {
+        font-size: 1.35rem !important;
+        letter-spacing: 0.4em !important;
+    }
+
+    .vr-step-label {
+        display: none; /* Compact indicator on narrow mobile */
+    }
+}
