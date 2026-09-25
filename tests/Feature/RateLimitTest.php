@@ -17,15 +17,15 @@ class RateLimitTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10'])
                 ->post(route('login.submit'), [
-                    'email' => 'rate-target@example.com',
+                    'login' => 'rate-target@example.com',
                     'password' => 'wrong-password',
                 ])
-                ->assertSessionHasErrors('email');
+                ->assertSessionHasErrors('login');
         }
 
         $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10'])
             ->post(route('login.submit'), [
-                'email' => 'rate-target@example.com',
+                'login' => 'rate-target@example.com',
                 'password' => 'wrong-password',
             ])
             ->assertStatus(429);

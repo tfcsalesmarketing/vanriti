@@ -53,23 +53,9 @@ class CartController extends Controller
 
     public function add(Request $request, Product $product): JsonResponse|RedirectResponse
     {
-        // ── Guest gate: adding to cart requires an account ──────────────────────
-        // Any add-to-cart from a guest is rejected here (server-side, authoritative).
-        // For AJAX/fetch requests we return 401 plus a pre-rendered login modal so
-        // the storefront JS can open it in place; for plain form posts (no JS) we
-        // fall back to a normal redirect to the login page.
-        if (auth('web')->guest()) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'auth_required' => true,
-                    'message' => 'Please login to continue.',
-                    'login_modal' => view('storefront.partials.login-modal')->render(),
-                ], 401);
-            }
-
-            return redirect()->guest(route('login'));
-        }
-
+        // Guests may add to cart anonymously (the cart is keyed to the session
+        // cookie) and reconcile into their account on login. Checkout still
+        // requires an authenticated user.
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1|max:5',
             'variant_id' => 'nullable|integer|exists:product_variants,id,product_id,'.$product->id,

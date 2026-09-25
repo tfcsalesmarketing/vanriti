@@ -65,7 +65,7 @@ class WishlistTest extends TestCase
 
         $this->withCookie('vanriti_wishlist', 'wish_login')
             ->post(route('login.submit'), [
-                'email' => $user->email,
+                'login' => $user->email,
                 'password' => 'password',
             ])
             ->assertRedirect();

@@ -52,9 +52,12 @@ class MediaTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.media.store'), [
                 'name' => 'Hero Flower Banner',
-                'image' => UploadedFile::fake()->image('hero.jpg', 600, 400),
+                'images' => [
+                    UploadedFile::fake()->image('hero.jpg', 600, 400),
+                ],
             ]);
 
+        $response->assertSessionHasNoErrors();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('media', [
@@ -131,22 +134,24 @@ class MediaTest extends TestCase
         $this->assertDatabaseMissing('media', ['id' => $media->id]);
     }
 
-    public function test_upload_requires_name_and_valid_image(): void
+    public function test_upload_requires_at_least_one_valid_image(): void
     {
         Storage::fake('s3');
         $admin = Admin::factory()->superAdmin()->create();
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.media.store'), [
-                'name' => '',
-                'image' => UploadedFile::fake()->image('hero.jpg'),
+                'name' => 'No Files',
             ])
-            ->assertSessionHasErrors('name');
+            ->assertSessionHasErrors('images');
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.media.store'), [
-                'name' => 'Only Name',
+                'name' => 'Not An Image',
+                'images' => [
+                    UploadedFile::fake()->create('notes.txt', 100, 'text/plain'),
+                ],
             ])
-            ->assertSessionHasErrors('image');
+            ->assertSessionHasErrors('images.0');
     }
 }

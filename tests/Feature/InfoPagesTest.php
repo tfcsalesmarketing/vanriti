@@ -2,12 +2,19 @@
 
 namespace Tests\Feature;
 
+use Database\Seeders\StaticPagesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class InfoPagesTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(StaticPagesSeeder::class);
+    }
 
     public function test_about_page_returns_200(): void
     {

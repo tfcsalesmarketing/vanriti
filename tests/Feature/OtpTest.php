@@ -36,6 +36,7 @@ class OtpTest extends TestCase
 
     public function test_otp_send_hits_whatsapp_and_persists(): void
     {
+        User::factory()->create(['status' => 'active', 'phone' => '9876543210']);
         Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.abc123']]], 200)]);
 
         $response = $this->postJson('/otp/send', [
@@ -77,6 +78,7 @@ class OtpTest extends TestCase
 
     public function test_otp_ignored_when_feature_disabled(): void
     {
+        User::factory()->create(['status' => 'active', 'phone' => '9876543210']);
         \App\Models\Setting::where('key', 'whatsapp_otp_enabled')->update(['value' => '0']);
 
         $response = $this->postJson('/otp/send', [

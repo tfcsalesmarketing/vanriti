@@ -91,9 +91,9 @@ class CartTest extends TestCase
     public function test_quantity_greater_than_stock_is_rejected(): void
     {
         $user = User::factory()->create();
-        $product = Product::factory()->active()->create(['stock' => 5]);
+        $product = Product::factory()->active()->create(['stock' => 3]);
 
-        $response = $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 10]);
+        $response = $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 5]);
 
         $response->assertSessionHas('error');
         $this->assertDatabaseCount('cart_items', 0);

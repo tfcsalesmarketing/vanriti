@@ -571,7 +571,7 @@ class ConsentTest extends TestCase
         $this->withCookie(static::COOKIE, $this->cookieFor([
             'analytics' => true,
         ]))->post(route('login.submit'), [
-            'email' => 'consent.login@example.com',
+            'login' => 'consent.login@example.com',
             'password' => 'password123',
         ])->assertRedirect(route('account.dashboard'));
 
@@ -619,7 +619,7 @@ class ConsentTest extends TestCase
         ]);
 
         $this->post(route('login.submit'), [
-            'email' => 'consent.blank@example.com',
+            'login' => 'consent.blank@example.com',
             'password' => 'password123',
         ])->assertRedirect(route('account.dashboard'));
 

@@ -12,6 +12,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -55,6 +56,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Any other request (storefront) falls through to Laravel's default error
         // views (resources/views/errors), which stay untouched.
         $exceptions->render(function (Throwable $e, Request $request) {
+            // Validation exceptions must be handled by Laravel's default renderer
+            // (which redirects back with the error bag), not the admin error-page
+            // renderer below. Otherwise admin form validation failures produce a
+            // blank 500 instead of inline field errors.
+            if ($e instanceof ValidationException) {
+                return;
+            }
             if (! $request->is('admin', 'admin/*')) {
                 return;
             }
