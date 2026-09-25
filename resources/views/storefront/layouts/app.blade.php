@@ -208,7 +208,7 @@
     </main>
     @include('storefront.partials.cart-drawer')
     @include('storefront.partials.login-modal')
-    @include('storefront.partials.bottom-bar')
+    @include('storefront.partials.footer')
 
     {{-- Guest flag for the storefront JS: lets the add-to-cart / wishlist
          handlers + login modal know whether a replayed action must first pass
