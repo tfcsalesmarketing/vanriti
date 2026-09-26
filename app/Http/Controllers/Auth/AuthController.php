@@ -284,6 +284,14 @@ class AuthController extends Controller
                 $password[] = 'confirmed';
             }
 
+            if ($request->exists('phone')) {
+                return [
+                    'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+                    'password' => $password,
+                    'password_confirmation' => ['required', 'same:password'],
+                ];
+            }
+
             return [
                 'email' => ['required', 'email'],
                 'password' => $password,
@@ -370,6 +378,50 @@ class AuthController extends Controller
 
     public function reset(Request $request): RedirectResponse
     {
+        $data = $request->validate([
+            'token' => ['required'],
+            'email' => ['nullable', 'required_without:phone', 'email'],
+            'phone' => ['nullable', 'required_without:email', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+            'password' => ['required', 'confirmed', $this->passwordRule()],
+            'password_confirmation' => ['required', 'same:password'],
+        ], [
+            'password_confirmation.same' => 'The password confirmation does not match.',
+            'phone.required_without' => 'Please enter your email address or mobile number.',
+            'email.required_without' => 'Please enter your email address or mobile number.',
+            'phone.regex' => 'Please enter a valid 10-digit mobile number.',
+            'phone.max' => 'Please enter a mobile number up to 15 digits.',
+        ]);
+
+        // ── phone-only reset: the OTP flow has already verified the phone, so
+        //    look the user up by phone and verify the broker token directly.
+        //    The token repository keys on getEmailForPasswordReset(), which
+        //    falls back to the phone for accounts without an email.
+        if ($request->filled('phone')) {
+            $phone = Str::of($request->string('phone'))->replace([' ', '-'], '')->trim()->toString();
+            $user = User::query()->where('phone', $phone)->first();
+
+            if (! $user) {
+                return back()->withErrors(['email' => __('We can\'t find a user with that mobile number.')]);
+            }
+
+            $repository = Password::broker('users')->getRepository();
+
+            if (! $repository->exists($user, (string) $request->input('token'))) {
+                return back()->withErrors(['email' => __('This password reset link is invalid or has expired.')]);
+            }
+
+            $user->forceFill(['password' => Hash::make($data['password'])])->save();
+            $user->setRememberToken(Str::random(60));
+            event(new PasswordReset($user));
+            $repository->delete($user);
+
+            auth('web')->login($user);
+            $request->session()->regenerate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('account.dashboard')->with('success', __('Your password has been reset.'));
+        }
+
         $request->merge(['email' => Str::lower(trim($request->string('email')->toString()))]);
 
         $request->validate([

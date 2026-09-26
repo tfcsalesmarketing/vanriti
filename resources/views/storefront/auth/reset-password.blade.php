@@ -21,16 +21,29 @@
                     @csrf
                     <input type="hidden" name="token" value="{{ $token }}">
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="reset_email">Email Address</label>
-                        <div class="vr-input-wrap">
-                            <input type="email" id="reset_email" name="email" value="{{ old('email', request('email')) }}"
-                                   class="form-control" placeholder="e.g. user@domain.com"
-                                   autocomplete="email" autofocus>
-                            <i class="ri-mail-line vr-input-icon"></i>
+                    @if(old('phone', request('phone')))
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" for="reset_phone">Mobile Number</label>
+                            <div class="vr-input-wrap">
+                                <input type="tel" id="reset_phone" name="phone" value="{{ old('phone', request('phone')) }}"
+                                       class="form-control" placeholder="98765 43210"
+                                       autocomplete="tel" inputmode="tel">
+                                <i class="ri-smartphone-line vr-input-icon"></i>
+                            </div>
+                            <div class="invalid-feedback d-block mt-1 small"></div>
                         </div>
-                        <div class="invalid-feedback d-block mt-1 small"></div>
-                    </div>
+                    @else
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" for="reset_email">Email Address</label>
+                            <div class="vr-input-wrap">
+                                <input type="email" id="reset_email" name="email" value="{{ old('email', request('email')) }}"
+                                       class="form-control" placeholder="e.g. user@domain.com"
+                                       autocomplete="email" autofocus>
+                                <i class="ri-mail-line vr-input-icon"></i>
+                            </div>
+                            <div class="invalid-feedback d-block mt-1 small"></div>
+                        </div>
+                    @endif
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold" for="reset_password">New Password</label>

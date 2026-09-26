@@ -135,9 +135,22 @@ class RazorpayGateway implements PaymentGateway
 
     public function refund(Payment $payment, float $amount, ?string $reference = null): array
     {
+        $paymentResponse = (array) ($payment->gateway_response ?? []);
+
+        // payment_reference intentionally holds the Razorpay *order* id used
+        // by createOrder/verify. The refund endpoint requires the captured
+        // *payment* id, which both the webhook and the browser-return path
+        // store under webhook_payment_id. Fall back to payment_reference only
+        // when it already looks like a payment id (legacy records).
+        $paymentId = (string) ($paymentResponse['webhook_payment_id'] ?? $payment->payment_reference);
+
+        if ($paymentId === '' || str_starts_with($paymentId, 'order_')) {
+            throw new \RuntimeException('No captured Razorpay payment id is available to refund.');
+        }
+
         $response = Http::withBasicAuth($this->keyId, $this->keySecret)
             ->asJson()
-            ->post('https://api.razorpay.com/v1/payments/'.$payment->payment_reference.'/refunds', [
+            ->post('https://api.razorpay.com/v1/payments/'.$paymentId.'/refunds', [
                 'amount' => (int) round($amount * 100),
             ]);
 

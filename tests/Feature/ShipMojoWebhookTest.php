@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\OrderStatusHistory;
+use App\Models\Setting;
 use App\Models\ShipmentTrackingEvent;
 use App\Notifications\OrderStatusNotification;
 use Database\Seeders\SettingsSeeder;
@@ -133,6 +134,25 @@ class ShipMojoWebhookTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_webhook_fails_closed_when_no_secret_configured(): void
+    {
+        $this->enableShipmojo(false, '');
+        Setting::updateOrCreate(['key' => 'shipmojo_webhook_secret'], ['value' => '']);
+
+        $order = $this->createOrder(['order_status' => 'confirmed']);
+        $shipment = $this->createShipment($order);
+
+        $this->postJson(route('shipmojo.webhook'), [
+            'order_id' => $shipment->shipmojo_order_id,
+            'status' => 'delivered',
+            'webhook_secret' => 'wrong-secret',
+        ])->assertStatus(401);
+
+        $this->assertSame('confirmed', $order->fresh()->order_status);
+        $this->assertSame('pending', $shipment->fresh()->status);
+        Notification::assertNothingSent();
+    }
+
     public function test_webhook_returns_404_for_unknown_order(): void
     {
         $this->enableShipmojo(true);
@@ -146,12 +166,14 @@ class ShipMojoWebhookTest extends TestCase
 
     public function test_webhook_ignored_when_disabled(): void
     {
-        $this->enableShipmojo(false);
+        $this->enableShipmojo(true, 'whsec_shipmojo_test');
+        Setting::updateOrCreate(['key' => 'shipmojo_webhook_enabled'], ['value' => '0']);
 
         $order = $this->createOrder(['order_status' => 'confirmed']);
         $shipment = $this->createShipment($order);
 
         $this->postJson(route('shipmojo.webhook'), [
+            'webhook_secret' => 'whsec_shipmojo_test',
             'order_id' => $shipment->shipmojo_order_id,
             'status' => 'delivered',
         ])->assertOk()->assertJson(['message' => 'Webhook disabled']);

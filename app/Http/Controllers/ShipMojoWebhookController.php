@@ -62,17 +62,18 @@ class ShipMojoWebhookController extends Controller
      *    x-webhook-signature / x-signature)
      *  - a "webhook_secret" field inside the JSON body
      *
-     * If no secret is configured yet the callback is accepted after a warning
-     * so integration can be validated before production keys are in place.
+     * Fails closed: when no secret is configured the callback is rejected so
+     * an unconfigured store never mutates orders or shipments from an
+     * unauthenticated HTTP request.
      */
     protected function authenticate(Request $request): bool
     {
         $secret = (string) secret_setting('shipmojo_webhook_secret', '');
 
         if ($secret === '') {
-            Log::warning('ShipMojo webhook received but no secret configured; accepting in test mode.');
+            Log::warning('ShipMojo webhook received but no secret configured; rejecting request.');
 
-            return true;
+            return false;
         }
 
         $publicKey = (string) $request->header('public-key', '');

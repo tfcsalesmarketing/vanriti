@@ -188,6 +188,7 @@ class OrderService
                 'discount_amount' => round($discountAmount, 2),
                 'coupon_discount' => $couponDiscount,
                 'shipping_charge' => $shipping['charge'],
+                'shipping_method' => $orderData['shipping_method'] ?? 'standard',
                 'taxable_amount' => $taxableAmount,
                 'tax_amount' => $taxAmount,
                 'cgst_amount' => $taxSplit['cgst'],
@@ -314,16 +315,22 @@ class OrderService
 
     public function cancelOrder(Order $order, ?string $reason = null): void
     {
-        if (! $order->isCancellable()) {
-            throw new \RuntimeException('This order can no longer be cancelled.');
-        }
-
+        // The cancellability check must happen atomically with the cancellation
+        // write: two concurrent cancel requests for the same order would both
+        // pass an outside-transaction check, double-restore stock and create
+        // duplicate refund records.
         DB::transaction(function () use ($order, $reason) {
-            $this->updateOrderStatus($order, 'cancelled', $reason ?? 'Cancelled by customer');
+            $locked = Order::query()->whereKey($order->id)->lockForUpdate()->first();
 
-            $order->update(['cancellation_reason' => $reason]);
+            if (! $locked || ! $locked->isCancellable()) {
+                throw new \RuntimeException('This order can no longer be cancelled.');
+            }
 
-            foreach ($order->items as $item) {
+            $this->updateOrderStatus($locked, 'cancelled', $reason ?? 'Cancelled by customer');
+
+            $locked->update(['cancellation_reason' => $reason]);
+
+            foreach ($locked->items as $item) {
                 $stockable = $item->product_variant_id
                     ? ProductVariant::find($item->product_variant_id)
                     : Product::find($item->product_id);
@@ -332,9 +339,9 @@ class OrderService
                     $this->inventoryService->withReference(
                         'reversal',
                         $stockable,
-                        $order,
+                        $locked,
                         $item->quantity,
-                        "Stock restored for cancelled order {$order->order_number}"
+                        "Stock restored for cancelled order {$locked->order_number}"
                     );
                 }
             }
@@ -342,32 +349,46 @@ class OrderService
             // A paid order that is cancelled must produce a refund record for
             // the finance team rather than silently keeping the customer's
             // money. Pending/failed/abandoned payments are excluded.
-            if ($order->payment_status === 'paid' && (float) $order->amount_paid > 0) {
+            if ($locked->payment_status === 'paid' && (float) $locked->amount_paid > 0) {
                 try {
                     app(RefundService::class)->createForOrder(
-                        $order,
-                        $order->user,
-                        (float) $order->amount_paid,
+                        $locked,
+                        $locked->user,
+                        (float) $locked->amount_paid,
                         'full',
                         $reason ?? 'Order cancelled'
                     );
-
-                    app(NotificationService::class)->notifyAdmins(
-                        'Refund required',
-                        sprintf(
-                            'Order %s was cancelled after payment. A refund of %s needs processing.',
-                            $order->order_number,
-                            format_price((float) $order->amount_paid)
-                        )
-                    );
                 } catch (\Throwable $e) {
                     Log::warning('Could not queue an automatic refund for a cancelled paid order.', [
-                        'order' => $order->order_number,
+                        'order' => $locked->order_number,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
         });
+
+        // Admin alert is sent after the transaction commits so the finance team
+        // is notified even when refund creation above failed. Failing to send
+        // the alert itself must never break the cancellation.
+        $order->refresh();
+
+        if ($order->payment_status === 'paid' && (float) $order->amount_paid > 0) {
+            try {
+                app(NotificationService::class)->notifyAdmins(
+                    'Refund required',
+                    sprintf(
+                        'Order %s was cancelled after payment. A refund of %s needs processing.',
+                        $order->order_number,
+                        format_price((float) $order->amount_paid)
+                    )
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Could not notify admins about a refund for a cancelled paid order.', [
+                    'order' => $order->order_number,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     protected function mapAddress(string $prefix, array $data): array

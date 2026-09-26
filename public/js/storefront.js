@@ -715,6 +715,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (btn) btn.disabled = false;
                     form.submit();
                 });
+        });
+    };
+
     // ---- Auto-open Side Cart Drawer after update/reload ----
     if (sessionStorage.getItem('vrOpenCartDrawer') === '1') {
         sessionStorage.removeItem('vrOpenCartDrawer');

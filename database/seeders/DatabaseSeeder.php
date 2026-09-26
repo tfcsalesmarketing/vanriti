@@ -19,8 +19,13 @@ class DatabaseSeeder extends Seeder
             ReturnPolicySeeder::class,
             CancellationPolicySeeder::class,
             DisclaimerPolicySeeder::class,
-            TestCredentialsSeeder::class,
         ]);
+
+        // Test credentials must never be seeded in production: seeding would
+        // reset the admin password and force super-admin promotion.
+        if (! app()->environment('production')) {
+            $this->call(TestCredentialsSeeder::class);
+        }
 
         $this->command?->info('Database seeded successfully.');
     }

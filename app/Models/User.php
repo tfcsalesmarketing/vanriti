@@ -87,6 +87,16 @@ class User extends Authenticatable
         return $this->status === 'active';
     }
 
+    /**
+     * Accounts registered with a mobile number only have no email; the
+     * password reset token store keys on this value, so fall back to the
+     * phone so phone-only users can use the OTP-verified reset flow.
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->email ?: $this->phone;
+    }
+
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token)
     {
         $this->notify(new ResetPasswordNotification($token));

@@ -577,6 +577,16 @@ class CheckoutController extends Controller
 
                 $this->paymentService->markPaid($payment);
 
+                // Record the captured Razorpay payment id alongside the order
+                // id held in payment_reference: the gateway refund endpoint
+                // requires the pay_* id, and both fulfilment paths must be able
+                // to refund after the browser never returns to the callback.
+                $payment->forceFill([
+                    'gateway_response' => array_merge((array) $payment->gateway_response, [
+                        'webhook_payment_id' => $request->input('razorpay_payment_id'),
+                    ]),
+                ])->save();
+
                 // Payment is now confirmed: the customer's cart is released and
                 // the in-flight Razorpay checkout (if any) is settled so a later
                 // submission starts a fresh order.
