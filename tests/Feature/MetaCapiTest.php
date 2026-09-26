@@ -50,7 +50,7 @@ class MetaCapiTest extends TestCase
             'type' => 'text',
         ]);
         Setting::updateOrCreate(['key' => 'meta_capi_access_token'], [
-            'value' => 'secret_token',
+            'value' => \Illuminate\Support\Facades\Crypt::encryptString('secret_token'),
             'group' => 'seo',
             'label' => 'Meta CAPI Access Token',
             'type' => 'password',
@@ -587,7 +587,7 @@ class MetaCapiTest extends TestCase
         Setting::updateOrCreate(['key' => 'online_payment_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'razorpay_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'razorpay_key_id'], ['value' => 'rzp_test_key']);
-        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => 'rzp_test_secret']);
+        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => \Illuminate\Support\Facades\Crypt::encryptString('rzp_test_secret')]);
     }
 
     protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus): Order

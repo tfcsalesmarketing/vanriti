@@ -43,6 +43,10 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role)
     {
+        if ($role->is_system) {
+            return back()->with('error', 'System roles cannot be edited.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|unique:roles,slug,'.$role->id,

@@ -94,7 +94,11 @@ class RefundAnalyticsHandoffTest extends TestCase
             'refund_amount' => $amount,
         ]);
 
-        return app(RefundService::class)->createFromReturn($returnRequest, $user, $amount, 'partial', 'Damaged');
+        $refund = app(RefundService::class)->createFromReturn($returnRequest, $user, $amount, 'partial', 'Damaged');
+
+        // A refund can only be completed once it has been approved; these tests
+        // exercise the completion step, so move it through approval first.
+        return app(RefundService::class)->approve($refund);
     }
 
     protected function serviceWithGateway(PaymentGateway $gateway): RefundService

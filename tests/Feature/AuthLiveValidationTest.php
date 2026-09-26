@@ -52,16 +52,18 @@ class AuthLiveValidationTest extends TestCase
         $response->assertOk()->assertJson(['valid' => true]);
     }
 
-    public function test_login_unknown_email_fails_live(): void
+    public function test_login_unknown_identifier_fails_live(): void
     {
         $response = $this->postJson(route('auth.validate'), [
             'context' => 'login',
-            'email' => 'nobody@example.com',
+            'login' => 'nobody@example.com',
             'password' => 'secret123',
         ]);
 
+        // The failure is reported under a single generic key so the endpoint
+        // cannot be used to distinguish a missing account from a wrong password.
         $response->assertStatus(422);
-        $this->assertArrayHasKey('email', $response->json('errors'));
+        $this->assertArrayHasKey('password', $response->json('errors'));
     }
 
     public function test_login_wrong_password_fails_live(): void
@@ -70,7 +72,7 @@ class AuthLiveValidationTest extends TestCase
 
         $response = $this->postJson(route('auth.validate'), [
             'context' => 'login',
-            'email' => 'user@example.com',
+            'login' => 'user@example.com',
             'password' => 'wrongpassword',
         ]);
 
@@ -113,17 +115,33 @@ class AuthLiveValidationTest extends TestCase
         $response->assertOk()->assertJson(['valid' => true]);
     }
 
-    public function test_register_duplicate_email_fails_live(): void
+    public function test_register_duplicate_email_does_not_leak_live(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
+        // Live validation must not reveal which emails are already registered
+        // (enumeration). Uniqueness is only enforced by the real register POST.
         $response = $this->postJson(route('auth.validate'), [
             'context' => 'register',
             'email' => 'taken@example.com',
         ]);
 
-        $response->assertStatus(422);
-        $this->assertArrayHasKey('email', $response->json('errors'));
+        $response->assertOk()->assertJson(['valid' => true]);
+    }
+
+    public function test_register_duplicate_email_rejected_on_submit(): void
+    {
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $response = $this->from(route('register'))->post(route('register.submit'), [
+            'name' => 'New User',
+            'email' => 'taken@example.com',
+            'phone' => '9876543210',
+            'password' => 'Password#123',
+            'password_confirmation' => 'Password#123',
+        ]);
+
+        $response->assertSessionHasErrors('email');
     }
 
     public function test_register_invalid_phone_fails_live(): void

@@ -263,24 +263,52 @@ class OrderController extends Controller
 
     public function updatePaymentStatus(Request $request, Order $order)
     {
+        $admin = auth('admin')->user();
+
+        if (! $admin?->hasPermission('manage-payments')) {
+            abort(403, 'You do not have permission to perform this action.');
+        }
+
         $data = $request->validate([
             'payment_status' => 'required|in:paid,failed,cancelled',
+            'reason' => 'nullable|string|max:1000',
         ]);
 
         $newStatus = $data['payment_status'];
+        $oldStatus = $order->payment_status;
 
-        $order->update(['payment_status' => $newStatus]);
+        $order->update([
+            'payment_status' => $newStatus,
+            'internal_notes' => ($order->internal_notes ? $order->internal_notes."\n" : '')
+                .'['.now()->format('d M Y H:i').'] Payment '.$oldStatus.' → '.$newStatus
+                .(trim((string) ($data['reason'] ?? '')) !== '' ? ' — '.trim((string) $data['reason']) : ''),
+        ]);
 
         if ($newStatus === 'paid') {
+            // Reconcile the payment record against the current amount due so a
+            // manual "mark paid" can never leave a stale total in the table.
+            $amount = (float) $order->amount_due;
             Payment::updateOrCreate(
                 ['order_id' => $order->id],
                 [
                     'status' => 'paid',
                     'paid_at' => now(),
-                    'amount' => $order->amount_due,
+                    'amount' => $amount,
                 ]
             );
+        } elseif ($newStatus === 'cancelled' || $newStatus === 'failed') {
+            // Failed/cancelled marks should not leave a "paid" record behind.
+            Payment::where('order_id', $order->id)->where('status', 'paid')->delete();
         }
+
+        $this->logger->log(
+            'payment_status_changed',
+            $order,
+            'Payment status changed from '.$oldStatus.' to '.$newStatus.'.',
+            ['payment_status' => $oldStatus],
+            ['payment_status' => $newStatus, 'reason' => $data['reason'] ?? null],
+            $admin,
+        );
 
         return redirect()->back()->with('success', "Payment status updated to {$newStatus}.");
     }

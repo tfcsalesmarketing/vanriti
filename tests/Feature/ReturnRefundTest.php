@@ -216,8 +216,9 @@ class ReturnRefundTest extends TestCase
             'requested_at' => now(),
         ]);
 
-        $refund = app(RefundService::class)->createFromReturn($returnRequest, $user, 500.00, 'full', 'Damaged');
-        $completed = app(RefundService::class)->complete($refund);
+        $service = app(RefundService::class);
+        $refund = $service->approve($service->createFromReturn($returnRequest, $user, 500.00, 'full', 'Damaged'));
+        $completed = $service->complete($refund);
 
         $this->assertSame('completed', $completed->status);
 

@@ -32,6 +32,60 @@ class ShipMojoService
     }
 
     /**
+     * Allowed shipment status transitions. A shipment only ever moves forward:
+     * a late or duplicated carrier callback (e.g. an `rto` that arrives after
+     * the parcel was already delivered) must never walk a delivered shipment
+     * back to returning/cancelled and trigger stock releases and customer
+     * notifications. `delivered` and `cancelled` are terminal.
+     *
+     * @var array<string, list<string>>
+     */
+    protected const SHIPMENT_TRANSITIONS = [
+        'pending' => ['pending', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'],
+        'packed' => ['packed', 'shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'],
+        'shipped' => ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'],
+        'out_for_delivery' => ['out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'],
+        'delivered' => ['delivered'],
+        'returning' => ['returning', 'returned', 'delivered', 'failed', 'cancelled'],
+        'returned' => ['returned', 'returning', 'delivered'],
+        'failed' => ['failed', 'returning', 'returned', 'cancelled'],
+        'cancelled' => ['cancelled'],
+    ];
+
+    /**
+     * Translate a mapped carrier status into the vocabulary the
+     * `shipments.status` enum actually accepts. The enum has no `cancelled`
+     * member, so a carrier-side cancellation is stored as a failed shipment
+     * (which is also what an explicit cancel call records).
+     */
+    protected function shipmentStatusFor(string $mappedStatus): string
+    {
+        $allowed = ['pending', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed'];
+
+        if (in_array($mappedStatus, $allowed, true)) {
+            return $mappedStatus;
+        }
+
+        return $mappedStatus === 'cancelled' ? 'failed' : 'pending';
+    }
+
+    /**
+     * Whether moving a shipment from $from to $to is a forward transition.
+     * Unknown current states are treated as forward-eligible so a newly
+     * introduced status cannot silently freeze tracking.
+     */
+    protected function canTransitionShipment(string $from, string $to): bool
+    {
+        if ($from === $to) {
+            return true;
+        }
+
+        $allowed = self::SHIPMENT_TRANSITIONS[$from] ?? null;
+
+        return $allowed === null || in_array($to, $allowed, true);
+    }
+
+    /**
      * Best human-readable error from a ShipMojo response, surfacing nested
      * provider detail (e.g. "Pickup pincode not serviceable") instead of the
      * generic top-level "Error".
@@ -153,6 +207,29 @@ class ShipMojoService
         // Eager-load required relations
         $order->loadMissing(['items', 'user']);
 
+        // Idempotency: a re-push (queue retry, or an admin clicking push twice)
+        // must not create a second carrier order. Once the carrier has accepted
+        // the order and its id is stored, the push is a no-op.
+        $pushed = $order->shipments()
+            ->whereNotNull('shipmojo_order_id')
+            ->whereNotNull('shipmojo_pushed_at')
+            ->latest('id')
+            ->first();
+
+        if ($pushed) {
+            Log::info('ShipMojo: Push skipped, order already pushed', [
+                'order' => $order->order_number,
+                'shipmojo_order_id' => $pushed->shipmojo_order_id,
+            ]);
+
+            return [
+                'result' => '1',
+                'message' => 'Order was already pushed to ShipMojo.',
+                'idempotent' => true,
+                'data' => ['order_id' => $pushed->shipmojo_order_id, 'reference_id' => $pushed->shipmojo_reference_id],
+            ];
+        }
+
         $warehouseId = (string) setting('shipmojo_warehouse_id', '');
 
         $items = $order->items->map(function ($item) {
@@ -199,8 +276,10 @@ class ShipMojoService
         $response = $this->post('/push-order', $payload);
 
         if (($response['result'] ?? '0') === '1') {
-            // Create/update shipment record
-            $shipment = $order->shipments()->firstOrNew([]);
+            // Reuse this order's existing shipment row (there is exactly one per
+            // order) instead of `firstOrNew([])`, which inserted a new row on
+            // every push and piled up duplicate shipments.
+            $shipment = $order->shipments()->latest('id')->first() ?? $order->shipments()->make();
 
             $data = $response['data'] ?? [];
             $shipmojoId = $data['order_id'] ?? $data['orderId'] ?? $data['order_uuid'] ?? $data['id'] ?? null;
@@ -377,22 +456,43 @@ class ShipMojoService
             // Update shipment current status
             $currentStatus = $data['current_status'] ?? $data['status'] ?? null;
             if ($currentStatus) {
-                $mappedStatus = $this->mapTrackingStatus((string) $currentStatus);
-                $updates = ['status' => $mappedStatus];
+                $mappedStatus = $this->shipmentStatusFor($this->mapTrackingStatus((string) $currentStatus));
+                $forward = $this->canTransitionShipment((string) $shipment->status, $mappedStatus);
 
-                if ($mappedStatus === 'delivered') {
-                    $updates['delivered_at'] = now();
+                if (! $forward) {
+                    // A stale/duplicate carrier callback must not walk the
+                    // shipment backwards; keep the record we already have.
+                    Log::info('ShipMojo: Ignored non-forward tracking status', [
+                        'order' => $order->order_number,
+                        'shipment_status' => $shipment->status,
+                        'incoming' => $mappedStatus,
+                    ]);
+
+                    $mappedStatus = null;
                 }
-                if ($mappedStatus === 'shipped') {
-                    $updates['shipped_at'] = now();
+
+                $updates = [];
+
+                if ($mappedStatus !== null) {
+                    $updates['status'] = $mappedStatus;
+
+                    if ($mappedStatus === 'delivered') {
+                        $updates['delivered_at'] = now();
+                    }
+                    if ($mappedStatus === 'shipped') {
+                        $updates['shipped_at'] = now();
+                    }
                 }
+
                 if (! empty($data['expected_delivery_date'])) {
                     $updates['estimated_delivery'] = $data['expected_delivery_date'];
                 }
 
-                $shipment->update($updates);
+                if ($updates !== []) {
+                    $shipment->update($updates);
+                }
 
-                $orderStatus = $this->orderStatusForMapped($mappedStatus);
+                $orderStatus = $mappedStatus !== null ? $this->orderStatusForMapped($mappedStatus) : null;
                 if ($orderStatus !== null && $this->syncOrderStatus($order, $orderStatus)) {
                     $this->notifyOrderStatus($order, $orderStatus);
                 }
@@ -599,7 +699,23 @@ class ShipMojoService
         }
 
         $rawStatus = $this->extractStatus($payload);
-        $mappedStatus = $rawStatus !== null ? $this->mapTrackingStatus((string) $rawStatus) : null;
+        $carrierStatus = $rawStatus !== null ? $this->mapTrackingStatus((string) $rawStatus) : null;
+
+        // Forward-only: a late `rto`/`failed`/`returning` callback must never
+        // downgrade a shipment (and therefore the order) that already advanced.
+        $mappedStatus = null;
+        if ($carrierStatus !== null) {
+            $target = $this->shipmentStatusFor($carrierStatus);
+            if ($this->canTransitionShipment((string) $shipment->status, $target)) {
+                $mappedStatus = $carrierStatus;
+            } else {
+                Log::info('ShipMojo: Webhook status ignored (not a forward transition)', [
+                    'order' => $order->order_number,
+                    'shipment_status' => $shipment->status,
+                    'incoming' => $carrierStatus,
+                ]);
+            }
+        }
 
         $updates = [];
 
@@ -635,7 +751,7 @@ class ShipMojoService
         }
 
         if ($mappedStatus !== null) {
-            $updates['status'] = $mappedStatus;
+            $updates['status'] = $this->shipmentStatusFor($mappedStatus);
 
             if ($mappedStatus === 'delivered') {
                 $updates['delivered_at'] = now();
@@ -864,6 +980,17 @@ class ShipMojoService
     protected function syncOrderStatus(Order $order, string $status): bool
     {
         if ($order->order_status === $status) {
+            return false;
+        }
+
+        // A delivered order is never walked back to cancelled by a carrier
+        // callback, even if the shipment record somehow drifted.
+        if ($order->order_status === 'delivered' && $status === 'cancelled') {
+            Log::warning('ShipMojo: Refusing to cancel an already delivered order.', [
+                'order' => $order->order_number,
+                'incoming' => $status,
+            ]);
+
             return false;
         }
 

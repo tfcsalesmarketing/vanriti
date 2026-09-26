@@ -186,7 +186,27 @@ class Order extends Model
 
     public function isReturnable(): bool
     {
-        return $this->order_status === 'delivered';
+        if ($this->order_status !== 'delivered') {
+            return false;
+        }
+
+        // The advertised "N-day returns" window is enforced server-side, not
+        // just displayed: an old delivery can no longer be returned even if the
+        // storefront button is reachable.
+        $windowDays = (int) setting('return_window_days', 7);
+
+        if ($windowDays <= 0) {
+            return true;
+        }
+
+        // The delivered status-history event is the anchor (there is no
+        // delivered_at column on orders). Falling back to created_at, never
+        // updated_at, keeps the window honest: a later payment or label update
+        // must not silently extend it.
+        $deliveredAt = $this->statusHistories->firstWhere('status', 'delivered')?->created_at
+            ?? $this->created_at;
+
+        return $deliveredAt !== null && $deliveredAt->gt(now()->subDays($windowDays));
     }
 
     /**

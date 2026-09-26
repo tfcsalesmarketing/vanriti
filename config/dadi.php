@@ -4,6 +4,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Dadi customer usage budget
+    |--------------------------------------------------------------------------
+    |
+    | Bounds on how many AI turns one visitor may consume per day. Guests are
+    | allowed to keep talking (no login gate), so these counters are the guard
+    | against unbounded AI spend from anonymous sessions:
+    |
+    |   daily_limit_authenticated  per signed-in user per day
+    |   daily_limit_session        per anonymous browser session per day
+    |   daily_limit_anon_ip        backstop per IP per day for guests
+    |
+    | The most specific scope (user > session > ip) wins; the IP backstop only
+    | counts guests so one router sharing an IP cannot starve its neighbours.
+    |
+    */
+
+    'usage' => [
+
+        'enabled' => (bool) env('DADI_USAGE_CAP_ENABLED', true),
+
+        'daily_limit_authenticated' => (int) env('DADI_USAGE_DAILY_AUTH', 30),
+
+        'daily_limit_session' => (int) env('DADI_USAGE_DAILY_SESSION', 10),
+
+        'daily_limit_anon_ip' => (int) env('DADI_USAGE_DAILY_IP', 20),
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Dadi conversation context & memory
     |--------------------------------------------------------------------------
     |

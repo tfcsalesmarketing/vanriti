@@ -1,7 +1,16 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # --- Security: deny direct access to sensitive files/directories.
+    # Applies when the project root is the document root (misconfiguration).
+    # Once a vhost points DocumentRoot at /public these never match.
+    RewriteRule ^\.(env.*|ht.*|git.*|gitignore)$ - [F,L]
+    RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|yarn\.lock|artisan)$ - [F,L]
+    RewriteRule ^(storage|database|bootstrap/cache|tests)/ - [F,L]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
+
+Options -Indexes

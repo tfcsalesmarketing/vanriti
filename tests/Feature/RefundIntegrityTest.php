@@ -183,16 +183,19 @@ class RefundIntegrityTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $first = app(RefundService::class)->createForOrder($order, $user, 300.00, 'partial', 'a');
-        $second = app(RefundService::class)->createForOrder($order, $user, 300.00, 'partial', 'b');
+        $service = app(RefundService::class);
 
-        app(RefundService::class)->complete($first);
+        // Completion requires an approved refund, so both are approved first.
+        $first = $service->approve($service->createForOrder($order, $user, 300.00, 'partial', 'a'));
+        $second = $service->approve($service->createForOrder($order, $user, 300.00, 'partial', 'b'));
+
+        $service->complete($first);
 
         $this->assertSame('completed', $first->fresh()->status);
         $this->assertSame('partially_refunded', $order->fresh()->payment_status);
 
         try {
-            app(RefundService::class)->complete($second);
+            $service->complete($second);
             $this->fail('Expected the cumulative refund cap to be enforced.');
         } catch (\RuntimeException $e) {
             $this->assertStringContainsString('exceed', $e->getMessage());

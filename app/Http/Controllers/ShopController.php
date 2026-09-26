@@ -46,12 +46,17 @@ class ShopController extends Controller
     {
         Paginator::useBootstrap();
 
+        // A draft/inactive category must not render a public listing page even
+        // when its URL is known; fall through to a 404 like any other missing
+        // catalogue page.
+        abort_unless($category->status === 'active', 404);
+
         $ids = $category->descendants();
 
         $products = Product::query()
             ->active()
             ->with(['categories', 'images', 'variants', 'activeVariants', 'approvedReviews'])
-            ->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $ids))
+            ->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $ids)->active())
             ->orderByDesc('created_at')
             ->paginate(12)
             ->withQueryString();

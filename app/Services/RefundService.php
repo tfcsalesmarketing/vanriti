@@ -111,6 +111,14 @@ class RefundService
                 return false;
             }
 
+            // A refund may only be paid out once it has been approved and sent
+            // to the gateway. Completing a refund that is still 'requested', or
+            // one that was already 'rejected', would send money back for a refund
+            // the business never authorised (or explicitly refused).
+            if (! in_array($refund->status, ['approved', 'processing'], true)) {
+                throw new \RuntimeException('Only an approved refund can be completed. This refund is currently '.$refund->status.'.');
+            }
+
             $order = $refund->order;
 
             if (! $order) {

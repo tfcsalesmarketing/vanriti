@@ -4,6 +4,7 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 if (! function_exists('setting')) {
     function setting(string $key, mixed $default = null): mixed
@@ -25,11 +26,11 @@ if (! function_exists('secret_setting')) {
             try {
                 return Crypt::decryptString($value);
             } catch (Throwable) {
-                if (str_starts_with($value, 'eyJ')) {
-                    Log::warning('Stored secret could not be decrypted.', ['key' => $key]);
-                }
+                // Fail closed: an undecryptable secret must never be sent to a
+                // gateway as if it were the plaintext value.
+                Log::error('Stored secret could not be decrypted.', ['key' => $key]);
 
-                return $value;
+                return $default;
             }
         }
 
@@ -104,6 +105,56 @@ if (! function_exists('generate_order_number')) {
     }
 }
 
+if (! function_exists('normalize_email')) {
+    /**
+     * Canonical form of an email address, so the same person is not stored
+     * twice (and cannot dodge an unsubscribe) via casing or Gmail-style
+     * dot/plus addressing.
+     */
+    function normalize_email(string $email): string
+    {
+        $email = Str::lower(trim($email));
+
+        if (! str_contains($email, '@')) {
+            return $email;
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+
+        if (in_array($domain, ['gmail.com', 'googlemail.com'], true)) {
+            $local = str_replace('.', '', $local);
+            $local = preg_replace('/\+.*$/', '', $local) ?? $local;
+            $domain = 'gmail.com';
+        }
+
+        return $local.'@'.$domain;
+    }
+}
+
+if (! function_exists('newsletter_unsubscribe_token')) {
+    /**
+     * HMAC over the canonical address keyed by the app key: the resulting
+     * unsubscribe link cannot be forged or edited to target another address.
+     */
+    function newsletter_unsubscribe_token(string $email): string
+    {
+        return hash_hmac('sha256', normalize_email($email), (string) config('app.key'));
+    }
+}
+
+if (! function_exists('newsletter_unsubscribe_url')) {
+    /**
+     * Signed, unguessable unsubscribe link for a newsletter campaign.
+     */
+    function newsletter_unsubscribe_url(string $email): string
+    {
+        return route('newsletter.unsubscribe', [
+            'token' => newsletter_unsubscribe_token($email),
+            'email' => normalize_email($email),
+        ]);
+    }
+}
+
 if (! function_exists('image_url')) {
     function image_url(?string $path, ?string $default = null): string
     {
@@ -174,7 +225,11 @@ if (! function_exists('clean_html')) {
                             continue;
                         }
 
-                        // Unknown tag: unwrap it, keeping its (sanitized) children.
+                        // Unknown tag: sanitize its subtree first, then unwrap it
+                        // keeping the (already sanitized) children. Sanitizing
+                        // before promotion ensures no node escapes the allowlist.
+                        $sanitize($child);
+
                         while ($child->firstChild) {
                             $node->insertBefore($child->firstChild, $child);
                         }

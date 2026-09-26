@@ -116,6 +116,13 @@ class CartService
     {
         $item = $this->ownedItem($cartItemId);
 
+        // Route-model binding resolves any cart item in the database. A foreign
+        // or already-removed id must be rejected here, otherwise the stock check
+        // below dereferenced null and surfaced a 500.
+        if (! $item) {
+            throw new \RuntimeException('This item is no longer in your cart.');
+        }
+
         if ($quantity < 1) {
             $this->remove($cartItemId);
 
@@ -129,7 +136,13 @@ class CartService
 
     public function remove(int $cartItemId): void
     {
-        $this->ownedItem($cartItemId)?->delete();
+        $item = $this->ownedItem($cartItemId);
+
+        if (! $item) {
+            throw new \RuntimeException('This item is no longer in your cart.');
+        }
+
+        $item->delete();
     }
 
     public function clear(): void
@@ -214,25 +227,66 @@ class CartService
         Cookie::queue(Cookie::forget(self::COOKIE_NAME));
     }
 
-    public function mergeUserCartIntoSession(User $user): void
+    /**
+     * Re-home a signed-in user's cart onto the current guest session.
+     *
+     * Called on logout: without it the account cart stays attached to the user
+     * and the shopper is left staring at an empty cart, with no way to tell that
+     * their items still exist. The items survive the transition and are picked
+     * up again by the next guest request.
+     */
+    public function releaseUserCartToSession(User $user): void
     {
-        $sessionId = $this->sessionId();
-        if (! $sessionId) {
+        $userCart = Cart::where('owner_type', User::class)->where('owner_id', $user->id)->first();
+
+        if (! $userCart || ! $userCart->items()->exists()) {
             return;
         }
+
+        $sessionId = $this->rememberSession();
 
         $guestCart = Cart::where('owner_type', 'guest')->where('session_id', $sessionId)->first();
-        if (! $guestCart) {
+
+        if ($guestCart && $guestCart->id !== $userCart->id) {
+            // A guest cart already exists for this browser: fold the released
+            // items into it instead of orphaning the account cart.
+            foreach ($userCart->items as $item) {
+                $existing = $guestCart->items()
+                    ->where('product_id', $item->product_id)
+                    ->when(
+                        $item->product_variant_id,
+                        fn ($q) => $q->where('product_variant_id', $item->product_variant_id),
+                        fn ($q) => $q->whereNull('product_variant_id')
+                    )
+                    ->first();
+
+                if ($existing) {
+                    $existing->update(['quantity' => $existing->quantity + $item->quantity]);
+
+                    continue;
+                }
+
+                $guestCart->items()->create([
+                    'product_id' => $item->product_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'mrp' => $item->mrp,
+                    'gst_rate' => $item->gst_rate,
+                ]);
+            }
+
+            $userCart->items()->delete();
+            $userCart->delete();
+
             return;
         }
 
-        $guestCart->update([
-            'owner_type' => User::class,
-            'owner_id' => $user->id,
-            'session_id' => null,
+        $userCart->update([
+            'owner_type' => 'guest',
+            'owner_id' => 0,
+            'session_id' => $sessionId,
         ]);
-
-        Cookie::queue(Cookie::forget(self::COOKIE_NAME));
     }
 
     protected function getCartForUserOrCreate(): Cart

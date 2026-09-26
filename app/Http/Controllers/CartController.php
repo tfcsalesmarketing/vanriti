@@ -171,7 +171,15 @@ class CartController extends Controller
 
     public function remove(Request $request, CartItem $cartItem): RedirectResponse|JsonResponse
     {
-        $this->cartService->remove($cartItem->id);
+        try {
+            $this->cartService->remove($cartItem->id);
+        } catch (\RuntimeException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

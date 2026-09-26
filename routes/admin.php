@@ -59,7 +59,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:manage-orders')->group(function () {
             Route::resource('orders', OrderController::class)->except(['create', 'store', 'destroy']);
             Route::post('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
-            Route::post('orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
             Route::post('orders/{order}/notes', [OrderController::class, 'addNote'])->name('orders.notes');
             // ShipMojo bulk actions
             Route::post('orders/bulk/push', [ShipMojoController::class, 'bulkPush'])->name('orders.shipmojo.bulk.push');
@@ -75,6 +74,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('orders/{order}/shipmojo/label', [ShipMojoController::class, 'getLabel'])->name('orders.shipmojo.label');
             Route::post('orders/{order}/shipmojo/track', [ShipMojoController::class, 'syncTracking'])->name('orders.shipmojo.track');
         });
+
+        // Payment status is a financial action: it needs the dedicated
+        // manage-payments permission and is audited via the activity log.
+        Route::post('orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])
+            ->name('orders.payment-status')
+            ->middleware('permission:manage-payments');
 
         Route::middleware('permission:manage-refunds')->group(function () {
             Route::get('refunds', [RefundController::class, 'index'])->name('refunds.index');
@@ -154,9 +159,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
         });
 
-        // ShipMojo utilities (requires admin auth, no extra permission)
-        Route::get('shipmojo/ping', [ShipMojoController::class, 'ping'])->name('shipmojo.ping');
-        Route::get('shipmojo/warehouses', [ShipMojoController::class, 'warehouses'])->name('shipmojo.warehouses');
-        Route::post('shipmojo/rates', [ShipMojoController::class, 'rates'])->name('shipmojo.rates');
+        // ShipMojo utilities (requires manage-shipments: they expose live rates
+        // and warehouse inventory to whoever can read a shipment form)
+        Route::middleware('permission:manage-shipments')->group(function () {
+            Route::get('shipmojo/ping', [ShipMojoController::class, 'ping'])->name('shipmojo.ping');
+            Route::get('shipmojo/warehouses', [ShipMojoController::class, 'warehouses'])->name('shipmojo.warehouses');
+            Route::post('shipmojo/rates', [ShipMojoController::class, 'rates'])->name('shipmojo.rates');
+        });
     });
 });

@@ -21,9 +21,10 @@ class DatabaseSeeder extends Seeder
             DisclaimerPolicySeeder::class,
         ]);
 
-        // Test credentials must never be seeded in production: seeding would
-        // reset the admin password and force super-admin promotion.
-        if (! app()->environment('production')) {
+        // Test credentials must never be seeded inadvertently: seeding would
+        // reset the admin password and force super-admin promotion. Require an
+        // explicit opt-in AND a non-production environment.
+        if (! app()->environment('production') && filter_var(env('SEED_DEMO_DATA', false), FILTER_VALIDATE_BOOL)) {
             $this->call(TestCredentialsSeeder::class);
         }
 

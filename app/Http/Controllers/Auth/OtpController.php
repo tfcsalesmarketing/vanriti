@@ -10,6 +10,7 @@ use App\Services\WishlistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -38,20 +39,42 @@ class OtpController extends Controller
 
         $phone = Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString();
 
-        // Pull up an existing account before we dispatch any OTP. For the
-        // login flow an unknown number must be rejected up front — never worth
-        // burning a WhatsApp code (and the cooldown) on a number with no account.
+        // Per-phone daily budget, independent of the IP throttle: a single
+        // number must never be flooded with OTP deliveries. Bound both valid
+        // and lookup-only sends so enumeration attempts cost rate-limit slots.
+        $phoneKey = 'otp-send-phone:'.$phone;
+        $dailyLimit = max(3, (int) setting('whatsapp_otp_daily_limit', 10));
+        if (RateLimiter::tooManyAttempts($phoneKey, $dailyLimit)) {
+            $throttled = 'Too many OTP requests for this number. Please try again later.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['result' => '0', 'message' => $throttled], 429);
+            }
+
+            return back()->with('error', $throttled)->withInput();
+        }
+
+        RateLimiter::hit($phoneKey, 86400);
+
+        // For the login flow an unknown number must be answered exactly like a
+        // known one (same status code, same message shape) so the endpoint can
+        // never be used to enumerate registered numbers. No code is dispatched
+        // for an account that does not exist.
         if ($data['purpose'] === 'login') {
             $loginUser = \App\Models\User::query()->where('phone', $phone)->first();
 
             if (! $loginUser) {
-                $message = 'User does not exist. Please register first.';
+                $cover = 'If that number is registered, we will send a code to your WhatsApp.';
 
                 if ($request->wantsJson()) {
-                    return response()->json(['result' => '0', 'message' => $message], 404);
+                    return response()->json([
+                        'result' => '1',
+                        'message' => $cover,
+                        'data' => ['phone' => $phone],
+                    ], 202);
                 }
 
-                return back()->with('error', $message)->withInput();
+                return back()->with('success', $cover)->withInput();
             }
         }
 
@@ -116,7 +139,7 @@ class OtpController extends Controller
             $user = \App\Models\User::query()->where('phone', $phone)->first();
 
             if (! $user) {
-                return back()->with('error', 'No account found for this number. Please register first.');
+                return back()->with('error', 'Unable to sign you in. Please try again or register a new account.');
             }
 
             if ($user->status !== 'active') {
@@ -168,7 +191,7 @@ class OtpController extends Controller
         $user = \App\Models\User::query()->where('phone', $phone)->first();
 
         if (! $user) {
-            return back()->with('error', 'No account found for this number. Please register first.');
+            return back()->with('error', 'Unable to reset the password for this number. Please try again.');
         }
 
         $token = \Illuminate\Support\Facades\Password::broker('users')->createToken($user);

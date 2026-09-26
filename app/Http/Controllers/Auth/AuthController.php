@@ -224,13 +224,13 @@ class AuthController extends Controller
             return response()->json(['valid' => false, 'errors' => $validator->errors()->toArray()], 422);
         }
 
-        if ($context === 'login' && $request->exists('email') && $request->exists('password')) {
-            $email = Str::lower(trim((string) $request->input('email')));
+        if ($context === 'login' && $request->exists('login') && $request->exists('password')) {
+            $login = Str::lower(trim((string) $request->input('login')));
 
             // Per-credential rate limiter prevents live-validation from being used
             // as a brute-force oracle. When the limit is hit, the request is
             // rejected before any expensive Hash::check runs.
-            $throttleKey = 'auth-validate:'.hash('sha256', $email).':'.$request->ip();
+            $throttleKey = 'auth-validate:'.hash('sha256', $login).':'.$request->ip();
             if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
                 return response()->json([
                     'valid' => false,
@@ -240,14 +240,19 @@ class AuthController extends Controller
 
             RateLimiter::hit($throttleKey, 60);
 
-            $user = User::where('email', $email)->first();
+            // Resolve the account by email OR mobile, mirroring the login
+            // controller's single-field lookup.
+            $user = Str::contains($login, '@')
+                ? User::where('email', $login)->first()
+                : User::where('phone', str_replace([' ', '-', '+'], '', $login))->first();
 
-            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
-                $errorKey = $user ? 'password' : 'email';
-
+            // Always report failures under a single generic key + body: the
+            // client can never distinguish a missing account from a wrong
+            // password, so the endpoint cannot be used to enumerate accounts.
+            if (! $user || $user->status !== 'active' || ! Hash::check((string) $request->input('password'), $user->password)) {
                 return response()->json([
                     'valid' => false,
-                    'errors' => [$errorKey => ['These credentials do not match our records.']],
+                    'errors' => ['password' => ['These credentials do not match our records.']],
                 ], 422);
             }
         }
@@ -265,8 +270,8 @@ class AuthController extends Controller
 
             return [
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
-                'phone' => ['required', 'string', 'max:15', 'unique:users,phone', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
                 'password' => $password,
                 'password_confirmation' => ['required', 'same:password'],
             ];
@@ -334,6 +339,15 @@ class AuthController extends Controller
 
     public function logout(): RedirectResponse
     {
+        $user = auth('web')->user();
+
+        // Hand the cart back to the browser session first, otherwise the items
+        // stay attached to the account and the next guest request shows an
+        // empty cart.
+        if ($user) {
+            $this->cartService->releaseUserCartToSession($user);
+        }
+
         auth('web')->logout();
         session()->invalidate();
         session()->regenerateToken();
@@ -404,6 +418,10 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => __('We can\'t find a user with that mobile number.')]);
             }
 
+            if ($user->status !== 'active') {
+                return back()->withErrors(['email' => __('Your account has been suspended. Contact support.')]);
+            }
+
             $repository = Password::broker('users')->getRepository();
 
             if (! $repository->exists($user, (string) $request->input('token'))) {
@@ -429,6 +447,12 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', $this->passwordRule()],
         ], $this->messages());
+
+        $user = User::query()->where('email', $request->string('email'))->first();
+
+        if ($user && $user->status !== 'active') {
+            return back()->withErrors(['email' => __('Your account has been suspended. Contact support.')]);
+        }
 
         $status = Password::broker('users')->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),

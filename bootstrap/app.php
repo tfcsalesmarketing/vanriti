@@ -33,7 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => RedirectIfAuthenticated::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: ['checkout/verify', 'razorpay/webhook', 'shipmojo/webhook']);
+        $middleware->validateCsrfTokens(except: ['razorpay/webhook', 'shipmojo/webhook']);
 
         $middleware->appendToGroup('web', [
             SecurityHeaders::class,
@@ -44,7 +44,16 @@ return Application::configure(basePath: dirname(__DIR__))
             $middleware->trustProxies(at: $trustedProxies);
         }
 
+        // Host allow-list: default to the host of the configured app URL so
+        // host-header poisoning is rejected out of the box, while still allowing
+        // an explicit TRUSTED_HOSTS override.
         $trustedHosts = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', '')))));
+        $appHost = parse_url((string) env('APP_URL', ''), PHP_URL_HOST);
+        if ($appHost !== null && $appHost !== '') {
+            $trustedHosts[] = $appHost;
+        }
+        $trustedHosts = array_values(array_unique($trustedHosts));
+
         if ($trustedHosts !== []) {
             $middleware->trustHosts(at: $trustedHosts, subdomains: true);
         } else {

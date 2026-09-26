@@ -152,6 +152,13 @@ class AccountController extends Controller
             'comment' => ['nullable', 'string', 'max:1500'],
         ]);
 
+        // Reviews are only for items the customer actually received. This is the
+        // server-side gate: the storefront hides the form elsewhere, but the
+        // request could be posted directly against an unpaid order.
+        if ($order->order_status !== 'delivered') {
+            return back()->with('error', 'You can review this item once the order has been delivered.');
+        }
+
         $item = $order->items()->findOrFail($request->input('order_item_id'));
 
         try {
@@ -163,7 +170,10 @@ class AccountController extends Controller
                 'title' => $request->input('title'),
                 'comment' => $request->input('comment'),
                 'status' => 'pending',
-                'is_verified_purchase' => true,
+                // Derived from the enforced delivered-order gate above rather
+                // than hardcoded. Payment is not part of this: a COD order that
+                // reached the customer is a verified purchase too.
+                'is_verified_purchase' => $order->order_status === 'delivered',
             ]);
         } catch (QueryException $e) {
             // SQLSTATE 23000 (integrity constraint) covers unique violations on

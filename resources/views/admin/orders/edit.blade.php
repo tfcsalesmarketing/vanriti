@@ -61,6 +61,10 @@
                     <div class="small text-muted mb-2">
                         Current: <span class="badge bg-{{ $pClass[$order->payment_status] ?? 'secondary' }}">{{ ucwords(str_replace('_', ' ', $order->payment_status)) }}</span>
                     </div>
+                    <div class="mb-2">
+                        <label class="form-label small text-muted">Reason (required)</label>
+                        <input type="text" name="reason" class="form-control form-control-sm" maxlength="1000" placeholder="e.g. UPI payment confirmed in bank statement" required>
+                    </div>
                     <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-credit-card me-1"></i>Update Payment</button>
                 </form>
             </div>

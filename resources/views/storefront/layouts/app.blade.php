@@ -78,6 +78,11 @@
     <script>
     window.dataLayer = window.dataLayer || [];
     </script>
+    {{-- Password reset and forgot-password URLs carry a single-use reset token
+         (and the phone flow's OTP confirmation happen inside the query string).
+         Analytics containers must never run on those pages, so a token can't
+         leak to GTM / Meta as part of the page URL. --}}
+    @unless (request()->routeIs('password.request', 'password.reset'))
     @if (config('analytics.gtm_container_id'))
         <script>
         (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -175,6 +180,7 @@
         })();
         </script>
     @endif
+    @endunless
 </head>
 <body class="has-mobile-bar">
     @if (config('analytics.gtm_container_id'))
@@ -201,7 +207,7 @@
             </div>
         @endif
         @if (! empty($errors) && $errors->any())
-            <script type="application/json" id="vrValidationErrors">{!! json_encode($errors->getMessages()) !!}</script>
+            <script type="application/json" id="vrValidationErrors">{!! json_encode($errors->getMessages(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
         @endif
 
         @yield('content')

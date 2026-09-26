@@ -125,6 +125,7 @@ Route::get('/faqs', [FaqController::class, 'index'])->name('faq.index');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,10');
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe')->middleware('throttle:5,10');
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('page');
 Route::get('/shop/return-policy', fn () => view('storefront.page', ['page' => Page::published()->where('slug', 'return-policy')->firstOrFail()]))->name('shop.return-policy');
 Route::get('/shop/cancellation-policy', fn () => view('storefront.page', ['page' => Page::published()->where('slug', 'cancellation-policy')->firstOrFail()]))->name('shop.cancellation-policy');

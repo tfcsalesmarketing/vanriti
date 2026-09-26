@@ -95,11 +95,24 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-reviews',
         ])->pluck('id'));
 
+        $adminEmail = env('ADMIN_EMAIL');
+        $adminPassword = env('ADMIN_PASSWORD');
+
+        if ($adminEmail === null && $adminPassword === null) {
+            $this->command?->warn('ADMIN_EMAIL/ADMIN_PASSWORD not set; skipping super-admin bootstrap admin.');
+
+            return;
+        }
+
+        if ($adminEmail === null || $adminPassword === null) {
+            throw new \RuntimeException('Both ADMIN_EMAIL and ADMIN_PASSWORD must be set to bootstrap the super-admin.');
+        }
+
         $super = Admin::updateOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'admin@vanriti.com')],
+            ['email' => $adminEmail],
             [
                 'name' => 'VANRITI Admin',
-                'password' => Hash::make(env('ADMIN_PASSWORD', 'Vanriti@2026')),
+                'password' => Hash::make($adminPassword),
                 'status' => 'active',
             ]
         );

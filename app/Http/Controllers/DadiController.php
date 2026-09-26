@@ -11,6 +11,7 @@ use App\Services\Dadi\DadiTurnResult;
 use App\Services\DadiMessagingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
@@ -146,6 +147,15 @@ class DadiController extends Controller
         $user = auth('web')->user();
         $sessionId = $request->session()->getId();
 
+        // Spend cap: without a login gate, these daily counters are the guard
+        // against unbounded AI consumption from anonymous sessions.
+        if ($this->usageOverLimit($user, $sessionId)) {
+            return response()->json([
+                'error' => 'dadi_limit_reached',
+                'message' => 'Beta, aaj ke liye Dadi ke saath itni hi baatein ho gayi hain. Kal phir se aayen!',
+            ], 429);
+        }
+
         try {
             $outcome = $this->dadi->turn(
                 user: $user,
@@ -180,6 +190,8 @@ class DadiController extends Controller
             ], 500);
         }
 
+        $this->recordTurn($user, $sessionId);
+
         return response()->json($this->payload($outcome));
     }
 
@@ -204,6 +216,66 @@ class DadiController extends Controller
         }
 
         return response()->json(['tracked' => true]);
+    }
+
+    /**
+     * The most specific budget scope wins: a signed-in user is capped by their
+     * own counter, an anonymous visitor by their session counter, and a raw IP
+     * backstop guards against session-cycling guests.
+     */
+    private function usageScopes(mixed $user, string $sessionId): array
+    {
+        if (! (bool) config('dadi.usage.enabled', true)) {
+            return [];
+        }
+
+        $day = now()->toDateString();
+
+        if ($user !== null) {
+            return [
+                'dadi.usage.daily_limit_authenticated' => "dadi-usage:{$day}:user:{$user->getKey()}",
+            ];
+        }
+
+        return [
+            'dadi.usage.daily_limit_session' => "dadi-usage:{$day}:session:{$sessionId}",
+            'dadi.usage.daily_limit_anon_ip' => "dadi-usage:{$day}:ip:".($this->ipKey() ?? 'anon'),
+        ];
+    }
+
+    private function usageOverLimit(mixed $user, string $sessionId): bool
+    {
+        foreach ($this->usageScopes($user, $sessionId) as $configKey => $cacheKey) {
+            $limit = max(1, (int) config($configKey));
+            if ((int) Cache::get($cacheKey, 0) >= $limit) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function recordTurn(mixed $user, string $sessionId): void
+    {
+        $scopes = $this->usageScopes($user, $sessionId);
+        if ($scopes === []) {
+            return;
+        }
+
+        $day = now()->toDateString();
+        $ttl = now()->startOfDay()->addDay()->diffInSeconds(now());
+
+        foreach ($scopes as $cacheKey) {
+            Cache::add($cacheKey, 0, $ttl);
+            Cache::increment($cacheKey);
+        }
+    }
+
+    private function ipKey(): ?string
+    {
+        $ip = request()->ip();
+
+        return $ip === null ? null : preg_replace('/[^0-9a-f.:]/i', '', $ip);
     }
 
     /**

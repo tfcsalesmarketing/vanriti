@@ -15,6 +15,7 @@ use App\Services\Dadi\DadiAttributionService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class OrderService
 {
@@ -114,7 +115,7 @@ class OrderService
             $coupon = null;
             $couponDiscount = 0.0;
             if (! empty($orderData['coupon_code'])) {
-                $result = $this->couponService->validate($orderData['coupon_code'], $cart, $user);
+                $result = $this->couponService->validate($orderData['coupon_code'], $cart, $user, lock: true);
                 if (! $result['valid']) {
                     throw new \RuntimeException($result['message']);
                 }
@@ -180,7 +181,12 @@ class OrderService
             $order = Order::create([
                 'user_id' => $user->id,
                 'coupon_id' => $coupon?->id,
-                'order_number' => 'TEMP',
+                // A literal 'TEMP' placeholder is unsafe: order_number carries a
+                // UNIQUE index, so two concurrent checkouts would collide on the
+                // placeholder itself and the loser saw a 500. The placeholder is
+                // unique per attempt; the final number is derived from the freshly
+                // inserted primary key and is therefore unique by construction.
+                'order_number' => 'TMP-'.Str::upper(Str::random(16)),
                 ...$this->mapAddress('billing', $orderData['billing']),
                 ...$this->mapAddress('shipping', $orderData['shipping']),
                 'is_billing_same' => $this->addressesEqual($orderData['billing'], $orderData['shipping']),

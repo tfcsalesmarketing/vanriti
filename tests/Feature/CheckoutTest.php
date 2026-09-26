@@ -518,7 +518,7 @@ class CheckoutTest extends TestCase
         Setting::updateOrCreate(['key' => 'online_payment_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'razorpay_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'razorpay_key_id'], ['value' => 'rzp_test_key']);
-        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => 'rzp_test_secret']);
+        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => \Illuminate\Support\Facades\Crypt::encryptString('rzp_test_secret')]);
     }
 
     protected function fakeRazorpayOrder(): void
