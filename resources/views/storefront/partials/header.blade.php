@@ -110,14 +110,14 @@
                         <span class="vr-badge js-wishlist-count d-none">0</span>
                     @endif
                 </a>
-                <button type="button" class="vr-icon-link position-relative border-0" data-bs-toggle="offcanvas" data-bs-target="#vrCartDrawer" aria-controls="vrCartDrawer" title="Cart" aria-label="Cart">
+                <a href="{{ route('cart.index') }}" class="vr-icon-link position-relative" title="Cart" aria-label="Cart">
                     <i class="bi bi-bag"></i>
                     @if ($cartCount > 0)
                         <span class="vr-badge js-cart-count">{{ $cartCount }}</span>
                     @else
                         <span class="vr-badge js-cart-count d-none">0</span>
                     @endif
-                </button>
+                </a>
             </div>
         </div>
     </div>

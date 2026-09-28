@@ -78,7 +78,12 @@
 
         /**
          * Send OTP.
-         * opts: { phoneEl, btn, purpose, onSent, onError [, sendUrl] }
+         * opts: { phoneEl, btn, purpose, onSent, onError [, emailEl, sendUrl] }
+         *
+         * When emailEl is provided and non-empty, its value is included in the
+         * request so a register-purpose send can reject a duplicate email before
+         * any OTP is dispatched. onError receives (message, responseData); pages
+         * that care which field failed can inspect responseData.errors.
          */
         send: function (opts) {
             if (!opts || !opts.phoneEl || !opts.btn) {
@@ -101,10 +106,16 @@
 
             setBusy(opts.btn, true, 'Sending…');
 
-            post(url, {
+            var payload = {
                 phone: phone,
                 purpose: opts.purpose || 'login'
-            }).then(function (data) {
+            };
+            var email = opts.emailEl ? String(opts.emailEl.value || '').trim() : '';
+            if (email !== '') {
+                payload.email = email;
+            }
+
+            post(url, payload).then(function (data) {
                 setBusy(opts.btn, false);
 
                 // Backend returns { result: '1' } on success
@@ -117,14 +128,14 @@
                     });
                     if (opts.onSent) opts.onSent(data);
                 } else {
-                    if (opts.onError) opts.onError(data.message || 'Could not send the code. Try again.');
+                    if (opts.onError) opts.onError(data.message || 'Could not send the code. Try again.', data);
                 }
             }).catch(function (err) {
                 setBusy(opts.btn, false);
                 var msg = (err && err.data && err.data.message)
                     ? err.data.message
                     : 'Network error. Please try again.';
-                if (opts.onError) opts.onError(msg);
+                if (opts.onError) opts.onError(msg, (err && err.data) || null);
             });
         },
 

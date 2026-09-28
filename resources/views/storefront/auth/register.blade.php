@@ -335,14 +335,17 @@
 
             otp.send({
                 phoneEl : phoneInput,
+                emailEl : document.getElementById('reg_email'),
                 btn     : proceedBtn,
                 purpose : 'register',
                 onSent  : function () {
                     showOtpStep(phoneInput.value.replace(/\D/g, ''));
                     startResendCooldown();
                 },
-                onError : function (msg) {
-                    showFieldError('reg_phone', msg);
+                onError : function (msg, data) {
+                    var keys = (data && data.errors) ? Object.keys(data.errors) : [];
+                    var field = keys.length ? keys[0] : 'phone';
+                    showFieldError('reg_' + field, msg);
                 }
             });
         }

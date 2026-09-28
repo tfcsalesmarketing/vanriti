@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class OtpController extends Controller
@@ -30,10 +31,12 @@ class OtpController extends Controller
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
             'purpose' => ['required', 'string', 'in:'.implode(',', $this->purposes)],
+            'email' => ['nullable', 'email', 'max:255'],
         ], [
             'phone.required' => 'Please enter your mobile number.',
             'phone.regex' => 'Please enter a valid 10-digit mobile number.',
             'purpose.in' => 'Invalid verification purpose.',
+            'email.email' => 'Please enter a valid email address.',
         ]);
 
         $phone = canonical_phone($data['phone']);
@@ -86,14 +89,34 @@ class OtpController extends Controller
         // number exists. That asymmetry is intentional: an account that cannot
         // register a number must be told why, and the same message is already
         // returned by AuthController::validateFields and AuthController::register.
-        if ($data['purpose'] === 'register' && user_by_phone($phone)) {
-            $taken = 'This mobile number is already registered.';
+        //
+        // An optional duplicate email is caught at the same step (and bound to
+        // its own field) so a registered email can never be hidden behind an
+        // OTP dance either.
+        if ($data['purpose'] === 'register') {
+            $email = ! empty($data['email'] ?? null)
+                ? Str::lower(trim((string) $data['email']))
+                : null;
 
-            if ($request->wantsJson()) {
-                return response()->json(['result' => '0', 'message' => $taken], 422);
+            if (user_by_phone($phone)) {
+                $message = 'This mobile number is already registered.';
+                $field = 'phone';
+            } elseif ($email !== null && \App\Models\User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                $message = 'This email is already registered.';
+                $field = 'email';
             }
 
-            return back()->with('error', $taken)->withInput();
+            if (isset($message)) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'result' => '0',
+                        'message' => $message,
+                        'errors' => [$field => [$message]],
+                    ], 422);
+                }
+
+                return back()->with('error', $message)->withInput();
+            }
         }
 
         // Per-phone daily budget, independent of the IP throttle: a single

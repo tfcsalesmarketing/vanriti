@@ -339,7 +339,7 @@
         @endauth
 
         {{-- Item 5: Cart (Bag Icon) --}}
-        <button type="button" class="vr-dock-item border-0 bg-transparent {{ request()->routeIs('cart.*') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrCartDrawer" aria-controls="vrCartDrawer" aria-label="Cart">
+        <a href="{{ route('cart.index') }}" class="vr-dock-item {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="Cart">
             <div class="vr-dock-icon position-relative">
                 <i class="{{ request()->routeIs('cart.*') ? 'ri-shopping-bag-3-fill' : 'ri-shopping-bag-3-line' }}"></i>
                 @if ($cartCount > 0)
@@ -349,6 +349,6 @@
                 @endif
             </div>
             <span class="vr-dock-label">Cart</span>
-        </button>
+        </a>
     </div>
 </div>

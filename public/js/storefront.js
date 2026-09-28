@@ -476,11 +476,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (data.cartItemId && !data.redirect_only) {
                         showCardQty(btn.closest('.vr-card'), data.cartItemId, data.quantity || 1);
                     }
-                    var drawerEl = document.getElementById('vrCartDrawer');
-                    if (drawerEl && typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
-                        var drawer = bootstrap.Offcanvas.getInstance(drawerEl) || new bootstrap.Offcanvas(drawerEl);
-                        drawer.show();
-                    }
                     if (data.analytics) {
                         window.dataLayer = window.dataLayer || [];
                         window.dataLayer.push(data.analytics);
@@ -717,107 +712,4 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     };
-
-    // ---- Auto-open Side Cart Drawer after update/reload ----
-    if (sessionStorage.getItem('vrOpenCartDrawer') === '1') {
-        sessionStorage.removeItem('vrOpenCartDrawer');
-        var drawerEl = document.getElementById('vrCartDrawer');
-        if (drawerEl && typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
-            var drawerInstance = bootstrap.Offcanvas.getInstance(drawerEl) || new bootstrap.Offcanvas(drawerEl);
-            drawerInstance.show();
-        }
-    }
-
-    // ---- Side Cart Drawer Quantity Stepper (+ / -) ----
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest ? e.target.closest('.js-drawer-step') : null;
-        if (!btn) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        var form = btn.closest('form');
-        if (!form) return;
-
-        var input = form.querySelector('input[name="quantity"]');
-        if (!input) return;
-
-        var step = parseInt(btn.dataset.step || '1', 10);
-        var current = parseInt(input.value || '1', 10);
-        var next = current + step;
-
-        if (next < 1) {
-            var itemCard = form.closest('.vr-cart-drawer-item');
-            var removeForm = itemCard ? itemCard.querySelector('.js-cart-remove-form') : null;
-            if (removeForm) {
-                sessionStorage.setItem('vrOpenCartDrawer', '1');
-                if (typeof removeForm.requestSubmit === 'function') removeForm.requestSubmit();
-                else removeForm.submit();
-            }
-            return;
-        }
-
-        if (next > MAX_QTY) {
-            toast('Maximum quantity limit is ' + MAX_QTY + ' items.', 'error');
-            return;
-        }
-
-        input.value = next;
-        btn.disabled = true;
-        sessionStorage.setItem('vrOpenCartDrawer', '1');
-
-        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        var fd = new FormData(form);
-
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json'
-            },
-            body: fd
-        }).then(function (r) { return r.json().catch(function () { return { success: false }; }); })
-          .then(function (data) {
-              if (data && data.success) {
-                  if (typeof data.cartCount !== 'undefined') setCartCount(data.cartCount);
-                  window.location.reload();
-              } else {
-                  sessionStorage.removeItem('vrOpenCartDrawer');
-                  btn.disabled = false;
-                  toast((data && data.message) || 'Could not update quantity.', 'error');
-              }
-          }).catch(function () {
-              window.location.reload();
-          });
-    });
-
-    // ---- Side Cart Drawer Item Remove ----
-    document.addEventListener('submit', function (e) {
-        var removeForm = e.target.closest ? e.target.closest('.js-cart-remove-form') : null;
-        if (!removeForm) return;
-
-        e.preventDefault();
-        sessionStorage.setItem('vrOpenCartDrawer', '1');
-        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-        fetch(removeForm.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json'
-            },
-            body: new FormData(removeForm)
-        }).then(function (r) { return r.json().catch(function () { return { success: false }; }); })
-          .then(function (data) {
-              if (data && data.success) {
-                  if (typeof data.cartCount !== 'undefined') setCartCount(data.cartCount);
-                  window.location.reload();
-              } else {
-                  removeForm.submit();
-              }
-          }).catch(function () {
-              removeForm.submit();
-          });
-    });
-
 });

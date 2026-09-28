@@ -29,6 +29,20 @@
     $liked = $wishlistService->has($product);
     $firstInStockVariant = $product->activeVariants->first(fn ($v) => (int) $v->stock > 0);
     $viewItemPayload = app(App\Services\Analytics\EcommerceDataService::class)->viewItem($product, $firstInStockVariant, 1);
+
+    $cartLinesByVariant = [];
+    foreach (app(App\Services\CartService::class)->items() as $_line) {
+        if ((int) $_line->product_id !== (int) $product->id) {
+            continue;
+        }
+        $cartLinesByVariant[$_line->product_variant_id ? (string) $_line->product_variant_id : '__default__'] = [
+            'id' => $_line->id,
+            'qty' => (int) $_line->quantity,
+        ];
+    }
+    $_pdpKey = $firstInStockVariant ? (string) $firstInStockVariant->id : '__default__';
+    $_pdpLine = $cartLinesByVariant[$_pdpKey] ?? null;
+    $_pdpInCart = (bool) $_pdpLine;
 @endphp
 
 <div class="container py-4">
@@ -101,7 +115,7 @@
                 <p class="text-muted mb-3">{{ $product->short_description }}</p>
             @endif
 
-            <form method="POST" action="{{ route('cart.add', $product) }}" id="addToCartForm" class="js-add-to-cart-form">
+            <form method="POST" action="{{ route('cart.add', $product) }}" id="addToCartForm" class="js-add-to-cart-form" data-variant-cart="{{ json_encode($cartLinesByVariant, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" data-stock="{{ min(5, max(1, $available)) }}">
                 @csrf
                 <input type="hidden" name="buy_now" value="0">
 
@@ -135,14 +149,29 @@
                 @endif
 
                 <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-                    <div class="vr-qty">
+                    <div class="vr-qty {{ $_pdpInCart ? 'd-none' : '' }}" id="vrPdpQtySelector">
                         <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
                         <input type="number" name="quantity" value="1" min="1" aria-label="Quantity" id="vrBuyQty">
                         <button type="button" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
                     </div>
-                    <button type="submit" class="btn btn-vr btn-lg flex-grow-1 js-pdp-add" {{ $out ? 'disabled' : '' }}>
-                        <i class="bi bi-bag me-2"></i> Add to Cart
-                    </button>
+                    <div class="js-pdp-add-wrap flex-grow-1 {{ $_pdpInCart ? 'd-none' : '' }}">
+                        <button type="submit" class="btn btn-vr btn-lg w-100 js-pdp-add" {{ $out ? 'disabled' : '' }}>
+                            <i class="bi bi-bag me-2"></i> Add to Cart
+                        </button>
+                    </div>
+                    <div class="js-pdp-qty-wrap flex-grow-1 {{ $_pdpInCart ? '' : 'd-none' }}">
+                        <form method="POST" action="{{ route('cart.update', '__ITEM__') }}" class="js-pdp-qty-form m-0"
+                              data-cart-item="{{ $_pdpLine['id'] ?? '' }}"
+                              data-update-url="{{ route('cart.update', '__ITEM__') }}"
+                              data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
+                            @csrf
+                            <div class="vr-card-qty vr-pdp-qty">
+                                <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
+                                <input type="number" name="quantity" value="{{ $_pdpLine['qty'] ?? 1 }}" min="1" max="5" readonly aria-label="Quantity in cart">
+                                <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </form>
+                    </div>
                     <button type="submit" name="buy_now" value="1" class="btn btn-vr-outline btn-lg flex-grow-1 js-pdp-buy" {{ $out ? 'disabled' : '' }}>
                         <i class="bi bi-lightning-charge me-2"></i> Buy Now
                     </button>
@@ -419,14 +448,27 @@
 
 <div class="vr-mobile-bar d-lg-none" id="vrMobileBar">
     <div class="container d-flex align-items-center gap-2">
-        <div class="vr-qty flex-shrink-0">
+        <div class="vr-qty flex-shrink-0 js-bar-qty-selector {{ $_pdpInCart ? 'd-none' : '' }}">
             <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
             <input type="number" value="1" min="1" aria-label="Quantity" id="vrBarQty">
             <button type="button" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
         </div>
-        <button type="button" class="btn btn-vr-outline flex-grow-1 js-bar-btn js-bar-add" {{ $out ? 'disabled' : '' }}>
+        <button type="button" class="btn btn-vr-outline flex-grow-1 js-bar-btn js-bar-add {{ $_pdpInCart ? 'd-none' : '' }}" {{ $out ? 'disabled' : '' }}>
             <i class="bi bi-bag-plus me-1"></i> Add
         </button>
+        <div class="js-bar-qty-wrap flex-grow-1 {{ $_pdpInCart ? '' : 'd-none' }}">
+            <form method="POST" action="{{ route('cart.update', '__ITEM__') }}" class="js-pdp-qty-form m-0"
+                  data-cart-item="{{ $_pdpLine['id'] ?? '' }}"
+                  data-update-url="{{ route('cart.update', '__ITEM__') }}"
+                  data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
+                @csrf
+                <div class="vr-card-qty vr-bar-qty">
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
+                    <input type="number" name="quantity" value="{{ $_pdpLine['qty'] ?? 1 }}" min="1" max="5" readonly aria-label="Quantity in cart">
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
+                </div>
+            </form>
+        </div>
         <button type="button" class="btn btn-vr flex-grow-1 js-bar-btn js-bar-buy" {{ $out ? 'disabled' : '' }}>
             <i class="bi bi-lightning-charge me-1"></i> Buy Now
         </button>
@@ -593,6 +635,9 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     @push('scripts')
     <script nonce="{{ $cspNonce }}">
     window.vrMeta.track('ViewContent', {!! json_encode($_metaViewContent, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+    window.vrPdpAddToCartMeta = function (analytics) {
+        window.vrMeta.trackAddToCartFromGa4(analytics);
+    };
     </script>
     @endpush
 @endif
@@ -603,25 +648,240 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     var form = document.getElementById('addToCartForm');
     if (!form) return;
 
+    var MAX_QTY = 5;
+
+    function guestMeta() { return document.querySelector('meta[name="vr-is-guest"]'); }
+    function isGuest() { var m = guestMeta(); return !!(m && m.getAttribute('content') === '1'); }
+    function csrfToken() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.getAttribute('content') : ''; }
+    function setCartCount(count) {
+        document.querySelectorAll('.js-cart-count').forEach(function (b) {
+            b.textContent = count;
+            b.classList.toggle('d-none', count <= 0);
+        });
+    }
+    function toast(msg, type) { if (window.vrToast) window.vrToast(msg, type); }
+
+    var buyNowInput = form.querySelector('input[name="buy_now"]');
+    var mainQty = document.getElementById('vrBuyQty');
+    var barQty = document.getElementById('vrBarQty');
+
+    var addWrap = document.querySelector('.js-pdp-add-wrap');
+    var qtyWrap = document.querySelector('.js-pdp-qty-wrap');
+    var barQtySelector = document.querySelector('.js-bar-qty-selector');
+    var barAdd = document.querySelector('.js-bar-add');
+    var barQtyWrap = document.querySelector('.js-bar-qty-wrap');
+
+    var variantCart = {};
+    try { variantCart = JSON.parse(form.dataset.variantCart || '{}') || {}; } catch (err) { variantCart = {}; }
+
+    function currentKey() {
+        var r = form.querySelector('input[name="variant_id"]:checked');
+        return r ? String(r.value) : '__default__';
+    }
+
+    function currentStock() {
+        var r = form.querySelector('input[name="variant_id"]:checked');
+        var label = r ? r.closest('.vr-variant-option') : null;
+        if (label && label.dataset && label.dataset.instock) {
+            return Math.max(1, parseInt(label.dataset.instock, 10) || 1);
+        }
+        return Math.max(1, parseInt(form.dataset.stock || '1', 10) || 1);
+    }
+
+    function stockLimit() { return Math.max(1, Math.min(MAX_QTY, currentStock())); }
+
+    function setFormState(f, itemId, qty) {
+        if (!f) return;
+        if (itemId) f.dataset.cartItem = itemId;
+        var input = f.querySelector('input[name="quantity"]');
+        if (input) input.value = qty;
+        var plus = f.querySelector('.vr-card-qty-plus');
+        if (plus) plus.disabled = qty >= stockLimit();
+        var minus = f.querySelector('.vr-card-qty-minus');
+        if (minus) minus.disabled = qty < 2;
+    }
+
+    function renderPdpLine(syncQty) {
+        var ukey = currentKey();
+        var line = variantCart[ukey] || null;
+        var inCart = !!(line && line.id);
+        var qty = line ? (parseInt(line.qty, 10) || 1) : 1;
+
+        if (addWrap) addWrap.classList.toggle('d-none', inCart);
+        if (qtyWrap) qtyWrap.classList.toggle('d-none', !inCart);
+        if (barAdd) barAdd.classList.toggle('d-none', inCart);
+        if (barQtySelector) barQtySelector.classList.toggle('d-none', inCart);
+        if (barQtyWrap) barQtyWrap.classList.toggle('d-none', !inCart);
+
+        document.querySelectorAll('.js-pdp-qty-form').forEach(function (f) {
+            setFormState(f, line && line.id, qty);
+        });
+
+        if (inCart) {
+            if (mainQty) mainQty.value = qty;
+            if (barQty) barQty.value = qty;
+        } else if (syncQty) {
+            if (mainQty) mainQty.value = '1';
+            if (barQty) barQty.value = '1';
+        }
+    }
+
+    function stepPdp(btn, step) {
+        var f = btn.closest('form');
+        var input = f ? f.querySelector('input[name="quantity"]') : null;
+        var ukey = currentKey();
+        var itemId = f ? f.dataset.cartItem : '';
+        if (!f || !input || !itemId) return;
+
+        var cur = parseInt(input.value || '1', 10) || 1;
+        var next = cur + step;
+        var limit = stockLimit();
+
+        if (next < 1) { removePdpLine(f); return; }
+        if (next > limit) {
+            if (cur >= limit) { toast('Only ' + limit + ' unit(s) available in stock.', 'error'); return; }
+            next = limit;
+        }
+
+        btn.disabled = true;
+        var url = (f.dataset.updateUrl || f.action).replace('__ITEM__', itemId);
+        var fd = new FormData(f);
+        fd.set('quantity', String(next));
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' },
+            body: fd
+        }).then(function (r) { return r.json().catch(function () { return { success: false, message: 'Something went wrong.' }; }); })
+          .then(function (data) {
+              btn.disabled = false;
+              if (!data.success) { toast(data.message || 'Could not update quantity.', 'error'); return; }
+              if (!variantCart[ukey]) variantCart[ukey] = { id: itemId, qty: next };
+              variantCart[ukey].qty = next;
+              if (typeof data.cartCount !== 'undefined') setCartCount(data.cartCount);
+              renderPdpLine(true);
+          }).catch(function () {
+              btn.disabled = false;
+              toast('Could not update quantity.', 'error');
+          });
+    }
+
+    function removePdpLine(f) {
+        var ukey = currentKey();
+        var itemId = f.dataset.cartItem;
+        if (!itemId) { renderPdpLine(); return; }
+        var url = (f.dataset.removeUrl || '').replace('__ITEM__', itemId);
+        if (!url) return;
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
+        }).then(function (r) { return r.json().catch(function () { return { success: false, message: 'Something went wrong.' }; }); })
+          .then(function (data) {
+              if (!data.success) { toast(data.message || 'Could not remove item.', 'error'); return; }
+              delete variantCart[ukey];
+              if (typeof data.cartCount !== 'undefined') setCartCount(data.cartCount);
+              renderPdpLine(true);
+          }).catch(function () {
+              toast('Could not remove item.', 'error');
+          });
+    }
+
+    function ajaxAdd(btn) {
+        if (!btn || btn.disabled) return;
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        var original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        if (buyNowInput) buyNowInput.value = '0';
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' },
+            body: new FormData(form)
+        }).then(function (r) { return r.json().catch(function () { return { success: false, message: 'Something went wrong.' }; }); })
+          .then(function (data) {
+              if (data && data.auth_required) {
+                  btn.disabled = false;
+                  btn.innerHTML = original;
+                  if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
+                      window.vrLoginModal.pendingForm = form;
+                      window.vrLoginModal.open();
+                  } else {
+                      toast(data.message || 'Please login to continue.', 'error');
+                  }
+                  return;
+              }
+              if (!data.success) {
+                  toast(data.message || 'Could not add to cart.', 'error');
+                  btn.disabled = false;
+                  btn.innerHTML = original;
+                  return;
+              }
+              toast(data.message || 'Added to cart.');
+              if (typeof data.cartCount !== 'undefined' && data.cartCount !== null) setCartCount(data.cartCount);
+              if (data.cartItemId) {
+                  variantCart[currentKey()] = { id: data.cartItemId, qty: parseInt(data.quantity || '1', 10) || 1 };
+                  renderPdpLine(true);
+              }
+              if (data.analytics) {
+                  window.dataLayer.push(data.analytics);
+                  if (typeof window.vrPdpAddToCartMeta === 'function') {
+                      window.vrPdpAddToCartMeta(data.analytics);
+                  }
+              }
+              if (data.redirect_only) { window.location.href = data.redirect; return; }
+              btn.innerHTML = original;
+              setTimeout(function () { btn.disabled = false; }, 600);
+          }).catch(function () {
+              btn.disabled = false;
+              btn.innerHTML = original;
+              toast('Could not add to cart. Please try again.', 'error');
+          });
+    }
+
     form.addEventListener('submit', function (e) {
-        var guestMeta = document.querySelector('meta[name="vr-is-guest"]');
-        if (guestMeta && guestMeta.getAttribute('content') === '1') {
+        var submitter = e.submitter || null;
+        var intent = form.getAttribute('data-intent');
+        form.removeAttribute('data-intent');
+
+        var isBuy = intent === 'buy'
+            || (!!submitter && (submitter.classList.contains('js-pdp-buy') || submitter.classList.contains('js-bar-buy')));
+
+        if (isGuest()) {
             e.preventDefault();
             e.stopPropagation();
+            if (buyNowInput) buyNowInput.value = isBuy ? '1' : '0';
+            form.setAttribute('data-intent', isBuy ? 'buy' : 'add');
             if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
                 window.vrLoginModal.pendingForm = form;
                 window.vrLoginModal.open();
             }
+            return;
         }
+
+        if (isBuy) {
+            if (buyNowInput) buyNowInput.value = '1';
+            return;
+        }
+
+        e.preventDefault();
+        var addBtn = submitter || form.querySelector('.js-pdp-add');
+        ajaxAdd(addBtn);
+    });
+
+    document.addEventListener('click', function (e) {
+        var sel = '.js-pdp-qty-wrap .vr-card-qty-btn, .js-bar-qty-wrap .vr-card-qty-btn';
+        var btn = e.target.closest ? e.target.closest(sel) : null;
+        if (!btn) return;
+        e.preventDefault();
+        var step = parseInt(btn.dataset.step || (btn.classList.contains('vr-card-qty-minus') ? -1 : 1), 10);
+        stepPdp(btn, step);
     });
 
     if (document.getElementById('vrMobileBar') && window.innerWidth < 992) {
         document.body.classList.add('has-mobile-bar');
     }
-
-    var buyNowInput = form.querySelector('input[name="buy_now"]');
-    var mainQty = document.getElementById('vrBuyQty');
-    var barQty = document.getElementById('vrBarQty');
 
     if (mainQty && barQty) {
         [mainQty, barQty].forEach(function (input) {
@@ -634,10 +894,32 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 
     document.querySelectorAll('.js-bar-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
+            if (btn.disabled) return;
             if (!form.checkValidity()) { form.reportValidity(); return; }
-            if (barQty) form.querySelector('input[name="quantity"]').value = barQty.value;
-            if (buyNowInput) buyNowInput.value = btn.classList.contains('js-bar-buy') ? '1' : '0';
-            form.submit();
+            if (barQty) {
+                var q = parseInt(barQty.value || '1', 10) || 1;
+                if (q < 1) q = 1;
+                if (q > stockLimit()) q = stockLimit();
+                barQty.value = q;
+                form.querySelector('input[name="quantity"]').value = q;
+            }
+            var isBuy = btn.classList.contains('js-bar-buy');
+            if (buyNowInput) buyNowInput.value = isBuy ? '1' : '0';
+
+            if (isGuest()) {
+                form.setAttribute('data-intent', isBuy ? 'buy' : 'add');
+                if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
+                    window.vrLoginModal.pendingForm = form;
+                    window.vrLoginModal.open();
+                }
+                return;
+            }
+
+            if (isBuy) {
+                form.submit();
+                return;
+            }
+            ajaxAdd(document.querySelector('.js-bar-add') || btn);
         });
     });
 
@@ -667,8 +949,11 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
                 }
             }
             setButtonsDisabled(!instock);
+            renderPdpLine();
         });
     }
+
+    renderPdpLine();
 })();
 </script>
 @endpush

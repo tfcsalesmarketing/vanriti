@@ -224,7 +224,6 @@
 
         @yield('content')
     </main>
-    @include('storefront.partials.cart-drawer')
     @include('storefront.partials.login-modal')
     @include('storefront.partials.footer')
 
