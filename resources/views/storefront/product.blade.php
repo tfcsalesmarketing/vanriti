@@ -1,13 +1,16 @@
 @extends('storefront.layouts.app')
 
-@section('title', $product->name)
+@section('title', $product->meta_title ?: $product->name)
 @section('meta_description', $product->meta_description ?: $product->short_description ?: setting('meta_description'))
 @section('meta_keywords', $product->meta_keywords ?: setting('meta_keywords'))
-@section('og_title', $product->name)
-@section('og_description', $product->short_description ?: $product->meta_description ?: setting('meta_description'))
+@section('og_title', $product->meta_title ?: $product->name)
+@section('og_description', $product->meta_description ?: $product->short_description ?: setting('meta_description'))
+@section('og_type', 'product')
 @section('og_image', $product->getPrimaryImage()
     ? image_url($product->getPrimaryImage()?->image_path, 'favicon.ico')
     : image_url(null, 'favicon.ico'))
+@section('og_image_alt', $product->name)
+@section('canonical', route('product.show', $product))
 
 @section('content')
 
@@ -44,7 +47,7 @@
             <div class="vr-zoom-container" id="vrZoomContainer">
                 @if ($img)
                     <a href="#" id="vrMainImageWrap" class="vr-zoom d-block mb-3" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
-                        <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 vr-zoom-image" style="aspect-ratio:1/1;object-fit:cover;" fetchpriority="high">
+                        <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 vr-zoom-image" style="aspect-ratio:1/1;object-fit:contain;background:linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);padding:1.35rem;" fetchpriority="high">
                     </a>
                 @else
                     <a href="#" id="vrMainImageWrap" class="vr-zoom d-block mb-3" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
@@ -63,7 +66,7 @@
                         @php $thumb = $image->image_path; @endphp
                         <div class="col-3">
                             <div class="vr-gallery-thumb {{ $thumb && $thumb === $img ? 'active' : '' }}" data-image="{{ image_url($thumb) }}">
-                                <img src="{{ image_url($thumb) }}" alt="{{ $image->alt_text ?: $product->name }}" class="img-fluid" style="aspect-ratio:1/1;object-fit:cover;">
+                                <img src="{{ image_url($thumb) }}" alt="{{ $image->alt_text ?: $product->name }}" class="img-fluid" style="aspect-ratio:1/1;object-fit:contain;background:#f7f4ea;padding:0.3rem;">
                             </div>
                         </div>
                     @endforeach
@@ -435,33 +438,96 @@
 }
 </script>
 <script nonce="{{ $cspNonce }}" type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@@type": "Product",
-    "name": {!! json_encode($product->name, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-    "image": {!! json_encode($img ? image_url($img) : null, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-    @if ($product->description)"description": {!! json_encode(strip_tags((string) $product->description), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},@endif
-    @if ($product->sku)"sku": {!! json_encode($product->sku, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},@endif
-    "brand": {
-        "@@type": "Brand",
-        "name": {!! json_encode(store_name(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
-    },
-    "offers": {
-        "@@type": "Offer",
-        "url": {!! json_encode(route('product.show', $product), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-        "priceCurrency": "INR",
-        "price": {!! json_encode(number_format((float) $product->selling_price, 2, '.', ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-        "availability": {!! json_encode($out ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-        "itemCondition": "https://schema.org/NewCondition"
+{!! json_encode((function () use ($product, $img, $gallery, $out) {
+    $images = $gallery->pluck('image_path')->filter()->map(fn ($path) => image_url($path))->values()->all();
+    if ($images === [] && $img) {
+        $images = [image_url($img)];
     }
-    @if ($product->review_count > 0),
-    "aggregateRating": {
-        "@@type": "AggregateRating",
-        "ratingValue": {!! json_encode((string) $product->review_rating, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-        "reviewCount": {!! json_encode((string) $product->review_count, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
+    $days = preg_split('/\D+/', (string) setting('estimated_days', '3-7')) ?: [];
+    $days = array_values(array_filter($days, fn ($d) => $d !== ''));
+    $transitMin = (int) ($days[0] ?? 3);
+    $transitMax = (int) ($days[1] ?? $transitMin);
+    $returnDays = max(1, (int) setting('return_window_days', 7));
+    $shipRate = number_format((float) setting('shipping_charge', 0), 2, '.', '');
+    $data = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $product->name,
+        'url' => route('product.show', $product),
+        'description' => strip_tags((string) ($product->description ?: $product->short_description ?: $product->meta_description)),
+        'brand' => [
+            '@type' => 'Brand',
+            'name' => store_name(),
+        ],
+        'offers' => [
+            '@type' => 'Offer',
+            'url' => route('product.show', $product),
+            'priceCurrency' => 'INR',
+            'price' => number_format((float) $product->selling_price, 2, '.', ''),
+            'priceValidUntil' => now()->addYear()->toDateString(),
+            'availability' => $out ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+            'itemCondition' => 'https://schema.org/NewCondition',
+            'seller' => [
+                '@type' => 'Organization',
+                'name' => store_name(),
+            ],
+            'shippingDetails' => [
+                '@type' => 'OfferShippingDetails',
+                'shippingRate' => [
+                    '@type' => 'MonetaryAmount',
+                    'value' => $shipRate,
+                    'currency' => 'INR',
+                ],
+                'shippingDestination' => [
+                    '@type' => 'DefinedRegion',
+                    'addressCountry' => 'IN',
+                ],
+                'deliveryTime' => [
+                    '@type' => 'ShippingDeliveryTime',
+                    'handlingTime' => [
+                        '@type' => 'QuantitativeValue',
+                        'minValue' => 1,
+                        'maxValue' => 2,
+                        'unitCode' => 'DAY',
+                    ],
+                    'transitTime' => [
+                        '@type' => 'QuantitativeValue',
+                        'minValue' => $transitMin,
+                        'maxValue' => $transitMax,
+                        'unitCode' => 'DAY',
+                    ],
+                ],
+            ],
+            'hasMerchantReturnPolicy' => [
+                '@type' => 'MerchantReturnPolicy',
+                'applicableCountry' => 'IN',
+                'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                'merchantReturnDays' => $returnDays,
+                'returnMethod' => 'https://schema.org/ReturnByMail',
+                'returnFees' => 'https://schema.org/FreeReturn',
+            ],
+        ],
+    ];
+    if ($images !== []) {
+        $data['image'] = $images;
     }
-    @endif
-}
+    if ($product->sku) {
+        $data['sku'] = $product->sku;
+        $data['mpn'] = $product->sku;
+    }
+    if ($product->barcode) {
+        $data['gtin'] = $product->barcode;
+    }
+    if ((int) $product->review_count > 0) {
+        $data['aggregateRating'] = [
+            '@type' => 'AggregateRating',
+            'ratingValue' => (string) $product->review_rating,
+            'reviewCount' => (string) $product->review_count,
+        ];
+    }
+
+    return $data;
+})(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
 </script>
 @endpush
 

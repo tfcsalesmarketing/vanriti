@@ -12,6 +12,11 @@ class ProductController extends Controller
             abort(404);
         }
 
+        $requested = request()->route()->originalParameter('product');
+        if (is_string($requested) && $requested !== $product->slug) {
+            return redirect()->route('product.show', $product, 301);
+        }
+
         $product->load([
             'images',
             'activeVariants',

@@ -1,6 +1,8 @@
 @extends('storefront.layouts.app')
 
 @section('title', 'Contact Us')
+@section('meta_description', 'Get in touch with ' . store_name() . ' for orders, product questions, and support.')
+@section('canonical', route('contact.index'))
 
 @section('content')
 <script nonce="{{ $cspNonce }}" type="application/ld+json">

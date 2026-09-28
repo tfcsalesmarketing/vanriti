@@ -106,9 +106,9 @@
                   data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
                 @csrf
                 <div class="vr-card-qty">
-                    <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="ri-subtract-line"></i></button>
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
                     <input type="number" name="quantity" value="{{ $cartQty > 0 ? $cartQty : 1 }}" min="1" max="5" readonly aria-label="Quantity">
-                    <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="ri-add-line"></i></button>
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
                 </div>
             </form>
         </div>

@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="facebook-domain-verification" content="uiy2uo8dqx16mp5h2f784kpbs4ry53" />
+    <meta name="vr-is-guest" content="{{ auth('web')->guest() ? '1' : '0' }}">
     @php
         $_seoTitle = trim((string) $__env->yieldContent('title'));
         $_brandName = store_name();
@@ -20,13 +21,9 @@
         if (setting('meta_title')) {
             $_ogDefault = (string) setting('meta_title');
         }
-    @endphp
-    <title>{{ $_seoTitle }}</title>
-    <meta name="description" content="@yield('meta_description', setting('meta_description'))">
-    <meta name="keywords" content="@yield('meta_keywords', setting('meta_keywords'))">
-    <meta name="robots" content="@yield('robots', 'index, follow')">
-    <link rel="canonical" href="{{ request()->url() }}">
-    @php
+        $_canonicalOverride = trim((string) $__env->yieldContent('canonical'));
+        $_canonical = canonical_url($_canonicalOverride !== '' ? $_canonicalOverride : null);
+        $_ogImage = trim((string) $__env->yieldContent('og_image'));
         $_brandLogo = setting('store_logo');
         if (! $_brandLogo) {
             foreach (['svg', 'png', 'webp', 'jpg', 'ico'] as $_ext) {
@@ -36,29 +33,41 @@
                 }
             }
         }
+        if ($_ogImage === '') {
+            $_ogImage = image_url($_brandLogo, 'favicon.ico');
+        }
     @endphp
+    <title>{{ $_seoTitle }}</title>
+    <meta name="description" content="@yield('meta_description', setting('meta_description'))">
+    <meta name="keywords" content="@yield('meta_keywords', setting('meta_keywords'))">
+    <meta name="robots" content="@yield('robots', 'index, follow')">
+    <link rel="canonical" href="{{ $_canonical }}">
+    <link rel="alternate" hreflang="en-IN" href="{{ $_canonical }}">
+    <link rel="alternate" hreflang="x-default" href="{{ $_canonical }}">
     <meta property="og:title" content="@yield('og_title', $_ogDefault)">
     <meta property="og:description" content="@yield('og_description', setting('meta_description'))">
-    <meta property="og:url" content="{{ request()->url() }}">
+    <meta property="og:url" content="{{ $_canonical }}">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:site_name" content="{{ store_name() }}">
     <meta property="og:locale" content="en_IN">
-    <meta property="og:image" content="@yield('og_image', image_url($_brandLogo, 'favicon.ico'))">
+    <meta property="og:image" content="{{ $_ogImage }}">
+    <meta property="og:image:alt" content="@yield('og_image_alt', store_name())">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('og_title', $_ogDefault)">
     <meta name="twitter:description" content="@yield('og_description', setting('meta_description'))">
-    <meta name="twitter:image" content="@yield('og_image', image_url($_brandLogo, 'favicon.ico'))">
+    <meta name="twitter:image" content="{{ $_ogImage }}">
     <meta name="theme-color" content="#263D25">
     <link rel="icon" href="{{ image_url($_brandLogo, 'favicon.ico') }}" sizes="any">
     <link rel="apple-touch-icon" href="{{ image_url($_brandLogo, 'favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
-    <link rel="stylesheet" href="{{ asset('css/storefront.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset_version('css/storefront.css') }}">
     @stack('styles')
+    @stack('head')
     <script nonce="{{ $cspNonce }}" type="application/ld+json">
     {
         "@@context": "https://schema.org",
@@ -74,6 +83,9 @@
             "query-input": "required name=search_term_string"
         }
     }
+    </script>
+    <script nonce="{{ $cspNonce }}" type="application/ld+json">
+    {!! organization_json_ld(image_url($_brandLogo, 'favicon.ico')) !!}
     </script>
     <script nonce="{{ $cspNonce }}">
     window.dataLayer = window.dataLayer || [];
@@ -216,15 +228,11 @@
     @include('storefront.partials.login-modal')
     @include('storefront.partials.footer')
 
-    {{-- Guest flag for the storefront JS: lets the add-to-cart / wishlist
-         handlers + login modal know whether a replayed action must first pass
-         through login. Server-side gates in CartController/WishlistController
-         are authoritative regardless. --}}
-    <meta name="vr-is-guest" content="{{ auth('web')->guest() ? '1' : '0' }}">
+    {{-- Guest flag is in <head> as meta[name="vr-is-guest"]; CartController/WishlistController remain authoritative. --}}
 
     <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script nonce="{{ $cspNonce }}" src="{{ asset('js/storefront.js') }}?v={{ time() }}"></script>
-    <script nonce="{{ $cspNonce }}" src="{{ asset('js/vr-login-modal.js') }}?v={{ time() }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset_version('js/storefront.js') }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset_version('js/vr-login-modal.js') }}"></script>
     <script nonce="{{ $cspNonce }}">
     (function () {
         var nav = document.getElementById('vrNavbar');

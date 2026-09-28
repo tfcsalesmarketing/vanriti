@@ -9,10 +9,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
     use HasFactory, SoftDeletes;
+
+    /**
+     * Previous slug stored during an update so a 301 redirect can be written after save.
+     */
+    public ?string $slugRedirectFrom = null;
 
     protected static function boot(): void
     {
@@ -25,6 +31,33 @@ class Product extends Model
                     $product->sku = null;
                 }
             }
+        });
+
+        static::creating(function (Product $product): void {
+            $product->slug = static::uniqueSlugFromName((string) $product->name);
+        });
+
+        static::updating(function (Product $product): void {
+            if ($product->isDirty('name')) {
+                $product->slug = static::uniqueSlugFromName((string) $product->name, $product->id);
+            }
+
+            $from = $product->getOriginal('slug');
+            if (is_string($from) && $from !== '' && $product->isDirty('slug') && $from !== $product->slug) {
+                $product->slugRedirectFrom = $from;
+            }
+        });
+
+        static::updated(function (Product $product): void {
+            if (! is_string($product->slugRedirectFrom) || $product->slugRedirectFrom === '') {
+                return;
+            }
+
+            ProductSlugRedirect::query()->updateOrCreate(
+                ['slug' => $product->slugRedirectFrom],
+                ['product_id' => $product->id]
+            );
+            $product->slugRedirectFrom = null;
         });
     }
 
@@ -101,6 +134,11 @@ class Product extends Model
     public function dadiProductProfile(): HasOne
     {
         return $this->hasOne(DadiProductProfile::class);
+    }
+
+    public function slugRedirects(): HasMany
+    {
+        return $this->hasMany(ProductSlugRedirect::class);
     }
 
     public function activeVariants(): HasMany
@@ -211,5 +249,97 @@ class Product extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $field ??= $this->getRouteKeyName();
+
+        $product = $this->where($field, $value)->first();
+        if ($product) {
+            return $product;
+        }
+
+        if ($field === 'slug') {
+            $productId = ProductSlugRedirect::query()->where('slug', $value)->value('product_id');
+            if ($productId) {
+                return $this->whereKey($productId)->first();
+            }
+        }
+
+        return null;
+    }
+
+    public static function uniqueSlugFromName(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name);
+        if ($base === '') {
+            $base = 'product';
+        }
+
+        $base = substr($base, 0, 240);
+        $slug = $base;
+        $suffix = 2;
+
+        while (static::slugIsTaken($slug, $ignoreId)) {
+            $slug = substr($base, 0, 230).'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    public static function rewriteSlugFromName(self $product): bool
+    {
+        $old = (string) $product->slug;
+        $new = static::uniqueSlugFromName((string) $product->name, $product->id);
+
+        if ($old === $new) {
+            return false;
+        }
+
+        $product->slug = $new;
+        $product->saveQuietly();
+
+        if ($old !== '') {
+            ProductSlugRedirect::query()->updateOrCreate(
+                ['slug' => $old],
+                ['product_id' => $product->id]
+            );
+        }
+
+        return true;
+    }
+
+    public static function rewriteAllSlugsFromNames(): int
+    {
+        $updated = 0;
+
+        foreach ([1, 2] as $_) {
+            static::query()->orderBy('id')->each(function (self $product) use (&$updated): void {
+                if (static::rewriteSlugFromName($product)) {
+                    $updated++;
+                }
+            });
+        }
+
+        return $updated;
+    }
+
+    protected static function slugIsTaken(string $slug, ?int $ignoreId = null): bool
+    {
+        $productTaken = static::withTrashed()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists();
+
+        if ($productTaken) {
+            return true;
+        }
+
+        return ProductSlugRedirect::query()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($q) => $q->where('product_id', '!=', $ignoreId))
+            ->exists();
     }
 }

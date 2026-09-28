@@ -5,7 +5,7 @@
 @section('meta_description', 'Baal, skin aur wellness ki baatein VANRITI Dadi ke saath - aapke sawaal, humari seekh.')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/dadi.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset_version('css/dadi.css') }}">
 @endpush
 
 @section('content')
@@ -265,5 +265,5 @@
 @endsection
 
 @push('scripts')
-    <script nonce="{{ $cspNonce }}" src="{{ asset('js/dadi.js') }}?v={{ time() }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset_version('js/dadi.js') }}"></script>
 @endpush

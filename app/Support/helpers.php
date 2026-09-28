@@ -367,3 +367,75 @@ if (! function_exists('clean_html')) {
         return trim($output);
     }
 }
+
+if (! function_exists('canonical_url')) {
+    /**
+     * Indexable URL for the current request: path only, plus page when paginated.
+     * Tracking and filter query strings are never copied onto the canonical.
+     */
+    function canonical_url(?string $override = null): string
+    {
+        if (is_string($override) && $override !== '') {
+            return $override;
+        }
+
+        $url = request()->url();
+        $page = (int) request()->query('page', 0);
+
+        if ($page > 1) {
+            return $url.'?page='.$page;
+        }
+
+        return $url;
+    }
+}
+
+if (! function_exists('asset_version')) {
+    function asset_version(string $relativePublicPath): string
+    {
+        $full = public_path($relativePublicPath);
+        $version = is_file($full) ? (string) filemtime($full) : '1';
+
+        return asset($relativePublicPath).'?v='.$version;
+    }
+}
+
+if (! function_exists('organization_json_ld')) {
+    function organization_json_ld(?string $logoUrl = null): string
+    {
+        $payload = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => store_name(),
+            'url' => route('home'),
+            'logo' => $logoUrl ?: image_url(setting('store_logo'), 'favicon.ico'),
+            'address' => [
+                '@type' => 'PostalAddress',
+                'streetAddress' => setting('store_address'),
+                'addressCountry' => 'IN',
+            ],
+            'sameAs' => seo_social_urls(),
+        ];
+
+        return json_encode(
+            $payload,
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+        ) ?: '{}';
+    }
+}
+
+if (! function_exists('seo_social_urls')) {
+    /**
+     * @return list<string>
+     */
+    function seo_social_urls(): array
+    {
+        return array_values(array_filter([
+            setting('facebook_url'),
+            setting('instagram_url'),
+            setting('twitter_url'),
+            setting('youtube_url'),
+            setting('linkedin_url'),
+        ], fn ($url) => is_string($url) && $url !== ''));
+    }
+}

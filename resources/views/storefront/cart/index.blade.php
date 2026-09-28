@@ -59,7 +59,7 @@
                                     <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0">
                                         <img src="{{ image_url($item->product->getPrimaryImage()?->image_path, 'images/placeholder.png') }}"
                                              alt="{{ $item->product->name }}"
-                                             style="width:90px;height:90px;object-fit:cover;border-radius:14px;background:var(--vr-cream);">
+                                             style="width:90px;height:90px;object-fit:contain;padding:0.3rem;border-radius:14px;background:var(--vr-cream);">
                                     </a>
 
                                     <div class="flex-grow-1 min-w-0">
@@ -81,9 +81,9 @@
                                             <form action="{{ route('cart.update', $item) }}" method="POST" data-auto-qty>
                                                 @csrf
                                                 <div class="vr-qty">
-                                                    <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity" {{ $item->quantity <= 1 ? 'disabled' : '' }}><i class="ri-subtract-line"></i></button>
+                                                    <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity" {{ $item->quantity <= 1 ? 'disabled' : '' }}><i class="bi bi-dash"></i></button>
                                                     <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="5" readonly aria-label="Quantity">
-                                                    <button type="button" class="qty-plus" data-step="1" aria-label="Increase quantity" {{ $item->quantity >= 5 ? 'disabled' : '' }}><i class="ri-add-line"></i></button>
+                                                    <button type="button" class="qty-plus" data-step="1" aria-label="Increase quantity" {{ $item->quantity >= 5 ? 'disabled' : '' }}><i class="bi bi-plus"></i></button>
                                                 </div>
                                             </form>
 

@@ -5,6 +5,7 @@
 @section('meta_keywords', setting('meta_keywords'))
 @section('og_title', $page->meta_title ?: $page->title)
 @section('og_description', $page->meta_description ?: setting('meta_description'))
+@section('canonical', url()->current())
 
 @section('content')
 <script nonce="{{ $cspNonce }}" type="application/ld+json">
@@ -28,6 +29,7 @@
 }
 </script>
 <div class="container py-5">
+    <h1 class="vr-section-title mb-4">{{ $page->title }}</h1>
     <div style="background:#ffffff;border-radius:16px;box-shadow:0 8px 30px rgba(38,61,37,0.08);padding:2rem;">
         {!! clean_html($page->content) !!}
     </div>

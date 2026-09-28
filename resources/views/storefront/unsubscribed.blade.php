@@ -1,6 +1,7 @@
 @extends('storefront.layouts.app')
 
 @section('title', 'Unsubscribed')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 <div class="vr-section">

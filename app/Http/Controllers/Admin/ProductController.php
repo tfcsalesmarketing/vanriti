@@ -12,7 +12,6 @@ use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -97,7 +96,8 @@ class ProductController extends Controller
             'primary_category_id' => 'nullable|exists:categories,id',
         ]);
 
-        $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
+        unset($validated['slug']);
+        $validated['slug'] = Product::uniqueSlugFromName($validated['name']);
         $validated['discount_percent'] = ($validated['mrp'] > $validated['selling_price'])
             ? round((($validated['mrp'] - $validated['selling_price']) / $validated['mrp']) * 100, 1)
             : 0;
@@ -190,7 +190,8 @@ class ProductController extends Controller
             'is_featured', 'is_bestseller', 'is_new_arrival',
         ]);
 
-        $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
+        unset($validated['slug']);
+        $validated['slug'] = Product::uniqueSlugFromName($validated['name'], $product->id);
         $validated['discount_percent'] = ($validated['mrp'] > $validated['selling_price'])
             ? round((($validated['mrp'] - $validated['selling_price']) / $validated['mrp']) * 100, 1)
             : 0;
@@ -414,18 +415,11 @@ class ProductController extends Controller
                 continue;
             }
 
-            $slug = Str::slug($data['name']);
+            $existing = Product::query()->where('sku', $sku)->first();
+            $slug = Product::uniqueSlugFromName((string) $data['name'], $existing?->id);
 
             if ($slug === '') {
                 $errors[] = "Line {$line}: name does not produce a URL slug.";
-
-                continue;
-            }
-
-            $slugTaken = Product::query()->where('slug', $slug)->where('sku', '!=', $sku)->exists();
-
-            if ($slugTaken) {
-                $errors[] = "Line {$line}: another product already uses this name.";
 
                 continue;
             }

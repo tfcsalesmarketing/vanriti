@@ -108,12 +108,12 @@
                                     </div>
 
                                     <div class="d-flex justify-content-between align-items-center mt-1">
-                                        <div class="vr-drawer-qty-wrap d-flex align-items-center border px-1 py-0.5" style="background:#F7F6F2; border-color: rgba(0,0,0,0.12) !important; border-radius: 0;">
+                                        <div class="vr-qty">
                                             <form method="POST" action="{{ route('cart.update', $item->id) }}" class="d-flex align-items-center m-0 js-drawer-qty-form">
                                                 @csrf
-                                                <button type="button" class="btn btn-sm p-1 text-dark js-drawer-step" data-step="-1" style="line-height:1; min-width: 24px;"><i class="ri-subtract-line small"></i></button>
-                                                <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="5" readonly class="form-control form-control-sm border-0 bg-transparent text-center px-1 py-0 fw-bold text-vr-dark" style="width: 28px; font-size:0.82rem;">
-                                                <button type="button" class="btn btn-sm p-1 text-dark js-drawer-step" data-step="1" style="line-height:1; min-width: 24px;"><i class="ri-add-line small"></i></button>
+                                                <button type="button" class="js-drawer-step" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
+                                                <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="5" readonly aria-label="Quantity">
+                                                <button type="button" class="js-drawer-step" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
                                             </form>
                                         </div>
                                         <div class="text-end">

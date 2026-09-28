@@ -1,6 +1,8 @@
 @extends('storefront.layouts.app')
 
 @section('title', 'Journal')
+@section('meta_description', 'Stories, guides and updates from ' . store_name() . '.')
+@section('canonical', route('blog.index'))
 
 @section('content')
 <div class="vr-section" style="background:var(--vr-cream);">

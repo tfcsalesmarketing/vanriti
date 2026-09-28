@@ -1,6 +1,8 @@
 @extends('storefront.layouts.app')
 
 @section('title', 'FAQs')
+@section('meta_description', 'Answers to common questions about ' . store_name() . ' orders, shipping, returns, and products.')
+@section('canonical', route('faq.index'))
 
 @section('content')
 @if ($faqs->count())
@@ -36,15 +38,15 @@
     <div class="container">
         @if ($faqs->count())
             @foreach ($faqs as $category => $items)
-                <h5 class="mb-3 mt-4" style="font-weight:700;color:var(--vr-green-dark);">{{ $category }}</h5>
+                <h2 class="mb-3 mt-4" style="font-weight:700;color:var(--vr-green-dark);font-size:1.05rem;">{{ $category }}</h2>
                 <div class="accordion mb-4" id="faq-{{ Str::slug($category) }}">
                     @foreach ($items as $faq)
                         <div class="accordion-item">
-                            <h2 class="accordion-header">
+                            <h3 class="accordion-header" style="font-size:1rem;">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-item-{{ $faq->id }}">
                                     {{ $faq->question }}
                                 </button>
-                            </h2>
+                            </h3>
                             <div id="faq-item-{{ $faq->id }}" class="accordion-collapse collapse" data-bs-parent="#faq-{{ Str::slug($category) }}">
                                 <div class="accordion-body" style="line-height:1.7;color:var(--vr-text);">
                                     {!! nl2br(e($faq->answer)) !!}

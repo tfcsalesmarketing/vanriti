@@ -1,6 +1,8 @@
 @extends('storefront.layouts.app')
 
-@section('title', 'Policies')
+@section('title', 'Return & Refund Policy')
+@section('meta_description', 'Return and refund rules for orders placed on ' . store_name() . '.')
+@section('canonical', url()->current())
 
 @section('content')
 <div class="vr-section" style="background:var(--vr-cream);">

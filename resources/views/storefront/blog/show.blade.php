@@ -5,6 +5,9 @@
 @section('meta_keywords', setting('meta_keywords'))
 @section('og_title', $blog->seo_title ?: $blog->title)
 @section('og_description', $blog->meta_description ?: setting('meta_description'))
+@section('canonical', route('blog.show', $blog))
+@section('og_image', $blog->featured_image ? image_url($blog->featured_image) : '')
+@section('og_image_alt', $blog->title)
 
 @section('content')
 <script nonce="{{ $cspNonce }}" type="application/ld+json">

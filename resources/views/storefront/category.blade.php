@@ -5,6 +5,7 @@
 @section('meta_keywords', $category->meta_keywords ?: setting('meta_keywords'))
 @section('og_title', $category->meta_title ?: $category->name)
 @section('og_description', $category->meta_description ?: setting('meta_description'))
+@section('canonical', route('shop.category', $category))
 
 @section('content')
 
@@ -61,6 +62,9 @@
     <nav class="vr-breadcrumb mb-3" aria-label="breadcrumb">
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
+            @if ($category->parent)
+                <li class="breadcrumb-item"><a href="{{ route('shop.category', $category->parent->slug) }}">{{ $category->parent->name }}</a></li>
+            @endif
             <li class="breadcrumb-item active" aria-current="page">{{ $category->name }}</li>
         </ol>
     </nav>

@@ -7,6 +7,17 @@
     login modes — classic password and WhatsApp OTP — plus a shortcut to the
     registration page.
 --}}
+@php
+    $loginLogo = setting('store_logo');
+    if (! $loginLogo) {
+        foreach (['svg', 'png', 'webp', 'jpg'] as $ext) {
+            if (file_exists(public_path('images/logo.' . $ext))) {
+                $loginLogo = 'images/logo.' . $ext;
+                break;
+            }
+        }
+    }
+@endphp
 <div class="modal fade" id="vrLoginModal" tabindex="-1" role="dialog" aria-labelledby="vrLoginModalTitle" aria-modal="true" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content vr-login-modal">
@@ -14,21 +25,22 @@
                 {{-- Left Brand Panel (hidden on mobile) --}}
                 <div class="vr-login-brand">
                     <div class="vr-login-brand-logo">
-                        <i class="ri-leaf-line"></i>
+                        @if ($loginLogo)
+                            <img src="{{ image_url($loginLogo, 'favicon.ico') }}" alt="{{ store_name() }}">
+                        @else
+                            <i class="ri-leaf-line"></i>
+                        @endif
                     </div>
-                    <h3>VANRITI</h3>
-                    <p>Pure, Handcrafted &amp; Natural Skincare Essentials</p>
-                    <div class="vr-login-brand-leaf">
-                        <i class="ri-plant-line"></i>
-                    </div>
+                    <p class="vr-login-brand-name">{{ strtoupper(store_name()) }}</p>
+                    <p>{{ setting('store_tagline', 'Pure by nature') }}</p>
                 </div>
 
                 {{-- Right Form Panel --}}
                 <div class="vr-login-form">
                     <div class="vr-login-header">
                         <div>
-                            <h4 class="vr-login-heading" id="vrLoginModalTitle">Welcome Back</h4>
-                            <p class="vr-login-subtitle mb-0">Sign in to save favorites, add items &amp; checkout.</p>
+                            <p class="vr-login-heading" id="vrLoginModalTitle">Welcome back</p>
+                            <p class="vr-login-subtitle mb-0">Sign in to add items, save favourites, and check out.</p>
                         </div>
                         <button type="button" class="vr-login-close" data-bs-dismiss="modal" aria-label="Close" data-vr-login-close>
                             <i class="ri-close-line"></i>
@@ -66,6 +78,9 @@
                                     <input type="password" name="password" id="vrLoginModalPassword"
                                            placeholder="Enter your password" autocomplete="current-password">
                                     <i class="ri-lock-2-line vr-login-input-icon"></i>
+                                    <button type="button" class="vr-login-eye" data-vr-login-eye aria-label="Show password">
+                                        <i class="ri-eye-line"></i>
+                                    </button>
                                 </div>
                             </div>
 

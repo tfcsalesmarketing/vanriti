@@ -1,4 +1,12 @@
 @if ($paginator->hasPages())
+    @push('head')
+        @if (! $paginator->onFirstPage() && $paginator->previousPageUrl())
+            <link rel="prev" href="{{ $paginator->previousPageUrl() }}">
+        @endif
+        @if ($paginator->hasMorePages() && $paginator->nextPageUrl())
+            <link rel="next" href="{{ $paginator->nextPageUrl() }}">
+        @endif
+    @endpush
     <nav aria-label="Page navigation">
         <ul class="pagination vr-pagination mb-0">
             @if ($paginator->onFirstPage())

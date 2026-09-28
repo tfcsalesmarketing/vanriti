@@ -299,6 +299,19 @@
                 close();
             });
         }
+
+        var eye = first('[data-vr-login-eye]');
+        if (eye) {
+            eye.addEventListener('click', function () {
+                var input = byId('vrLoginModalPassword');
+                if (!input) return;
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                var icon = eye.querySelector('i');
+                if (icon) icon.className = show ? 'ri-eye-off-line' : 'ri-eye-line';
+                eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            });
+        }
     }
 
     if (document.readyState === 'loading') {

@@ -14,10 +14,10 @@ class SitemapController extends Controller
     {
         $urls = [];
 
-        // Home
+        $homeLastmod = Product::query()->active()->max('updated_at');
         $urls[] = [
             'loc' => route('home'),
-            'lastmod' => now()->toAtomString(),
+            'lastmod' => $homeLastmod ? \Illuminate\Support\Carbon::parse($homeLastmod)->toAtomString() : now()->toAtomString(),
             'changefreq' => 'daily',
             'priority' => '1.0',
         ];
@@ -106,12 +106,6 @@ class SitemapController extends Controller
             'lastmod' => now()->toAtomString(),
             'changefreq' => 'monthly',
             'priority' => '0.4',
-        ];
-        $urls[] = [
-            'loc' => route('track'),
-            'lastmod' => now()->toAtomString(),
-            'changefreq' => 'monthly',
-            'priority' => '0.3',
         ];
 
         // Remaining CMS pages that don't have a dedicated pretty route

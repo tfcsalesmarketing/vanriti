@@ -1,6 +1,16 @@
 @extends('storefront.layouts.app')
 
 @section('title', $query !== '' ? 'Search results for "'.$query.'"' : 'Shop')
+@php
+    $shopIsFiltered = $query !== ''
+        || $isFeatured
+        || $sort !== ''
+        || $selectedCategories !== []
+        || $minPrice !== ''
+        || $maxPrice !== '';
+@endphp
+@section('robots', $shopIsFiltered ? 'noindex, follow' : 'index, follow')
+@section('canonical', $shopIsFiltered ? route('shop.index') : '')
 
 @section('content')
 

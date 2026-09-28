@@ -1,11 +1,15 @@
 @extends('storefront.layouts.app')
 
 @section('title', setting('meta_title') ?: (store_name() . ' - ' . setting('store_tagline', 'PURE BY NATURE')))
+@section('meta_description', setting('meta_description'))
+@section('og_title', setting('meta_title') ?: (store_name() . ' - ' . setting('store_tagline', 'PURE BY NATURE')))
+@section('canonical', route('home'))
 
 @section('content')
 
 @if ($banners->isNotEmpty())
     <section class="vr-hero">
+        <h1 class="visually-hidden">{{ store_name() }}{{ setting('store_tagline') ? ' — '.setting('store_tagline') : '' }}</h1>
         <div id="vrHeroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000">
             <div class="carousel-indicators">
                 @foreach ($banners as $i => $banner)
@@ -18,10 +22,10 @@
                     <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
                         @if ($banner->link)
                             <a href="{{ $banner->link }}" class="d-block">
-                                <div class="vr-hero-img" style="background-image:url('{{ image_url($img) }}');"></div>
+                                <div class="vr-hero-img" style="background-image:url('{{ image_url($img) }}');" role="img" aria-label="{{ store_name() }} banner {{ $i + 1 }}"></div>
                             </a>
                         @else
-                            <div class="vr-hero-img" style="background-image:url('{{ image_url($img) }}');"></div>
+                            <div class="vr-hero-img" style="background-image:url('{{ image_url($img) }}');" role="img" aria-label="{{ store_name() }} banner {{ $i + 1 }}"></div>
                         @endif
                     </div>
                 @endforeach

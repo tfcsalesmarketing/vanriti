@@ -9,5 +9,8 @@ Disallow: /login
 Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
+Disallow: /dadi
+Disallow: /unsubscribed
+Disallow: /track
 
 Sitemap: https://vanriti.com/sitemap.xml

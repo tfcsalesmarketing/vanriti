@@ -327,7 +327,7 @@
                                         <div class="d-flex align-items-center gap-2 py-1">
                                             <img src="{{ image_url($ci->product->getPrimaryImage()?->image_path, 'images/placeholder.png') }}"
                                                  alt="{{ $ci->product->name }}"
-                                                 style="width:40px;height:40px;object-fit:cover;border-radius:8px;background:var(--vr-cream);">
+                                                 style="width:40px;height:40px;object-fit:contain;padding:0.15rem;border-radius:8px;background:var(--vr-cream);">
                                             <div class="flex-grow-1 min-w-0">
                                                 <div class="small fw-semibold text-truncate">{{ $ci->product->name }}</div>
                                                 <div class="small text-muted">Qty: {{ $ci->quantity }}</div>
