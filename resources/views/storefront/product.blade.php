@@ -160,17 +160,16 @@
                         </button>
                     </div>
                     <div class="js-pdp-qty-wrap flex-grow-1 {{ $_pdpInCart ? '' : 'd-none' }}">
-                        <form method="POST" action="{{ route('cart.update', '__ITEM__') }}" class="js-pdp-qty-form m-0"
+                        <div class="js-pdp-qty-form m-0"
                               data-cart-item="{{ $_pdpLine['id'] ?? '' }}"
                               data-update-url="{{ route('cart.update', '__ITEM__') }}"
                               data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
-                            @csrf
                             <div class="vr-card-qty vr-pdp-qty">
                                 <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
                                 <input type="number" name="quantity" value="{{ $_pdpLine['qty'] ?? 1 }}" min="1" max="5" readonly aria-label="Quantity in cart">
                                 <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                     <button type="submit" name="buy_now" value="1" class="btn btn-vr-outline btn-lg flex-grow-1 js-pdp-buy" {{ $out ? 'disabled' : '' }}>
                         <i class="bi bi-lightning-charge me-2"></i> Buy Now
@@ -457,17 +456,16 @@
             <i class="bi bi-bag-plus me-1"></i> Add
         </button>
         <div class="js-bar-qty-wrap flex-grow-1 {{ $_pdpInCart ? '' : 'd-none' }}">
-            <form method="POST" action="{{ route('cart.update', '__ITEM__') }}" class="js-pdp-qty-form m-0"
+            <div class="js-pdp-qty-form m-0"
                   data-cart-item="{{ $_pdpLine['id'] ?? '' }}"
                   data-update-url="{{ route('cart.update', '__ITEM__') }}"
                   data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
-                @csrf
                 <div class="vr-card-qty vr-bar-qty">
                     <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
                     <input type="number" name="quantity" value="{{ $_pdpLine['qty'] ?? 1 }}" min="1" max="5" readonly aria-label="Quantity in cart">
                     <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
                 </div>
-            </form>
+            </div>
         </div>
         <button type="button" class="btn btn-vr flex-grow-1 js-bar-btn js-bar-buy" {{ $out ? 'disabled' : '' }}>
             <i class="bi bi-lightning-charge me-1"></i> Buy Now
@@ -727,7 +725,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     }
 
     function stepPdp(btn, step) {
-        var f = btn.closest('form');
+        var f = btn.closest('.js-pdp-qty-form');
         var input = f ? f.querySelector('input[name="quantity"]') : null;
         var ukey = currentKey();
         var itemId = f ? f.dataset.cartItem : '';
@@ -744,8 +742,8 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
         }
 
         btn.disabled = true;
-        var url = (f.dataset.updateUrl || f.action).replace('__ITEM__', itemId);
-        var fd = new FormData(f);
+        var url = f.dataset.updateUrl.replace('__ITEM__', itemId);
+        var fd = new FormData(form);
         fd.set('quantity', String(next));
 
         fetch(url, {

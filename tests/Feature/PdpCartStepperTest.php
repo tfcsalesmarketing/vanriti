@@ -50,6 +50,58 @@ class PdpCartStepperTest extends TestCase
         $this->assertMatchesRegularExpression('/data-remove-url="[^"]*\/cart\/__ITEM__\/remove"/', $html);
     }
 
+    public function test_pdp_form_contains_buy_now_within_the_single_add_to_cart_form(): void
+    {
+        $productA = Product::factory()->active()->create([
+            'name' => 'Stepper Form A',
+            'selling_price' => 299.00,
+            'mrp' => 399.00,
+            'stock' => 10,
+        ]);
+        $user = User::factory()->create();
+
+        // Empty cart.
+        $html = $this->actingAs($user, 'web')->get(route('product.show', $productA))->assertOk()->getContent();
+        $this->assertSingleAddToCartForm($html);
+
+        // A second product with an existing cart line (desktop + mobile steppers shown).
+        $productB = Product::factory()->active()->create([
+            'name' => 'Stepper Form B',
+            'selling_price' => 199.00,
+            'mrp' => 299.00,
+            'stock' => 10,
+        ]);
+        $this->actingAs($user, 'web')->postJson(route('cart.add', $productB), ['quantity' => 2])->assertOk();
+
+        $html = $this->actingAs($user, 'web')->get(route('product.show', $productB))->assertOk()->getContent();
+        $this->assertSingleAddToCartForm($html);
+    }
+
+    private function assertSingleAddToCartForm(string $html): void
+    {
+        // Exactly one form carries id="addToCartForm" on the page.
+        $this->assertSame(1, substr_count($html, 'id="addToCartForm"'));
+
+        // Bound the outer form (its own closing tag is the first </form> after it —
+        // no nested <form> may exist inside it).
+        $start = strpos($html, 'id="addToCartForm"');
+        $this->assertNotFalse($start);
+        $end = strpos($html, '</form>', $start);
+        $this->assertNotFalse($end);
+        $formRegion = substr($html, $start, $end - $start);
+
+        // No nested form start tag inside the add-to-cart form.
+        $this->assertStringNotContainsString('<form', $formRegion);
+
+        // The Buy Now and Add buttons are descendants of the form (never orphaned).
+        $this->assertStringContainsString('js-pdp-buy', $formRegion);
+        $this->assertStringContainsString('js-pdp-add', $formRegion);
+
+        // Steppers are plain wrappers (no inner update <form> element).
+        $this->assertStringContainsString('js-pdp-qty-form', $formRegion);
+        $this->assertStringNotContainsString('class="js-pdp-qty-form m-0">', $formRegion);
+    }
+
     public function test_pdp_switches_to_stepper_when_default_variant_is_in_cart(): void
     {
         $user = User::factory()->create();
