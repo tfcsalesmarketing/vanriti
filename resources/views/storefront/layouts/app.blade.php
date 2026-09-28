@@ -59,7 +59,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
     <link rel="stylesheet" href="{{ asset('css/storefront.css') }}?v={{ time() }}">
     @stack('styles')
-    <script type="application/ld+json">
+    <script nonce="{{ $cspNonce }}" type="application/ld+json">
     {
         "@@context": "https://schema.org",
         "@@type": "WebSite",
@@ -75,7 +75,7 @@
         }
     }
     </script>
-    <script>
+    <script nonce="{{ $cspNonce }}">
     window.dataLayer = window.dataLayer || [];
     </script>
     {{-- Password reset and forgot-password URLs carry a single-use reset token
@@ -84,7 +84,7 @@
          leak to GTM / Meta as part of the page URL. --}}
     @unless (request()->routeIs('password.request', 'password.reset'))
     @if (config('analytics.gtm_container_id'))
-        <script>
+        <script nonce="{{ $cspNonce }}">
         (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
         new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
         j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;
@@ -94,7 +94,7 @@
         </script>
     @endif
     @if (setting('meta_pixel_id'))
-        <script>
+        <script nonce="{{ $cspNonce }}">
         !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
         n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
         n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
@@ -106,7 +106,7 @@
         <noscript><img height="1" width="1" style="display:none"
         src="https://www.facebook.com/tr?id={{ setting('meta_pixel_id') }}&ev=PageView&noscript=1"
         /></noscript>
-        <script>
+        <script nonce="{{ $cspNonce }}">
         // Centralised Meta browser event helper (M3.2). Observational only: it
         // verifies fbq exists, fails silently, and never alters commerce flow.
         window.vrMeta = (function () {
@@ -207,7 +207,7 @@
             </div>
         @endif
         @if (! empty($errors) && $errors->any())
-            <script type="application/json" id="vrValidationErrors">{!! json_encode($errors->getMessages(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
+            <script nonce="{{ $cspNonce }}" type="application/json" id="vrValidationErrors">{!! json_encode($errors->getMessages(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
         @endif
 
         @yield('content')
@@ -222,10 +222,10 @@
          are authoritative regardless. --}}
     <meta name="vr-is-guest" content="{{ auth('web')->guest() ? '1' : '0' }}">
 
-    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('js/storefront.js') }}?v={{ time() }}"></script>
-    <script src="{{ asset('js/vr-login-modal.js') }}?v={{ time() }}"></script>
-    <script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('js/storefront.js') }}?v={{ time() }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('js/vr-login-modal.js') }}?v={{ time() }}"></script>
+    <script nonce="{{ $cspNonce }}">
     (function () {
         var nav = document.getElementById('vrNavbar');
         if (nav) {
@@ -250,7 +250,7 @@
         }
     })();
     </script>
-    <script>
+    <script nonce="{{ $cspNonce }}">
     (function () {
         var el = document.getElementById('vrValidationErrors');
         if (!el) return;
@@ -264,7 +264,7 @@
     </script>
     @php $pendingAddToCart = session()->pull('pending_add_to_cart'); @endphp
     @if ($pendingAddToCart)
-        <script>
+        <script nonce="{{ $cspNonce }}">
         window.dataLayer.push({!! json_encode($pendingAddToCart, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
         @if (setting('meta_pixel_id'))
         window.vrMeta.trackAddToCartFromGa4({!! json_encode($pendingAddToCart['ecommerce'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
@@ -279,7 +279,7 @@
     @endphp
     @if (! empty($pendingRefundEvents) && is_array($pendingRefundEvents))
         @foreach ($pendingRefundEvents as $pendingRefundEvent)
-            <script>
+            <script nonce="{{ $cspNonce }}">
             window.dataLayer.push({!! json_encode($pendingRefundEvent, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
             </script>
         @endforeach

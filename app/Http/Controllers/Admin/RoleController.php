@@ -13,7 +13,7 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::withCount(['permissions', 'admins'])->orderBy('name')->get();
-        $permissions = Permission::orderBy('name')->get();
+        $permissions = Permission::query()->whereIn('id', $this->grantablePermissionIds())->orderBy('name')->get();
 
         return view('admin.roles.index', compact('roles', 'permissions'));
     }
@@ -30,13 +30,21 @@ class RoleController extends Controller
 
         $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
 
+        $permissionIds = $this->onlyGrantable($validated['permissions']);
+
+        if ($permissionIds === []) {
+            return back()
+                ->withErrors(['permissions' => 'Choose at least one permission you are allowed to grant.'])
+                ->withInput();
+        }
+
         $role = Role::create([
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?? null,
         ]);
 
-        $role->permissions()->sync($validated['permissions']);
+        $role->permissions()->sync($permissionIds);
 
         return redirect()->route('admin.roles.index')->with('success', 'Role created successfully.');
     }
@@ -61,7 +69,12 @@ class RoleController extends Controller
             'description' => $validated['description'] ?? null,
         ]);
 
-        $role->permissions()->sync($validated['permissions']);
+        $grantable = $this->grantablePermissionIds();
+        $kept = $role->permissions()->whereNotIn('permissions.id', $grantable)->pluck('permissions.id')->all();
+        $role->permissions()->sync(array_values(array_unique(array_merge(
+            $this->onlyGrantable($validated['permissions']),
+            $kept,
+        ))));
 
         return redirect()->route('admin.roles.index')->with('success', 'Role updated successfully.');
     }
@@ -77,5 +90,42 @@ class RoleController extends Controller
         $role->delete();
 
         return back()->with('success', 'Role deleted successfully.');
+    }
+
+    /**
+     * Permissions this admin may attach to a role. Payment, settings, role,
+     * and admin management stay with the super admin.
+     *
+     * @return array<int>
+     */
+    private function grantablePermissionIds(): array
+    {
+        $admin = auth('admin')->user();
+        $restricted = ['manage-admins', 'manage-roles', 'manage-settings', 'manage-payments'];
+
+        if ($admin?->is_super_admin) {
+            return Permission::query()->pluck('id')->all();
+        }
+
+        $held = $admin
+            ? $admin->roles()->with('permissions')->get()->flatMap->permissions->pluck('slug')->unique()->all()
+            : [];
+
+        return Permission::query()
+            ->whereIn('slug', $held)
+            ->whereNotIn('slug', $restricted)
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * @param  array<int, mixed>  $ids
+     * @return array<int>
+     */
+    private function onlyGrantable(array $ids): array
+    {
+        $allowed = $this->grantablePermissionIds();
+
+        return array_values(array_intersect(array_map('intval', $ids), $allowed));
     }
 }

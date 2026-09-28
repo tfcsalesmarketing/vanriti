@@ -218,8 +218,8 @@
 @endpush
 
 @push('scripts')
-<script src="{{ asset('js/vr-whatsapp-otp.js') }}?v={{ @filemtime(public_path('js/vr-whatsapp-otp.js')) ?: time() }}"></script>
-<script>
+<script nonce="{{ $cspNonce }}" src="{{ asset('js/vr-whatsapp-otp.js') }}?v={{ @filemtime(public_path('js/vr-whatsapp-otp.js')) ?: time() }}"></script>
+<script nonce="{{ $cspNonce }}">
     /* ── Route config injected once; shared by the OTP helper ── */
     window.vrOtpConfig = {
         sendUrl:   '{{ route('otp.send') }}',

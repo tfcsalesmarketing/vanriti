@@ -169,4 +169,43 @@ class CouponService
             ]);
         });
     }
+
+    /**
+     * Re-check the coupon stored in the session against the current cart.
+     * Clears it when the cart changed enough that the code no longer applies.
+     *
+     * @return array{code: ?string, discount: float}
+     */
+    public function syncSessionCoupon(?Cart $cart, ?User $user): array
+    {
+        $code = session('cart_coupon.code');
+
+        if (! is_string($code) || $code === '' || ! $cart || ! $cart->items()->exists()) {
+            if ($code) {
+                session()->forget('cart_coupon');
+            }
+
+            return ['code' => null, 'discount' => 0.0];
+        }
+
+        $result = $this->validate($code, $cart, $user);
+
+        if (! $result['valid'] || ! $result['coupon']) {
+            session()->forget('cart_coupon');
+
+            return ['code' => null, 'discount' => 0.0];
+        }
+
+        $discount = (float) $result['discount'];
+        $normalized = strtoupper($result['coupon']->code);
+
+        session([
+            'cart_coupon' => [
+                'code' => $normalized,
+                'discount' => $discount,
+            ],
+        ]);
+
+        return ['code' => $normalized, 'discount' => $discount];
+    }
 }

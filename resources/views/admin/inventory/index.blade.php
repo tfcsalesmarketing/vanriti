@@ -90,7 +90,7 @@
                             <div class="d-flex align-items-center gap-2">
                                 @php $img = $product->images->first(); @endphp
                                 @if ($img)
-                                    <img src="{{ image_url($img->image_path) }}" alt="" class="img-thumb">
+                                    <img src="{{ image_url($img->image_path) }}" alt="{{ $product->name }}" class="img-thumb">
                                 @else
                                     <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
                                         <i class="bi bi-image text-muted"></i>

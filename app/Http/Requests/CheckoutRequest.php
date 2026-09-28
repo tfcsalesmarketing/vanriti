@@ -11,6 +11,17 @@ class CheckoutRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $shipping = canonical_phone($this->input('shipping_mobile'));
+        $billing = canonical_phone($this->input('billing_mobile'));
+
+        $this->merge(array_filter([
+            'shipping_mobile' => $shipping,
+            'billing_mobile' => $billing,
+        ], fn ($value) => $value !== null));
+    }
+
     public function rules(): array
     {
         return [

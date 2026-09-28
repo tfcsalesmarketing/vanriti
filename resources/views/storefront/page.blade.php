@@ -7,7 +7,7 @@
 @section('og_description', $page->meta_description ?: setting('meta_description'))
 
 @section('content')
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "BreadcrumbList",

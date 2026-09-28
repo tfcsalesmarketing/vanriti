@@ -181,11 +181,6 @@ class OrderController extends Controller
         ]);
     }
 
-    public function update(Request $request, Order $order)
-    {
-        return redirect()->back()->with('success', 'Order updated.');
-    }
-
     public function updateStatus(Request $request, Order $order)
     {
         $data = $request->validate([
@@ -271,34 +266,44 @@ class OrderController extends Controller
 
         $data = $request->validate([
             'payment_status' => 'required|in:paid,failed,cancelled',
-            'reason' => 'nullable|string|max:1000',
+            'reason' => 'required|string|max:1000',
         ]);
 
         $newStatus = $data['payment_status'];
         $oldStatus = $order->payment_status;
+        $reason = trim($data['reason']);
 
         $order->update([
             'payment_status' => $newStatus,
             'internal_notes' => ($order->internal_notes ? $order->internal_notes."\n" : '')
                 .'['.now()->format('d M Y H:i').'] Payment '.$oldStatus.' → '.$newStatus
-                .(trim((string) ($data['reason'] ?? '')) !== '' ? ' — '.trim((string) $data['reason']) : ''),
+                .' — '.$reason,
         ]);
 
+        $payment = $order->payments()->latest()->first();
+        $amount = (float) $order->amount_due;
+
         if ($newStatus === 'paid') {
-            // Reconcile the payment record against the current amount due so a
-            // manual "mark paid" can never leave a stale total in the table.
-            $amount = (float) $order->amount_due;
-            Payment::updateOrCreate(
-                ['order_id' => $order->id],
-                [
+            if ($payment) {
+                $payment->update([
+                    'status' => 'paid',
+                    'paid_at' => $payment->paid_at ?? now(),
+                    'amount' => $amount,
+                ]);
+            } else {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'method' => 'manual',
+                    'amount' => $amount,
                     'status' => 'paid',
                     'paid_at' => now(),
-                    'amount' => $amount,
-                ]
-            );
-        } elseif ($newStatus === 'cancelled' || $newStatus === 'failed') {
-            // Failed/cancelled marks should not leave a "paid" record behind.
-            Payment::where('order_id', $order->id)->where('status', 'paid')->delete();
+                ]);
+            }
+        } elseif ($payment) {
+            $payment->update([
+                'status' => $newStatus,
+                'failed_at' => now(),
+            ]);
         }
 
         $this->logger->log(

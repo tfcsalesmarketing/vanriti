@@ -105,8 +105,8 @@
 
     <div class="admin-sidebar-backdrop" id="sidebarBackdrop"></div>
 
-    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('js/admin.js') }}?v=1.4"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('js/admin.js') }}?v=1.4"></script>
     @stack('scripts')
 </body>
 </html>

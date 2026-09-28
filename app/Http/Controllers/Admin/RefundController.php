@@ -49,7 +49,9 @@ class RefundController extends Controller
 
     public function approve(Request $request, Refund $refund)
     {
-        $adminNote = $request->input('admin_note');
+        $adminNote = $request->validate([
+            'admin_note' => ['nullable', 'string', 'max:1000'],
+        ])['admin_note'] ?? null;
 
         $this->refundService->approve($refund, $adminNote);
         $this->logger->refundProcessed(auth('admin')->user(), $refund);
@@ -60,7 +62,9 @@ class RefundController extends Controller
 
     public function reject(Request $request, Refund $refund)
     {
-        $adminNote = $request->input('admin_note');
+        $adminNote = $request->validate([
+            'admin_note' => ['nullable', 'string', 'max:1000'],
+        ])['admin_note'] ?? null;
 
         $this->refundService->reject($refund, $adminNote);
         $this->logger->refundProcessed(auth('admin')->user(), $refund);
@@ -85,7 +89,9 @@ class RefundController extends Controller
 
             return redirect()->back()->with('success', 'Refund completed.');
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', 'Refund could not be completed: '.$e->getMessage());
+            report($e);
+
+            return redirect()->back()->with('error', 'The refund could not be completed. Please try again.');
         }
     }
 }

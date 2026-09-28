@@ -65,6 +65,64 @@ if (! function_exists('currency')) {
     }
 }
 
+if (! function_exists('csp_nonce')) {
+    function csp_nonce(): string
+    {
+        if (! app()->bound('csp.nonce')) {
+            app()->instance('csp.nonce', bin2hex(random_bytes(16)));
+            \Illuminate\Support\Facades\View::share('cspNonce', app('csp.nonce'));
+        }
+
+        return (string) app('csp.nonce');
+    }
+}
+
+if (! function_exists('canonical_phone')) {
+    /**
+     * Indian mobile numbers as a 10-digit string starting with 6-9.
+     * Accepts spaces, dashes, a leading 0, and a +91 prefix.
+     */
+    function canonical_phone(?string $phone): ?string
+    {
+        if ($phone === null) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if (str_starts_with($digits, '91') && strlen($digits) === 12) {
+            $digits = substr($digits, 2);
+        }
+
+        $digits = ltrim($digits, '0');
+
+        if (preg_match('/^[6-9]\d{9}$/', $digits) !== 1) {
+            return null;
+        }
+
+        return $digits;
+    }
+}
+
+if (! function_exists('user_by_phone')) {
+    /**
+     * Find an account by any common spelling of the same Indian mobile number.
+     */
+    function user_by_phone(?string $phone): ?\App\Models\User
+    {
+        $canonical = canonical_phone($phone);
+
+        if ($canonical === null) {
+            return null;
+        }
+
+        return \App\Models\User::query()
+            ->whereIn('phone', [$canonical, '91'.$canonical, '+91'.$canonical, '0'.$canonical])
+            ->orderByRaw('CASE WHEN phone = ? THEN 0 ELSE 1 END', [$canonical])
+            ->first();
+    }
+}
+
 if (! function_exists('format_price')) {
     /**
      * Format an amount with the store currency and 2 decimals.

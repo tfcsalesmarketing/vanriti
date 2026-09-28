@@ -42,7 +42,7 @@
                 </a>
             </div>
         @else
-            <form action="{{ route('checkout.store') }}" method="POST" id="checkoutForm" novalidate>
+            <form action="{{ route('checkout.store') }}" method="POST" id="checkoutForm">
                 @csrf
                 <div class="row g-4">
                     <div class="col-lg-8">
@@ -100,19 +100,20 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Full Name</label>
-                                        <input type="text" name="shipping_name" class="form-control"
+                                        <input type="text" name="shipping_name" class="form-control" required maxlength="255"
                                                value="{{ old('shipping_name', $selectedAddress->full_name ?? $user->name ?? '') }}">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Mobile Number</label>
-                                        <input type="text" name="shipping_mobile" class="form-control"
+                                        <input type="tel" name="shipping_mobile" class="form-control" required inputmode="tel" maxlength="20"
+                                               pattern="^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$"
                                                value="{{ old('shipping_mobile', $selectedAddress->mobile ?? '') }}">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold">Address Line 1</label>
-                                        <input type="text" name="shipping_address_line1" class="form-control"
+                                        <input type="text" name="shipping_address_line1" class="form-control" required maxlength="255"
                                                value="{{ old('shipping_address_line1', $selectedAddress->address_line1 ?? '') }}" placeholder="House/Flat No., Building Name, Street">
                                         <div class="invalid-feedback"></div>
                                     </div>
@@ -132,7 +133,7 @@
                                             <span class="vr-pincode-tip"><i class="ri-map-pin-2-line"></i> Auto-fills city &amp; state</span>
                                         </label>
                                         <input type="text" name="shipping_pincode" id="shipping_pincode"
-                                               class="form-control"
+                                               class="form-control" required pattern="[0-9]{6}"
                                                value="{{ old('shipping_pincode', $selectedAddress->pincode ?? '') }}"
                                                maxlength="6" inputmode="numeric" placeholder="6-digit pincode"
                                                data-pincode-input data-pincode-prefix="shipping_">
@@ -141,14 +142,14 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">City</label>
-                                        <input type="text" name="shipping_city" class="form-control"
+                                        <input type="text" name="shipping_city" class="form-control" required maxlength="120"
                                                value="{{ old('shipping_city', $selectedAddress->city ?? '') }}"
                                                placeholder="Auto-filled from pincode">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">State</label>
-                                        <input type="text" name="shipping_state" class="form-control"
+                                        <input type="text" name="shipping_state" class="form-control" required maxlength="120"
                                                value="{{ old('shipping_state', $selectedAddress->state ?? '') }}"
                                                placeholder="Auto-filled from pincode">
                                         <div class="invalid-feedback"></div>
@@ -174,15 +175,17 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Full Name</label>
-                                        <input type="text" name="billing_name" class="form-control" value="{{ old('billing_name', '') }}">
+                                        <input type="text" name="billing_name" class="form-control" required maxlength="255" value="{{ old('billing_name', '') }}">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Mobile</label>
-                                        <input type="text" name="billing_mobile" class="form-control" value="{{ old('billing_mobile', '') }}">
+                                        <input type="tel" name="billing_mobile" class="form-control" required inputmode="tel" maxlength="20"
+                                               pattern="^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$"
+                                               value="{{ old('billing_mobile', '') }}">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold">Address Line 1</label>
-                                        <input type="text" name="billing_address_line1" class="form-control" value="{{ old('billing_address_line1', '') }}">
+                                        <input type="text" name="billing_address_line1" class="form-control" required maxlength="255" value="{{ old('billing_address_line1', '') }}">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold">Address Line 2 <span class="text-muted">(optional)</span></label>
@@ -198,20 +201,20 @@
                                             <span class="vr-pincode-tip"><i class="ri-map-pin-2-line"></i> Auto-fills city &amp; state</span>
                                         </label>
                                         <input type="text" name="billing_pincode" id="billing_pincode"
-                                               class="form-control"
+                                               class="form-control" required pattern="[0-9]{6}"
                                                value="{{ old('billing_pincode', '') }}"
                                                maxlength="6" inputmode="numeric" placeholder="6-digit pincode">
                                         <div class="vr-pincode-status" id="billing_pincode_status"></div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">City</label>
-                                        <input type="text" name="billing_city" class="form-control"
+                                        <input type="text" name="billing_city" class="form-control" required maxlength="120"
                                                value="{{ old('billing_city', '') }}"
                                                placeholder="Auto-filled from pincode">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">State</label>
-                                        <input type="text" name="billing_state" class="form-control"
+                                        <input type="text" name="billing_state" class="form-control" required maxlength="120"
                                                value="{{ old('billing_state', '') }}"
                                                placeholder="Auto-filled from pincode">
                                     </div>
@@ -405,22 +408,23 @@
                 </button>
             </div>
             <div class="modal-body p-4">
-                <form id="addressModalForm" novalidate>
+                <form id="addressModalForm">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">Full Name</label>
-                            <input type="text" name="full_name" class="form-control">
+                            <input type="text" name="full_name" class="form-control" required maxlength="255">
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">Mobile</label>
-                            <input type="text" name="mobile" class="form-control">
+                            <input type="tel" name="mobile" class="form-control" required maxlength="20" inputmode="tel"
+                                   pattern="^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$">
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold">Address Line 1</label>
-                            <input type="text" name="address_line1" class="form-control">
+                            <input type="text" name="address_line1" class="form-control" required maxlength="255">
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-12">
@@ -436,19 +440,19 @@
                                 Pincode
                                 <span class="vr-pincode-tip"><i class="ri-map-pin-2-line"></i> Auto-fills city &amp; state</span>
                             </label>
-                            <input type="text" name="pincode" id="modal_pincode" class="form-control"
+                            <input type="text" name="pincode" id="modal_pincode" class="form-control" required pattern="[0-9]{6}"
                                    maxlength="6" inputmode="numeric" placeholder="6-digit pincode">
                             <div class="vr-pincode-status" id="modal_pincode_status"></div>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">City</label>
-                            <input type="text" name="city" class="form-control" placeholder="Auto-filled from pincode">
+                            <input type="text" name="city" class="form-control" required maxlength="120" placeholder="Auto-filled from pincode">
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">State</label>
-                            <input type="text" name="state" class="form-control" placeholder="Auto-filled from pincode">
+                            <input type="text" name="state" class="form-control" required maxlength="120" placeholder="Auto-filled from pincode">
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-4">
@@ -477,7 +481,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 (function () {
     // ---- Pincode lookup for checkout inline fields ----
     var shippingPincodeEl = document.getElementById('shipping_pincode');
@@ -549,6 +553,9 @@
 
     document.getElementById('addressModalSaveBtn').addEventListener('click', function () {
         var form = document.getElementById('addressModalForm');
+        if (!form.reportValidity()) {
+            return;
+        }
         var btn = this;
         var token = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -666,10 +673,17 @@ if (addressRadios.length > 0) {
 // Billing toggle
 var billingSame = document.getElementById('billingSame');
 var billingFields = document.getElementById('billingFields');
-if (billingSame && billingFields) {
-    billingSame.addEventListener('change', function () {
-        billingFields.classList.toggle('d-none', this.checked);
+function syncBillingInputs() {
+    if (!billingSame || !billingFields) return;
+    var hide = billingSame.checked;
+    billingFields.classList.toggle('d-none', hide);
+    billingFields.querySelectorAll('input').forEach(function (input) {
+        input.disabled = hide;
     });
+}
+if (billingSame && billingFields) {
+    billingSame.addEventListener('change', syncBillingInputs);
+    syncBillingInputs();
 }
 
 // Razorpay integration
@@ -700,6 +714,14 @@ if (checkoutForm) {
     }
 
     checkoutForm.addEventListener('submit', function (e) {
+        if (typeof syncBillingInputs === 'function') {
+            syncBillingInputs();
+        }
+        if (!checkoutForm.checkValidity()) {
+            e.preventDefault();
+            checkoutForm.reportValidity();
+            return;
+        }
         var paymentMethod = checkoutForm.querySelector('input[name="payment_method"]:checked');
         var submitBtn = document.getElementById('placeOrderBtn');
         var isRazorpay = paymentMethod && paymentMethod.value === 'razorpay';
@@ -822,7 +844,7 @@ function verifyPayment(response, orderId) {
 @endpush
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 (function () {
     var form = document.getElementById('checkoutForm');
     if (!form) return;
@@ -911,7 +933,7 @@ function verifyPayment(response, orderId) {
 @endphp
 @if ($beginCheckoutPayload)
     @push('scripts')
-    <script>
+    <script nonce="{{ $cspNonce }}">
     window.vrCheckoutAnalytics = {!! json_encode(['ecommerce' => $checkoutEcommerce], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
     window.dataLayer.push({!! json_encode($beginCheckoutPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     @if ($_metaInitiatePayload && setting('meta_pixel_id'))

@@ -57,7 +57,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index')->middleware('permission:manage-inventory');
 
         Route::middleware('permission:manage-orders')->group(function () {
-            Route::resource('orders', OrderController::class)->except(['create', 'store', 'destroy']);
+            Route::resource('orders', OrderController::class)->except(['create', 'store', 'destroy', 'update']);
             Route::post('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
             Route::post('orders/{order}/notes', [OrderController::class, 'addNote'])->name('orders.notes');
             // ShipMojo bulk actions

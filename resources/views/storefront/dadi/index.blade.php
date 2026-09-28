@@ -10,7 +10,7 @@
 
 @section('content')
 
-<script>document.body.classList.add('dadi-active');</script>
+<script nonce="{{ $cspNonce }}">document.body.classList.add('dadi-active');</script>
 
 <div class="dadi-page" id="dadiApp"
       data-endpoint="{{ route('dadi.message') }}"
@@ -265,5 +265,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/dadi.js') }}?v={{ time() }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('js/dadi.js') }}?v={{ time() }}"></script>
 @endpush

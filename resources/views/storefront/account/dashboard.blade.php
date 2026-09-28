@@ -50,6 +50,41 @@
                 </div>
             </div>
 
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3">Profile</h6>
+                    <form method="POST" action="{{ route('account.profile.update') }}" id="profileForm">
+                        @csrf
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="profile_name">Name</label>
+                                <input type="text" name="name" id="profile_name" class="form-control @error('name') is-invalid @enderror" required maxlength="255" value="{{ old('name', auth('web')->user()->name) }}">
+                                @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="profile_phone">Mobile</label>
+                                <input type="tel" name="phone" id="profile_phone" class="form-control @error('phone') is-invalid @enderror" required maxlength="20" inputmode="tel" value="{{ old('phone', canonical_phone(auth('web')->user()->phone) ?? auth('web')->user()->phone) }}">
+                                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            @if (setting('whatsapp_otp_enabled'))
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold" for="profile_otp">WhatsApp code</label>
+                                    <input type="text" id="profile_otp" class="form-control" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="Required only if you change the number">
+                                </div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="profileSendOtp">Send code</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="profileVerifyOtp">Verify code</button>
+                                </div>
+                                <div class="col-12"><div class="small" id="profileOtpStatus"></div></div>
+                            @endif
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-vr btn-sm">Save profile</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-bold mb-0">Recent Orders</h6>
                 <a href="{{ route('account.orders') }}" class="small vr-link-underline">View all</a>
@@ -68,3 +103,36 @@
     </div>
 </div>
 @endsection
+
+@if (setting('whatsapp_otp_enabled'))
+@push('scripts')
+<script nonce="{{ $cspNonce }}" src="{{ asset('js/vr-whatsapp-otp.js') }}?v={{ @filemtime(public_path('js/vr-whatsapp-otp.js')) ?: time() }}"></script>
+<script nonce="{{ $cspNonce }}">
+window.vrOtpConfig = {
+    sendUrl: @json(route('otp.send')),
+    verifyUrl: @json(route('otp.verify'))
+};
+document.getElementById('profileSendOtp').addEventListener('click', function () {
+    var status = document.getElementById('profileOtpStatus');
+    window.vrWhatsAppOtp.send({
+        phoneEl: document.getElementById('profile_phone'),
+        btn: this,
+        purpose: 'change_phone',
+        onSent: function () { status.textContent = 'Code sent on WhatsApp.'; },
+        onError: function (message) { status.textContent = message; }
+    });
+});
+document.getElementById('profileVerifyOtp').addEventListener('click', function () {
+    var status = document.getElementById('profileOtpStatus');
+    window.vrWhatsAppOtp.verify({
+        phoneEl: document.getElementById('profile_phone'),
+        codeEl: document.getElementById('profile_otp'),
+        btn: this,
+        purpose: 'change_phone',
+        onVerified: function () { status.textContent = 'Number verified. Save your profile.'; },
+        onError: function (message) { status.textContent = message; }
+    });
+});
+</script>
+@endpush
+@endif

@@ -219,7 +219,7 @@
     $_logo = setting('store_logo');
     if (! $_logo) { foreach (['svg', 'png', 'webp', 'jpg'] as $_ext) { if (file_exists(public_path('images/logo.' . $_ext))) { $_logo = 'images/logo.' . $_ext; break; } } }
 @endphp
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "Organization",

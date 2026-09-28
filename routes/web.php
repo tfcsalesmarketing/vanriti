@@ -43,7 +43,7 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 
 // ---------- Wishlist ----------
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
-Route::post('/wishlist/toggle/{product:slug}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+Route::post('/wishlist/toggle/{product:slug}', [WishlistController::class, 'toggle'])->name('wishlist.toggle')->middleware('throttle:30,1');
 
 // ---------- Dadi ----------
 Route::get('/dadi', [DadiController::class, 'show'])->name('dadi.index');
@@ -62,23 +62,22 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:5,10');
     Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.store')->middleware('throttle:5,60');
-
-    // Email verification (informational — no login gate). Signed URL comes from
-    // the welcome mail's "Verify Email" button. The signature proves ownership of
-    // the link; the guard is deliberately informational.
-    Route::get('/email/verify/{user}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('signed');
-
-
-// ---------- WhatsApp OTP (login / register / reset_password) ----------
-    Route::post('/otp/send', [OtpController::class, 'send'])->name('otp.send')->middleware('throttle:otp.send');
-    Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify')->middleware('throttle:otp.verify');
 });
+
+// Email verification stays outside the guest group. A customer who just
+// registered is already signed in; the signed URL must still mark the address.
+Route::get('/email/verify/{user}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('signed');
+
+// WhatsApp OTP is used by guests (login, register, reset) and by signed-in
+// customers changing the mobile number on their profile.
+Route::post('/otp/send', [OtpController::class, 'send'])->name('otp.send')->middleware('throttle:otp.send');
+Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify')->middleware('throttle:otp.verify');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ---------- Checkout (requires login; guest carts merge on login) ----------
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:checkout');
     Route::post('/checkout/validate', [CheckoutController::class, 'validateFields'])->name('checkout.validate');
     Route::post('/checkout/verify', [CheckoutController::class, 'verify'])->name('checkout.verify')->middleware('throttle:10,1');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');

@@ -14,6 +14,7 @@ use App\Services\Analytics\ConversionService;
 use App\Services\Analytics\EcommerceDataService;
 use App\Services\Analytics\MetaCapiService;
 use App\Services\CartService;
+use App\Services\CouponService;
 use App\Services\NotificationService;
 use App\Services\OrderService;
 use App\Services\Payments\PaymentService;
@@ -31,6 +32,7 @@ class CheckoutController extends Controller
 {
     public function __construct(
         protected CartService $cartService,
+        protected CouponService $couponService,
         protected OrderService $orderService,
         protected PaymentService $paymentService,
         protected ShippingService $shippingService,
@@ -73,11 +75,9 @@ class CheckoutController extends Controller
             //
         }
 
-        $couponDiscount = 0;
-        $couponCode = session('cart_coupon.code');
-        if ($couponCode) {
-            $couponDiscount = (float) session('cart_coupon.discount', 0);
-        }
+        $coupon = $this->couponService->syncSessionCoupon($cart, $user);
+        $couponDiscount = $coupon['discount'];
+        $couponCode = $coupon['code'];
 
         $beginCheckoutPayload = $this->ecommerceDataService->beginCheckout($cart);
         $checkoutEcommerce = $this->ecommerceDataService->checkoutEcommerce($cart);
@@ -248,7 +248,9 @@ class CheckoutController extends Controller
                 $payment = $this->paymentService->createPayment($order, 'cod');
                 $this->paymentService->initialize($order, $payment, 'cod');
             } catch (\Throwable $e) {
-                return back()->withErrors(['checkout' => 'Payment initialisation failed: '.$e->getMessage()])->withInput();
+                Log::error('COD payment initialisation failed.', ['error' => $e->getMessage()]);
+
+                return back()->withErrors(['checkout' => 'Payment initialisation failed. Please try again.'])->withInput();
             }
 
             session()->forget('cart_coupon');
@@ -342,7 +344,9 @@ class CheckoutController extends Controller
                 $this->paymentService->markFailed($payment, $e->getMessage());
             }
 
-            return back()->withErrors(['checkout' => 'Razorpay initialisation failed: '.$e->getMessage()])->withInput();
+            Log::error('Razorpay initialisation failed.', ['error' => $e->getMessage()]);
+
+            return back()->withErrors(['checkout' => 'Payment initialisation failed. Please try again.'])->withInput();
         }
     }
 

@@ -177,7 +177,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 var addressModal = null;
 
 // Init pincode lookup for modal

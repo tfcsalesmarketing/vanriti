@@ -72,4 +72,18 @@ class GuestOrderTrackingTest extends TestCase
         $this->get($url)
             ->assertForbidden();
     }
+
+    public function test_lookup_accepts_plus_91_for_a_stored_ten_digit_mobile(): void
+    {
+        $this->makeOrder([
+            'order_number' => 'VAN-2026-990102',
+            'shipping_mobile' => '9876543210',
+            'billing_mobile' => '9876543210',
+        ]);
+
+        $this->post(route('track.lookup'), [
+            'order_number' => 'VAN-2026-990102',
+            'mobile' => '+91 98765 43210',
+        ])->assertOk()->assertSee('VAN-2026-990102');
+    }
 }

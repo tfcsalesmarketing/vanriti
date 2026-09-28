@@ -185,7 +185,7 @@
 
 @push('scripts')
 @if ($tabBulkActions)
-<script>
+<script nonce="{{ $cspNonce }}">
 window.bulkSubmit = function (btn) {
     var form = document.getElementById('bulk-form');
     window.vrConfirm(btn.dataset.confirm, {

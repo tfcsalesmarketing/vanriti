@@ -42,6 +42,68 @@ class AuthTest extends TestCase
         $this->assertAuthenticatedAs(User::where('email', 'jane@example.com')->firstOrFail(), 'web');
     }
 
+    public function test_registration_stores_a_canonical_mobile(): void
+    {
+        $this->post(route('register.submit'), [
+            'name' => 'Asha Rao',
+            'email' => 'asha@example.com',
+            'phone' => '+91 91234 56780',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect(route('account.dashboard'));
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'asha@example.com',
+            'phone' => '9123456780',
+        ]);
+    }
+
+    public function test_password_login_accepts_plus_91_for_a_ten_digit_account(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '9876543210',
+            'password' => 'secret123',
+        ]);
+
+        $this->post(route('login.submit'), [
+            'login' => '+91 98765 43210',
+            'password' => 'secret123',
+        ])->assertRedirect(route('account.dashboard'));
+
+        $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_signed_email_verification_works_while_signed_in(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => null,
+        ]);
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addHour(),
+            ['user' => $user->id],
+        );
+
+        $this->actingAs($user)->get($url)->assertRedirect(route('account.dashboard'));
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_profile_phone_change_requires_a_verified_otp(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '9876543210',
+            'name' => 'Keep Name',
+        ]);
+
+        $this->actingAs($user)->post(route('account.profile.update'), [
+            'name' => 'Keep Name',
+            'phone' => '9123456780',
+        ])->assertSessionHasErrors('phone');
+
+        $this->assertSame('9876543210', $user->fresh()->phone);
+    }
+
     public function test_registration_password_confirmation_mismatch_fails(): void
     {
         $response = $this->post(route('register.submit'), [

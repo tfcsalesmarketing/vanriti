@@ -139,7 +139,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ $cspNonce }}">
 window.vrOtpConfig = window.vrOtpConfig || {
     sendUrl:   '{{ route('otp.send') }}',
     verifyUrl: '{{ route('otp.verify') }}'

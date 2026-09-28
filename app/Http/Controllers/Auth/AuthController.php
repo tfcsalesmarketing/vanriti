@@ -50,7 +50,7 @@ class AuthController extends Controller
         // "9876543210" and "919876543210" all resolve to the same account.
         $user = Str::contains($identifier, '@')
             ? User::where('email', $identifier)->first()
-            : User::where('phone', str_replace([' ', '-', '+'], '', $identifier))->first();
+            : user_by_phone($credentials['login']);
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             // Single generic message prevents email-enumeration via error wording.
@@ -76,6 +76,8 @@ class AuthController extends Controller
 
             return back()->withErrors(['login' => 'Your account has been suspended. Contact support.']);
         }
+
+        $this->rememberCanonicalPhone($user, $credentials['login']);
 
         auth('web')->login($user, $request->boolean('remember'));
 
@@ -124,6 +126,12 @@ class AuthController extends Controller
 
     public function register(Request $request): RedirectResponse
     {
+        $canonical = canonical_phone($request->input('phone'));
+
+        if ($canonical !== null) {
+            $request->merge(['phone' => $canonical]);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -131,7 +139,11 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', $this->passwordRule()],
         ], $this->messages());
 
-        $phone = Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString();
+        $phone = canonical_phone($data['phone']);
+
+        if ($phone === null) {
+            return back()->withErrors(['phone' => 'Please enter a valid 10-digit mobile number.'])->withInput();
+        }
 
         // ── WhatsApp OTP gate: registration requires a phone that was verified ──
         // via OTP in this browser session when the feature is enabled. This keeps
@@ -150,7 +162,7 @@ class AuthController extends Controller
         // Prevent duplicate registrations on the same (normalized) phone number
         // even when whitespace or dashes differ (e.g. "98765 43210" vs
         // "9876543210").
-        if (User::where('phone', $phone)->exists()) {
+        if (user_by_phone($phone)) {
             return back()->withErrors(['phone' => 'This mobile number is already registered.'])->withInput();
         }
 
@@ -224,6 +236,13 @@ class AuthController extends Controller
             return response()->json(['valid' => false, 'errors' => $validator->errors()->toArray()], 422);
         }
 
+        if ($context === 'register' && $request->exists('phone') && user_by_phone($request->input('phone'))) {
+            return response()->json([
+                'valid' => false,
+                'errors' => ['phone' => ['This mobile number is already registered.']],
+            ], 422);
+        }
+
         if ($context === 'login' && $request->exists('login') && $request->exists('password')) {
             $login = Str::lower(trim((string) $request->input('login')));
 
@@ -244,7 +263,7 @@ class AuthController extends Controller
             // controller's single-field lookup.
             $user = Str::contains($login, '@')
                 ? User::where('email', $login)->first()
-                : User::where('phone', str_replace([' ', '-', '+'], '', $login))->first();
+                : user_by_phone($login);
 
             // Always report failures under a single generic key + body: the
             // client can never distinguish a missing account from a wrong
@@ -411,8 +430,8 @@ class AuthController extends Controller
         //    The token repository keys on getEmailForPasswordReset(), which
         //    falls back to the phone for accounts without an email.
         if ($request->filled('phone')) {
-            $phone = Str::of($request->string('phone'))->replace([' ', '-'], '')->trim()->toString();
-            $user = User::query()->where('phone', $phone)->first();
+            $phone = canonical_phone($request->string('phone')->toString());
+            $user = $phone ? user_by_phone($phone) : null;
 
             if (! $user) {
                 return back()->withErrors(['email' => __('We can\'t find a user with that mobile number.')]);
@@ -432,6 +451,8 @@ class AuthController extends Controller
             $user->setRememberToken(Str::random(60));
             event(new PasswordReset($user));
             $repository->delete($user);
+
+            $this->rememberCanonicalPhone($user, $phone);
 
             auth('web')->login($user);
             $request->session()->regenerate();
@@ -469,5 +490,26 @@ class AuthController extends Controller
         return $status === Password::PASSWORD_RESET
             ? redirect()->route('account.dashboard')->with('success', __('Your password has been reset.'))
             : back()->withErrors(['email' => __($status)]);
+    }
+
+    /**
+     * Rewrite a legacy +91 / leading-zero phone to the 10-digit form when that
+     * value is not already taken by another account.
+     */
+    protected function rememberCanonicalPhone(User $user, ?string $raw): void
+    {
+        $canonical = canonical_phone($raw);
+
+        if ($canonical === null || $user->phone === $canonical) {
+            return;
+        }
+
+        $taken = User::query()->where('phone', $canonical)->whereKeyNot($user->id)->exists();
+
+        if ($taken) {
+            return;
+        }
+
+        $user->forceFill(['phone' => $canonical])->save();
     }
 }

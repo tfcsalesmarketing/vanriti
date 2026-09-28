@@ -4,7 +4,7 @@
 
 @section('content')
 @if ($faqs->count())
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "FAQPage",

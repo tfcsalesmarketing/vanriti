@@ -3,7 +3,7 @@
 @section('title', 'Contact Us')
 
 @section('content')
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "ContactPage",

@@ -145,7 +145,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 (function () {
     // ---- Copy link (with visible affordance on overlay button) ----
     document.querySelectorAll('.copy-link').forEach(function (btn) {

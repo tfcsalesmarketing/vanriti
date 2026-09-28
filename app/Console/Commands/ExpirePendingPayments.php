@@ -9,14 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class ExpirePendingPayments extends Command
 {
-    protected $signature = 'orders:expire-pending-payments {--hours=24 : Abandoned Razorpay orders older than this many hours are cancelled}';
+    protected $signature = 'orders:expire-pending-payments {--minutes=30 : Abandoned Razorpay orders older than this many minutes are cancelled}';
 
     protected $description = 'Cancel Razorpay orders whose payment was never completed and restore their stock';
 
     public function handle(OrderService $orderService): int
     {
-        $hours = max(1, (int) $this->option('hours'));
-        $cutoff = now()->subHours($hours);
+        $minutes = max(15, (int) $this->option('minutes'));
+        $cutoff = now()->subMinutes($minutes);
 
         $orders = Order::where('payment_method', 'razorpay')
             ->whereIn('payment_status', ['pending', 'processing', 'failed'])

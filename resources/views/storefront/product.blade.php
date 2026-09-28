@@ -399,7 +399,7 @@
 @endsection
 
 @push('scripts')
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "BreadcrumbList",
@@ -434,7 +434,7 @@
     ]
 }
 </script>
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "Product",
@@ -466,7 +466,7 @@
 @endpush
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
 </script>
 @endpush
@@ -491,14 +491,14 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 @endphp
 @if ($_metaViewContent && setting('meta_pixel_id'))
     @push('scripts')
-    <script>
+    <script nonce="{{ $cspNonce }}">
     window.vrMeta.track('ViewContent', {!! json_encode($_metaViewContent, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     </script>
     @endpush
 @endif
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 (function () {
     var form = document.getElementById('addToCartForm');
     if (!form) return;
@@ -574,7 +574,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 @endpush
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 (function () {
     if (window.innerWidth < 992) return;
 

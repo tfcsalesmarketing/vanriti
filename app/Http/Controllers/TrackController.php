@@ -20,16 +20,20 @@ class TrackController extends Controller
     {
         $request->validate([
             'order_number' => 'required|string|max:30',
-            'mobile' => 'required|string|max:15',
+            'mobile' => 'required|string|max:20',
         ]);
+
+        $mobile = canonical_phone($request->string('mobile')->toString());
+
+        if ($mobile === null) {
+            return back()->with('error', 'Please enter a valid 10-digit mobile number.')->withInput();
+        }
 
         $orders = Order::with(['items', 'shipments.trackingEvents'])
             ->where('order_number', $request->order_number)
-            ->where(function ($q) use ($request) {
-                $q->where('shipping_mobile', $request->mobile)
-                    ->orWhere('billing_mobile', $request->mobile);
-            })
-            ->get();
+            ->get()
+            ->filter(fn (Order $order) => $this->mobileMatches($order, $mobile))
+            ->values();
 
         if ($orders->isEmpty()) {
             return back()->with('error', 'No order found with the given details. Please check and try again.');
@@ -40,9 +44,9 @@ class TrackController extends Controller
 
     public function show(Order $order, Request $request): View|RedirectResponse
     {
-        $mobile = trim((string) $request->query('mobile', ''));
+        $mobile = canonical_phone(trim((string) $request->query('mobile', '')));
 
-        if (! in_array($mobile, array_filter([$order->billing_mobile, $order->shipping_mobile]), true)) {
+        if ($mobile === null || ! $this->mobileMatches($order, $mobile)) {
             abort(403);
         }
 
@@ -50,5 +54,11 @@ class TrackController extends Controller
         $orders = collect([$order]);
 
         return view('storefront.track.index', compact('orders'));
+    }
+
+    protected function mobileMatches(Order $order, string $canonical): bool
+    {
+        return canonical_phone($order->shipping_mobile) === $canonical
+            || canonical_phone($order->billing_mobile) === $canonical;
     }
 }

@@ -613,8 +613,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script>
+<script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script nonce="{{ $cspNonce }}">
 (function () {
     const preset = document.getElementById('preset');
     const customWrap = document.getElementById('customRangeWrap');

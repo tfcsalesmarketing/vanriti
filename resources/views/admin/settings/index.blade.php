@@ -80,7 +80,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 function testShipMojo(btn) {
     const orig = btn.innerHTML;
     btn.disabled = true;

@@ -262,4 +262,26 @@ class RazorpayWebhookTest extends TestCase
         $this->assertSame('cancelled', $order->fresh()->order_status);
         $this->assertSame(20, (int) $product->fresh()->stock);
     }
+
+    public function test_captured_webhook_rejects_a_missing_amount(): void
+    {
+        $this->enableRazorpay();
+        $this->fakeRazorpayOrder();
+
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 500.00, 'mrp' => 500.00, 'gst_rate' => 0, 'stock' => 10,
+        ]);
+
+        $order = $this->placeRazorpayOrder($user, $product);
+        $payment = $order->payments()->firstOrFail();
+
+        $payload = $this->capturedPayload('order_EZ6G0001', 0);
+
+        $this->postJson(route('razorpay.webhook'), $payload, [
+            'X-Razorpay-Signature' => $this->sign($payload),
+        ])->assertStatus(422);
+
+        $this->assertNotSame('paid', $payment->fresh()->status);
+    }
 }

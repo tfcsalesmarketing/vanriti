@@ -82,7 +82,7 @@ class RazorpayWebhookController extends Controller
         // The webhook amount is authoritative: refuse to settle an order for a
         // different figure than the one we asked the gateway to charge.
         $expectedPaisa = (int) round((float) $payment->amount * 100);
-        if ($amountPaisa > 0 && $amountPaisa !== $expectedPaisa) {
+        if ($amountPaisa !== $expectedPaisa) {
             Log::warning('Razorpay webhook amount mismatch; payment not settled.', [
                 'order' => $order->order_number,
                 'expected_paisa' => $expectedPaisa,

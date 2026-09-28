@@ -344,58 +344,127 @@ class ProductController extends Controller
         rewind($handle);
 
         $header = fgetcsv($handle);
+        $errors = [];
+        $line = 1;
+
+        if (! is_array($header) || ! in_array('name', $header, true) || ! in_array('sku', $header, true)) {
+            fclose($handle);
+
+            return redirect()->back()->with('error', 'The CSV must include name and sku columns.');
+        }
 
         while (($row = fgetcsv($handle)) !== false) {
-            try {
-                $data = array_combine($header, $row);
+            $line++;
 
-                if (empty($data['name'])) {
-                    continue;
-                }
+            if (count($row) !== count($header)) {
+                $errors[] = "Line {$line}: column count does not match the header.";
 
-                $rawSku = $data['sku'] ?? null;
-                $sku = is_string($rawSku) ? strtoupper(trim($rawSku)) : null;
-                if ($sku === '') {
-                    $sku = null;
-                }
-                if ($sku === null) {
-                    continue;
-                }
-
-                $slug = Str::slug($data['name']);
-
-                Product::updateOrCreate(
-                    ['sku' => $sku],
-                    [
-                        'name' => $data['name'],
-                        'slug' => $slug,
-                        'mrp' => $data['mrp'] ?? 0,
-                        'selling_price' => $data['selling_price'] ?? 0,
-                        'gst_rate' => $data['gst_rate'] ?? 0,
-                        'stock' => $data['stock'] ?? 0,
-                        'status' => $data['status'] ?? 'draft',
-                    ]
-                );
-
-                if (! empty($data['category_slug'])) {
-                    $category = Category::where('slug', $data['category_slug'])->first();
-                    if ($category) {
-                        $product = Product::where('sku', $sku)->first();
-                        if ($product) {
-                            $product->categories()->syncWithoutDetaching([$category->id]);
-                        }
-                    }
-                }
-
-                $imported++;
-            } catch (\Exception $e) {
                 continue;
             }
+
+            $data = array_combine($header, $row);
+
+            if (! is_array($data) || trim((string) ($data['name'] ?? '')) === '') {
+                $errors[] = "Line {$line}: name is required.";
+
+                continue;
+            }
+
+            $sku = strtoupper(trim((string) ($data['sku'] ?? '')));
+
+            if ($sku === '') {
+                $errors[] = "Line {$line}: sku is required.";
+
+                continue;
+            }
+
+            $status = strtolower(trim((string) ($data['status'] ?? 'draft')));
+
+            if (! in_array($status, ['draft', 'active', 'inactive'], true)) {
+                $errors[] = "Line {$line}: status must be draft, active, or inactive.";
+
+                continue;
+            }
+
+            foreach (['mrp', 'selling_price', 'gst_rate'] as $money) {
+                $raw = trim((string) ($data[$money] ?? '0'));
+
+                if ($raw === '') {
+                    $raw = '0';
+                }
+
+                if (! is_numeric($raw) || (float) $raw < 0) {
+                    $errors[] = "Line {$line}: {$money} must be a number that is zero or greater.";
+
+                    continue 2;
+                }
+
+                $data[$money] = $raw;
+            }
+
+            $stock = trim((string) ($data['stock'] ?? '0'));
+
+            if ($stock === '') {
+                $stock = '0';
+            }
+
+            if (! ctype_digit($stock)) {
+                $errors[] = "Line {$line}: stock must be a whole number.";
+
+                continue;
+            }
+
+            $slug = Str::slug($data['name']);
+
+            if ($slug === '') {
+                $errors[] = "Line {$line}: name does not produce a URL slug.";
+
+                continue;
+            }
+
+            $slugTaken = Product::query()->where('slug', $slug)->where('sku', '!=', $sku)->exists();
+
+            if ($slugTaken) {
+                $errors[] = "Line {$line}: another product already uses this name.";
+
+                continue;
+            }
+
+            Product::updateOrCreate(
+                ['sku' => $sku],
+                [
+                    'name' => trim((string) $data['name']),
+                    'slug' => $slug,
+                    'mrp' => $data['mrp'],
+                    'selling_price' => $data['selling_price'],
+                    'gst_rate' => $data['gst_rate'],
+                    'stock' => (int) $stock,
+                    'status' => $status,
+                ]
+            );
+
+            if (! empty($data['category_slug'])) {
+                $category = Category::where('slug', $data['category_slug'])->first();
+                if ($category) {
+                    $product = Product::where('sku', $sku)->first();
+                    if ($product) {
+                        $product->categories()->syncWithoutDetaching([$category->id]);
+                    }
+                }
+            }
+
+            $imported++;
         }
 
         fclose($handle);
 
-        return redirect()->back()->with('success', $imported.' products imported.');
+        $redirect = redirect()->back()->with('success', $imported.' products imported.');
+
+        if ($errors !== []) {
+            $redirect->with('error', implode(' ', array_slice($errors, 0, 8)));
+        }
+
+        return $redirect;
     }
 
     public function export()

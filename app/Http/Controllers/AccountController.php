@@ -134,7 +134,9 @@ class AccountController extends Controller
                 return $return;
             });
         } catch (\Throwable $e) {
-            return back()->with('error', 'Unable to submit return request: '.$e->getMessage());
+            report($e);
+
+            return back()->with('error', 'Unable to submit the return request. Please try again.');
         }
 
         return redirect()->route('account.order', $order)
@@ -272,19 +274,49 @@ class AccountController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\- ]+$/'],
+            'phone' => ['required', 'string', 'max:20', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
+        ], [
+            'phone.regex' => 'Please enter a valid 10-digit mobile number.',
         ]);
 
-        $user->update($data);
+        $phone = canonical_phone($data['phone']);
+
+        if ($phone === null) {
+            return back()->withErrors(['phone' => 'Please enter a valid 10-digit mobile number.'])->withInput();
+        }
+
+        if ($phone !== $user->phone) {
+            if (user_by_phone($phone) && user_by_phone($phone)->id !== $user->id) {
+                return back()->withErrors(['phone' => 'This mobile number is already registered.'])->withInput();
+            }
+
+            if (! app(\App\Services\WhatsAppOtpService::class)->isEnabled()) {
+                return back()->withErrors(['phone' => 'Phone changes need WhatsApp verification, which is not enabled.'])->withInput();
+            }
+
+            $verified = (string) session('otp_verified_phone', '');
+
+            if ($verified !== $phone) {
+                return back()->withErrors(['phone' => 'Verify this mobile number with the WhatsApp code before saving.'])->withInput();
+            }
+        }
+
+        $user->update([
+            'name' => $data['name'],
+            'phone' => $phone,
+            'phone_verified_at' => $phone !== $user->phone ? now() : $user->phone_verified_at,
+        ]);
+
+        session()->forget('otp_verified_phone');
 
         return back()->with('success', 'Profile updated.');
     }
 
     protected function validateAddress(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'mobile' => ['required', 'string', 'max:15', 'regex:/^[0-9+\- ]+$/'],
+            'mobile' => ['required', 'string', 'max:20', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'landmark' => ['nullable', 'string', 'max:255'],
@@ -295,8 +327,12 @@ class AccountController extends Controller
             'type' => ['nullable', 'in:home,office,other'],
         ], [
             'pincode.regex' => 'Please enter a valid 6-digit pincode.',
-            'mobile.regex' => 'Please enter a valid mobile number.',
+            'mobile.regex' => 'Please enter a valid 10-digit mobile number.',
         ]);
+
+        $data['mobile'] = canonical_phone($data['mobile']);
+
+        return $data;
     }
 
     protected function setDefault(Address $address): void

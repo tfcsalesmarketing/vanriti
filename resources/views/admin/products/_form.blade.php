@@ -248,7 +248,7 @@
 </div>
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
     const mrp = document.getElementById('formMrp');
     const sp = document.getElementById('formSellingPrice');

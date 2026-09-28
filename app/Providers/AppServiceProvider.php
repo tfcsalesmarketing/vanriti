@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+        csp_nonce();
 
         if ($appUrl = config('app.url')) {
             URL::forceRootUrl($appUrl);
@@ -45,6 +46,10 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('otp.verify', function (Request $request): Limit {
             return Limit::perMinutes(60, 10)->by(($request->ip() ?: 'otp') . ':verify');
+        });
+
+        RateLimiter::for('checkout', function (Request $request): Limit {
+            return Limit::perMinute(8)->by('checkout:'.($request->user()?->id ?: $request->ip()));
         });
 
         try {

@@ -58,7 +58,11 @@ class WhatsAppOtpService
 
         try {
             $code = (string) random_int(100000, 999999);
-            $phone = Str::of($phone)->replace([' ', '-'], '')->trim()->toString();
+            $phone = canonical_phone($phone) ?? '';
+
+            if ($phone === '') {
+                return $this->failure('Please enter a valid 10-digit mobile number.');
+            }
             $tooEarly = false;
 
             // Cooldown: reuse the latest stored OTP within 60s if it is still
@@ -135,7 +139,7 @@ class WhatsAppOtpService
         } catch (\Throwable $e) {
             Log::warning('WhatsApp OTP send exception.', ['error' => $e->getMessage()]);
 
-            return $this->failure('WhatsApp OTP request failed: '.$e->getMessage());
+            return $this->failure('WhatsApp OTP request failed. Please try again.');
         }
     }
 
@@ -146,7 +150,11 @@ class WhatsAppOtpService
      */
     public function verifyOtp(string $phone, string $code, string $purpose = 'login'): array
     {
-        $phone = Str::of($phone)->replace([' ', '-'], '')->trim()->toString();
+        $phone = canonical_phone($phone) ?? '';
+
+        if ($phone === '') {
+            return $this->failure('Please enter a valid 10-digit mobile number.');
+        }
 
         $otp = OtpCode::query()
             ->where('phone', $phone)

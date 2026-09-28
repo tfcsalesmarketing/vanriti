@@ -9,7 +9,7 @@
                     <img
                         class="dadi-card-img"
                         src="{{ $_card['image_url'] }}"
-                        alt=""
+                        alt="{{ $_card['name'] }}"
                         loading="lazy"
                     >
                 </a>

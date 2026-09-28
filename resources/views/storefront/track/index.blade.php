@@ -57,7 +57,7 @@
                                 @foreach ($order->items as $item)
                                     <div class="d-flex align-items-center gap-2 p-2 border rounded" style="font-size:0.82rem;">
                                         @if ($item->image)
-                                            <img src="{{ image_url($item->image) }}" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
+                                            <img src="{{ image_url($item->image) }}" alt="{{ $item->product_name }}" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
                                         @endif
                                         <span>{{ $item->product_name }}</span>
                                         <span class="text-muted">x{{ $item->quantity }}</span>

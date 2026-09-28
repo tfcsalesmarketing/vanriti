@@ -90,7 +90,7 @@
         ];
     @endphp
     @push('scripts')
-    <script>
+    <script nonce="{{ $cspNonce }}">
     fbq('track', 'Purchase', {!! json_encode($_purchasePayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, {eventID: {!! json_encode($metaEventId) !!}});
     </script>
     @endpush
@@ -98,7 +98,7 @@
 
 @if ($shippingInfoPayload && $paymentInfoPayload)
     @push('scripts')
-    <script>
+    <script nonce="{{ $cspNonce }}">
     window.dataLayer.push({!! json_encode($shippingInfoPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     window.dataLayer.push({!! json_encode($paymentInfoPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     </script>
@@ -107,7 +107,7 @@
 
 @if ($purchasePayload)
     @push('scripts')
-    <script>
+    <script nonce="{{ $cspNonce }}">
     window.dataLayer.push({!! json_encode($purchasePayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     </script>
     @endpush

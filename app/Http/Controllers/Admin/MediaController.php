@@ -88,7 +88,9 @@ class MediaController extends Controller
 
             $media->delete();
         } catch (\Throwable $e) {
-            return back()->with('error', 'Delete failed: '.$e->getMessage());
+            report($e);
+
+            return back()->with('error', 'The image could not be deleted. Please try again.');
         }
 
         return back()->with('success', 'Image deleted successfully.');

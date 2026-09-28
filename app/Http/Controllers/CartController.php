@@ -43,8 +43,9 @@ class CartController extends Controller
             $shipping = ['charge' => 0, 'eligible_for_free' => false, 'estimated_days' => '3-7'];
         }
 
-        $couponDiscount = (float) session('cart_coupon.discount', 0);
-        $couponCode = session('cart_coupon.code');
+        $coupon = $this->couponService->syncSessionCoupon($this->cartService->getCart(), auth('web')->user());
+        $couponDiscount = $coupon['discount'];
+        $couponCode = $coupon['code'];
 
         return view('storefront.cart.index', compact(
             'cartItems', 'subtotal', 'count', 'shipping', 'couponDiscount', 'couponCode', 'viewCartPayload'

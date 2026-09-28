@@ -92,7 +92,7 @@
 @endpush
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
     document.addEventListener('DOMContentLoaded', function () {
         var form = document.getElementById('vrResetForm');
         if (form && typeof window.vrLiveServerValidation === 'function') {

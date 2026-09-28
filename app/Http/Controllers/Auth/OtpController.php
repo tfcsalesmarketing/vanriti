@@ -11,12 +11,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class OtpController extends Controller
 {
-    protected array $purposes = ['login', 'register', 'reset_password'];
+    protected array $purposes = ['login', 'register', 'reset_password', 'change_phone'];
 
     public function __construct(
         protected WhatsAppOtpService $whatsapp,
@@ -37,7 +36,45 @@ class OtpController extends Controller
             'purpose.in' => 'Invalid verification purpose.',
         ]);
 
-        $phone = Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString();
+        $phone = canonical_phone($data['phone']);
+
+        if ($phone === null) {
+            $invalid = 'Please enter a valid 10-digit mobile number.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['result' => '0', 'message' => $invalid], 422);
+            }
+
+            return back()->with('error', $invalid)->withInput();
+        }
+
+        if ($data['purpose'] === 'change_phone' && ! auth('web')->check()) {
+            abort(403);
+        }
+
+        if ($data['purpose'] !== 'change_phone' && auth('web')->check()) {
+            $busy = 'You are already signed in.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['result' => '0', 'message' => $busy], 409);
+            }
+
+            return back()->with('error', $busy);
+        }
+
+        if ($data['purpose'] === 'change_phone') {
+            $owner = user_by_phone($phone);
+
+            if ($owner && $owner->id !== auth('web')->id()) {
+                $taken = 'This mobile number is already registered.';
+
+                if ($request->wantsJson()) {
+                    return response()->json(['result' => '0', 'message' => $taken], 422);
+                }
+
+                return back()->with('error', $taken)->withInput();
+            }
+        }
 
         // Per-phone daily budget, independent of the IP throttle: a single
         // number must never be flooded with OTP deliveries. Bound both valid
@@ -61,7 +98,7 @@ class OtpController extends Controller
         // never be used to enumerate registered numbers. No code is dispatched
         // for an account that does not exist.
         if ($data['purpose'] === 'login') {
-            $loginUser = \App\Models\User::query()->where('phone', $phone)->first();
+            $loginUser = user_by_phone($phone);
 
             if (! $loginUser) {
                 $cover = 'If that number is registered, we will send a code to your WhatsApp.';
@@ -122,7 +159,21 @@ class OtpController extends Controller
             'purpose.in' => 'Invalid verification purpose.',
         ]);
 
-        $phone = Str::of($data['phone'])->replace([' ', '-'], '')->trim()->toString();
+        $phone = canonical_phone($data['phone']);
+
+        if ($phone === null) {
+            $invalid = 'Please enter a valid 10-digit mobile number.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['result' => '0', 'message' => $invalid], 422);
+            }
+
+            return back()->with('error', $invalid)->withInput();
+        }
+
+        if ($data['purpose'] === 'change_phone' && ! auth('web')->check()) {
+            abort(403);
+        }
 
         $result = $this->whatsapp->verifyOtp($phone, $data['code'], $data['purpose']);
 
@@ -134,9 +185,20 @@ class OtpController extends Controller
             return back()->with('error', $result['message'] ?? 'The code you entered is invalid.')->withInput();
         }
 
+        if ($data['purpose'] === 'change_phone') {
+            session()->put('otp_verified_phone', $phone);
+            session()->forget('otp_pending_phone');
+
+            if ($request->wantsJson()) {
+                return response()->json($result);
+            }
+
+            return back()->with('success', 'Phone verified. You can now save your profile.');
+        }
+
         // ── login: log the user in (negates the password step) ────────────────
         if ($data['purpose'] === 'login') {
-            $user = \App\Models\User::query()->where('phone', $phone)->first();
+            $user = user_by_phone($phone);
 
             if (! $user) {
                 return back()->with('error', 'Unable to sign you in. Please try again or register a new account.');
@@ -146,7 +208,12 @@ class OtpController extends Controller
                 return back()->with('error', 'Your account has been suspended. Contact support.');
             }
 
+            if ($user->phone !== $phone && ! \App\Models\User::query()->where('phone', $phone)->whereKeyNot($user->id)->exists()) {
+                $user->phone = $phone;
+            }
+
             $user->update([
+                'phone' => $user->phone,
                 'last_login_at' => now(),
                 'phone_verified_at' => $user->phone_verified_at ?? now(),
             ]);
@@ -188,7 +255,7 @@ class OtpController extends Controller
         }
 
         // ── reset_password: send the user to the password reset form ---------
-        $user = \App\Models\User::query()->where('phone', $phone)->first();
+        $user = user_by_phone($phone);
 
         if (! $user) {
             return back()->with('error', 'Unable to reset the password for this number. Please try again.');

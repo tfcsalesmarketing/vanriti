@@ -4,7 +4,7 @@
 
 @section('content')
 
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "BreadcrumbList",
@@ -25,7 +25,7 @@
 }
 </script>
 @if ($products->isNotEmpty())
-<script type="application/ld+json">
+<script nonce="{{ $cspNonce }}" type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "ItemList",
