@@ -34,7 +34,7 @@ class AuthController extends Controller
         return view('storefront.auth.login');
     }
 
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request): RedirectResponse|JsonResponse
     {
         $credentials = $request->validate([
             'login' => ['required', 'string', 'max:255'],
