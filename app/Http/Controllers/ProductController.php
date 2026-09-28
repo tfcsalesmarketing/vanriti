@@ -23,6 +23,7 @@ class ProductController extends Controller
             'categories',
             'reviews' => fn ($q) => $q->where('status', 'approved')->orderByDesc('created_at'),
             'reviews.user',
+            'reviews.images',
         ]);
 
         $categoryIds = $product->categories->pluck('id');

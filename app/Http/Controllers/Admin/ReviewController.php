@@ -13,7 +13,7 @@ class ReviewController extends Controller
     public function index(Request $request): View
     {
         $query = Review::query()
-            ->with(['user', 'product.images', 'orderItem']);
+            ->with(['user', 'product.images', 'orderItem', 'images']);
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);

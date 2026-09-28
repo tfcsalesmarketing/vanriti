@@ -10,8 +10,6 @@
         'packed' => 'os-processing', 'shipped' => 'os-shipped', 'out_for_delivery' => 'os-shipped',
         'delivered' => 'os-delivered', 'cancelled' => 'os-cancelled', 'failed' => 'os-cancelled',
     ];
-    $reviewed = $order->items->map(fn ($i) => $i->reviewExist)->all() ?? [];
-    $alreadyReviewing = $order->items->filter(fn ($i) => ($i->reviewExist ?? false));
     $hasReturn = $order->returnRequests->isNotEmpty();
 @endphp
 
@@ -53,12 +51,12 @@
                         <div class="text-end small">
                             <div class="fw-semibold">{{ format_price($item->total_price) }}</div>
 
-                            @if ($order->order_status === 'delivered' && ! $alreadyReviewing->contains('order_item_id', $item->id) && ! $item->reviewExist)
+                            @if ($order->order_status === 'delivered' && ! $item->review)
                                 <button class="btn btn-sm btn-vr-outline mt-2" data-bs-toggle="collapse" data-bs-target="#review-{{ $item->id }}">
                                     <i class="bi bi-star me-1"></i>Review
                                 </button>
                                 <div class="collapse mt-2" id="review-{{ $item->id }}">
-                                    <form method="POST" action="{{ route('account.order.review', $order) }}" class="text-start" novalidate>
+                                    <form method="POST" action="{{ route('account.order.review', $order) }}" enctype="multipart/form-data" class="text-start" novalidate>
                                         @csrf
                                         <input type="hidden" name="order_item_id" value="{{ $item->id }}">
                                         <div class="mb-2">
@@ -74,6 +72,16 @@
                                         </div>
                                         <div class="mb-2">
                                             <textarea name="comment" class="form-control form-control-sm" rows="2" placeholder="Tell us what you thought..."></textarea>
+                                        </div>
+                                        <div class="mb-2">
+                                            <input type="file" name="images[]" class="form-control form-control-sm" multiple accept="image/jpeg,image/jpg,image/png,image/webp">
+                                            <div class="form-text">Optional — up to 5 photos, 4 MB each (JPG, PNG or WebP).</div>
+                                            @error('images')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                            @error('images.*')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                         <button type="submit" class="btn btn-sm btn-vr">Submit Review</button>
                                     </form>

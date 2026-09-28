@@ -76,6 +76,26 @@ class OtpController extends Controller
             }
         }
 
+        // Registration must reject an already-registered number here, before an
+        // OTP is dispatched. The register page submits /otp/send instead of the
+        // form (its live-validation submit handler is bypassed by the OTP step),
+        // so without this the customer only discovered the duplicate number
+        // after verifying a code they had no reason to doubt.
+        //
+        // Unlike the "login" purpose above, this deliberately discloses that the
+        // number exists. That asymmetry is intentional: an account that cannot
+        // register a number must be told why, and the same message is already
+        // returned by AuthController::validateFields and AuthController::register.
+        if ($data['purpose'] === 'register' && user_by_phone($phone)) {
+            $taken = 'This mobile number is already registered.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['result' => '0', 'message' => $taken], 422);
+            }
+
+            return back()->with('error', $taken)->withInput();
+        }
+
         // Per-phone daily budget, independent of the IP throttle: a single
         // number must never be flooded with OTP deliveries. Bound both valid
         // and lookup-only sends so enumeration attempts cost rate-limit slots.

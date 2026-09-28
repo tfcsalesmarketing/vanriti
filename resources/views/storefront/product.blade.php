@@ -342,9 +342,43 @@
                         @if ($review->comment)
                             <p class="small text-muted mb-0 mt-1">{{ $review->comment }}</p>
                         @endif
+                        @if ($review->images->isNotEmpty())
+                            <div class="vr-review-gallery mt-2">
+                                @foreach ($review->images as $image)
+                                    <button type="button" class="vr-review-gallery__thumb"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#vrReviewImage{{ $review->id }}_{{ $image->id }}">
+                                        <img src="{{ image_url($image->path) }}" alt="Photo from {{ $review->user?->name ?: 'a customer' }}" loading="lazy">
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
+
+            @foreach ($reviews as $review)
+                @foreach ($review->images as $image)
+                    <div class="modal fade" id="vrReviewImage{{ $review->id }}_{{ $image->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header border-0">
+                                    <h6 class="modal-title small">
+                                        Photo by {{ $review->user?->name ?: 'Verified Buyer' }}
+                                        @if ($review->is_verified_purchase)
+                                            <span class="vr-pill-badge ps-paid ms-1" style="font-size:0.62rem;">Verified Purchase</span>
+                                        @endif
+                                    </h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-0 text-center">
+                                    <img src="{{ image_url($image->path) }}" alt="Customer review photo" class="img-fluid">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            @endforeach
         @else
             <div class="vr-empty bg-white rounded-4" style="box-shadow:var(--vr-shadow-xs);">
                 <i class="bi bi-chat-left-text"></i>

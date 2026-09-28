@@ -83,6 +83,18 @@
                             @if ($review->comment)
                                 <div class="text-muted" style="font-size:0.75rem;">{{ Str::limit($review->comment, 80) }}</div>
                             @endif
+                            @if ($review->images->isNotEmpty())
+                                <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                                    @foreach ($review->images->take(4) as $image)
+                                        <img src="{{ image_url($image->path) }}" alt=""
+                                             width="28" height="28" class="rounded"
+                                             style="object-fit:cover;border:1px solid var(--vr-border);">
+                                    @endforeach
+                                    @if ($review->images->count() > 4)
+                                        <span class="text-muted" style="font-size:0.7rem;">+{{ $review->images->count() - 4 }} more</span>
+                                    @endif
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <span class="badge bg-{{ $statusColors[$review->status] ?? 'secondary' }}">{{ ucfirst($review->status) }}</span>

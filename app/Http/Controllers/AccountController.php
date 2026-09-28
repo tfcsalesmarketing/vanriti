@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -49,7 +50,7 @@ class AccountController extends Controller
     {
         abort_unless($order->user_id === auth('web')->id(), 403);
 
-        $order->load(['items', 'payments', 'statusHistories', 'shipments.trackingEvents', 'returnRequests.items']);
+        $order->load(['items.review', 'payments', 'statusHistories', 'shipments.trackingEvents', 'returnRequests.items']);
 
         return view('storefront.account.order-detail', compact('order'));
     }
@@ -152,6 +153,8 @@ class AccountController extends Controller
             'rating' => ['required', 'integer', 'between:1,5'],
             'title' => ['nullable', 'string', 'max:120'],
             'comment' => ['nullable', 'string', 'max:1500'],
+            'images' => ['nullable', 'array', 'max:5'],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ]);
 
         // Reviews are only for items the customer actually received. This is the
@@ -189,7 +192,65 @@ class AccountController extends Controller
             throw $e;
         }
 
+        try {
+            $this->storeReviewImages($request, $review);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Your review could not be saved with the images. Please try again.');
+        }
+
         return back()->with('success', 'Thank you! Your review has been submitted for approval.');
+    }
+
+    /**
+     * Persist the customer's photo attachments.
+     *
+     * Runs only after the review row exists and the duplicate guard above has
+     * passed, so a rejected submission never leaves a file behind. A partial
+     * failure rolls the whole review back, including anything already written
+     * to the disk, so the review and its photos are always all-or-nothing.
+     */
+    private function storeReviewImages(Request $request, Review $review): void
+    {
+        $files = $request->file('images', []);
+
+        if (! is_array($files) || $files === []) {
+            return;
+        }
+
+        $storedPaths = [];
+
+        try {
+            foreach (array_values($files) as $index => $file) {
+                if (! $file) {
+                    continue;
+                }
+
+                $path = $file->store('reviews/'.$review->id, 's3');
+                $storedPaths[] = $path;
+
+                $review->images()->create([
+                    'path' => $path,
+                    'disk' => 's3',
+                    'mime_type' => $file->getClientMimeType(),
+                    'size' => $file->getSize(),
+                    'sort_order' => $index,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+
+            foreach ($storedPaths as $path) {
+                try {
+                    Storage::disk('s3')->delete($path);
+                } catch (\Throwable $cleanupError) {
+                    report($cleanupError);
+                }
+            }
+
+            $review->delete();
+
+            throw new \RuntimeException('Review images could not be stored.', 0, $e);
+        }
     }
 
     public function addresses(): View

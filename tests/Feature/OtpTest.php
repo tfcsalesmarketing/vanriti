@@ -53,6 +53,95 @@ class OtpTest extends TestCase
         ]);
     }
 
+    public function test_register_otp_send_rejects_already_registered_phone(): void
+    {
+        User::factory()->create(['status' => 'active', 'phone' => '9876543210']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.abc']]], 200)]);
+
+        $response = $this->postJson('/otp/send', [
+            'phone' => '9876543210',
+            'purpose' => 'register',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'result' => '0',
+            'message' => 'This mobile number is already registered.',
+        ]);
+
+        $this->assertDatabaseMissing('otp_codes', [
+            'phone' => '9876543210',
+            'purpose' => 'register',
+        ]);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_register_otp_send_rejects_duplicate_across_phone_spellings(): void
+    {
+        User::factory()->create(['status' => 'active', 'phone' => '919876543210']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.abc']]], 200)]);
+
+        $response = $this->postJson('/otp/send', [
+            'phone' => '9876543210',
+            'purpose' => 'register',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'result' => '0',
+            'message' => 'This mobile number is already registered.',
+        ]);
+
+        $this->assertDatabaseMissing('otp_codes', [
+            'phone' => '9876543210',
+            'purpose' => 'register',
+        ]);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_register_otp_send_still_succeeds_for_available_phone(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.abc']]], 200)]);
+
+        $response = $this->postJson('/otp/send', [
+            'phone' => '9876543210',
+            'purpose' => 'register',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['result' => '1']);
+
+        $this->assertDatabaseHas('otp_codes', [
+            'phone' => '9876543210',
+            'purpose' => 'register',
+            'channel' => 'whatsapp',
+        ]);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_login_otp_send_still_hides_unknown_numbers(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.abc']]], 200)]);
+
+        $response = $this->postJson('/otp/send', [
+            'phone' => '9876543210',
+            'purpose' => 'login',
+        ]);
+
+        $response->assertStatus(202);
+        $response->assertJson(['result' => '1']);
+
+        $this->assertDatabaseMissing('otp_codes', [
+            'phone' => '9876543210',
+            'purpose' => 'login',
+        ]);
+
+        Http::assertNothingSent();
+    }
+
     public function test_verify_marks_user_phone_verified(): void
     {
         $user = User::factory()->create(['status' => 'active', 'phone' => '9876543210']);

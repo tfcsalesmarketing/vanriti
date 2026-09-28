@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\GstService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OrderItem extends Model
 {
@@ -40,6 +41,15 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    /**
+     * At most one review per line item, enforced by the review_unique index
+     * on (product_id, user_id, order_item_id).
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
     }
 
     public function hasReviewBy(User $user): bool
