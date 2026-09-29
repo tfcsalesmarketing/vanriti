@@ -8,48 +8,56 @@
         [
             'key' => 'whatsapp',
             'icon' => 'bi-whatsapp',
+            'short' => 'WhatsApp',
             'label' => 'Share on WhatsApp',
             'href' => 'https://wa.me/?text='.$enc($shareText.' '.$shareUrl),
         ],
         [
             'key' => 'facebook',
             'icon' => 'bi-facebook',
+            'short' => 'Facebook',
             'label' => 'Share on Facebook',
             'href' => 'https://www.facebook.com/sharer/sharer.php?u='.$enc($shareUrl),
         ],
         [
             'key' => 'x',
             'icon' => 'bi-twitter-x',
+            'short' => 'X',
             'label' => 'Share on X',
             'href' => 'https://twitter.com/intent/tweet?url='.$enc($shareUrl).'&text='.$enc($shareText),
         ],
         [
             'key' => 'linkedin',
             'icon' => 'bi-linkedin',
+            'short' => 'LinkedIn',
             'label' => 'Share on LinkedIn',
             'href' => 'https://www.linkedin.com/sharing/share-offsite/?url='.$enc($shareUrl),
         ],
         [
             'key' => 'telegram',
             'icon' => 'bi-telegram',
+            'short' => 'Telegram',
             'label' => 'Share on Telegram',
             'href' => 'https://t.me/share/url?url='.$enc($shareUrl).'&text='.$enc($shareText),
         ],
         [
             'key' => 'pinterest',
             'icon' => 'bi-pinterest',
+            'short' => 'Pinterest',
             'label' => 'Save on Pinterest',
             'href' => 'https://pinterest.com/pin/create/button/?url='.$enc($shareUrl).'&description='.$enc($shareText),
         ],
         [
             'key' => 'email',
             'icon' => 'bi-envelope-fill',
+            'short' => 'Email',
             'label' => 'Share by email',
             'href' => 'mailto:?subject='.$enc($shareText).'&body='.$enc($shareUrl),
         ],
         [
             'key' => 'instagram',
             'icon' => 'bi-instagram',
+            'short' => 'Instagram',
             'label' => 'Open in Instagram (copies the link)',
             'href' => 'https://www.instagram.com/',
             'app' => true,
@@ -57,6 +65,7 @@
         [
             'key' => 'threads',
             'icon' => 'bi-threads',
+            'short' => 'Threads',
             'label' => 'Open in Threads (copies the link)',
             'href' => 'https://www.threads.net/',
             'app' => true,
@@ -64,6 +73,7 @@
         [
             'key' => 'messenger',
             'icon' => 'bi-messenger',
+            'short' => 'Messenger',
             'label' => 'Open in Messenger (copies the link)',
             'href' => 'https://www.messenger.com/',
             'app' => true,
@@ -76,33 +86,70 @@
      data-share-url="{{ $shareUrl }}"
      data-share-title="{{ $shareTitle }}"
      data-share-text="{{ $shareText }}">
-    <span class="vr-share-label">Share</span>
+    <button type="button"
+            class="vr-share-btn vr-share-trigger"
+            data-bs-toggle="modal"
+            data-bs-target="#vrShareModal"
+            aria-label="Share {{ $shareTitle }}"
+            title="Share">
+        <i class="bi bi-share" aria-hidden="true"></i>
+    </button>
 
-    <div class="vr-share-list">
-        @foreach ($shareLinks as $link)
-            <a class="vr-share-btn"
-               href="{{ $link['href'] }}"
-               target="_blank"
-               rel="noopener noreferrer"
-               aria-label="{{ $link['label'] }}"
-               title="{{ $link['label'] }}"
-               data-share-network="{{ $link['key'] }}"
-               @if (! empty($link['app'])) data-share-app @endif
-               @if (! empty($link['app'])) data-share-href="{{ $link['href'] }}" @endif>
-                <i class="bi {{ $link['icon'] }}" aria-hidden="true"></i>
-            </a>
-        @endforeach
+    <div class="modal fade vr-share-modal"
+         id="vrShareModal"
+         tabindex="-1"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="vrShareModalTitle">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h6 mb-0" id="vrShareModalTitle">Share this product</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
 
-        <button type="button" class="vr-share-btn" data-share-copy aria-label="Copy product link" title="Copy product link">
-            <i class="bi bi-link-45deg" aria-hidden="true"></i>
-        </button>
+                <div class="modal-body">
+                    <div class="vr-share-grid">
+                        @foreach ($shareLinks as $link)
+                            <a class="vr-share-tile"
+                               href="{{ $link['href'] }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               aria-label="{{ $link['label'] }}"
+                               title="{{ $link['label'] }}"
+                               data-share-network="{{ $link['key'] }}"
+                               @if (! empty($link['app'])) data-share-app @endif
+                               @if (! empty($link['app'])) data-share-href="{{ $link['href'] }}" @endif>
+                                <span class="vr-share-tile-icon"><i class="bi {{ $link['icon'] }}" aria-hidden="true"></i></span>
+                                <span class="vr-share-tile-label">{{ $link['short'] }}</span>
+                            </a>
+                        @endforeach
 
-        <button type="button" class="vr-share-btn" data-share-native hidden aria-label="Share product" title="Share product">
-            <i class="bi bi-share" aria-hidden="true"></i>
-        </button>
+                        <button type="button"
+                                class="vr-share-tile"
+                                data-share-copy
+                                aria-label="Copy product link"
+                                title="Copy product link">
+                            <span class="vr-share-tile-icon"><i class="bi bi-link-45deg" aria-hidden="true"></i></span>
+                            <span class="vr-share-tile-label">Copy link</span>
+                        </button>
+
+                        <button type="button"
+                                class="vr-share-tile"
+                                data-share-native
+                                hidden
+                                aria-label="Share product"
+                                title="Share product">
+                            <span class="vr-share-tile-icon"><i class="bi bi-share" aria-hidden="true"></i></span>
+                            <span class="vr-share-tile-label">More</span>
+                        </button>
+                    </div>
+
+                    <p class="vr-share-status" data-share-status role="status" aria-live="polite"></p>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <span class="vr-share-status" data-share-status role="status" aria-live="polite"></span>
 </div>
 
 @once
@@ -210,7 +257,7 @@
                 }
 
                 root.addEventListener('click', function (event) {
-                    var btn = event.target.closest ? event.target.closest('.vr-share-btn') : null;
+                    var btn = event.target.closest ? event.target.closest('.vr-share-tile') : null;
 
                     if (!btn) {
                         return;
