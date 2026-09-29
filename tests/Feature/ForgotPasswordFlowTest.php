@@ -40,9 +40,9 @@ class ForgotPasswordFlowTest extends TestCase
         $response->assertSessionMissing('success');
     }
 
-    public function test_forgot_password_accepts_five_requests_then_rate_limits(): void
+    public function test_forgot_password_accepts_three_requests_then_rate_limits(): void
     {
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $response = $this->from(route('password.request'))
                 ->post(route('password.email'), ['identifier' => "rate{$i}@example.com"]);
 
@@ -51,8 +51,33 @@ class ForgotPasswordFlowTest extends TestCase
         }
 
         $this->from(route('password.request'))
-            ->post(route('password.email'), ['identifier' => 'rate-sixth@example.com'])
-            ->assertStatus(429);
+            ->post(route('password.email'), ['identifier' => 'rate-fourth@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('error', 'Limit exceeded for OTP request. You can retry after 30 minutes.');
+    }
+
+    public function test_forgot_password_rate_limit_refreshes_after_30_minutes(): void
+    {
+        for ($i = 0; $i < 3; $i++) {
+            $this->from(route('password.request'))
+                ->post(route('password.email'), ['identifier' => "refresh{$i}@example.com"])
+                ->assertRedirect(route('password.otp.verify'))
+                ->assertSessionHas('success');
+        }
+
+        // 4th request within 30 minutes -> rate limited
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'refresh-fourth@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('error', 'Limit exceeded for OTP request. You can retry after 30 minutes.');
+
+        // Travel 31 minutes -> limit refreshes
+        $this->travel(31)->minutes();
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'refresh-fourth@example.com'])
+            ->assertRedirect(route('password.otp.verify'))
+            ->assertSessionHas('success');
     }
 
     public function test_forgot_password_for_unknown_email_does_not_reveal_existence(): void

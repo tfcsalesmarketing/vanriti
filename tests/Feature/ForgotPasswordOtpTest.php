@@ -349,19 +349,45 @@ class ForgotPasswordOtpTest extends TestCase
         $this->assertTrue(Hash::check('OldPass#123', $user->fresh()->password));
     }
 
-    public function test_forgot_password_accepts_five_requests_then_rate_limits(): void
+    public function test_forgot_password_rate_limits_after_three_requests_per_30_minutes(): void
     {
         Notification::fake();
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $this->from(route('password.request'))
-                ->post(route('password.email'), ['identifier' => "rate{$i}@example.com"])
+                ->post(route('password.email'), ['identifier' => "ratelimit{$i}@example.com"])
                 ->assertRedirect(route('password.otp.verify'));
         }
 
         $this->from(route('password.request'))
-            ->post(route('password.email'), ['identifier' => 'rate-sixth@example.com'])
-            ->assertStatus(429);
+            ->post(route('password.email'), ['identifier' => 'ratelimit3@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('error', 'Limit exceeded for OTP request. You can retry after 30 minutes.');
+    }
+
+    public function test_forgot_password_rate_limit_refreshes_after_30_minutes(): void
+    {
+        Notification::fake();
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->from(route('password.request'))
+                ->post(route('password.email'), ['identifier' => "refresh{$i}@example.com"])
+                ->assertRedirect(route('password.otp.verify'));
+        }
+
+        // 4th request within 30 minutes -> rate limited
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'refresh3@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('error', 'Limit exceeded for OTP request. You can retry after 30 minutes.');
+
+        // Travel 31 minutes -> limit refreshes
+        $this->travel(31)->minutes();
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'refresh3@example.com'])
+            ->assertRedirect(route('password.otp.verify'))
+            ->assertSessionHas('success');
     }
 
     public function test_a_failed_send_leaves_no_undelivered_code_behind(): void

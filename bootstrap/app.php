@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -63,6 +64,14 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Handle rate limit exceeded for forgot password and OTP routes
+        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) {
+            if ($request->is('forgot-password', 'forgot-password/*', 'otp/send', 'otp/verify')) {
+                return redirect()->route('password.request')
+                    ->with('error', 'Limit exceeded for OTP request. You can retry after 30 minutes.');
+            }
+        });
+
         // Admin panel gets its own set of error pages (resources/views/admin/errors).
         // Any other request (storefront) falls through to Laravel's default error
         // views (resources/views/errors), which stay untouched.

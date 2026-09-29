@@ -52,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(8)->by('checkout:'.($request->user()?->id ?: $request->ip()));
         });
 
+        RateLimiter::for('password.otp', function (Request $request): Limit {
+            return Limit::perMinutes(30, 3)->by($request->ip());
+        });
+
         try {
             View::share('cartLineByProduct', app(CartService::class)->items()->keyBy('product_id'));
         } catch (\Throwable) {

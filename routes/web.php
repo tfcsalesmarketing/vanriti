@@ -59,7 +59,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit')->middleware('throttle:register.per.ip');
     Route::post('/auth/validate', [AuthController::class, 'validateFields'])->name('auth.validate')->middleware('throttle:60,1');
     Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendPasswordOtp'])->name('password.email')->middleware('throttle:5,10');
+    Route::post('/forgot-password', [AuthController::class, 'sendPasswordOtp'])->name('password.email')->middleware('throttle:password.otp');
 
     // Password reset: code -> new password -> confirmation. Each step reads its
     // state from the session, so a guest cannot skip straight to step 3 or
