@@ -93,7 +93,10 @@
             @if ($category)
                 <a href="{{ route('shop.category', $category->slug) }}" class="cat-name text-uppercase text-decoration-none d-inline-block mb-1">{{ $category->name }}</a>
             @endif
-            <h1 class="h3 fw-bold mb-2">{{ $product->name }}</h1>
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2">
+                <h1 class="h3 fw-bold mb-0">{{ $product->name }}</h1>
+                @include('storefront.partials.share', ['product' => $product])
+            </div>
 
             @if ($reviewCount > 0)
                 <div class="rating-stars small mb-3">
