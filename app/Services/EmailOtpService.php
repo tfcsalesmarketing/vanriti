@@ -7,6 +7,7 @@ use App\Notifications\OtpEmailNotification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
@@ -23,6 +24,9 @@ class EmailOtpService
     /** Max verify attempts before the code is burnt, hard cap. */
     protected int $maxAttempts = 5;
 
+    /** Seconds a freshly sent code blocks the next one for this address. */
+    protected int $cooldownSeconds = 60;
+
     /**
      * Send a 6-digit OTP to the given email address.
      *
@@ -36,6 +40,18 @@ class EmailOtpService
             return $this->failure('Please enter a valid email address.');
         }
 
+        // Per-address daily budget, independent of any per-IP throttle: a single
+        // inbox must never be flooded by requests spread across source IPs.
+        // The address is hashed so it never lands in a cache-store key.
+        $dailyKey = 'otp-send-email:'.hash('sha256', $email);
+        $dailyLimit = max(3, (int) setting('email_otp_daily_limit', 10));
+
+        if (RateLimiter::tooManyAttempts($dailyKey, $dailyLimit)) {
+            return $this->failure('Too many code requests for this address. Please try again later.');
+        }
+
+        RateLimiter::hit($dailyKey, 86400);
+
         // Cooldown: reuse the in-flight OTP instead of re-sending mail, so a
         // held-down button cannot flood an inbox.
         $remaining = $this->cooldownRemaining($email, $purpose);
@@ -44,10 +60,12 @@ class EmailOtpService
             return $this->failure('Please wait for the cooldown to expire before requesting a new code.');
         }
 
+        $otp = null;
+
         try {
             $code = (string) random_int(100000, 999999);
 
-            OtpCode::create([
+            $otp = OtpCode::create([
                 'phone' => null,
                 'email' => $email,
                 'purpose' => $purpose,
@@ -62,6 +80,11 @@ class EmailOtpService
                 $this->ttlSeconds() / 60,
             ));
         } catch (\Throwable $e) {
+            // The row was written before the send, so an undelivered code would
+            // otherwise sit there looking live: it would hold the cooldown and
+            // block the customer's immediate retry. Drop it instead.
+            $otp?->delete();
+
             Log::warning('Email OTP send exception.', [
                 'purpose' => $purpose,
                 'error' => $e->getMessage(),

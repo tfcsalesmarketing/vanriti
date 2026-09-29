@@ -8,7 +8,10 @@ use App\Models\User;
 use App\Notifications\OtpEmailNotification;
 use App\Services\EmailOtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -359,6 +362,69 @@ class ForgotPasswordOtpTest extends TestCase
         $this->from(route('password.request'))
             ->post(route('password.email'), ['identifier' => 'rate-sixth@example.com'])
             ->assertStatus(429);
+    }
+
+    public function test_a_failed_send_leaves_no_undelivered_code_behind(): void
+    {
+        $user = User::factory()->create(['email' => 'smtp-down@example.com']);
+
+        Event::listen(MessageSending::class, function (): void {
+            throw new \RuntimeException('SMTP connection refused');
+        });
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'smtp-down@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('error');
+
+        // An undelivered code would still look live: it would hold the cooldown
+        // and block the customer's immediate retry.
+        $this->assertSame(0, OtpCode::where('email', 'smtp-down@example.com')->count());
+        $this->assertNull(session('password_reset'));
+
+        Event::forget(MessageSending::class);
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'smtp-down@example.com'])
+            ->assertRedirect(route('password.otp.verify'))
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, OtpCode::where('email', 'smtp-down@example.com')->count());
+        $this->assertSame('smtp-down@example.com', session('password_reset.identifier'));
+    }
+
+    public function test_email_codes_are_capped_per_address_each_day(): void
+    {
+        Notification::fake();
+
+        User::factory()->create(['email' => 'daily-cap@example.com']);
+
+        // The per-IP route throttle is not what this test is about; the cap
+        // lives in the service and must survive its removal.
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->travel(61)->seconds();
+
+            $this->from(route('password.request'))
+                ->post(route('password.email'), ['identifier' => 'daily-cap@example.com'])
+                ->assertRedirect(route('password.otp.verify'))
+                ->assertSessionHas('success');
+        }
+
+        $this->travel(61)->seconds();
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'daily-cap@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('error');
+
+        // The cap is scoped to the address, not the caller: a different address
+        // is unaffected.
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['identifier' => 'not-capped@example.com'])
+            ->assertRedirect(route('password.otp.verify'))
+            ->assertSessionHas('success');
     }
 
     /**
