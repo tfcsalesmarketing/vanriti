@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendWhatsAppOrderConfirmation;
 use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Refund;
@@ -19,11 +20,20 @@ class NotificationService
     public function orderPlaced(Order $order): void
     {
         $this->orderStatusChanged($order, 'pending');
+
+        // A Razorpay order is not confirmed until the payment settles, so its
+        // WhatsApp waits for paymentSuccessful(); a failed payment must never
+        // be told the order is confirmed.
+        if ($order->payment_method !== 'razorpay') {
+            SendWhatsAppOrderConfirmation::dispatchSync($order);
+        }
     }
 
     public function paymentSuccessful(Order $order): void
     {
         $this->orderStatusChanged($order, 'payment_confirmed');
+
+        SendWhatsAppOrderConfirmation::dispatchSync($order);
     }
 
     public function paymentFailed(Order $order): void

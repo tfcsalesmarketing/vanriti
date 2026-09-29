@@ -25,7 +25,6 @@ class OrderService
         protected ShippingService $shippingService,
         protected InventoryService $inventoryService,
         protected GstService $gstService,
-        protected WhatsAppOtpService $whatsappService,
     ) {}
 
     /**
@@ -254,30 +253,6 @@ class OrderService
             app(DadiAttributionService::class)->recordPurchaseForOrder($order);
         } catch (\Throwable) {
             // Best-effort; must never affect the order outcome.
-        }
-
-        // WhatsApp order confirmation (approved template, linked to the signed,
-        // login-free track page). Best-effort like the welcome — a delivery
-        // failure must never stand between the customer and their order.
-        try {
-            if ($this->whatsappService->isEnabled() && ! empty(trim((string) $user->phone))) {
-                $firstName = explode(' ', trim((string) $user->name))[0] ?? '';
-                $etaDays = max(0, (int) setting('whatsapp_delivery_eta_days', 5));
-                $deliveryDate = now()->addDays($etaDays)->toDateString();
-
-                $this->whatsappService->sendOrderConfirmation(
-                    $user->phone,
-                    $firstName,
-                    $order->order_number,
-                    $deliveryDate,
-                    $order->guestTrackingUrl(),
-                );
-            }
-        } catch (\Throwable $e) {
-            Log::warning('WhatsApp order confirmation could not be delivered.', [
-                'order' => $order->order_number,
-                'error' => $e->getMessage(),
-            ]);
         }
 
         return $order;

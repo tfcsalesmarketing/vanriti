@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\OtpCode;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -37,12 +36,35 @@ class WhatsAppOtpService
         ];
     }
 
+    /**
+     * Transport-level check: a Meta phone number id and access token exist.
+     * Shared by every message type so no single feature can break the rest.
+     */
+    public function isConfigured(): bool
+    {
+        return ! empty(setting('whatsapp_phone_number_id', ''))
+            && ! empty(secret_setting('whatsapp_access_token', ''));
+    }
+
+    /**
+     * OTP messages. The OTP switch and the OTP template are deliberately not
+     * shared with other message types: they used to gate order confirmations
+     * too, which silently dropped them whenever OTP was off or unconfigured.
+     */
     public function isEnabled(): bool
     {
-        return (bool) setting('whatsapp_otp_enabled', false)
-            && ! empty(setting('whatsapp_phone_number_id', ''))
-            && ! empty(secret_setting('whatsapp_access_token', ''))
+        return $this->isConfigured()
+            && (bool) setting('whatsapp_otp_enabled', false)
             && ! empty(setting('whatsapp_template_name', ''));
+    }
+
+    /**
+     * Order-confirmation messages, independent of the OTP switch.
+     */
+    public function ordersEnabled(): bool
+    {
+        return $this->isConfigured()
+            && (bool) setting('whatsapp_orders_enabled', true);
     }
 
     /**
@@ -299,16 +321,19 @@ class WhatsAppOtpService
     /**
      * Order-confirmation WhatsApp message (approved template, three body
      * variables: customer name, order number, estimated delivery date; plus a
-     * dynamic URL button that carries the signed "track my order" link).
+     * dynamic URL button that carries the dashboard order link).
+     *
+     * The button URL is supplied in full by the caller, so the approved
+     * template's button only needs a single {{1}} placeholder.
      *
      * Best-effort: any failure logs a warning and must never block the order.
      *
      * @return array{result: string, message: string}
      */
-    public function sendOrderConfirmation(string $phone, string $name, string $orderNumber, string $deliveryDate, string $trackUrl): array
+    public function sendOrderConfirmation(string $phone, string $name, string $orderNumber, string $deliveryDate, string $orderUrl): array
     {
-        if (! $this->isEnabled()) {
-            return $this->failure('WhatsApp is not enabled or configured yet.');
+        if (! $this->ordersEnabled()) {
+            return $this->failure('WhatsApp order confirmation is not enabled or configured yet.');
         }
 
         $template = (string) setting('whatsapp_order_template_name', 'order_confirmation');
@@ -321,7 +346,7 @@ class WhatsAppOtpService
 
         try {
             $response = Http::withHeaders($this->headers())
-                ->timeout(20)
+                ->timeout(8)
                 ->post(
                     $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
                     [
@@ -343,13 +368,14 @@ class WhatsAppOtpService
                                     ],
                                 ],
                                 [
-                                    // The template's single URL button ("Track My Order")
-                                    // points at the signed, login-free order page.
+                                    // The template's single URL button is a bare
+                                    // {{1}} placeholder, so the full link comes
+                                    // from us: the customer's dashboard order page.
                                     'type' => 'button',
                                     'sub_type' => 'url',
                                     'index' => '0',
                                     'parameters' => [
-                                        ['type' => 'url', 'url' => $trackUrl],
+                                        ['type' => 'url', 'url' => $orderUrl],
                                     ],
                                 ],
                             ],
