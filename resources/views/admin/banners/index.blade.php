@@ -16,7 +16,8 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Image</th>
+                    <th>Desktop</th>
+                    <th>Mobile</th>
                     <th>Link</th>
                     <th>Position</th>
                     <th>Type</th>
@@ -36,6 +37,15 @@
                                 <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
                                     <i class="bi bi-image text-muted"></i>
                                 </div>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($banner->mobile_image)
+                                <img src="{{ image_url($banner->mobile_image) }}" alt="" class="img-thumb">
+                            @else
+                                <span class="badge badge-soft-secondary" title="No mobile image set. The desktop image is shown on phones.">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Uses desktop
+                                </span>
                             @endif
                         </td>
                         <td class="small">
@@ -73,9 +83,9 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">No banners found.</td>
-                    </tr>
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">No banners found.</td>
+                        </tr>
                 @endforelse
             </tbody>
         </table>

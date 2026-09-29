@@ -39,6 +39,9 @@ class BannerController extends Controller
             'expires_at' => 'nullable|date|after_or_equal:starts_at',
         ]);
 
+        // Transport-only inputs: the banner stores the resolved path, not the URL field.
+        unset($validated['image_url'], $validated['mobile_image_url']);
+
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('banners', 's3');
         } elseif ($request->input('image_url')) {
@@ -75,7 +78,11 @@ class BannerController extends Controller
             'status' => 'required|in:active,inactive',
             'starts_at' => 'nullable|date',
             'expires_at' => 'nullable|date|after_or_equal:starts_at',
+            'remove_mobile_image' => 'nullable|boolean',
         ]);
+
+        // Transport-only inputs: the banner stores the resolved path, not the URL field.
+        unset($validated['image_url'], $validated['mobile_image_url'], $validated['remove_mobile_image']);
 
         if ($request->hasFile('image')) {
             if ($banner->image && ! str_starts_with($banner->image, 'http')) {
@@ -88,7 +95,12 @@ class BannerController extends Controller
             unset($validated['image']);
         }
 
-        if ($request->hasFile('mobile_image')) {
+        // Replacing only the desktop image must never touch the mobile one, and
+        // vice versa. An explicit "remove" box is the only way to clear mobile,
+        // because an empty file input alone is indistinguishable from "unchanged".
+        if ($request->boolean('remove_mobile_image')) {
+            $validated['mobile_image'] = null;
+        } elseif ($request->hasFile('mobile_image')) {
             if ($banner->mobile_image && ! str_starts_with($banner->mobile_image, 'http')) {
                 Storage::disk('s3')->delete($banner->mobile_image);
             }

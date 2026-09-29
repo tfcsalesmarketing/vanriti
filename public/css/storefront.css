@@ -290,6 +290,16 @@ img { max-width: 100%; height: auto; }
     min-height: 600px;
 }
 
+/* Hero <picture>/<img>. Kept separate from .vr-hero-img because that class is
+   still used by the no-banner gradient placeholder, which needs background-image. */
+.vr-hero-pic {
+    display: block;
+    width: 100%;
+    height: 600px;
+    object-fit: cover;
+    object-position: center;
+}
+
 .vr-hero .carousel-indicators { bottom: 1.5rem; }
 .vr-hero .carousel-indicators [data-bs-target] {
     width: 32px;

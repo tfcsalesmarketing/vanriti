@@ -53,8 +53,12 @@
             <div class="card-header fw-semibold">Images</div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Image <span class="text-danger">*</span></label>
+                    <label class="form-label small fw-semibold">
+                        Desktop Image
+                        @if (! $banner || ! $banner->image)<span class="text-danger">*</span>@endif
+                    </label>
                     <input type="file" name="image" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp">
+                    <div class="form-text">Shown on tablets and desktops. Leave empty to keep the current image.</div>
                     @if ($banner && $banner->image)
                         <div class="mt-2"><img src="{{ image_url($banner->image) }}" alt="" class="img-thumb"></div>
                     @endif
@@ -62,13 +66,20 @@
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Mobile Image</label>
                     <input type="file" name="mobile_image" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp">
+                    <div class="form-text">Portrait crop shown on phones (under 768px). Leave empty to keep the current mobile image.</div>
                     @if ($banner && $banner->mobile_image)
                         <div class="mt-2"><img src="{{ image_url($banner->mobile_image) }}" alt="" class="img-thumb"></div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" name="remove_mobile_image" value="1" id="removeMobileImage">
+                            <label class="form-check-label small text-danger" for="removeMobileImage">
+                                Remove the mobile image and show the desktop image on phones
+                            </label>
+                        </div>
                     @endif
                 </div>
                 <div class="form-text">Upload may be used as-is, or if no image file is attached supply a direct URL below.</div>
                 <div class="mb-3 mt-2">
-                    <label class="form-label small fw-semibold">Image URL</label>
+                    <label class="form-label small fw-semibold">Desktop Image URL</label>
                     <input type="text" name="image_url" class="form-control form-control-sm" value="{{ old('image_url') }}" placeholder="https://...">
                 </div>
                 <div>
