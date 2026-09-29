@@ -17,7 +17,7 @@
     <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.analytics') ? 'active' : '' }}"
            href="{{ route('admin.analytics') }}">
-            <i class="bi bi-graph-up"></i><span>Analytics Command Center</span>
+            <i class="bi bi-graph-up"></i><span>Analytics Center</span>
         </a>
     </li>
     @endif

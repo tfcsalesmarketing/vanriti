@@ -426,7 +426,7 @@
             </div>
             <div class="row g-4 vr-stagger">
                 @foreach ($related as $relatedProduct)
-                    <div class="col-6 col-md-4 col-xl-3">
+                    <div class="col-12 col-md-6 col-xl-4">
                         @include('storefront.partials.product-card', ['product' => $relatedProduct])
                     </div>
                 @endforeach

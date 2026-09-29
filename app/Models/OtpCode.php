@@ -12,6 +12,7 @@ class OtpCode extends Model
 
     protected $fillable = [
         'phone',
+        'email',
         'purpose',
         'channel',
         'hashed_code',
@@ -34,6 +35,17 @@ class OtpCode extends Model
     {
         return $query
             ->where('phone', $phone)
+            ->where('purpose', $purpose)
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->latest('id');
+    }
+
+    /** Latest still-active OTP for an email + purpose (unused, unexpired). */
+    public function scopeActiveForEmail(Builder $query, string $email, string $purpose): Builder
+    {
+        return $query
+            ->where('email', $email)
             ->where('purpose', $purpose)
             ->whereNull('used_at')
             ->where('expires_at', '>', now())

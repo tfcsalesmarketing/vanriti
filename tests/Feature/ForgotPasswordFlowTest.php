@@ -8,7 +8,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
@@ -23,90 +22,68 @@ class ForgotPasswordFlowTest extends TestCase
             ->assertSee('vrForgotForm');
     }
 
-    public function test_sending_reset_link_creates_token_and_notifies_with_branded_notification(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create(['email' => 'resetme@example.com']);
-
-        $response = $this->from(route('password.request'))
-            ->post(route('password.email'), ['email' => 'resetme@example.com']);
-
-        $response->assertRedirect(route('password.request'));
-        $response->assertSessionHas('success');
-
-        $this->assertDatabaseHas('password_reset_tokens', ['email' => 'resetme@example.com']);
-
-        Notification::assertSentTo(
-            $user,
-            ResetPasswordNotification::class
-        );
-    }
-
-    public function test_forgot_password_for_existing_email_succeeds_when_reset_email_fails_to_send(): void
+    /**
+     * A mail failure must be reported rather than answered with a cheerful
+     * "we emailed your link" the customer never receives.
+     */
+    public function test_forgot_password_reports_a_failed_email_dispatch(): void
     {
         Event::listen(MessageSending::class, fn () => throw new \RuntimeException('smtp unreachable'));
 
-        $user = User::factory()->create(['email' => 'mailfail-reset@example.com']);
+        User::factory()->create(['email' => 'mailfail-reset@example.com']);
 
         $response = $this->from(route('password.request'))
-            ->post(route('password.email'), ['email' => 'mailfail-reset@example.com']);
+            ->post(route('password.email'), ['identifier' => 'mailfail-reset@example.com']);
 
         $response->assertRedirect(route('password.request'));
-        $response->assertSessionHas('success');
-        $response->assertSessionMissing('errors');
+        $response->assertSessionHas('error');
+        $response->assertSessionMissing('success');
     }
 
     public function test_forgot_password_accepts_five_requests_then_rate_limits(): void
     {
         for ($i = 0; $i < 5; $i++) {
             $response = $this->from(route('password.request'))
-                ->post(route('password.email'), ['email' => "rate$i@example.com"]);
+                ->post(route('password.email'), ['identifier' => "rate{$i}@example.com"]);
 
+            $response->assertRedirect(route('password.otp.verify'));
             $response->assertSessionHas('success');
         }
 
         $this->from(route('password.request'))
-            ->post(route('password.email'), ['email' => 'rate-sixth@example.com'])
+            ->post(route('password.email'), ['identifier' => 'rate-sixth@example.com'])
             ->assertStatus(429);
     }
 
     public function test_forgot_password_for_unknown_email_does_not_reveal_existence(): void
     {
         $response = $this->from(route('password.request'))
-            ->post(route('password.email'), ['email' => 'nobody@example.com']);
+            ->post(route('password.email'), ['identifier' => 'nobody@example.com']);
 
-        $response->assertRedirect(route('password.request'));
+        // Byte-for-byte the same answer a registered address gets.
+        $response->assertRedirect(route('password.otp.verify'));
         $response->assertSessionHas('success');
         $response->assertSessionMissing('errors');
-        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'nobody@example.com']);
+        $this->assertDatabaseMissing('otp_codes', ['email' => 'nobody@example.com']);
     }
 
     public function test_reset_email_link_uses_the_request_host(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create([
             'name' => 'Aarav Mehta',
             'email' => 'hostlink@example.com',
         ]);
 
-        $this->post(route('password.email'), ['email' => 'hostlink@example.com'])
-            ->assertSessionHas('success');
-
-        Notification::assertSentTo(
-            $user,
-            ResetPasswordNotification::class,
-            function (ResetPasswordNotification $notification) use ($user): bool {
-                $html = $notification->toMail($user)->render();
-                $expectedUrl = url(route('password.reset', [
-                    'token' => $notification->token,
-                    'email' => $user->email,
-                ], false));
-
-                return str_contains($html, $expectedUrl);
-            }
+        $notification = new ResetPasswordNotification(
+            Password::broker('users')->createToken($user)
         );
+
+        $expectedUrl = url(route('password.reset', [
+            'token' => $notification->token,
+            'email' => $user->email,
+        ], false));
+
+        $this->assertStringContainsString($expectedUrl, $notification->toMail($user)->render());
     }
 
     public function test_reset_email_uses_premium_branded_template(): void
@@ -151,8 +128,8 @@ class ForgotPasswordFlowTest extends TestCase
             'password_confirmation' => 'NewPass#456',
         ]);
 
-        $response->assertRedirect(route('account.dashboard'));
-        $this->assertAuthenticatedAs($user, 'web');
+        $response->assertRedirect(route('password.complete'));
+        $this->assertGuest('web');
 
         $user->refresh();
         $this->assertTrue(Hash::check('NewPass#456', $user->password));

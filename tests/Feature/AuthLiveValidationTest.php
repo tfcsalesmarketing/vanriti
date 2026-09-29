@@ -230,25 +230,41 @@ class AuthLiveValidationTest extends TestCase
             ->assertSee('vrForgotForm');
     }
 
-    public function test_forgot_invalid_email_fails_live(): void
+    public function test_forgot_empty_identifier_fails_live(): void
     {
         $response = $this->postJson(route('auth.validate'), [
             'context' => 'forgot',
-            'email' => 'not-an-email',
+            'identifier' => '',
         ]);
 
         $response->assertStatus(422);
-        $this->assertArrayHasKey('email', $response->json('errors'));
+        $this->assertArrayHasKey('identifier', $response->json('errors'));
     }
 
-    public function test_forgot_valid_email_passes_live(): void
+    public function test_forgot_identifier_passes_live(): void
     {
-        $response = $this->postJson(route('auth.validate'), [
+        $email = $this->postJson(route('auth.validate'), [
             'context' => 'forgot',
-            'email' => 'me@example.com',
+            'identifier' => 'me@example.com',
         ]);
 
-        $response->assertOk()->assertJson(['valid' => true]);
+        $email->assertOk()->assertJson(['valid' => true]);
+
+        $this->postJson(route('auth.validate'), [
+            'context' => 'forgot',
+            'identifier' => '98765 43210',
+        ])->assertOk()->assertJson(['valid' => true]);
+    }
+
+    public function test_setpassword_short_password_fails_live(): void
+    {
+        $response = $this->postJson(route('auth.validate'), [
+            'context' => 'setpassword',
+            'password' => 'abc',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('password', $response->json('errors'));
     }
 
     public function test_reset_short_password_fails_live(): void

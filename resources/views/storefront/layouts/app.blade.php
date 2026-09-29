@@ -94,7 +94,7 @@
          (and the phone flow's OTP confirmation happen inside the query string).
          Analytics containers must never run on those pages, so a token can't
          leak to GTM / Meta as part of the page URL. --}}
-    @unless (request()->routeIs('password.request', 'password.reset'))
+    @unless (request()->routeIs('password.request', 'password.otp.*', 'password.new', 'password.complete', 'password.reset'))
     @if (config('analytics.gtm_container_id'))
         <script nonce="{{ $cspNonce }}">
         (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

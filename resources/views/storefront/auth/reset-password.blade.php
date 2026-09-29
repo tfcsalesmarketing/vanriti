@@ -74,11 +74,12 @@
                     </div>
 
                     <button type="submit" class="btn btn-vr w-100 py-2.5">
-                        Reset Password &amp; Login
+                        Update Password
                     </button>
                 </form>
 
                 <p class="text-center small text-muted mt-4 mb-0">
+                    You'll sign in with your new password on the next screen.<br>
                     <a href="{{ route('login') }}" class="fw-bold vr-link-underline">&larr; Back to login</a>
                 </p>
             </div>

@@ -79,8 +79,8 @@ class OtpPasswordResetTest extends TestCase
             'password_confirmation' => 'NewPass#456',
         ]);
 
-        $response->assertRedirect(route('account.dashboard'));
-        $this->assertAuthenticatedAs($user, 'web');
+        $response->assertRedirect(route('password.complete'));
+        $this->assertGuest('web');
 
         $user->refresh();
         $this->assertTrue(Hash::check('NewPass#456', $user->password));

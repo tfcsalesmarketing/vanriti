@@ -14,24 +14,31 @@
                     </div>
                     <div class="vr-kicker mb-1">RECOVER ACCOUNT</div>
                     <h5 class="fw-bold text-dark mb-1">Forgot Password?</h5>
-                    <p class="vr-auth-subtitle mb-0">Enter your registered email and we'll send you a password reset link.</p>
+                    <p class="vr-auth-subtitle mb-0">
+                        Enter the email address or mobile number on your account and we'll send you a 6-digit code.
+                    </p>
                 </div>
 
                 <form method="POST" action="{{ route('password.email') }}" id="vrForgotForm" novalidate>
                     @csrf
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold" for="forgot_email">Email Address</label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" for="forgot_identifier">Email or Mobile Number</label>
                         <div class="vr-input-wrap">
-                            <input type="email" id="forgot_email" name="email" value="{{ old('email') }}"
-                                   class="form-control" placeholder="e.g. user@domain.com"
-                                   autocomplete="email" autofocus>
-                            <i class="ri-mail-send-line vr-input-icon"></i>
+                            <input type="text" id="forgot_identifier" name="identifier" value="{{ old('identifier') }}"
+                                   class="form-control" placeholder="you@domain.com or 98765 43210"
+                                   autocomplete="username" autofocus>
+                            <i class="ri-at-line vr-input-icon"></i>
                         </div>
                         <div class="invalid-feedback d-block mt-1 small"></div>
                     </div>
 
+                    <p class="small text-muted mb-4">
+                        <i class="ri-information-line me-1"></i>
+                        Mobile numbers receive the code on WhatsApp. Email addresses receive it in your inbox.
+                    </p>
+
                     <button type="submit" class="btn btn-vr w-100 py-2.5">
-                        Send Reset Link
+                        Send Verification Code
                     </button>
                 </form>
 

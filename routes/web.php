@@ -59,7 +59,19 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit')->middleware('throttle:register.per.ip');
     Route::post('/auth/validate', [AuthController::class, 'validateFields'])->name('auth.validate')->middleware('throttle:60,1');
     Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:5,10');
+    Route::post('/forgot-password', [AuthController::class, 'sendPasswordOtp'])->name('password.email')->middleware('throttle:5,10');
+
+    // Password reset: code -> new password -> confirmation. Each step reads its
+    // state from the session, so a guest cannot skip straight to step 3 or
+    // nominate whose password gets changed.
+    Route::get('/forgot-password/verify', [AuthController::class, 'showOtpVerify'])->name('password.otp.verify');
+    Route::post('/forgot-password/verify', [AuthController::class, 'verifyPasswordOtp'])->name('password.otp.check')->middleware('throttle:10,10');
+    Route::get('/forgot-password/new', [AuthController::class, 'showNewPassword'])->name('password.new');
+    Route::post('/forgot-password/new', [AuthController::class, 'updatePassword'])->name('password.update')->middleware('throttle:5,60');
+    Route::get('/forgot-password/complete', [AuthController::class, 'showPasswordComplete'])->name('password.complete');
+
+    // Legacy token link. Still honoured so a reset email that was already in an
+    // inbox keeps working, but nothing new is sent through this path.
     Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.store')->middleware('throttle:5,60');
 });

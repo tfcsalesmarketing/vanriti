@@ -110,7 +110,7 @@
         </div>
         <div class="row g-4 vr-stagger">
             @forelse ($featured as $product)
-                <div class="col-6 col-md-4 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     @include('storefront.partials.product-card', ['product' => $product])
                 </div>
             @empty
@@ -137,7 +137,7 @@
             </div>
             <div class="row g-4 vr-stagger">
                 @foreach ($bestsellers as $product)
-                    <div class="col-6 col-md-4 col-xl-3">
+                    <div class="col-12 col-md-6 col-xl-4">
                         @include('storefront.partials.product-card', ['product' => $product])
                     </div>
                 @endforeach
@@ -158,7 +158,7 @@
             </div>
             <div class="row g-4 vr-stagger">
                 @foreach ($newArrivals as $product)
-                    <div class="col-6 col-md-4 col-xl-3">
+                    <div class="col-12 col-md-6 col-xl-4">
                         @include('storefront.partials.product-card', ['product' => $product])
                     </div>
                 @endforeach

@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Consent\ConsentService;
 use App\Http\Controllers\Controller;
+use App\Models\OtpCode;
 use App\Models\User;
 use App\Notifications\WelcomeNotification;
 use App\Services\CartService;
+use App\Services\EmailOtpService;
+use App\Services\WhatsAppOtpService;
 use App\Services\WishlistService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +30,8 @@ class AuthController extends Controller
         protected CartService $cartService,
         protected WishlistService $wishlistService,
         protected ConsentService $consentService,
+        protected WhatsAppOtpService $whatsapp,
+        protected EmailOtpService $emailOtp,
     ) {}
 
     public function showLogin(): View
@@ -218,7 +223,7 @@ class AuthController extends Controller
 
     public function validateFields(Request $request): JsonResponse
     {
-        $context = in_array($request->input('context'), ['register', 'forgot', 'reset'], true)
+        $context = in_array($request->input('context'), ['register', 'forgot', 'reset', 'setpassword'], true)
             ? $request->input('context')
             : 'login';
         $rules = $this->rulesFor(context: $context, request: $request);
@@ -298,7 +303,21 @@ class AuthController extends Controller
 
         if ($context === 'forgot') {
             return [
-                'email' => ['required', 'email'],
+                'identifier' => ['required', 'string', 'max:255'],
+            ];
+        }
+
+        // The OTP flow's final step: the account was already resolved by the
+        // verified code, so only the two password fields are present.
+        if ($context === 'setpassword') {
+            $password = ['required', $this->passwordRule()];
+            if ($request->exists('password') && $request->exists('password_confirmation')) {
+                $password[] = 'confirmed';
+            }
+
+            return [
+                'password' => $password,
+                'password_confirmation' => ['required', 'same:password'],
             ];
         }
 
@@ -338,6 +357,7 @@ class AuthController extends Controller
     {
         return [
             'login.required' => 'Please enter your email or mobile number.',
+            'identifier.required' => 'Please enter your email address or mobile number.',
             'email.required' => 'Please enter your email address.',
             'email.email' => 'Please enter a valid email address.',
             'email.unique' => 'This email is already registered.',
@@ -379,29 +399,193 @@ class AuthController extends Controller
         return view('storefront.auth.forgot-password');
     }
 
-    public function sendResetLink(Request $request): RedirectResponse
+    /**
+     * Step 1 — resolve an email address or mobile number and dispatch a 6-digit
+     * code. A mobile number is messaged over WhatsApp; an email address gets a
+     * code by mail. If WhatsApp is switched off (or unconfigured) the code is
+     * sent to the account's email address instead.
+     *
+     * The response is identical for a known and an unknown identifier, so this
+     * step cannot be used to discover which addresses or numbers are
+     * registered. The one exception is a genuine delivery failure, which is
+     * surfaced because a silently stuck customer is worse than the small
+     * amount of account-existence it reveals — and the register flow already
+     * discloses duplicate numbers and emails.
+     */
+    public function sendPasswordOtp(Request $request): RedirectResponse
     {
-        $request->merge(['email' => Str::lower(trim($request->string('email')->toString()))]);
-        $request->validate(['email' => ['required', 'email']], $this->messages());
+        $data = $request->validate([
+            'identifier' => ['required', 'string', 'max:255'],
+        ], [
+            'identifier.required' => 'Please enter your email address or mobile number.',
+        ]);
 
-        try {
-            $status = Password::broker('users')->sendResetLink($request->only('email'));
-        } catch (\Throwable $e) {
-            Log::warning('Password reset email could not be delivered.', [
-                'email' => $request->string('email')->toString(),
-                'error' => $e->getMessage(),
-            ]);
-            $status = null;
+        $raw = trim($data['identifier']);
+        $looksLikeEmail = Str::contains($raw, '@');
+
+        if ($looksLikeEmail) {
+            $identifier = Str::lower($raw);
+            $valid = filter_var($identifier, FILTER_VALIDATE_EMAIL) !== false;
+        } else {
+            $identifier = canonical_phone($raw) ?? '';
+            $valid = $identifier !== '';
         }
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            Log::info('Password reset requested for an unknown or throttled email address.', [
-                'email' => $request->string('email')->toString(),
-                'status' => $status,
-            ]);
+        if (! $valid) {
+            return back()
+                ->withErrors(['identifier' => 'Please enter a valid email address or 10-digit mobile number.'])
+                ->withInput();
         }
 
-        return back()->with('success', __('We have emailed your password reset link.'));
+        $user = $looksLikeEmail
+            ? User::query()->where('email', $identifier)->first()
+            : user_by_phone($identifier);
+
+        $channel = $looksLikeEmail ? 'email' : 'whatsapp';
+        $message = $looksLikeEmail
+            ? 'We sent a 6-digit code to your email address.'
+            : 'We sent a 6-digit code to your WhatsApp.';
+
+        // WhatsApp cannot reach a phone-only account while the channel is off,
+        // so fall back to the inbox when the account has one.
+        if ($user && $channel === 'whatsapp' && ! $this->whatsapp->isEnabled() && ! empty($user->email)) {
+            $channel = 'email';
+            $identifier = Str::lower((string) $user->email);
+            $message = 'WhatsApp verification is unavailable right now, so we sent a 6-digit code to your email address instead.';
+        }
+
+        if ($user) {
+            $sent = $channel === 'email'
+                ? $this->emailOtp->sendOtp($identifier, 'reset_password')
+                : $this->whatsapp->sendOtp($identifier, 'reset_password');
+
+            if (($sent['result'] ?? '0') !== '1') {
+                Log::warning('Password reset code could not be dispatched.', [
+                    'channel' => $channel,
+                    'error' => $sent['message'] ?? 'unknown',
+                ]);
+
+                return back()->with('error', __('We could not send a verification code right now. Please try again in a moment.'));
+            }
+        }
+
+        $request->session()->put('password_reset', [
+            'identifier' => $identifier,
+            'channel' => $channel,
+        ]);
+
+        return redirect()->route('password.otp.verify')->with('success', $message);
+    }
+
+    /** Step 2 — ask for the 6-digit code that was just dispatched. */
+    public function showOtpVerify(): View|RedirectResponse
+    {
+        $pending = $this->pendingReset();
+
+        if ($pending === null) {
+            return redirect()->route('password.request');
+        }
+
+        return view('storefront.auth.verify-otp', ['channel' => $pending['channel']]);
+    }
+
+    /** Step 2 submit — burn the code and unlock the new-password step. */
+    public function verifyPasswordOtp(Request $request): RedirectResponse
+    {
+        $pending = $this->pendingReset();
+
+        if ($pending === null) {
+            return redirect()->route('password.request');
+        }
+
+        $data = $request->validate([
+            'code' => ['required', 'digits:6'],
+        ], [
+            'code.required' => 'Please enter the 6-digit code we sent you.',
+            'code.digits' => 'The code must be exactly 6 digits.',
+        ]);
+
+        $result = $pending['channel'] === 'whatsapp'
+            ? $this->whatsapp->verifyOtp($pending['identifier'], $data['code'], 'reset_password')
+            : $this->emailOtp->verifyOtp($pending['identifier'], $data['code'], 'reset_password');
+
+        if (($result['result'] ?? '0') !== '1') {
+            // One message for every failure mode. A wrong code, a burnt code,
+            // an expired code and "no code was ever sent because the account
+            // does not exist" must be indistinguishable, otherwise this step
+            // enumerates accounts.
+            return back()
+                ->withErrors(['code' => 'That code is not valid or has expired. Please request a new one.'])
+                ->withInput();
+        }
+
+        $user = $pending['channel'] === 'email'
+            ? User::query()->where('email', $pending['identifier'])->first()
+            : user_by_phone($pending['identifier']);
+
+        if (! $user || $user->status !== 'active') {
+            $request->session()->forget('password_reset');
+
+            return redirect()->route('password.request')
+                ->withErrors(['identifier' => __('We can\'t reset the password for that account.')]);
+        }
+
+        $request->session()->put('password_reset.user_id', $user->id);
+
+        return redirect()->route('password.new');
+    }
+
+    /** Step 3 — new password + confirmation, shown only after a verified code. */
+    public function showNewPassword(): View|RedirectResponse
+    {
+        if ($this->verifiedResetUserId() === null) {
+            return redirect()->route('password.request');
+        }
+
+        return view('storefront.auth.new-password');
+    }
+
+    /** Step 3 submit — store the new password. Deliberately does not log in. */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        if ($this->verifiedResetUserId() === null) {
+            return redirect()->route('password.request');
+        }
+
+        $data = $request->validate([
+            'password' => ['required', 'confirmed', $this->passwordRule()],
+            'password_confirmation' => ['required', 'same:password'],
+        ], $this->messages());
+
+        $user = User::query()->find($this->verifiedResetUserId());
+
+        if (! $user || $user->status !== 'active') {
+            $request->session()->forget('password_reset');
+
+            return redirect()->route('password.request')
+                ->withErrors(['identifier' => __('We can\'t reset the password for that account.')]);
+        }
+
+        $user->forceFill(['password' => Hash::make($data['password'])])->save();
+        $user->setRememberToken(Str::random(60));
+        event(new PasswordReset($user));
+
+        $this->invalidateResetArtifacts($user);
+
+        // No auth('web')->login() here on purpose: changing a password must
+        // never hand out a session. The customer signs in with the new
+        // password on the login page like any other customer.
+        return $this->passwordChanged($request);
+    }
+
+    /** Step 4 — "password changed" confirmation with a way back to login. */
+    public function showPasswordComplete(Request $request): View|RedirectResponse
+    {
+        if (! $request->session()->pull('password_changed', false)) {
+            return redirect()->route('login');
+        }
+
+        return view('storefront.auth.password-changed');
     }
 
     public function showReset(string $token): View
@@ -453,12 +637,9 @@ class AuthController extends Controller
             $repository->delete($user);
 
             $this->rememberCanonicalPhone($user, $phone);
+            $this->invalidateResetArtifacts($user);
 
-            auth('web')->login($user);
-            $request->session()->regenerate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('account.dashboard')->with('success', __('Your password has been reset.'));
+            return $this->passwordChanged($request);
         }
 
         $request->merge(['email' => Str::lower(trim($request->string('email')->toString()))]);
@@ -481,14 +662,11 @@ class AuthController extends Controller
                 $user->forceFill(['password' => Hash::make($password)])->save();
                 $user->setRememberToken(Str::random(60));
                 event(new PasswordReset($user));
-                auth('web')->login($user);
-                $request->session()->regenerate();
-                $request->session()->regenerateToken();
             }
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('account.dashboard')->with('success', __('Your password has been reset.'))
+            ? $this->passwordChanged($request)
             : back()->withErrors(['email' => __($status)]);
     }
 
@@ -511,5 +689,72 @@ class AuthController extends Controller
         }
 
         $user->forceFill(['phone' => $canonical])->save();
+    }
+
+    /**
+     * The in-flight reset: where the code was sent and over which channel.
+     *
+     * @return array{identifier: string, channel: string}|null
+     */
+    protected function pendingReset(): ?array
+    {
+        $pending = session('password_reset');
+
+        if (! is_array($pending) || empty($pending['identifier']) || empty($pending['channel'])) {
+            return null;
+        }
+
+        return $pending;
+    }
+
+    /**
+     * The account unlocked by a verified code, if any. Read from the session
+     * only — never from request input — so a visitor cannot nominate whose
+     * password gets changed.
+     */
+    protected function verifiedResetUserId(): ?int
+    {
+        $id = session('password_reset.user_id');
+
+        return is_numeric($id) ? (int) $id : null;
+    }
+
+    /**
+     * Burn every outstanding reset artefact for the account: the broker's reset
+     * links plus any reset code that is still live. Without this a link or code
+     * dispatched a moment before the change could still be replayed.
+     */
+    protected function invalidateResetArtifacts(User $user): void
+    {
+        Password::broker('users')->getRepository()->delete($user);
+
+        $codes = OtpCode::query()
+            ->where('purpose', 'reset_password')
+            ->whereNull('used_at')
+            ->where(function ($query) use ($user) {
+                if (! empty($user->phone)) {
+                    $query->orWhere('phone', $user->phone);
+                }
+
+                if (! empty($user->email)) {
+                    $query->orWhere('email', $user->email);
+                }
+            });
+
+        foreach ($codes->get() as $code) {
+            $code->update(['used_at' => now()]);
+        }
+    }
+
+    /**
+     * Clear the reset state and hand the guest to the confirmation page.
+     * The caller is responsible for having already saved the new password.
+     */
+    protected function passwordChanged(Request $request): RedirectResponse
+    {
+        $request->session()->forget('password_reset');
+        $request->session()->flash('password_changed', true);
+
+        return redirect()->route('password.complete');
     }
 }
