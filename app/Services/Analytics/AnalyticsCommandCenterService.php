@@ -7,6 +7,7 @@ use App\Models\User;
 use Closure;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AnalyticsCommandCenterService
 {
-    public const VERSION = '18';
+    public const VERSION = '19';
 
     protected const CACHE_TTL = 300;
 
@@ -152,6 +153,7 @@ class AnalyticsCommandCenterService
         $executive = $this->section('executive', fn () => $this->executive($bounds), $this->emptyExecutive());
         $revenue = $this->section('revenue', fn () => $this->revenue($bounds), $this->emptyRevenue());
         $funnel = $this->section('funnel', fn () => $this->funnel($bounds), $this->emptyFunnel());
+        $visitors = $this->section('visitors', fn () => $this->visitors($bounds), $this->emptyVisitors());
         $dadi = $this->section('dadi', fn () => $this->dadi($bounds), $this->emptyDadi());
         $products = $this->section('products', fn () => $this->products($bounds), $this->emptyProducts());
         $tracking = $this->section('tracking', fn () => $this->tracking($bounds, $executive), $this->emptyTracking());
@@ -172,6 +174,7 @@ class AnalyticsCommandCenterService
             'executive' => $executive,
             'revenue' => $revenue,
             'funnel' => $funnel,
+            'visitors' => $visitors,
             'dadi' => $dadi,
             'products' => $products,
             'tracking' => $tracking,
@@ -408,6 +411,148 @@ class AnalyticsCommandCenterService
     }
 
     /**
+     * Persistent anonymous visitor aggregation, counted from page_view events
+     * that carry a visitor_id.
+     *
+     *   Website Visitors = distinct visitor_id with a page_view in the period.
+     *   Sessions         = distinct session_id with a page_view in the period.
+     *   New Visitors     = visitors whose earliest-ever page_view falls inside
+     *                      the period.
+     *   Returning        = active visitors whose earliest-ever page_view is
+     *                      before the period started.
+     *
+     * The new/returning split is deliberately historical: the first-seen
+     * lookup is not bounded by the period start, so a visitor first seen in
+     * August and active in September is counted as returning. Without that
+     * lookback every visitor would look new on the first day of any window.
+     *
+     * Counts are aggregate measurements only. visitor_id is a random anonymous
+     * UUID: no PII, and it is never sent to Meta, GA4 or Google Ads.
+     */
+    protected function visitors(array $bounds): array
+    {
+        $sessions = $this->visitorPageViews()
+            ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']])
+            ->distinct()
+            ->count('session_id');
+
+        $firstSeen = $this->visitorFirstSeen($bounds);
+
+        $unique = $firstSeen->count();
+        $new = 0;
+        $newByDate = [];
+
+        foreach ($firstSeen as $firstSeenAt) {
+            $at = Carbon::parse($firstSeenAt);
+
+            if ($at->gte($bounds['from'])) {
+                $new++;
+                $date = $at->toDateString();
+                $newByDate[$date] = ($newByDate[$date] ?? 0) + 1;
+            }
+        }
+
+        $returning = $unique - $new;
+
+        return [
+            'unique' => $unique,
+            'new' => $new,
+            'returning' => $returning,
+            'sessions' => $sessions,
+            'new_rate' => $unique > 0 ? round(($new / $unique) * 100, 1) : null,
+            'returning_rate' => $unique > 0 ? round(($returning / $unique) * 100, 1) : null,
+            'tracked' => $unique > 0,
+            'series' => $this->visitorSeries($bounds, $newByDate),
+        ];
+    }
+
+    /**
+     * page_view rows that carry a usable visitor identity. Rows without one are
+     * pre-migration history or server-side events and are simply skipped.
+     */
+    protected function visitorPageViews(): Builder
+    {
+        return DB::table('analytics_events')
+            ->where('event_type', AnalyticsEvent::PAGE_VIEW)
+            ->whereNotNull('visitor_id')
+            ->where('visitor_id', '!=', '');
+    }
+
+    /**
+     * Earliest-ever page_view timestamp for every visitor active in the period.
+     *
+     * The period filter appears only inside the subquery, never in the outer
+     * aggregation — that is what makes the classification historical rather
+     * than period-relative. The candidate set stays a subquery so it is never
+     * materialised in PHP, and the (visitor_id, occurred_at) index serves both
+     * the range scan and the MIN() grouping.
+     *
+     * @return Collection<int, string>
+     */
+    protected function visitorFirstSeen(array $bounds)
+    {
+        return DB::table('analytics_events as e')
+            ->where('e.event_type', AnalyticsEvent::PAGE_VIEW)
+            ->whereNotNull('e.visitor_id')
+            ->where('e.visitor_id', '!=', '')
+            ->whereIn('e.visitor_id', function ($query) use ($bounds) {
+                $query->select('visitor_id')
+                    ->from('analytics_events')
+                    ->where('event_type', AnalyticsEvent::PAGE_VIEW)
+                    ->whereNotNull('visitor_id')
+                    ->where('visitor_id', '!=', '')
+                    ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']])
+                    ->groupBy('visitor_id');
+            })
+            ->groupBy('e.visitor_id')
+            ->select(DB::raw('MIN(e.occurred_at) as first_seen'))
+            ->get()
+            ->pluck('first_seen');
+    }
+
+    /**
+     * Per-day visitor series, gap-filled across the period like revenue/orders.
+     *
+     * A visitor is counted at most once per day (COUNT DISTINCT), and is "new"
+     * only on the single day of their earliest-ever page_view — so daily new
+     * plus daily returning always reconciles with daily visitors.
+     *
+     * @param  array<string, int>  $newByDate
+     * @return list<array{date: string, visitors: int, new: int, returning: int}>
+     */
+    protected function visitorSeries(array $bounds, array $newByDate): array
+    {
+        $perDay = $this->visitorPageViews()
+            ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']])
+            ->select(DB::raw('DATE(occurred_at) as date'), DB::raw('COUNT(DISTINCT visitor_id) as visitors'))
+            ->groupBy(DB::raw('DATE(occurred_at)'))
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->date => (int) $row->visitors])
+            ->all();
+
+        $series = [];
+        $cursor = $bounds['from']->copy()->startOfDay();
+        $end = $bounds['to']->copy()->startOfDay();
+
+        while ($cursor->lte($end)) {
+            $date = $cursor->toDateString();
+            $visitors = $perDay[$date] ?? 0;
+            $new = $newByDate[$date] ?? 0;
+
+            $series[] = [
+                'date' => $date,
+                'visitors' => $visitors,
+                'new' => $new,
+                'returning' => max(0, $visitors - $new),
+            ];
+
+            $cursor->addDay();
+        }
+
+        return $series;
+    }
+
+    /**
      * Internal business "Payment Started" metric: distinct qualifying orders
      * that have at least one payments record created during the period. This
      * deliberately measures qualifying payment activity, not a GA4/Meta
@@ -429,8 +574,10 @@ class AnalyticsCommandCenterService
 
     /**
      * Traffic acquisition breakdown from page_view events: source, medium,
-     * campaign, landing path and device type. Each row reports page views and
-     * the distinct sessions that produced them.
+     * campaign, landing path and device type. Each row reports page views, the
+     * distinct sessions that produced them and the distinct visitors behind
+     * those sessions. Attribution exists only on page_view, so it is never
+     * inferred for other event types.
      */
     protected function traffic(array $bounds): array
     {
@@ -438,20 +585,29 @@ class AnalyticsCommandCenterService
             ->where('e.event_type', AnalyticsEvent::PAGE_VIEW)
             ->whereBetween('e.occurred_at', [$bounds['from'], $bounds['to']]);
 
-        $grouped = function (string $column) use ($base) {
+        $metrics = [
+            DB::raw('COUNT(*) as views'),
+            DB::raw('COUNT(DISTINCT e.session_id) as sessions'),
+            DB::raw('COUNT(DISTINCT e.visitor_id) as visitors'),
+        ];
+
+        $map = fn ($row) => [
+            'label' => $row->label,
+            'views' => (int) $row->views,
+            'sessions' => (int) $row->sessions,
+            'visitors' => (int) $row->visitors,
+        ];
+
+        $grouped = function (string $column) use ($base, $metrics, $map) {
             return (clone $base)
-                ->select($column.' as label', DB::raw('COUNT(*) as views'), DB::raw('COUNT(DISTINCT e.session_id) as sessions'))
+                ->select($column.' as label', ...$metrics)
                 ->whereNotNull($column)
                 ->where($column, '!=', '')
                 ->groupBy($column)
                 ->orderByDesc('views')
                 ->limit(10)
                 ->get()
-                ->map(fn ($row) => [
-                    'label' => $row->label,
-                    'views' => (int) $row->views,
-                    'sessions' => (int) $row->sessions,
-                ])
+                ->map($map)
                 ->values()
                 ->all();
         };
@@ -464,17 +620,12 @@ class AnalyticsCommandCenterService
             'by_device' => (clone $base)
                 ->select(
                     DB::raw('COALESCE(NULLIF(e.device_type, \'\'), \'unknown\') as label'),
-                    DB::raw('COUNT(*) as views'),
-                    DB::raw('COUNT(DISTINCT e.session_id) as sessions')
+                    ...$metrics
                 )
                 ->groupBy('device_type')
                 ->orderByDesc('views')
                 ->get()
-                ->map(fn ($row) => [
-                    'label' => $row->label,
-                    'views' => (int) $row->views,
-                    'sessions' => (int) $row->sessions,
-                ])
+                ->map($map)
                 ->values()
                 ->all(),
         ];
@@ -499,6 +650,7 @@ class AnalyticsCommandCenterService
             'days' => $days,
             'executive' => $this->executive($prev),
             'events' => $this->events($prev),
+            'visitors' => $this->visitors($prev),
             'payment_started' => $this->paymentStarted($prev),
         ];
     }
@@ -731,6 +883,44 @@ class AnalyticsCommandCenterService
         $lastServerEventRaw = max($lastEvent, $lastConversion);
         $lastServerEvent = $lastServerEventRaw === '' ? null : Carbon::parse($lastServerEventRaw);
 
+        $recorderTotal = array_sum($recorderByType);
+
+        /*
+         * Visitor identity diagnostics.
+         *
+         * All-time on purpose: the point is to show how much of the stored
+         * history carries an identity, which is what bounds the New/Returning
+         * classification. Counts only — a raw visitor_id is never surfaced in
+         * the dashboard, its payloads, or its HTML.
+         */
+        $visitorEvents = DB::table('analytics_events')
+            ->whereNotNull('visitor_id')
+            ->where('visitor_id', '!=', '');
+
+        $visitorWithId = (clone $visitorEvents)->count();
+        $visitorDistinct = (clone $visitorEvents)->distinct()->count('visitor_id');
+        $visitorWithoutId = max(0, DB::table('analytics_events')->count() - $visitorWithId);
+        $visitorFirstEvent = (string) (clone $visitorEvents)->min('occurred_at');
+        $visitorLastEvent = (string) (clone $visitorEvents)->max('occurred_at');
+
+        // distinct sessions / visitors that produced a page_view, for cross-check.
+        $visitorSessions = $this->visitorPageViews()->distinct()->count('session_id');
+        $visitorPageViewed = $this->visitorPageViews()->distinct()->count('visitor_id');
+
+        $visitorStatus = match (true) {
+            $visitorWithId === 0 => 'inactive',
+            $visitorWithoutId > 0 => 'limited',
+            default => 'active',
+        };
+
+        $visitorSince = $visitorFirstEvent === '' ? null : Carbon::parse($visitorFirstEvent);
+
+        $visitorCoverageNote = $visitorSince === null
+            ? 'No visitor-identified events have been recorded yet, so unique, new and returning visitors cannot be reported.'
+            : 'New/Returning visitor classification is based on first-party analytics data available since visitor tracking was enabled ('
+                .$visitorSince->toFormattedDateString()
+                .'). Visitors active before tracking was enabled cannot be identified and are not counted.';
+
         return [
             'currency' => self::CURRENCY,
             'gtm_configured' => $gtmConfigured,
@@ -755,9 +945,18 @@ class AnalyticsCommandCenterService
             'ledger_by_state' => $ledgerByState,
             'ledger_failures_7d' => $ledgerFailed,
             'recorder_by_type' => $recorderByType,
-            'recorder_total' => array_sum($recorderByType),
+            'recorder_total' => $recorderTotal,
             'recorder_first_event' => $firstEvent === '' ? null : Carbon::parse($firstEvent),
             'recorder_last_event' => $lastEvent === '' ? null : Carbon::parse($lastEvent),
+            'visitor_events_with_id' => $visitorWithId,
+            'visitor_events_without_id' => $visitorWithoutId,
+            'visitor_unique_all_time' => $visitorDistinct,
+            'visitor_page_viewed_unique' => $visitorPageViewed,
+            'visitor_sessions' => $visitorSessions,
+            'visitor_first_event' => $visitorSince,
+            'visitor_last_event' => $visitorLastEvent === '' ? null : Carbon::parse($visitorLastEvent),
+            'visitor_status' => $visitorStatus,
+            'visitor_coverage_note' => $visitorCoverageNote,
             'last_server_event' => $lastServerEvent,
             'add_payment_info_events' => (int) ($recorderByType[AnalyticsEvent::ADD_PAYMENT_INFO] ?? 0),
             'payment_started' => $this->paymentStarted($bounds),
@@ -1175,6 +1374,20 @@ class AnalyticsCommandCenterService
         ];
     }
 
+    protected function emptyVisitors(): array
+    {
+        return [
+            'unique' => 0,
+            'new' => 0,
+            'returning' => 0,
+            'sessions' => 0,
+            'new_rate' => null,
+            'returning_rate' => null,
+            'tracked' => false,
+            'series' => [],
+        ];
+    }
+
     protected function emptyTracking(): array
     {
         return [
@@ -1212,6 +1425,15 @@ class AnalyticsCommandCenterService
             'recorder_total' => 0,
             'recorder_first_event' => null,
             'recorder_last_event' => null,
+            'visitor_events_with_id' => 0,
+            'visitor_events_without_id' => 0,
+            'visitor_unique_all_time' => 0,
+            'visitor_page_viewed_unique' => 0,
+            'visitor_sessions' => 0,
+            'visitor_first_event' => null,
+            'visitor_last_event' => null,
+            'visitor_status' => 'inactive',
+            'visitor_coverage_note' => 'No visitor-identified events have been recorded yet, so unique, new and returning visitors cannot be reported.',
             'last_server_event' => null,
             'add_payment_info_events' => 0,
             'payment_started' => 0,
@@ -1249,6 +1471,7 @@ class AnalyticsCommandCenterService
             'days' => 0,
             'executive' => $this->emptyExecutive(),
             'events' => $this->emptyEvents(),
+            'visitors' => $this->emptyVisitors(),
             'payment_started' => 0,
         ];
     }

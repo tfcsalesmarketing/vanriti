@@ -24,15 +24,7 @@
         $_canonicalOverride = trim((string) $__env->yieldContent('canonical'));
         $_canonical = canonical_url($_canonicalOverride !== '' ? $_canonicalOverride : null);
         $_ogImage = trim((string) $__env->yieldContent('og_image'));
-        $_brandLogo = setting('store_logo');
-        if (! $_brandLogo) {
-            foreach (['svg', 'png', 'webp', 'jpg', 'ico'] as $_ext) {
-                if (file_exists(public_path('images/logo.' . $_ext))) {
-                    $_brandLogo = 'images/logo.' . $_ext;
-                    break;
-                }
-            }
-        }
+        $_brandLogo = brand_logo_path();
         if ($_ogImage === '') {
             $_ogImage = image_url($_brandLogo, 'favicon.ico');
         }
@@ -57,8 +49,8 @@
     <meta name="twitter:description" content="@yield('og_description', setting('meta_description'))">
     <meta name="twitter:image" content="{{ $_ogImage }}">
     <meta name="theme-color" content="#263D25">
-    <link rel="icon" href="{{ image_url($_brandLogo, 'favicon.ico') }}" sizes="any">
-    <link rel="apple-touch-icon" href="{{ image_url($_brandLogo, 'favicon.ico') }}">
+    <link rel="icon" href="{{ brand_favicon_url() }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ brand_favicon_url() }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

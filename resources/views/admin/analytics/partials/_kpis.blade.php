@@ -2,12 +2,21 @@
     $events = $report['events'] ?? [];
     $compare = $report['compare'] ?? [];
     $prevEvents = $compare['events'] ?? [];
+
+    // Persistent anonymous visitor metrics (report.visitors). Deliberately
+    // separate from $events['visitors'], which is the pre-existing distinct
+    // *session* count and stays the conversion-rate denominator.
+    $visitorReport = $report['visitors'] ?? [];
+    $prevVisitorReport = $compare['visitors'] ?? [];
+
     $visitors = (int) ($events['visitors'] ?? 0);
     $purchases = (int) ($report['executive']['orders'] ?? 0);
     $prevVisitors = (int) ($prevEvents['visitors'] ?? 0);
     $prevPurchases = (int) ($compare['executive']['orders'] ?? 0);
     $cr = $visitors > 0 ? ($purchases / $visitors) * 100 : null;
     $prevCr = $prevVisitors > 0 ? ($prevPurchases / $prevVisitors) * 100 : null;
+
+    $coverageNote = $report['tracking']['visitor_coverage_note'] ?? '';
 
     $pct = function ($current, $previous) {
         $cur = (float) $current;
@@ -24,13 +33,49 @@
 
     $kpis = [
         [
-            'label' => 'Website Visitors / Unique Sessions',
+            'label' => 'Website Visitors',
+            'value' => number_format((int) ($visitorReport['unique'] ?? 0)),
+            'current' => (int) ($visitorReport['unique'] ?? 0),
+            'prev' => (int) ($prevVisitorReport['unique'] ?? 0),
+            'icon' => 'bi-people-fill',
+            'tone' => 'primary',
+            'title' => 'Distinct anonymous visitors (first-party visitor_id) with a page_view in the period. One visitor is counted once per period regardless of session or page count. '.$coverageNote,
+        ],
+        [
+            'label' => 'New Visitors',
+            'value' => number_format((int) ($visitorReport['new'] ?? 0)),
+            'current' => (int) ($visitorReport['new'] ?? 0),
+            'prev' => (int) ($prevVisitorReport['new'] ?? 0),
+            'icon' => 'bi-person-plus-fill',
+            'tone' => 'primary',
+            'title' => 'Visitors whose first-ever recorded page_view falls inside the period. '.$coverageNote,
+        ],
+        [
+            'label' => 'Returning Visitors',
+            'value' => number_format((int) ($visitorReport['returning'] ?? 0)),
+            'current' => (int) ($visitorReport['returning'] ?? 0),
+            'prev' => (int) ($prevVisitorReport['returning'] ?? 0),
+            'icon' => 'bi-person-check-fill',
+            'tone' => 'primary',
+            'title' => 'Visitors active in the period whose first-ever recorded page_view was before the period started. '.$coverageNote,
+        ],
+        [
+            'label' => 'Sessions',
+            'value' => number_format((int) ($visitorReport['sessions'] ?? 0)),
+            'current' => (int) ($visitorReport['sessions'] ?? 0),
+            'prev' => (int) ($prevVisitorReport['sessions'] ?? 0),
+            'icon' => 'bi-clock-history',
+            'tone' => 'primary',
+            'title' => 'Distinct browser sessions that produced a visitor-identified page_view in the period. Sessions are shorter-lived than visitors, so Sessions is normally higher than Website Visitors.',
+        ],
+        [
+            'label' => 'Unique Sessions (all)',
             'value' => number_format($visitors),
             'current' => $visitors,
             'prev' => $prevVisitors,
-            'icon' => 'bi-people-fill',
-            'tone' => 'primary',
-            'title' => 'Distinct hashed session IDs observed via page_view in the period. Unique sessions, not unique people; bot traffic is excluded.',
+            'icon' => 'bi-hash',
+            'tone' => 'info',
+            'title' => 'Distinct hashed session IDs observed via page_view in the period, including sessions recorded before visitor tracking existed. Historical measure - use Website Visitors above for visitor-based reporting. Bot traffic is excluded.',
         ],
         [
             'label' => 'Page Views',
@@ -102,7 +147,7 @@
             'prev' => $prevCr,
             'icon' => 'bi-graph-up-arrow',
             'tone' => 'success',
-            'title' => 'Qualifying purchases ÷ Website Visitors.',
+            'title' => 'Qualifying purchases ÷ Unique Sessions. Denominator is the session-based historical measure, not Website Visitors, so this KPI is unchanged from previous reporting.',
         ],
         [
             'label' => 'Avg Order Value',

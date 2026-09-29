@@ -19,14 +19,18 @@ use Illuminate\Support\Facades\Log;
  * recording never throws, never fails a request, and never renders to HTML.
  *
  * Identity is a salted HMAC of the Laravel session id; no customer PII is ever
- * stored. Only page_view carries acquisition context (UTM / referrer / device /
- * landing path). Order, revenue and payment truth remains in the application
- * database — this is measurement, not the source of truth.
+ * stored. Each event also carries the persistent anonymous visitor_id (see
+ * {@see VisitorIdentity}) so the dashboard can count unique/new/returning
+ * visitors, which a per-session identifier cannot express. Only page_view
+ * carries acquisition context (UTM / referrer / device / landing path). Order,
+ * revenue and payment truth remains in the application database — this is
+ * measurement, not the source of truth.
  */
 class AnalyticsEventRecorder
 {
     public function __construct(
         protected EcommerceDataService $ecommerce,
+        protected VisitorIdentity $visitor,
     ) {}
 
     /**
@@ -66,7 +70,7 @@ class AnalyticsEventRecorder
                 'path' => $path,
                 'method' => $request->method(),
             ],
-        ]);
+        ], $request);
     }
 
     /**
@@ -164,12 +168,13 @@ class AnalyticsEventRecorder
         }
     }
 
-    protected function record(string $eventType, array $attributes): void
+    protected function record(string $eventType, array $attributes, ?Request $request = null): void
     {
         try {
             AnalyticsEvent::create(array_merge([
                 'event_type' => $eventType,
                 'session_id' => self::sessionId(),
+                'visitor_id' => $this->visitorId($request),
                 'user_id' => auth('web')->id(),
                 'source' => null,
                 'medium' => null,
@@ -192,6 +197,21 @@ class AnalyticsEventRecorder
         $id = session()->getId() ?: 'no-session';
 
         return hash_hmac('sha256', 'analytics-session:'.$id, (string) config('app.key'));
+    }
+
+    /**
+     * Persistent anonymous visitor id, or null when one cannot be resolved
+     * (no browser request, rejected cookie, storage failure). A missing
+     * visitor_id is legitimate and must never fail the commerce operation that
+     * triggered the event.
+     */
+    protected function visitorId(?Request $request = null): ?string
+    {
+        try {
+            return $this->visitor->resolve($request);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     protected function itemSku(array $item): ?string

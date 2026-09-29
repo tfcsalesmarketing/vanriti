@@ -1,8 +1,10 @@
 @php
     $events = $report['events'] ?? [];
     $traffic = $report['traffic'] ?? [];
+    $visitorReport = $report['visitors'] ?? [];
     $totalViews = (int) ($events['page_views'] ?? 0);
     $totalSessions = (int) ($events['visitors'] ?? 0);
+    $totalVisitors = (int) ($visitorReport['unique'] ?? 0);
 
     $groups = [
         'by_source' => 'Acquisition by Source',
@@ -15,6 +17,7 @@
             'label' => $item['label'] ?? '(unknown)',
             'views' => (int) ($item['views'] ?? 0),
             'sessions' => (int) ($item['sessions'] ?? 0),
+            'visitors' => (int) ($item['visitors'] ?? 0),
         ])->sortByDesc('views')->values();
     };
 @endphp
@@ -41,6 +44,7 @@
                                         <th scope="col">Value</th>
                                         <th scope="col" class="text-end">Views</th>
                                         <th scope="col" class="text-end">Sessions</th>
+                                        <th scope="col" class="text-end">Visitors</th>
                                         <th scope="col" style="min-width:120px;">Share</th>
                                     </tr>
                                 </thead>
@@ -49,6 +53,7 @@
                                         <td class="fw-semibold">All / (total)</td>
                                         <td class="text-end fw-semibold">{{ number_format($totalViews) }}</td>
                                         <td class="text-end fw-semibold">{{ number_format($totalSessions) }}</td>
+                                        <td class="text-end fw-semibold">{{ number_format($totalVisitors) }}</td>
                                         <td></td>
                                     </tr>
                                     @foreach ($rows($key) as $row)
@@ -59,6 +64,7 @@
                                             <td>{{ $row['label'] }}</td>
                                             <td class="text-end">{{ number_format($row['views']) }}</td>
                                             <td class="text-end">{{ number_format($row['sessions']) }}</td>
+                                            <td class="text-end">{{ number_format($row['visitors']) }}</td>
                                             <td>
                                                 <div class="progress" style="height:6px;">
                                                     <div class="progress-bar bg-info" style="width: {{ $share }}%"></div>
@@ -95,6 +101,7 @@
                             <th scope="col">Device</th>
                             <th scope="col" class="text-end">Views</th>
                             <th scope="col" class="text-end">Sessions</th>
+                            <th scope="col" class="text-end">Visitors</th>
                             <th scope="col" style="min-width:120px;">Share</th>
                         </tr>
                     </thead>
@@ -105,6 +112,7 @@
                                 <td class="fw-medium">{{ ucfirst($row['label'] ?? 'unknown') }}</td>
                                 <td class="text-end">{{ number_format((int) ($row['views'] ?? 0)) }}</td>
                                 <td class="text-end">{{ number_format((int) ($row['sessions'] ?? 0)) }}</td>
+                                <td class="text-end">{{ number_format((int) ($row['visitors'] ?? 0)) }}</td>
                                 <td>
                                     <div class="progress" style="height:6px;">
                                         <div class="progress-bar bg-secondary" style="width: {{ $share }}%"></div>

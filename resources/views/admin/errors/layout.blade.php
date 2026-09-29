@@ -1,17 +1,13 @@
 @php
     $_adErrBrand = 'VANRITI ADMIN';
     $_adErrLogo = null;
+    // Resolved inside the try/catch and defaulted up front: this layout renders
+    // during failures, and a database outage is a likely reason we are here.
+    $_adErrFavicon = asset('favicon.ico');
     try {
         $_adErrBrand = strtoupper((string) store_name()) . ' ADMIN';
-        $_adErrLogo = setting('store_logo');
-        if (! $_adErrLogo) {
-            foreach (['svg', 'png', 'webp', 'jpg'] as $ext) {
-                if (file_exists(public_path('images/logo.' . $ext))) {
-                    $_adErrLogo = 'images/logo.' . $ext;
-                    break;
-                }
-            }
-        }
+        $_adErrLogo = brand_logo_path();
+        $_adErrFavicon = brand_favicon_url();
     } catch (\Throwable $__e) {
         $_adErrBrand = 'VANRITI ADMIN';
         $_adErrLogo = null;
@@ -25,6 +21,8 @@
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#263D25">
     <title>@yield('code', 'Error') &middot; @yield('title', 'Something went wrong')</title>
+    <link rel="icon" href="{{ $_adErrFavicon }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ $_adErrFavicon }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

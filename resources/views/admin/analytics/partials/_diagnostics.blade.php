@@ -100,6 +100,38 @@
                             </td>
                         </tr>
                         <tr>
+                            <td class="small">Visitor tracking</td>
+                            <td>
+                                @php
+                                    $visitorStatus = $tracking['visitor_status'] ?? 'inactive';
+                                    $visitorBadge = match ($visitorStatus) {
+                                        'active' => 'text-bg-success',
+                                        'limited' => 'text-bg-warning',
+                                        default => 'text-bg-secondary',
+                                    };
+                                    $visitorLabel = match ($visitorStatus) {
+                                        'active' => 'ACTIVE',
+                                        'limited' => 'LIMITED',
+                                        default => 'NOT ACTIVE',
+                                    };
+                                @endphp
+                                <span class="badge {{ $visitorBadge }}">{{ $visitorLabel }}</span>
+                            </td>
+                            <td class="small text-muted">
+                                {{ $tracking['visitor_events_with_id'] }} event(s) carry a visitor identity
+                                &middot; {{ $tracking['visitor_events_without_id'] }} without one
+                                &middot; {{ $tracking['visitor_unique_all_time'] }} unique visitor(s) all-time
+                                &middot; {{ $tracking['visitor_sessions'] }} unique session(s) with a visitor-identified page view
+                                @if ($tracking['visitor_first_event'])
+                                    &middot; first: {{ $tracking['visitor_first_event'] }}
+                                @endif
+                                @if ($tracking['visitor_last_event'])
+                                    &middot; last: {{ $tracking['visitor_last_event'] }}
+                                @endif
+                                <br>{{ $tracking['visitor_coverage_note'] }}
+                            </td>
+                        </tr>
+                        <tr>
                             <td class="small">Tracking coverage (qualifying)</td>
                             <td>
                                 @if (($tracking['tracked_orders'] ?? 0) + ($tracking['untracked_orders'] ?? 0) === 0)

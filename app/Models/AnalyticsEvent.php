@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\Model;
  * authoritative for orders, revenue or payments (those remain in orders /
  * order_items / payments). The session_id is an HMAC-SHA256 digest of the
  * underlying session identifier.
+ *
+ * visitor_id is a separate, longer-lived concept: a random anonymous UUID held
+ * in a first-party cookie, used only to count unique/new/returning visitors. It
+ * is deliberately not derived from session_id, and is never sent to Meta,
+ * GA4 or Google Ads.
  */
 class AnalyticsEvent extends Model
 {
@@ -28,6 +33,7 @@ class AnalyticsEvent extends Model
     protected $fillable = [
         'event_type',
         'session_id',
+        'visitor_id',
         'user_id',
         'product_id',
         'sku',

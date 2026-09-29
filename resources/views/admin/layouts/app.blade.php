@@ -6,7 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - {{ store_name() }} Admin</title>
     <meta name="theme-color" content="#263D25">
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" href="{{ brand_favicon_url() }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ brand_favicon_url() }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,12 +19,11 @@
     <div class="admin-wrapper">
         <aside class="admin-sidebar" id="adminSidebar">
             @php
-                $_adminLogo = setting('store_logo');
-                if (! $_adminLogo) { foreach (['svg', 'png', 'webp', 'jpg'] as $_e) { if (file_exists(public_path('images/logo.' . $_e))) { $_adminLogo = 'images/logo.' . $_e; break; } } }
+                $_adminLogo = brand_logo_path();
             @endphp
             <div class="sidebar-brand">
                 @if ($_adminLogo)
-                    <img src="{{ asset($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
+                    <img src="{{ image_url($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
                 @else
                     <span class="brand-text" style="color:var(--vanriti-green);">{{ strtoupper(store_name()) }}</span>
                 @endif

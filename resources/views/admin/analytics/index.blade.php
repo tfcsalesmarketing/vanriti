@@ -39,6 +39,7 @@
 
 <div id="analytics-overview" class="{{ $currentSection === 'overview' ? '' : 'd-none' }}">
     @include('admin.analytics.partials._kpis')
+    @include('admin.analytics.partials._visitors')
     @include('admin.analytics.partials._funnel')
 </div>
 
@@ -80,6 +81,71 @@
         };
         toggle();
         preset.addEventListener('change', toggle);
+    }
+
+    const visitorWrap = document.getElementById('analytics-overview');
+    if (visitorWrap && !visitorWrap.classList.contains('d-none')) {
+        const series = @json($report['visitors']['series'] ?? []);
+        const canvas = document.getElementById('visitorTrendChart');
+        if (canvas && window.Chart && series.length) {
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: series.map(function (row) { return row.date.slice(5); }),
+                    datasets: [
+                        {
+                            label: 'Website Visitors',
+                            data: series.map(function (row) { return row.visitors; }),
+                            borderColor: '#263D25',
+                            backgroundColor: 'rgba(38, 61, 37, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: series.length > 60 ? 0 : 3
+                        },
+                        {
+                            label: 'New Visitors',
+                            data: series.map(function (row) { return row.new; }),
+                            borderColor: '#6F8736',
+                            backgroundColor: 'rgba(111, 135, 54, 0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: series.length > 60 ? 0 : 3
+                        },
+                        {
+                            label: 'Returning Visitors',
+                            data: series.map(function (row) { return row.returning; }),
+                            borderColor: '#c98b2b',
+                            backgroundColor: 'rgba(201, 139, 43, 0.08)',
+                            borderDash: [5, 4],
+                            fill: false,
+                            tension: 0.35,
+                            pointRadius: series.length > 60 ? 0 : 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: '#f0ede6' }
+                        }
+                    }
+                }
+            });
+        }
     }
 
     const sectionWrap = document.getElementById('analytics-revenue');

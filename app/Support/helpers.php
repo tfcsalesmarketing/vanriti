@@ -236,6 +236,37 @@ if (! function_exists('image_url')) {
     }
 }
 
+if (! function_exists('brand_logo_path')) {
+    /**
+     * Resolve the brand logo from settings, falling back to any logo shipped in
+     * public/images. Centralised so the storefront and both admin layouts
+     * cannot drift apart on favicon / apple-touch-icon output.
+     */
+    function brand_logo_path(): ?string
+    {
+        $logo = setting('store_logo');
+
+        if ($logo) {
+            return (string) $logo;
+        }
+
+        foreach (['svg', 'png', 'webp', 'jpg', 'ico'] as $extension) {
+            if (file_exists(public_path('images/logo.'.$extension))) {
+                return 'images/logo.'.$extension;
+            }
+        }
+
+        return null;
+    }
+}
+
+if (! function_exists('brand_favicon_url')) {
+    function brand_favicon_url(): string
+    {
+        return image_url(brand_logo_path(), 'favicon.ico');
+    }
+}
+
 if (! function_exists('clean_html')) {
     /**
      * Sanitize admin-authored HTML for safe rendering in the storefront.
