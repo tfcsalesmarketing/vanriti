@@ -6,6 +6,7 @@ use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrackStorefrontPageView;
 use App\Providers\DadiServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->appendToGroup('web', [
             SecurityHeaders::class,
+            TrackStorefrontPageView::class,
         ]);
 
         $trustedProxies = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))));

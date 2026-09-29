@@ -84,6 +84,9 @@ class CartController extends Controller
 
         $analytics = $this->ecommerceDataService->addToCart($product, $variant, (int) $request->quantity);
 
+        // First-party analytics event (measurement only; never affects cart outcome).
+        app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addToCart($product, $variant, (int) $request->quantity);
+
         // Record minimal Dadi attribution (best-effort; never affects cart outcome).
         $this->recordDadiAttribution($request, $product, $cartItem, $request->boolean('buy_now'));
 

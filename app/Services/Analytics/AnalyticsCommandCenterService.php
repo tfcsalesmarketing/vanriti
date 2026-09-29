@@ -2,6 +2,7 @@
 
 namespace App\Services\Analytics;
 
+use App\Models\AnalyticsEvent;
 use App\Models\User;
 use Closure;
 use Illuminate\Database\Query\Builder;
@@ -11,16 +12,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Internal-only (Phase 0) Analytics Command Center aggregations.
+ * Internal-only Analytics Command Center aggregations.
  *
  * The report is entirely database driven: no external analytics APIs are
  * called and no customer personally-identifiable information is returned.
  * All monetary values are derived from the historically immutable order /
  * order_items snapshots, mirroring {@see EcommerceDataService::purchaseEligible()}.
+ *
+ * Behavioral event counts (visitors / page views / product views / cart and
+ * checkout events) come from the first-party analytics_events log. They are
+ * aggregate measurements only — the database remains the single authoritative
+ * source for orders, revenue and payments.
  */
 class AnalyticsCommandCenterService
 {
-    public const VERSION = '17';
+    public const VERSION = '18';
 
     protected const CACHE_TTL = 300;
 
@@ -63,7 +69,67 @@ class AnalyticsCommandCenterService
                 'message' => $e->getMessage(),
             ]);
 
-            return $this->buildProductReport($from, $to, $page);
+            try {
+                return $this->buildProductReport($from, $to, $page);
+            } catch (\Throwable $inner) {
+                Log::warning('[analytics] product report failed', ['message' => $inner->getMessage()]);
+
+                return [
+                    'items' => [],
+                    'total' => 0,
+                    'per_page' => 15,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'error' => true,
+                    'message' => 'Product report temporarily unavailable.',
+                ];
+            }
+        }
+    }
+
+    /**
+     * Paginated, SKU-merged product analytics: first-party event behavior
+     * (views / add-to-cart / checkout) combined with authoritative order-item
+     * snapshots (purchases / units / revenue). Filters by product name and by
+     * category (product_category pivot) are applied before pagination.
+     */
+    public function productEventReport(string $from, string $to, ?string $product = null, ?int $categoryId = null, int $page = 1): array
+    {
+        $page = max(1, min((int) $page, 100000));
+
+        $suffix = 'products-event';
+        if ($product !== null && trim($product) !== '') {
+            $suffix .= '.q='.sha1(mb_strtolower(trim($product)));
+        }
+        if ($categoryId !== null) {
+            $suffix .= '.c='.$categoryId;
+        }
+
+        $key = $this->cacheKey($from, $to, $suffix, $page);
+
+        try {
+            return Cache::remember($key, self::CACHE_TTL, fn () => $this->buildProductEventReport($from, $to, $product, $categoryId, $page));
+        } catch (\Throwable $e) {
+            Log::warning('[analytics] product event report cache failure', [
+                'key' => $key,
+                'message' => $e->getMessage(),
+            ]);
+
+            try {
+                return $this->buildProductEventReport($from, $to, $product, $categoryId, $page);
+            } catch (\Throwable $inner) {
+                Log::warning('[analytics] product event report failed', ['message' => $inner->getMessage()]);
+
+                return [
+                    'items' => [],
+                    'total' => 0,
+                    'per_page' => 15,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'error' => true,
+                    'message' => 'Product analytics temporarily unavailable.',
+                ];
+            }
         }
     }
 
@@ -89,6 +155,10 @@ class AnalyticsCommandCenterService
         $dadi = $this->section('dadi', fn () => $this->dadi($bounds), $this->emptyDadi());
         $products = $this->section('products', fn () => $this->products($bounds), $this->emptyProducts());
         $tracking = $this->section('tracking', fn () => $this->tracking($bounds, $executive), $this->emptyTracking());
+        $events = $this->section('events', fn () => $this->events($bounds), $this->emptyEvents());
+        $traffic = $this->section('traffic', fn () => $this->traffic($bounds), $this->emptyTraffic());
+        $paymentStarted = $this->section('payment_started', fn () => ['count' => $this->paymentStarted($bounds)], ['count' => 0]);
+        $compare = $this->section('compare', fn () => $this->compare($bounds), $this->emptyCompare());
 
         $alerts = $this->alerts($tracking);
 
@@ -105,6 +175,10 @@ class AnalyticsCommandCenterService
             'dadi' => $dadi,
             'products' => $products,
             'tracking' => $tracking,
+            'events' => $events,
+            'traffic' => $traffic,
+            'payment_started' => $paymentStarted,
+            'compare' => $compare,
             'alerts' => $alerts,
         ];
     }
@@ -306,6 +380,129 @@ class AnalyticsCommandCenterService
             ->all();
     }
 
+    /**
+     * Aggregate first-party behavioral counts from analytics_events.
+     *
+     * Visitors is the count of distinct hashed session_ids seen in page_view
+     * during the period — it measures unique sessions, not unique people, and
+     * excludes bot traffic. Every count here is an event measurement; the
+     * database remains authoritative for orders, revenue and payments.
+     */
+    protected function events(array $bounds): array
+    {
+        $base = DB::table('analytics_events')
+            ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']]);
+
+        $count = fn (string $type) => (clone $base)->where('event_type', $type)->count();
+
+        return [
+            'visitors' => (clone $base)->where('event_type', AnalyticsEvent::PAGE_VIEW)
+                ->distinct('session_id')
+                ->count('session_id'),
+            'page_views' => $count(AnalyticsEvent::PAGE_VIEW),
+            'product_views' => $count(AnalyticsEvent::VIEW_ITEM),
+            'add_to_carts' => $count(AnalyticsEvent::ADD_TO_CART),
+            'begin_checkouts' => $count(AnalyticsEvent::BEGIN_CHECKOUT),
+            'add_payment_infos' => $count(AnalyticsEvent::ADD_PAYMENT_INFO),
+        ];
+    }
+
+    /**
+     * Internal business "Payment Started" metric: distinct qualifying orders
+     * that have at least one payments record created during the period. This
+     * deliberately measures qualifying payment activity, not a GA4/Meta
+     * add_payment_info event (that event, where recorded, is surfaced
+     * separately in the diagnostics section).
+     */
+    protected function paymentStarted(array $bounds): int
+    {
+        return $this->qualifying(
+            $this->ordersBetween(DB::table('orders as o'), $bounds)
+                ->whereExists(function ($q) use ($bounds) {
+                    $q->select(DB::raw(1))
+                        ->from('payments as p')
+                        ->whereColumn('p.order_id', 'o.id')
+                        ->whereBetween('p.created_at', [$bounds['from'], $bounds['to']]);
+                })
+        )->distinct('o.id')->count('o.id');
+    }
+
+    /**
+     * Traffic acquisition breakdown from page_view events: source, medium,
+     * campaign, landing path and device type. Each row reports page views and
+     * the distinct sessions that produced them.
+     */
+    protected function traffic(array $bounds): array
+    {
+        $base = DB::table('analytics_events as e')
+            ->where('e.event_type', AnalyticsEvent::PAGE_VIEW)
+            ->whereBetween('e.occurred_at', [$bounds['from'], $bounds['to']]);
+
+        $grouped = function (string $column) use ($base) {
+            return (clone $base)
+                ->select($column.' as label', DB::raw('COUNT(*) as views'), DB::raw('COUNT(DISTINCT e.session_id) as sessions'))
+                ->whereNotNull($column)
+                ->where($column, '!=', '')
+                ->groupBy($column)
+                ->orderByDesc('views')
+                ->limit(10)
+                ->get()
+                ->map(fn ($row) => [
+                    'label' => $row->label,
+                    'views' => (int) $row->views,
+                    'sessions' => (int) $row->sessions,
+                ])
+                ->values()
+                ->all();
+        };
+
+        return [
+            'by_source' => $grouped('e.source'),
+            'by_medium' => $grouped('e.medium'),
+            'by_campaign' => $grouped('e.campaign'),
+            'by_landing' => $grouped('e.landing_path'),
+            'by_device' => (clone $base)
+                ->select(
+                    DB::raw('COALESCE(NULLIF(e.device_type, \'\'), \'unknown\') as label'),
+                    DB::raw('COUNT(*) as views'),
+                    DB::raw('COUNT(DISTINCT e.session_id) as sessions')
+                )
+                ->groupBy('device_type')
+                ->orderByDesc('views')
+                ->get()
+                ->map(fn ($row) => [
+                    'label' => $row->label,
+                    'views' => (int) $row->views,
+                    'sessions' => (int) $row->sessions,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * Equal-length previous-period snapshot against which the KPI cards are
+     * compared. Monetary and behavioral metrics are both recomputed for the
+     * immediately preceding window of the same length.
+     */
+    protected function compare(array $bounds): array
+    {
+        $days = $bounds['from']->copy()->startOfDay()->diffInDays($bounds['to']->copy()->startOfDay()) + 1;
+        $endPrev = $bounds['from']->copy()->subDay();
+        $startPrev = $endPrev->copy()->subDays($days - 1);
+
+        $prev = $this->bounds($startPrev->toDateString(), $endPrev->toDateString());
+
+        return [
+            'from' => $startPrev->toDateString(),
+            'to' => $endPrev->toDateString(),
+            'days' => $days,
+            'executive' => $this->executive($prev),
+            'events' => $this->events($prev),
+            'payment_started' => $this->paymentStarted($prev),
+        ];
+    }
+
     protected function products(array $bounds): array
     {
         $topByRevenue = $this->productAggregates($bounds)
@@ -457,7 +654,7 @@ class AnalyticsCommandCenterService
         $pixelConfigured = $pixelId !== '';
 
         $gtmConfigured = (string) config('analytics.gtm_container_id', '') !== '';
-        $capiEnabled = (bool) config('meta.enabled');
+        $capi = $this->capiStatus($bounds);
 
         $tracked = $this->trackedOrders($bounds);
 
@@ -520,6 +717,20 @@ class AnalyticsCommandCenterService
             $ledgerByState[$row->meta_state ?? 'null'] = (int) $row->count;
         }
 
+        $recorderByType = DB::table('analytics_events')
+            ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']])
+            ->select('event_type', DB::raw('COUNT(*) as count'))
+            ->groupBy('event_type')
+            ->get()
+            ->pluck('count', 'event_type')
+            ->toArray();
+
+        $firstEvent = (string) DB::table('analytics_events')->min('occurred_at');
+        $lastEvent = (string) DB::table('analytics_events')->max('occurred_at');
+        $lastConversion = (string) DB::table('analytics_conversions')->max('created_at');
+        $lastServerEventRaw = max($lastEvent, $lastConversion);
+        $lastServerEvent = $lastServerEventRaw === '' ? null : Carbon::parse($lastServerEventRaw);
+
         return [
             'currency' => self::CURRENCY,
             'gtm_configured' => $gtmConfigured,
@@ -527,7 +738,11 @@ class AnalyticsCommandCenterService
             'ga4_configured' => $gtmConfigured,
             'pixel_configured' => $pixelConfigured,
             'pixel_masked' => $pixelConfigured ? 'xxxx'.substr($pixelId, -4) : '',
-            'capi_enabled' => $capiEnabled,
+            'capi' => $capi,
+            'capi_enabled' => $capi['capi_enabled'],
+            'capi_status' => $capi['status'],
+            'capi_status_label' => $capi['label'],
+            'capi_status_detail' => $capi['detail'],
             'products_without_sku' => $productsWithoutSku,
             'duplicate_skus' => $duplicateSkus,
             'orders_missing_item_sku' => $missingSkuOrders,
@@ -539,6 +754,86 @@ class AnalyticsCommandCenterService
             'ledger_total' => $ledgerTotal,
             'ledger_by_state' => $ledgerByState,
             'ledger_failures_7d' => $ledgerFailed,
+            'recorder_by_type' => $recorderByType,
+            'recorder_total' => array_sum($recorderByType),
+            'recorder_first_event' => $firstEvent === '' ? null : Carbon::parse($firstEvent),
+            'recorder_last_event' => $lastEvent === '' ? null : Carbon::parse($lastEvent),
+            'last_server_event' => $lastServerEvent,
+            'add_payment_info_events' => (int) ($recorderByType[AnalyticsEvent::ADD_PAYMENT_INFO] ?? 0),
+            'payment_started' => $this->paymentStarted($bounds),
+        ];
+    }
+
+    /**
+     * Effective Meta CAPI delivery status. Configuration alone is never treated
+     * as proof of delivery: the state is derived from the conversion ledger's
+     * delivery evidence (meta_state / meta_sent_at in the last 7 days).
+     *
+     * States: not_configured | active | failed | configured_not_receiving | unknown.
+     */
+    protected function capiStatus(array $bounds): array
+    {
+        $configured = app(MetaCapiService::class)->isConfigured();
+
+        $recent = Carbon::now()->subDays(7);
+
+        $allTime = DB::table('analytics_conversions')
+            ->where('event_type', 'purchase')
+            ->count();
+
+        $delivered7d = DB::table('analytics_conversions')
+            ->where('event_type', 'purchase')
+            ->where('meta_state', 'sent')
+            ->whereNotNull('meta_sent_at')
+            ->where('meta_sent_at', '>', $recent)
+            ->count();
+
+        $failed7d = DB::table('analytics_conversions')
+            ->where('event_type', 'purchase')
+            ->where('meta_state', 'failed')
+            ->where('created_at', '>', $recent)
+            ->count();
+
+        $everDelivered = DB::table('analytics_conversions')
+            ->where('event_type', 'purchase')
+            ->where('meta_state', 'sent')
+            ->whereNotNull('meta_sent_at')
+            ->count();
+
+        if (! $configured) {
+            $status = 'not_configured';
+            $label = 'Not Configured';
+            $detail = 'META_CAPI_ENABLED, the Meta pixel ID and the server access token are all required; server-side Purchase delivery is not configured.';
+        } elseif ($delivered7d > 0) {
+            $status = 'active';
+            $label = 'Active / Receiving';
+            $detail = 'Receiving server-side Purchase events ('.$delivered7d.' delivered in the last 7 days). Browser Pixel and CAPI share a deterministic event_id, so Meta can deduplicate the two representations.';
+        } elseif ($failed7d > 0) {
+            $status = 'failed';
+            $label = 'Failed';
+            $detail = 'Configured, but no delivery succeeded in the last 7 days ('.$failed7d.' failed ledger record(s)). Verify the access token and check the conversion ledger.';
+        } elseif ($everDelivered > 0) {
+            $status = 'configured_not_receiving';
+            $label = 'Configured / Not Receiving';
+            $detail = 'Configured with past deliveries, but no event was received in the last 7 days.';
+        } elseif ($allTime > 0) {
+            $status = 'configured_not_receiving';
+            $label = 'Configured / Not Receiving';
+            $detail = 'Configured, but conversions are pending and no server-side delivery has been confirmed yet.';
+        } else {
+            $status = 'unknown';
+            $label = 'Unknown';
+            $detail = 'Configured, but there is no delivery evidence yet — parsing your data.';
+        }
+
+        return [
+            'status' => $status,
+            'label' => $label,
+            'detail' => $detail,
+            'capi_enabled' => $configured,
+            'delivered_7d' => $delivered7d,
+            'failed_7d' => $failed7d,
+            'ledger_total_all_time' => $allTime,
         ];
     }
 
@@ -577,10 +872,21 @@ class AnalyticsCommandCenterService
             $alerts[] = ['severity' => 'critical', 'title' => 'Meta Pixel is not configured', 'detail' => 'No pixel ID is set in Settings → SEO; storefront Meta tracking will not fire.'];
         }
 
-        if ($tracking['capi_enabled']) {
-            $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is enabled', 'detail' => 'Server-side delivery is active. Verify token validity and monitor the conversion ledger.'];
-        } else {
-            $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is disabled', 'detail' => 'Intentionally disabled. CAPI activation is deferred until consent/privacy readiness is complete.'];
+        switch ($tracking['capi_status'] ?? 'not_configured') {
+            case 'active':
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is active', 'detail' => 'Receiving server-side Purchase events; verify token validity and monitor the conversion ledger.'];
+                break;
+            case 'failed':
+                $alerts[] = ['severity' => 'warning', 'title' => 'Meta Conversions API delivery failing', 'detail' => 'No server-side delivery succeeded in the last 7 days; check the access token and the conversion ledger.'];
+                break;
+            case 'configured_not_receiving':
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API configured but not receiving', 'detail' => 'Configured, but there is no recent delivery evidence in the conversion ledger.'];
+                break;
+            case 'unknown':
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API status unknown', 'detail' => 'Configured, but there is no delivery evidence yet — parsing your data.'];
+                break;
+            default:
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is not configured', 'detail' => 'Server-side CAPI delivery is not configured; browser Pixel tracking may still be active.'];
         }
 
         if ($tracking['gtm_configured']) {
@@ -639,6 +945,153 @@ class AnalyticsCommandCenterService
             'per_page' => (int) $paginator->perPage(),
             'current_page' => (int) $paginator->currentPage(),
             'last_page' => (int) $paginator->lastPage(),
+        ];
+    }
+
+    /**
+     * SKU-merged product analytics. Order-side numbers (purchases / units /
+     * revenue) come from qualifying order-item snapshots; event-side numbers
+     * (views / add_to_cart / checkouts) come from analytics_events. Event-only
+     * SKUs resolve their product name from the catalogue (falling back to
+     * "(unmatched)") so behavioral data is never dropped.
+     */
+    protected function buildProductEventReport(string $from, string $to, ?string $product, ?int $categoryId, int $page): array
+    {
+        $bounds = $this->bounds($from, $to);
+        $perPage = 15;
+
+        $categorySkus = null;
+        if ($categoryId !== null) {
+            $categorySkus = DB::table('products as p')
+                ->join('product_category as pc', 'pc.product_id', '=', 'p.id')
+                ->where('pc.category_id', $categoryId)
+                ->whereNotNull('p.sku')
+                ->where('p.sku', '!=', '')
+                ->distinct()
+                ->pluck('p.sku')
+                ->all();
+        }
+
+        $orderRows = $this->qualifying(
+            $this->ordersBetween(DB::table('order_items as oi')->join('orders as o', 'o.id', '=', 'oi.order_id'), $bounds)
+        )
+            ->leftJoin('products as p', fn ($join) => $join->on('p.sku', '=', 'oi.sku'))
+            ->select(
+                DB::raw('COALESCE(NULLIF(oi.sku, \'\'), \'\') as sku'),
+                DB::raw('COALESCE(p.name, oi.product_name) as product_name'),
+                DB::raw('SUM(oi.quantity) as units'),
+                DB::raw('SUM(oi.total_price) as revenue'),
+                DB::raw('COUNT(DISTINCT oi.order_id) as orders'),
+                DB::raw('COALESCE(p.status, \'\') as status'),
+                DB::raw('COALESCE(p.stock, 0) as stock')
+            )
+            ->whereNotNull('oi.sku')
+            ->where('oi.sku', '!=', '')
+            ->groupBy('oi.sku')
+            ->groupBy(DB::raw('COALESCE(p.name, oi.product_name)'))
+            ->groupBy(DB::raw('COALESCE(p.status, \'\')'))
+            ->groupBy(DB::raw('COALESCE(p.stock, 0)'))
+            ->get();
+
+        $eventTypes = [
+            AnalyticsEvent::VIEW_ITEM => 'views',
+            AnalyticsEvent::ADD_TO_CART => 'add_to_carts',
+            AnalyticsEvent::BEGIN_CHECKOUT => 'checkouts',
+        ];
+
+        $eventBySku = [];
+        foreach ($eventTypes as $type => $field) {
+            $rows = DB::table('analytics_events')
+                ->where('event_type', $type)
+                ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']])
+                ->whereNotNull('sku')
+                ->select('sku', DB::raw('COUNT(*) as count'))
+                ->groupBy('sku')
+                ->get();
+
+            foreach ($rows as $row) {
+                $eventBySku[$row->sku][$field] = (int) $row->count;
+            }
+        }
+
+        $rows = [];
+        foreach ($orderRows as $row) {
+            $rows[$row->sku] = [
+                'sku' => $row->sku,
+                'product_name' => $row->product_name,
+                'views' => 0,
+                'add_to_carts' => 0,
+                'checkouts' => 0,
+                'purchases' => (int) $row->orders,
+                'units' => (int) $row->units,
+                'revenue' => round((float) $row->revenue, 2),
+                'status' => $row->status,
+                'stock' => (int) $row->stock,
+                'views' => 0,
+                'add_to_carts' => 0,
+                'checkouts' => 0,
+            ];
+        }
+
+        $eventOnlySkus = array_diff(array_keys($eventBySku), array_keys($rows));
+        if ($eventOnlySkus !== []) {
+            $names = DB::table('products')->whereIn('sku', $eventOnlySkus)->pluck('name', 'sku')->all();
+
+            foreach ($eventOnlySkus as $sku) {
+                $rows[$sku] = [
+                    'sku' => $sku,
+                    'product_name' => $names[$sku] ?? '(unmatched)',
+                    'views' => 0,
+                    'add_to_carts' => 0,
+                    'checkouts' => 0,
+                    'purchases' => 0,
+                    'units' => 0,
+                    'revenue' => 0.0,
+                    'status' => '',
+                    'stock' => 0,
+                ];
+            }
+        }
+
+        foreach ($eventBySku as $sku => $counts) {
+            foreach ($eventTypes as $field) {
+                $rows[$sku][$field] = (int) ($counts[$field] ?? 0);
+            }
+        }
+
+        if ($categorySkus !== null) {
+            $categorySkus = array_flip($categorySkus);
+            $rows = array_filter($rows, fn (array $row) => isset($categorySkus[$row['sku']]));
+        }
+
+        $search = $product !== null ? mb_strtolower(trim($product)) : '';
+        if ($search !== '') {
+            $rows = array_filter($rows, fn (array $row) => mb_strpos(mb_strtolower($row['product_name']), $search) !== false);
+        }
+
+        foreach ($rows as $sku => &$row) {
+            $row['conversion_rate'] = $row['views'] > 0
+                ? round(((float) $row['purchases'] / $row['views']) * 100, 1)
+                : null;
+        }
+        unset($row);
+
+        uasort($rows, function (array $a, array $b) {
+            return [$b['revenue'], $b['views'], $b['product_name']] <=> [$a['revenue'], $a['views'], $a['product_name']];
+        });
+
+        $rows = array_values($rows);
+        $total = count($rows);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+        $items = array_slice($rows, ($page - 1) * $perPage, $perPage);
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'per_page' => $perPage,
+            'current_page' => $page,
+            'last_page' => $lastPage,
         ];
     }
 
@@ -731,7 +1184,19 @@ class AnalyticsCommandCenterService
             'ga4_configured' => false,
             'pixel_configured' => false,
             'pixel_masked' => '',
+            'capi' => [
+                'status' => 'unknown',
+                'label' => 'Unknown',
+                'detail' => '',
+                'capi_enabled' => false,
+                'delivered_7d' => 0,
+                'failed_7d' => 0,
+                'ledger_total_all_time' => 0,
+            ],
             'capi_enabled' => false,
+            'capi_status' => 'unknown',
+            'capi_status_label' => 'Unknown',
+            'capi_status_detail' => '',
             'products_without_sku' => 0,
             'duplicate_skus' => 0,
             'orders_missing_item_sku' => 0,
@@ -743,6 +1208,48 @@ class AnalyticsCommandCenterService
             'ledger_total' => 0,
             'ledger_by_state' => [],
             'ledger_failures_7d' => 0,
+            'recorder_by_type' => [],
+            'recorder_total' => 0,
+            'recorder_first_event' => null,
+            'recorder_last_event' => null,
+            'last_server_event' => null,
+            'add_payment_info_events' => 0,
+            'payment_started' => 0,
+        ];
+    }
+
+    protected function emptyEvents(): array
+    {
+        return [
+            'visitors' => 0,
+            'page_views' => 0,
+            'product_views' => 0,
+            'add_to_carts' => 0,
+            'begin_checkouts' => 0,
+            'add_payment_infos' => 0,
+        ];
+    }
+
+    protected function emptyTraffic(): array
+    {
+        return [
+            'by_source' => [],
+            'by_medium' => [],
+            'by_campaign' => [],
+            'by_landing' => [],
+            'by_device' => [],
+        ];
+    }
+
+    protected function emptyCompare(): array
+    {
+        return [
+            'from' => '',
+            'to' => '',
+            'days' => 0,
+            'executive' => $this->emptyExecutive(),
+            'events' => $this->emptyEvents(),
+            'payment_started' => 0,
         ];
     }
 }

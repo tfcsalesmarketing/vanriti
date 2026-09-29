@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
 use App\Models\AnalyticsConversion;
+use App\Models\AnalyticsEvent;
+use App\Models\Category;
 use App\Models\DadiConversation;
 use App\Models\DadiRecommendationEvent;
 use App\Models\Order;
@@ -17,6 +19,7 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -69,6 +72,34 @@ class AnalyticsCommandCenterTest extends TestCase
             'created_at' => $at,
             'updated_at' => $at,
         ]);
+    }
+
+    protected function recordEvent(string $type, array $attrs = []): AnalyticsEvent
+    {
+        return AnalyticsEvent::create(array_merge([
+            'event_type' => $type,
+            'session_id' => Str::random(64),
+            'occurred_at' => now(),
+        ], $attrs));
+    }
+
+    protected function ledgerRow(string $state, ?Carbon $at = null): void
+    {
+        $at = $at ?? Carbon::now();
+
+        $row = AnalyticsConversion::create([
+            'event_type' => 'purchase',
+            'order_number' => 'VAN-CAPI-'.Str::random(6),
+            'channel' => 'meta',
+            'payload' => [],
+            'meta_state' => $state,
+            'meta_sent_at' => $state === 'sent' ? $at : null,
+            'meta_attempts' => 1,
+            'created_at' => $at,
+            'updated_at' => $at,
+        ]);
+
+        $this->forceTimestamps('analytics_conversions', $row->id, $at);
     }
 
     protected function createOrder(
@@ -500,20 +531,19 @@ class AnalyticsCommandCenterTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function test_pixel_is_masked_and_capi_disabled_is_informational(): void
+    public function test_pixel_is_masked_and_capi_status_is_dynamic(): void
     {
         config()->set('analytics.gtm_container_id', '');
-        Setting::where('key', 'meta_pixel_id')->update(['value' => '1669655987915785']);
+        Setting::where('key', 'meta_pixel_id')->update(['value' => '2252733575515299']);
 
         $response = $this->actingAs($this->manager(), 'admin')
             ->get(route('admin.analytics'))
             ->assertOk();
 
-        $response->assertSee('xxxx5785');
-        $response->assertDontSee('1669655987915785');
-        $response->assertSee('DISABLED');
-        $response->assertSee('Conversions API is disabled');
-        $response->assertSee('Intentionally disabled. CAPI activation is deferred until consent/privacy readiness is complete.');
+        $response->assertSee('xxxx5299');
+        $response->assertDontSee('2252733575515299');
+        $response->assertSee('NOT CONFIGURED');
+        $response->assertSee('Meta Conversions API is not configured');
         $response->assertDontSee('Check Settings');
     }
 
@@ -619,18 +649,18 @@ class AnalyticsCommandCenterTest extends TestCase
         $this->assertSame(50.0, $report['tracking']['coverage_percent']);
     }
 
-    public function test_tracking_coverage_kpi_renders_em_dash_instead_of_literal_entity(): void
+    public function test_conversion_rate_kpi_renders_em_dash_instead_of_literal_entity(): void
     {
         $response = $this->actingAs($this->manager(), 'admin')
             ->get(route('admin.analytics'))
             ->assertOk();
 
         $html = $response->getContent();
-        $start = strpos($html, 'Tracking Coverage');
-        $this->assertNotFalse($start, 'Tracking Coverage KPI should be present');
+        $start = strpos($html, 'Conversion Rate');
+        $this->assertNotFalse($start, 'Conversion Rate KPI should be present');
         $segment = substr($html, $start, 160);
 
-        $this->assertStringContainsString('—', $segment, 'KPI should render a real em dash when coverage has no denominator');
+        $this->assertStringContainsString('—', $segment, 'KPI should render a real em dash when there is no conversion denominator');
         $this->assertStringNotContainsString('&amp;mdash;', $segment, 'KPI must not render the escaped literal string "&mdash;"');
     }
 
@@ -697,5 +727,226 @@ class AnalyticsCommandCenterTest extends TestCase
         $this->service->report('2026-01-01', '2026-01-31');
         $this->assertTrue(Cache::has($this->service->cacheKey('2026-01-01', '2026-01-31')));
         $this->assertFalse(Cache::has($this->service->cacheKey('2026-01-01', '2026-02-28')));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | First-party analytics_events
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_events_section_counts_unique_sessions_and_event_types(): void
+    {
+        [$from, $to] = $this->range();
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, ['session_id' => 'sess-a', 'occurred_at' => Carbon::parse($to.' 10:00:00')]);
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, ['session_id' => 'sess-a', 'occurred_at' => Carbon::parse($to.' 10:05:00')]);
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, ['session_id' => 'sess-b', 'occurred_at' => Carbon::parse($to.' 11:00:00')]);
+        $this->recordEvent(AnalyticsEvent::VIEW_ITEM, ['session_id' => 'sess-a', 'occurred_at' => Carbon::parse($to.' 10:10:00')]);
+        $this->recordEvent(AnalyticsEvent::VIEW_ITEM, ['session_id' => 'sess-b', 'occurred_at' => Carbon::parse($to.' 11:05:00')]);
+        $this->recordEvent(AnalyticsEvent::ADD_TO_CART, ['session_id' => 'sess-b', 'occurred_at' => Carbon::parse($to.' 11:10:00')]);
+        $this->recordEvent(AnalyticsEvent::BEGIN_CHECKOUT, ['session_id' => 'sess-b', 'occurred_at' => Carbon::parse($to.' 11:15:00')]);
+
+        $report = $this->service->report($from, $to);
+
+        $this->assertSame(2, $report['events']['visitors']);
+        $this->assertSame(3, $report['events']['page_views']);
+        $this->assertSame(2, $report['events']['product_views']);
+        $this->assertSame(1, $report['events']['add_to_carts']);
+        $this->assertSame(1, $report['events']['begin_checkouts']);
+        $this->assertSame(0, $report['events']['add_payment_infos']);
+    }
+
+    public function test_traffic_section_aggregates_by_source_medium_landing_and_device(): void
+    {
+        [$from, $to] = $this->range();
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, [
+            'session_id' => 's1',
+            'source' => 'google', 'medium' => 'cpc', 'campaign' => 'camp-a',
+            'landing_path' => '/', 'device_type' => 'mobile',
+            'occurred_at' => Carbon::parse($to.' 10:00:00'),
+        ]);
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, [
+            'session_id' => 's1',
+            'source' => 'google', 'medium' => 'cpc', 'campaign' => 'camp-a',
+            'landing_path' => '/products/snapback', 'device_type' => 'mobile',
+            'occurred_at' => Carbon::parse($to.' 10:05:00'),
+        ]);
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, [
+            'session_id' => 's2',
+            'source' => 'direct', 'medium' => 'direct', 'campaign' => null,
+            'landing_path' => '/', 'device_type' => 'desktop',
+            'occurred_at' => Carbon::parse($to.' 11:00:00'),
+        ]);
+
+        $report = $this->service->report($from, $to);
+
+        $this->assertSame(2, $report['events']['visitors']);
+        $this->assertSame(['google' => 2, 'direct' => 1], collect($report['traffic']['by_source'])->mapWithKeys(fn ($r) => [$r['label'] => $r['views']])->all());
+        $this->assertSame(['cpc' => 2, 'direct' => 1], collect($report['traffic']['by_medium'])->mapWithKeys(fn ($r) => [$r['label'] => $r['views']])->all());
+        $this->assertSame(['camp-a' => 2], collect($report['traffic']['by_campaign'])->mapWithKeys(fn ($r) => [$r['label'] => $r['views']])->all());
+        $this->assertSame(['/' => 2, '/products/snapback' => 1], collect($report['traffic']['by_landing'])->mapWithKeys(fn ($r) => [$r['label'] => $r['views']])->all());
+        $this->assertSame(['mobile' => 2, 'desktop' => 1], collect($report['traffic']['by_device'])->mapWithKeys(fn ($r) => [$r['label'] => $r['views']])->all());
+    }
+
+    public function test_payment_started_counts_distinct_qualifying_orders_with_payments_activity(): void
+    {
+        [$from, $to] = $this->range();
+        $user = $this->makeUser();
+        $qualifying = $this->createOrder($user, 500.00, 'cod', 'pending', 'pending', Carbon::parse($to.' 09:00:00'));
+        $cancelled = $this->createOrder($user, 600.00, 'cod', 'pending', 'cancelled', Carbon::parse($to.' 09:30:00'));
+        $dual = $this->createOrder($user, 700.00, 'cod', 'pending', 'pending', Carbon::parse($to.' 10:00:00'));
+
+        foreach ([$qualifying, $cancelled, $dual] as $order) {
+            DB::table('payments')->insert([
+                'order_id' => $order->id,
+                'method' => 'cod',
+                'amount' => $order->grand_total,
+                'status' => 'pending',
+                'created_at' => Carbon::parse($to.' 10:30:00'),
+                'updated_at' => Carbon::parse($to.' 10:30:00'),
+            ]);
+        }
+        // a second payment on the same qualifying order must not double-count
+        DB::table('payments')->insert([
+            'order_id' => $qualifying->id,
+            'method' => 'cod',
+            'amount' => 100.00,
+            'status' => 'paid',
+            'created_at' => Carbon::parse($to.' 11:00:00'),
+            'updated_at' => Carbon::parse($to.' 11:00:00'),
+        ]);
+
+        $report = $this->service->report($from, $to);
+
+        $this->assertSame(2, $report['payment_started']['count']);
+    }
+
+    public function test_compare_provides_previous_equal_length_period(): void
+    {
+        [$from, $to] = $this->range();
+        $user = $this->makeUser();
+
+        $days = Carbon::parse($from)->diffInDays(Carbon::parse($to)) + 1;
+        $endPrev = Carbon::parse($from)->subDay();
+        $startPrev = $endPrev->copy()->subDays($days - 1);
+
+        $this->createOrder($user, 100.00, 'cod', 'pending', 'pending', Carbon::parse($to.' 10:00:00'));
+        $this->createOrder($user, 250.00, 'cod', 'pending', 'pending', $endPrev->copy()->setTime(10, 0, 0));
+        $this->recordEvent(AnalyticsEvent::PAGE_VIEW, ['session_id' => 'prev-sess', 'occurred_at' => $endPrev->copy()->setTime(11, 0, 0)]);
+
+        $report = $this->service->report($from, $to);
+
+        $this->assertSame($startPrev->toDateString(), $report['compare']['from']);
+        $this->assertSame($endPrev->toDateString(), $report['compare']['to']);
+        $this->assertSame($days, $report['compare']['days']);
+        $this->assertSame(100.0, $report['executive']['revenue']);
+        $this->assertSame(250.0, $report['compare']['executive']['revenue']);
+        $this->assertSame(1, $report['compare']['events']['visitors']);
+    }
+
+    public function test_product_event_report_merges_order_and_event_metrics_by_sku(): void
+    {
+        [$from, $to] = $this->range();
+        $user = $this->makeUser();
+        $product = $this->makeProduct('EVENT-001', 100.0);
+        $order = $this->createOrder($user, 200.00, 'cod', 'pending', 'pending', Carbon::parse($to.' 10:00:00'));
+        $this->addItem($order, $product, 2, 100.0);
+
+        $this->recordEvent(AnalyticsEvent::VIEW_ITEM, ['session_id' => 's1', 'product_id' => $product->id, 'sku' => 'EVENT-001', 'occurred_at' => Carbon::parse($to.' 09:00:00')]);
+        $this->recordEvent(AnalyticsEvent::VIEW_ITEM, ['session_id' => 's2', 'product_id' => $product->id, 'sku' => 'EVENT-001', 'occurred_at' => Carbon::parse($to.' 09:05:00')]);
+        $this->recordEvent(AnalyticsEvent::ADD_TO_CART, ['session_id' => 's1', 'product_id' => $product->id, 'sku' => 'EVENT-001', 'occurred_at' => Carbon::parse($to.' 09:10:00')]);
+        $this->recordEvent(AnalyticsEvent::BEGIN_CHECKOUT, ['session_id' => 's1', 'product_id' => $product->id, 'sku' => 'EVENT-001', 'occurred_at' => Carbon::parse($to.' 09:15:00')]);
+
+        $report = $this->service->productEventReport($from, $to);
+
+        $this->assertCount(1, $report['items']);
+        $row = $report['items'][0];
+        $this->assertSame('EVENT-001', $row['sku']);
+        $this->assertSame(2, (int) $row['views']);
+        $this->assertSame(1, (int) $row['add_to_carts']);
+        $this->assertSame(1, (int) $row['checkouts']);
+        $this->assertSame(1, (int) $row['purchases']);
+        $this->assertSame(2, (int) $row['units']);
+        $this->assertSame(200.0, (float) $row['revenue']);
+        $this->assertSame(50.0, (float) $row['conversion_rate']);
+    }
+
+    public function test_product_event_report_filters_by_name_and_category(): void
+    {
+        [$from, $to] = $this->range();
+        $category = Category::factory()->create();
+        $matched = Product::factory()->create(['sku' => 'FILT-AAA-001', 'name' => 'Alpha Snapback', 'selling_price' => 100.0, 'mrp' => 100.0, 'stock' => 10, 'low_stock_threshold' => 2, 'status' => 'active']);
+        $other = Product::factory()->create(['sku' => 'FILT-BBB-002', 'name' => 'Beta Snapback', 'selling_price' => 100.0, 'mrp' => 100.0, 'stock' => 10, 'low_stock_threshold' => 2, 'status' => 'active']);
+
+        DB::table('product_category')->insert([
+            'product_id' => $matched->id,
+            'category_id' => $category->id,
+        ]);
+
+        foreach (['FILT-AAA-001', 'FILT-BBB-002'] as $i => $sku) {
+            $this->recordEvent(AnalyticsEvent::VIEW_ITEM, ['session_id' => 's'.$i, 'sku' => $sku, 'occurred_at' => Carbon::parse($to.' 09:00:00')]);
+        }
+
+        $byName = $this->service->productEventReport($from, $to, 'Alpha', null);
+        $this->assertCount(1, $byName['items']);
+        $this->assertSame('FILT-AAA-001', $byName['items'][0]['sku']);
+
+        $byCategory = $this->service->productEventReport($from, $to, null, $category->id);
+        $this->assertCount(1, $byCategory['items']);
+        $this->assertSame('FILT-AAA-001', $byCategory['items'][0]['sku']);
+
+        $all = $this->service->productEventReport($from, $to);
+        $this->assertCount(2, $all['items']);
+    }
+
+    public function test_product_event_report_lists_event_only_skus_as_unmatched(): void
+    {
+        [$from, $to] = $this->range();
+
+        $this->recordEvent(AnalyticsEvent::VIEW_ITEM, ['session_id' => 's1', 'sku' => 'GHOST-999', 'occurred_at' => Carbon::parse($to.' 09:00:00')]);
+
+        $report = $this->service->productEventReport($from, $to);
+
+        $this->assertCount(1, $report['items']);
+        $this->assertSame('GHOST-999', $report['items'][0]['sku']);
+        $this->assertSame('(unmatched)', $report['items'][0]['product_name']);
+        $this->assertSame(1, (int) $report['items'][0]['views']);
+    }
+
+    public function test_capi_status_is_derived_from_ledger_evidence_not_config_alone(): void
+    {
+        [$from, $to] = $this->range();
+        Setting::where('key', 'meta_pixel_id')->update(['value' => '2252733575515299']);
+        Setting::where('key', 'meta_capi_access_token')->update(['value' => Crypt::encryptString('test-token')]);
+        config()->set('meta.enabled', true);
+
+        // configured with zero ledger rows -> unknown (config alone proves nothing)
+        $report = $this->service->report($from, $to);
+        $this->assertSame('unknown', $report['tracking']['capi']['status']);
+
+        // a ledger row with no recent delivery -> configured_not_receiving
+        $this->ledgerRow('sent', Carbon::now()->subDays(20));
+        Cache::flush();
+        $report = $this->service->report($from, $to);
+        $this->assertSame('configured_not_receiving', $report['tracking']['capi']['status']);
+
+        // recent delivered row -> active
+        $this->ledgerRow('sent', Carbon::now()->subHours(2));
+        Cache::flush();
+        $report = $this->service->report($from, $to);
+        $this->assertSame('active', $report['tracking']['capi']['status']);
+    }
+
+    public function test_capi_status_is_failed_when_recent_failures_and_no_delivery(): void
+    {
+        [$from, $to] = $this->range();
+        Setting::where('key', 'meta_pixel_id')->update(['value' => '2252733575515299']);
+        Setting::where('key', 'meta_capi_access_token')->update(['value' => Crypt::encryptString('test-token')]);
+        config()->set('meta.enabled', true);
+
+        $this->ledgerRow('failed', Carbon::now()->subHours(3));
+
+        $report = $this->service->report($from, $to);
+        $this->assertSame('failed', $report['tracking']['capi']['status']);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Services\Analytics\AnalyticsCommandCenterService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ class AnalyticsController extends Controller
             'preset' => ['sometimes', 'nullable', 'string', 'in:today,yesterday,last_7,last_30,this_month,last_month,custom'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
+            'product' => ['nullable', 'string', 'max:150'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
         ]);
 
         $preset = $data['preset'] ?? 'last_30';
@@ -28,11 +31,18 @@ class AnalyticsController extends Controller
 
         [$from, $to] = $range;
 
+        $page = (int) $request->input('page', 1);
+        $productFilter = $request->string('product')->trim()->toString() ?: null;
+        $categoryId = $request->filled('category_id') ? (int) $request->input('category_id') : null;
+
         $service = app(AnalyticsCommandCenterService::class);
         $report = $service->report($from, $to);
-        $report['products']['report'] = $service->productReport($from, $to, (int) $request->input('page', 1));
+        $report['products']['report'] = $service->productReport($from, $to, $page);
+        $report['products']['event_report'] = $service->productEventReport($from, $to, $productFilter, $categoryId, $page);
 
-        return view('admin.analytics.index', compact('preset', 'from', 'to', 'report'));
+        $categories = Category::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('admin.analytics.index', compact('preset', 'from', 'to', 'report', 'categories'));
     }
 
     /**

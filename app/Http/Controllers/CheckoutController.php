@@ -82,6 +82,9 @@ class CheckoutController extends Controller
         $beginCheckoutPayload = $this->ecommerceDataService->beginCheckout($cart);
         $checkoutEcommerce = $this->ecommerceDataService->checkoutEcommerce($cart);
 
+        // First-party analytics event (measurement only; never affects checkout).
+        app(\App\Services\Analytics\AnalyticsEventRecorder::class)->beginCheckout($cart);
+
         return view('storefront.checkout.index', compact(
             'cart', 'addresses', 'selectedAddress', 'subtotal',
             'availableMethods', 'shipping', 'couponDiscount', 'couponCode', 'user',
@@ -247,6 +250,7 @@ class CheckoutController extends Controller
             try {
                 $payment = $this->paymentService->createPayment($order, 'cod');
                 $this->paymentService->initialize($order, $payment, 'cod');
+                app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'cod');
             } catch (\Throwable $e) {
                 Log::error('COD payment initialisation failed.', ['error' => $e->getMessage()]);
 
@@ -322,6 +326,8 @@ class CheckoutController extends Controller
 
                 $payment = $this->paymentService->createPayment($order, 'razorpay');
                 $init = $this->paymentService->initialize($order, $payment, 'razorpay');
+                // First-party analytics event (measurement only; never affects payment).
+                app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'razorpay');
             });
 
             session()->forget('cart_coupon');

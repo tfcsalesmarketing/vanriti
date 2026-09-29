@@ -29,6 +29,7 @@
     $liked = $wishlistService->has($product);
     $firstInStockVariant = $product->activeVariants->first(fn ($v) => (int) $v->stock > 0);
     $viewItemPayload = app(App\Services\Analytics\EcommerceDataService::class)->viewItem($product, $firstInStockVariant, 1);
+    app(App\Services\Analytics\AnalyticsEventRecorder::class)->viewItem($product, $firstInStockVariant);
 
     $cartLinesByVariant = [];
     foreach (app(App\Services\CartService::class)->items() as $_line) {
