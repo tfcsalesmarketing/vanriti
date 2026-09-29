@@ -350,6 +350,11 @@
                                     <span><i class="ri-price-tag-3-line me-1"></i>Discount ({{ $couponCode }})</span>
                                     <span>-{{ format_price($couponDiscount) }}</span>
                                 </div>
+
+                                <div class="d-flex justify-content-between small mb-2 text-muted">
+                                    <span>Subtotal after discount</span>
+                                    <span class="text-dark fw-semibold">{{ format_price(max(0, $subtotal - $couponDiscount)) }}</span>
+                                </div>
                             @endif
 
                             <div class="d-flex justify-content-between small mb-2 text-muted">

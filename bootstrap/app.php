@@ -3,15 +3,18 @@
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureDatabaseIsReachable;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrackStorefrontPageView;
 use App\Providers\DadiServiceProvider;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -42,6 +45,12 @@ return Application::configure(basePath: dirname(__DIR__))
             TrackStorefrontPageView::class,
         ]);
 
+        // Runs before EncryptCookies/StartSession so a dead database surfaces as
+        // a friendly 503 page instead of a raw 500 thrown from the session store.
+        $middleware->prependToGroup('web', [
+            EnsureDatabaseIsReachable::class,
+        ]);
+
         $trustedProxies = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))));
         if ($trustedProxies !== []) {
             $middleware->trustProxies(at: $trustedProxies);
@@ -70,6 +79,32 @@ return Application::configure(basePath: dirname(__DIR__))
                 return redirect()->route('password.request')
                     ->with('error', 'Limit exceeded for OTP request. You can retry after 30 minutes.');
             }
+        });
+
+        // Second safety net for a dead database: the session, cache and queue
+        // stores are all database-backed, so a redirect with a flash message is
+        // impossible once the server is unreachable. Render the session-free
+        // 503 page instead of a raw 500 (and never leak SQL to the customer).
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $e instanceof QueryException) {
+                return;
+            }
+
+            if ($request->is('admin', 'admin/*')) {
+                return;
+            }
+
+            if (! $request->is('forgot-password', 'forgot-password/*', 'otp/send', 'otp/verify', 'password/*')) {
+                return;
+            }
+
+            Log::error('database.query_failed', [
+                'path' => $request->path(),
+                'sqlstate' => $e->getCode(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->view('errors.503', [], 503);
         });
 
         // Admin panel gets its own set of error pages (resources/views/admin/errors).
