@@ -42,11 +42,56 @@ class MetaCapiService
         );
     }
 
+    /**
+     * Authoritative, non-sensitive breakdown of every requirement that gates
+     * server-side delivery.
+     *
+     * isConfigured() derives from this single source, so the admin diagnostic
+     * can never disagree with the actual sender. Nothing here is secret: only
+     * booleans, the names of the unmet requirements, and whether a token is
+     * stored/readable. The token value itself is never returned or logged.
+     *
+     * `token_stored` separates "no token saved" from "a token is saved but
+     * could not be decrypted" (for example written straight into the database
+     * instead of being encrypted through Settings).
+     */
+    public function configuration(): array
+    {
+        $token = $this->accessToken();
+        $tokenPresent = $token !== '';
+
+        $requirements = [
+            'env_enabled' => (bool) config('meta.enabled', false),
+            'pixel_present' => $this->pixelId() !== '',
+            'token_present' => $tokenPresent,
+        ];
+
+        $missing = array_keys(array_filter(
+            $requirements,
+            static fn (bool $satisfied): bool => ! $satisfied
+        ));
+
+        // Only probe the stored-vs-readable distinction when a token is the
+        // thing that is wrong, so this stays a single query on the healthy
+        // path instead of two.
+        $tokenStored = null;
+
+        if (! $tokenPresent) {
+            $tokenStored = trim((string) setting('meta_capi_access_token', '')) !== '';
+        }
+
+        return [
+            'configured' => $missing === [],
+            'requirements' => $requirements,
+            'missing' => $missing,
+            'token_stored' => $tokenStored,
+            'token_readable' => $tokenPresent,
+        ];
+    }
+
     public function isConfigured(): bool
     {
-        return (bool) config('meta.enabled', false)
-            && $this->pixelId() !== ''
-            && $this->accessToken() !== '';
+        return $this->configuration()['configured'];
     }
 
     public function maxAttempts(): int

@@ -14,6 +14,7 @@ use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Analytics\AnalyticsCommandCenterService;
+use App\Services\Analytics\MetaCapiService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -83,7 +84,7 @@ class AnalyticsCommandCenterTest extends TestCase
         ], $attrs));
     }
 
-    protected function ledgerRow(string $state, ?Carbon $at = null): void
+    protected function ledgerRow(?string $state, ?Carbon $at = null): void
     {
         $at = $at ?? Carbon::now();
 
@@ -540,8 +541,13 @@ class AnalyticsCommandCenterTest extends TestCase
             ->get(route('admin.analytics'))
             ->assertOk();
 
+        // The dedicated Pixel row keeps masking the ID.
         $response->assertSee('xxxx5299');
-        $response->assertDontSee('2252733575515299');
+
+        // No credential is ever rendered.
+        $response->assertDontSee('meta_capi_access_token');
+        $response->assertDontSee('EAAB');
+
         $response->assertSee('NOT CONFIGURED');
         $response->assertSee('Meta Conversions API is not configured');
         $response->assertDontSee('Check Settings');
@@ -948,5 +954,232 @@ class AnalyticsCommandCenterTest extends TestCase
 
         $report = $this->service->report($from, $to);
         $this->assertSame('failed', $report['tracking']['capi']['status']);
+    }
+
+    /**
+     * CAPI configuration states
+     */
+    protected function configureCapi(bool $enabled = true, bool $pixel = true, ?string $token = 'test-token'): void
+    {
+        config()->set('meta.enabled', $enabled);
+
+        Setting::where('key', 'meta_pixel_id')->update([
+            'value' => $pixel ? '2252733575515299' : '',
+        ]);
+
+        Setting::where('key', 'meta_capi_access_token')->update([
+            'value' => $token === null ? '' : Crypt::encryptString($token),
+        ]);
+    }
+
+    protected function capi(array $fromTo): array
+    {
+        [$from, $to] = $fromTo;
+
+        return $this->service->report($from, $to)['tracking']['capi'];
+    }
+
+    public function test_state_a_missing_configuration_is_not_configured(): void
+    {
+        [$range] = [$this->range()];
+
+        // Nothing configured at all.
+        Setting::where('key', 'meta_pixel_id')->update(['value' => '']);
+        Setting::where('key', 'meta_capi_access_token')->update(['value' => '']);
+        config()->set('meta.enabled', false);
+
+        $capi = $this->capi($range);
+        $this->assertSame('not_configured', $capi['status']);
+        $this->assertSame('Not Configured', $capi['label']);
+        $this->assertFalse($capi['capi_enabled']);
+        $this->assertSame(
+            ['env_enabled', 'pixel_present', 'token_present'],
+            $capi['config']['missing']
+        );
+    }
+
+    public function test_not_configured_names_the_env_flag_when_only_that_is_missing(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi(enabled: false);
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('not_configured', $capi['status']);
+        $this->assertSame(['env_enabled'], $capi['config']['missing']);
+        $this->assertStringContainsString('META_CAPI_ENABLED', $capi['detail']);
+        $this->assertStringContainsString('Browser Pixel tracking is unaffected', $capi['detail']);
+    }
+
+    public function test_not_configured_names_a_missing_pixel_and_token(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi(enabled: true, pixel: false, token: null);
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('not_configured', $capi['status']);
+        $this->assertSame(['pixel_present', 'token_present'], $capi['config']['missing']);
+        $this->assertStringContainsString('no Meta Pixel ID is saved', $capi['detail']);
+        $this->assertStringContainsString('no usable Meta CAPI access token is saved', $capi['detail']);
+    }
+
+    public function test_not_configured_detects_a_stored_but_undecryptable_token(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi(enabled: true);
+
+        // Token written straight to the database instead of being encrypted.
+        Setting::where('key', 'meta_capi_access_token')->update(['value' => 'EAAB plaintext-token']);
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('not_configured', $capi['status']);
+        $this->assertTrue($capi['config']['token_stored'], 'A token is present in the database.');
+        $this->assertFalse($capi['config']['token_readable'], 'But it cannot be decrypted.');
+        $this->assertStringContainsString('could not be decrypted', $capi['detail']);
+        $this->assertStringNotContainsString('EAAB', $capi['detail'], 'The token value is never surfaced.');
+    }
+
+    public function test_configuration_is_the_single_source_for_is_configured(): void
+    {
+        $this->configureCapi();
+
+        $service = app(MetaCapiService::class);
+
+        $this->assertSame(
+            $service->isConfigured(),
+            $service->configuration()['configured'],
+            'The admin diagnostic must not define "configured" independently.'
+        );
+        $this->assertTrue($service->isConfigured());
+
+        $this->configureCapi(enabled: false);
+        $this->assertFalse($service->isConfigured());
+    }
+
+    public function test_state_b_configured_but_no_delivery_is_configured_not_receiving(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi();
+
+        // Past delivery, but nothing recent.
+        $this->ledgerRow('sent', Carbon::now()->subDays(20));
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('configured_not_receiving', $capi['status']);
+        $this->assertSame(0, $capi['delivered_7d']);
+        $this->assertSame(1, $capi['ever_delivered']);
+    }
+
+    public function test_state_c_configured_with_successful_delivery_is_active(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi();
+
+        $sentAt = Carbon::now()->subHours(2);
+        $this->ledgerRow('sent', $sentAt);
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('active', $capi['status']);
+        $this->assertSame('Active / Receiving', $capi['label']);
+        $this->assertSame(1, $capi['delivered_7d']);
+        $this->assertSame(1, $capi['ever_delivered']);
+        $this->assertNotNull($capi['last_sent_at'], 'Active state must expose the last successful delivery.');
+    }
+
+    public function test_state_d_configured_with_recent_failures_is_failed(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi();
+
+        $this->ledgerRow('failed', Carbon::now()->subHours(3));
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('failed', $capi['status']);
+        $this->assertSame('Failed', $capi['label']);
+        $this->assertSame(1, $capi['failed_7d']);
+        $this->assertSame(0, $capi['delivered_7d']);
+    }
+
+    public function test_state_e_configured_with_awaiting_conversions_is_unknown_parsing(): void
+    {
+        [$range] = [$this->range()];
+        $this->configureCapi();
+
+        // A conversion that has no delivery attempt recorded yet.
+        $this->ledgerRow(null, Carbon::now()->subHours(1));
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('unknown', $capi['status']);
+        $this->assertSame('Unknown / Parsing', $capi['label']);
+        $this->assertSame(1, $capi['awaiting_delivery']);
+        $this->assertStringContainsString('inconclusive', $capi['detail']);
+    }
+
+    public function test_production_style_capi_configuration_is_detected(): void
+    {
+        [$range] = [$this->range()];
+
+        // Exactly how production is configured: production pixel, a token saved
+        // through Settings (therefore encrypted), and the env flag enabled.
+        $this->configureCapi(enabled: true, pixel: true, token: 'EAAB-production-token');
+        $this->ledgerRow('sent', Carbon::now()->subHours(1));
+
+        $capi = $this->capi($range);
+
+        $this->assertTrue($capi['capi_enabled']);
+        $this->assertSame([], $capi['config']['missing']);
+        $this->assertSame('active', $capi['status']);
+        $this->assertTrue(app(MetaCapiService::class)->isConfigured());
+    }
+
+    public function test_capi_status_never_treats_browser_pixel_activity_as_capi_evidence(): void
+    {
+        [$range] = [$this->range()];
+
+        // Pixel configured but CAPI switched off: browser activity exists, and
+        // it must NOT be read as proof that the server is delivering.
+        $this->configureCapi(enabled: false);
+        $this->ledgerRow('sent', Carbon::now()->subHours(1));
+
+        $capi = $this->capi($range);
+
+        $this->assertSame('not_configured', $capi['status']);
+        $this->assertSame(['env_enabled'], $capi['config']['missing']);
+    }
+
+    public function test_admin_renders_the_dynamic_capi_status_and_never_the_token(): void
+    {
+        $this->configureCapi(enabled: true, token: 'EAAB-super-secret-token');
+        $this->ledgerRow('sent', Carbon::now()->subHours(1));
+
+        $response = $this->actingAs($this->manager(), 'admin')
+            ->get(route('admin.analytics'))
+            ->assertOk();
+
+        $response->assertSee('ACTIVE / RECEIVING');
+        $response->assertSee('Configuration:');
+        $response->assertSee('Last successful delivery:');
+        $response->assertSee('Recent delivered events (7 days):');
+        $response->assertDontSee('EAAB-super-secret-token');
+        $response->assertDontSee('meta_capi_access_token');
+    }
+
+    public function test_admin_shows_the_precise_reason_when_capi_is_off(): void
+    {
+        $this->configureCapi(enabled: false);
+
+        $response = $this->actingAs($this->manager(), 'admin')
+            ->get(route('admin.analytics'))
+            ->assertOk();
+
+        $response->assertSee('NOT CONFIGURED');
+        $response->assertSee('META_CAPI_ENABLED');
+        $response->assertDontSee('Server-side CAPI delivery is not configured; browser Pixel tracking may still be active.');
     }
 }

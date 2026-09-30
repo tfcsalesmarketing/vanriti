@@ -1,14 +1,26 @@
 @php
     $tracking = $report['tracking'] ?? [];
     $capi = $tracking['capi'] ?? [];
+    $capiConfig = $capi['config'] ?? [];
     $capiStatusKey = $capi['status'] ?? 'unknown';
     $capiLabel = $capi['label'] ?? 'Unknown';
     $capiBadge = match ($capiStatusKey) {
         'active' => 'text-bg-success',
         'failed' => 'text-bg-danger',
         'configured_not_receiving' => 'text-bg-warning',
-        default => 'text-bg-secondary',
+        'not_configured' => 'text-bg-secondary',
+        default => 'text-bg-info',
     };
+    $capiPixelConfigured = (bool) ($capiConfig['requirements']['pixel_present'] ?? false);
+    $capiPixel = $capiPixelConfigured ? trim((string) setting('meta_pixel_id', '')) : '';
+    $capiDelivery = match ($capiStatusKey) {
+        'active' => 'Receiving',
+        'failed' => 'Failing',
+        'configured_not_receiving' => 'Not receiving',
+        'not_configured' => 'Not delivering',
+        default => 'Unproven',
+    };
+    $capiLastSent = $capi['last_sent_at'] ?? null;
 @endphp
 
 @if (($tracking['error'] ?? false))
@@ -55,10 +67,23 @@
                             <td><span class="badge {{ $capiBadge }}">{{ strtoupper($capiLabel) }}</span></td>
                             <td class="small text-muted">
                                 {{ $tracking['capi_status_detail'] ?: $capi['detail'] }}
-                                @if (($capi['delivered_7d'] ?? 0) + ($capi['failed_7d'] ?? 0) > 0)
-                                    &middot; delivered (7 day): {{ $capi['delivered_7d'] }} &middot; failed (7 day): {{ $capi['failed_7d'] }}
-                                @endif
-                                <span class="d-block text-muted mt-1">Configuration alone never proves delivery - status is inferred from the conversion ledger.</span>
+                                <span class="d-block mt-2">
+                                    <span class="d-block"><strong>Configuration:</strong>
+                                        {{ ($capiConfig['configured'] ?? false) ? 'Configured' : 'Not configured' }}</span>
+                                    <span class="d-block"><strong>Pixel:</strong>
+                                        {{ $capiPixel !== '' ? $capiPixel : 'Not set' }}</span>
+                                    <span class="d-block"><strong>Delivery:</strong>
+                                        {{ $capiDelivery }}</span>
+                                    <span class="d-block"><strong>Last successful delivery:</strong>
+                                        {{ $capiLastSent ? \Carbon\Carbon::parse($capiLastSent)->toDayDateTimeString() : 'Never' }}</span>
+                                    <span class="d-block"><strong>Recent delivered events (7 days):</strong>
+                                        {{ (int) ($capi['delivered_7d'] ?? 0) }}</span>
+                                    <span class="d-block"><strong>Failed deliveries (7 days):</strong>
+                                        {{ (int) ($capi['failed_7d'] ?? 0) }}</span>
+                                    <span class="d-block"><strong>Awaiting delivery:</strong>
+                                        {{ (int) ($capi['awaiting_delivery'] ?? 0) }}</span>
+                                </span>
+                                <span class="d-block text-muted mt-1">Configuration alone never proves delivery - status is inferred from the conversion ledger. Browser Pixel activity is not treated as CAPI evidence.</span>
                             </td>
                         </tr>
                         <tr>

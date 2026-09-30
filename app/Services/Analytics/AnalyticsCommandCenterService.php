@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AnalyticsCommandCenterService
 {
-    public const VERSION = '19';
+    public const VERSION = '20';
 
     protected const CACHE_TTL = 300;
 
@@ -968,11 +968,17 @@ class AnalyticsCommandCenterService
      * as proof of delivery: the state is derived from the conversion ledger's
      * delivery evidence (meta_state / meta_sent_at in the last 7 days).
      *
+     * The configuration half comes from MetaCapiService::configuration() - the
+     * same source MetaCapiService::isConfigured() uses to decide whether to
+     * deliver - so this can never disagree with the real sender. Browser Pixel
+     * activity is deliberately not an input.
+     *
      * States: not_configured | active | failed | configured_not_receiving | unknown.
      */
     protected function capiStatus(array $bounds): array
     {
-        $configured = app(MetaCapiService::class)->isConfigured();
+        $config = app(MetaCapiService::class)->configuration();
+        $configured = $config['configured'];
 
         $recent = Carbon::now()->subDays(7);
 
@@ -999,14 +1005,30 @@ class AnalyticsCommandCenterService
             ->whereNotNull('meta_sent_at')
             ->count();
 
+        $lastSentAt = DB::table('analytics_conversions')
+            ->where('event_type', 'purchase')
+            ->where('meta_state', 'sent')
+            ->whereNotNull('meta_sent_at')
+            ->max('meta_sent_at');
+
+        // meta_state is only ever written as 'sent' or 'failed', so a NULL
+        // state is a conversion that has not yet had a successful attempt.
+        $awaiting = DB::table('analytics_conversions')
+            ->where('event_type', 'purchase')
+            ->whereNull('meta_state')
+            ->count();
+
         if (! $configured) {
             $status = 'not_configured';
             $label = 'Not Configured';
-            $detail = 'META_CAPI_ENABLED, the Meta pixel ID and the server access token are all required; server-side Purchase delivery is not configured.';
+            $detail = 'Server-side CAPI delivery is switched off: '
+                .lcfirst($this->describeMissingCapiRequirements($config))
+                .'. Browser Pixel tracking is unaffected and may still be active.';
         } elseif ($delivered7d > 0) {
             $status = 'active';
             $label = 'Active / Receiving';
-            $detail = 'Receiving server-side Purchase events ('.$delivered7d.' delivered in the last 7 days). Browser Pixel and CAPI share a deterministic event_id, so Meta can deduplicate the two representations.';
+            $detail = 'Server-side CAPI delivery is configured and recent events have been successfully delivered to Meta ('
+                .$delivered7d.' in the last 7 days). Browser Pixel and CAPI share a deterministic event_id, so Meta can deduplicate the two representations.';
         } elseif ($failed7d > 0) {
             $status = 'failed';
             $label = 'Failed';
@@ -1016,13 +1038,14 @@ class AnalyticsCommandCenterService
             $label = 'Configured / Not Receiving';
             $detail = 'Configured with past deliveries, but no event was received in the last 7 days.';
         } elseif ($allTime > 0) {
-            $status = 'configured_not_receiving';
-            $label = 'Configured / Not Receiving';
-            $detail = 'Configured, but conversions are pending and no server-side delivery has been confirmed yet.';
+            $status = 'unknown';
+            $label = 'Unknown / Parsing';
+            $detail = 'Configured, but the delivery ledger is still inconclusive - '.$awaiting
+                .' conversion(s) have no confirmed delivery yet while Meta finishes parsing your data.';
         } else {
             $status = 'unknown';
-            $label = 'Unknown';
-            $detail = 'Configured, but there is no delivery evidence yet — parsing your data.';
+            $label = 'Unknown / Parsing';
+            $detail = 'Configured, but no purchase conversions have been recorded yet, so delivery is unproven - Meta is still parsing your data.';
         }
 
         return [
@@ -1030,10 +1053,42 @@ class AnalyticsCommandCenterService
             'label' => $label,
             'detail' => $detail,
             'capi_enabled' => $configured,
+            'config' => $config,
             'delivered_7d' => $delivered7d,
             'failed_7d' => $failed7d,
+            'ever_delivered' => $everDelivered,
+            'last_sent_at' => $lastSentAt,
+            'awaiting_delivery' => $awaiting,
             'ledger_total_all_time' => $allTime,
         ];
+    }
+
+    /**
+     * Human-readable, non-sensitive explanation of exactly which configuration
+     * requirement is unmet, plus the remedy. Never includes the token value.
+     */
+    protected function describeMissingCapiRequirements(array $config): string
+    {
+        $reasons = [
+            'env_enabled' => 'the META_CAPI_ENABLED environment flag is not set to a truthy value',
+            'pixel_present' => 'no Meta Pixel ID is saved in Settings -> SEO',
+            'token_present' => 'no usable Meta CAPI access token is saved in Settings -> SEO',
+        ];
+
+        $parts = [];
+
+        foreach ($config['missing'] as $requirement) {
+            $part = $reasons[$requirement] ?? 'the '.$requirement.' requirement is unmet';
+
+            if ($requirement === 'token_present' && ($config['token_stored'] ?? false)) {
+                $part = 'the saved Meta CAPI access token could not be decrypted with the current APP_KEY'
+                    .' (it was most likely stored unencrypted) - re-save it in Settings -> SEO';
+            }
+
+            $parts[] = $part;
+        }
+
+        return implode('; ', $parts);
     }
 
     protected function trackedOrders(array $bounds): int
@@ -1082,10 +1137,13 @@ class AnalyticsCommandCenterService
                 $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API configured but not receiving', 'detail' => 'Configured, but there is no recent delivery evidence in the conversion ledger.'];
                 break;
             case 'unknown':
-                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API status unknown', 'detail' => 'Configured, but there is no delivery evidence yet — parsing your data.'];
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API delivery unproven', 'detail' => $tracking['capi_status_detail'] ?? 'Configured, but the delivery ledger is inconclusive — Meta is still parsing your data.'];
+                break;
+            case 'not_configured':
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is not configured', 'detail' => $tracking['capi_status_detail'] ?? 'Server-side CAPI delivery is not configured; browser Pixel tracking may still be active.'];
                 break;
             default:
-                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is not configured', 'detail' => 'Server-side CAPI delivery is not configured; browser Pixel tracking may still be active.'];
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API status unknown', 'detail' => $tracking['capi_status_detail'] ?? 'CAPI status could not be determined.'];
         }
 
         if ($tracking['gtm_configured']) {
