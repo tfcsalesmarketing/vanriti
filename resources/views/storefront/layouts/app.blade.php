@@ -11,7 +11,7 @@
         $_brandName = store_name();
         $_escapedBrand = e($_brandName);
         if ($_seoTitle === '') {
-            $_seoTitle = setting('meta_title') ? e(setting('meta_title')) : $_escapedBrand;
+            $_seoTitle = setting('meta_title') ? e(html_entity_decode(setting('meta_title'), ENT_QUOTES)) : $_escapedBrand;
         }
         if ($_seoTitle !== '' && $_seoTitle !== $_escapedBrand && mb_strpos($_seoTitle, $_escapedBrand) === false) {
             $_seoTitle .= ' - ' . $_escapedBrand;
