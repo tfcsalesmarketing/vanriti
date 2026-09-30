@@ -540,7 +540,7 @@
 
     $buildOffer = function ($price, bool $available) use ($product, $shipRate, $transitMin, $transitMax, $returnDays) {
         return [
-            '@type' => 'Offer',
+            '@' . 'type' => 'Offer',
             'url' => route('product.show', $product),
             'priceCurrency' => 'INR',
             'price' => number_format((float) $price, 2, '.', ''),
@@ -548,30 +548,30 @@
             'availability' => $available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             'itemCondition' => 'https://schema.org/NewCondition',
             'seller' => [
-                '@type' => 'Organization',
+                '@' . 'type' => 'Organization',
                 'name' => store_name(),
             ],
             'shippingDetails' => [
-                '@type' => 'OfferShippingDetails',
+                '@' . 'type' => 'OfferShippingDetails',
                 'shippingRate' => [
-                    '@type' => 'MonetaryAmount',
+                    '@' . 'type' => 'MonetaryAmount',
                     'value' => $shipRate,
                     'currency' => 'INR',
                 ],
                 'shippingDestination' => [
-                    '@type' => 'DefinedRegion',
+                    '@' . 'type' => 'DefinedRegion',
                     'addressCountry' => 'IN',
                 ],
                 'deliveryTime' => [
-                    '@type' => 'ShippingDeliveryTime',
+                    '@' . 'type' => 'ShippingDeliveryTime',
                     'handlingTime' => [
-                        '@type' => 'QuantitativeValue',
+                        '@' . 'type' => 'QuantitativeValue',
                         'minValue' => 1,
                         'maxValue' => 2,
                         'unitCode' => 'DAY',
                     ],
                     'transitTime' => [
-                        '@type' => 'QuantitativeValue',
+                        '@' . 'type' => 'QuantitativeValue',
                         'minValue' => $transitMin,
                         'maxValue' => $transitMax,
                         'unitCode' => 'DAY',
@@ -579,7 +579,7 @@
                 ],
             ],
             'hasMerchantReturnPolicy' => [
-                '@type' => 'MerchantReturnPolicy',
+                '@' . 'type' => 'MerchantReturnPolicy',
                 'applicableCountry' => 'IN',
                 'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
                 'merchantReturnDays' => $returnDays,
@@ -590,13 +590,13 @@
     };
 
     $data = [
-        '@context' => 'https://schema.org',
-        '@type' => 'Product',
+        '@' . 'context' => 'https://schema.org',
+        '@' . 'type' => 'Product',
         'name' => $product->name,
         'url' => route('product.show', $product),
         'description' => strip_tags((string) ($product->description ?: $product->short_description ?: $product->meta_description)),
         'brand' => [
-            '@type' => 'Brand',
+            '@' . 'type' => 'Brand',
             'name' => store_name(),
         ],
     ];
@@ -605,7 +605,7 @@
     // the base row price is not necessarily a price the customer can pay.
     if ($activeVariants->isNotEmpty() && $variantPrices->count() > 1) {
         $data['offers'] = [
-            '@type' => 'AggregateOffer',
+            '@' . 'type' => 'AggregateOffer',
             'priceCurrency' => 'INR',
             'lowPrice' => number_format($variantPrices->min(), 2, '.', ''),
             'highPrice' => number_format($variantPrices->max(), 2, '.', ''),
@@ -634,7 +634,7 @@
     }
     if ((int) $product->review_count > 0) {
         $data['aggregateRating'] = [
-            '@type' => 'AggregateRating',
+            '@' . 'type' => 'AggregateRating',
             'ratingValue' => (string) $product->review_rating,
             'reviewCount' => (string) $product->review_count,
         ];
