@@ -16,6 +16,18 @@ class HomeController extends Controller
             ->active()
             ->get();
 
+        // One promotional banner per homepage section slot, keyed by position.
+        // scopeActive() already orders by sort_order, so first() per group is
+        // the lowest one; id breaks any sort_order tie deterministically.
+        $sectionBanners = Banner::query()
+            ->whereIn('type', Banner::PROMOTIONAL_TYPES)
+            ->whereIn('position', array_keys(Banner::SECTION_POSITIONS))
+            ->active()
+            ->orderBy('id')
+            ->get()
+            ->groupBy('position')
+            ->map->first();
+
         $featured = Product::query()
             ->active()
             ->featured()
@@ -48,6 +60,6 @@ class HomeController extends Controller
         $bestsellers = $bestsellers->isEmpty() ? $featured : $bestsellers;
         $newArrivals = $newArrivals->isEmpty() ? $featured : $newArrivals;
 
-        return view('storefront.home', compact('banners', 'featured', 'bestsellers', 'newArrivals', 'categories'));
+        return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories'));
     }
 }

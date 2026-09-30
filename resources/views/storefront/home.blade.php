@@ -139,6 +139,8 @@
     </div>
 </section>
 
+@include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_featured')])
+
 @if ($bestsellers->isNotEmpty())
     <section class="vr-section pt-0">
         <div class="container">
@@ -160,6 +162,8 @@
     </section>
 @endif
 
+@include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_bestsellers')])
+
 @if ($newArrivals->isNotEmpty())
     <section class="vr-section pt-0">
         <div class="container">
@@ -180,6 +184,8 @@
         </div>
     </section>
 @endif
+
+@include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_new_arrivals')])
 
 @if ($categories->isNotEmpty())
     <section class="vr-section pt-0">

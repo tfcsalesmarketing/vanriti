@@ -55,7 +55,11 @@
                                 —
                             @endif
                         </td>
-                        <td class="small">{{ $banner->position }}</td>
+                        <td class="small">
+                            {{ \App\Models\Banner::SECTION_POSITIONS[$banner->position]
+                                ?? \App\Models\Banner::HERO_POSITIONS[$banner->position]
+                                ?? $banner->position }}
+                        </td>
                         <td>
                             <span class="badge badge-soft-primary">{{ ucfirst($banner->type) }}</span>
                         </td>

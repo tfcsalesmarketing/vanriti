@@ -7,6 +7,8 @@ use App\Models\Banner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\In;
 use Illuminate\View\View;
 
 class BannerController extends Controller
@@ -26,13 +28,14 @@ class BannerController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,webp|max:3072',
             'mobile_image' => 'nullable|image|mimes:jpeg,png,webp|max:3072',
             'image_url' => ['nullable', 'url:https', 'max:500'],
             'mobile_image_url' => ['nullable', 'url:https', 'max:500'],
             'link' => 'required|url|max:500',
             'type' => 'required|in:hero,promotional,section',
-            'position' => 'required|string|max:50',
+            'position' => ['required', 'string', 'max:50', $this->positionRule($request)],
             'sort_order' => 'nullable|integer',
             'status' => 'required|in:active,inactive',
             'starts_at' => 'nullable|date',
@@ -67,13 +70,14 @@ class BannerController extends Controller
     public function update(Request $request, Banner $banner): RedirectResponse
     {
         $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:3072',
             'mobile_image' => 'nullable|image|mimes:jpeg,png,webp|max:3072',
             'image_url' => ['nullable', 'url:https', 'max:500'],
             'mobile_image_url' => ['nullable', 'url:https', 'max:500'],
             'link' => 'required|url|max:500',
             'type' => 'required|in:hero,promotional,section',
-            'position' => 'required|string|max:50',
+            'position' => ['required', 'string', 'max:50', $this->positionRule($request)],
             'sort_order' => 'nullable|integer',
             'status' => 'required|in:active,inactive',
             'starts_at' => 'nullable|date',
@@ -128,5 +132,15 @@ class BannerController extends Controller
         $banner->delete();
 
         return back()->with('success', 'Banner deleted successfully.');
+    }
+
+    /**
+     * Constrain `position` to the placements that are actually valid for the
+     * submitted type, so a hero banner can never be pointed at a homepage
+     * section slot (or vice versa) and silently render nowhere.
+     */
+    protected function positionRule(Request $request): In
+    {
+        return Rule::in(array_keys(Banner::positionsForType((string) $request->input('type', ''))));
     }
 }

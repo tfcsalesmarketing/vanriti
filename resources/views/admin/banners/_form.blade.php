@@ -1,5 +1,16 @@
 @php
     $banner = $banner ?? null;
+    $currentPosition = old('position', $banner->position ?? 'home_top');
+    $currentType = old('type', $banner->type ?? 'hero');
+
+    // A banner saved before the position dropdown existed can hold a position
+    // that is not valid for its type (e.g. a promotional banner left on
+    // home_top). Falling back to the first legal option keeps the record
+    // editable instead of making every save fail validation.
+    $positionIsValid = array_key_exists($currentPosition, \App\Models\Banner::positionsForType($currentType));
+    if (! $positionIsValid) {
+        $currentPosition = array_key_first(\App\Models\Banner::positionsForType($currentType));
+    }
 @endphp
 
 <div class="row g-3">
@@ -15,14 +26,36 @@
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Type <span class="text-danger">*</span></label>
                         <select name="type" class="form-select form-select-sm" required>
-                            <option value="hero" {{ old('type', $banner->type ?? 'hero') === 'hero' ? 'selected' : '' }}>Hero</option>
-                            <option value="promotional" {{ old('type', $banner->type ?? '') === 'promotional' ? 'selected' : '' }}>Promotional</option>
-                            <option value="section" {{ old('type', $banner->type ?? '') === 'section' ? 'selected' : '' }}>Section</option>
+                            <option value="hero" {{ $currentType === 'hero' ? 'selected' : '' }}>Hero (home carousel)</option>
+                            <option value="promotional" {{ $currentType === 'promotional' ? 'selected' : '' }}>Promotional (after a section)</option>
+                            <option value="section" {{ $currentType === 'section' ? 'selected' : '' }}>Section</option>
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Position <span class="text-danger">*</span></label>
-                        <input type="text" name="position" class="form-control form-control-sm" value="{{ old('position', $banner->position ?? 'home_top') }}" required>
+                        <select name="position" class="form-select form-select-sm" required>
+                            <optgroup label="Hero carousel">
+                                @foreach (\App\Models\Banner::HERO_POSITIONS as $value => $label)
+                                    <option value="{{ $value }}" {{ $currentPosition === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="After a homepage section">
+                                @foreach (\App\Models\Banner::SECTION_POSITIONS as $value => $label)
+                                    <option value="{{ $value }}" {{ $currentPosition === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </optgroup>
+                        </select>
+                        <div class="form-text">Hero banners sit in the homepage carousel. The section options place this banner directly under the matching product grid on the homepage. One banner per position - the lowest sort order is shown.</div>
+                        @unless ($positionIsValid)
+                            <div class="form-text text-warning-emphasis">
+                                This banner was stored with the position &ldquo;{{ $banner?->position }}&rdquo;, which is not valid for a {{ $currentType }} banner. Saving will move it to the position selected above.
+                            </div>
+                        @endunless
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Title</label>
+                        <input type="text" name="title" class="form-control form-control-sm" value="{{ old('title', $banner->title ?? '') }}" maxlength="255">
+                        <div class="form-text">Used as the image alt text, so it helps SEO. Leave empty for a generic alt.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Link URL <span class="text-danger">*</span></label>
