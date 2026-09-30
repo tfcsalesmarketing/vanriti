@@ -28,6 +28,8 @@
         if ($_ogImage === '') {
             $_ogImage = image_url($_brandLogo, 'favicon.ico');
         }
+        $_robots = trim((string) $__env->yieldContent('robots', 'index, follow'));
+        $_indexable = ! str_contains($_robots, 'noindex');
     @endphp
     <title>{{ $_seoTitle }}</title>
     <meta name="description" content="@yield('meta_description', setting('meta_description'))">
@@ -77,7 +79,7 @@
     }
     </script>
     <script nonce="{{ $cspNonce }}" type="application/ld+json">
-    {!! organization_json_ld(image_url($_brandLogo, 'favicon.ico')) !!}
+    {!! organization_json_ld(image_url($_brandLogo, 'favicon.ico'), $_indexable) !!}
     </script>
     <script nonce="{{ $cspNonce }}">
     window.dataLayer = window.dataLayer || [];

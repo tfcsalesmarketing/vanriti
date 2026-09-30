@@ -1,9 +1,11 @@
 <?php
 
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 
 if (! function_exists('setting')) {
@@ -70,7 +72,7 @@ if (! function_exists('csp_nonce')) {
     {
         if (! app()->bound('csp.nonce')) {
             app()->instance('csp.nonce', bin2hex(random_bytes(16)));
-            \Illuminate\Support\Facades\View::share('cspNonce', app('csp.nonce'));
+            View::share('cspNonce', app('csp.nonce'));
         }
 
         return (string) app('csp.nonce');
@@ -108,7 +110,7 @@ if (! function_exists('user_by_phone')) {
     /**
      * Find an account by any common spelling of the same Indian mobile number.
      */
-    function user_by_phone(?string $phone): ?\App\Models\User
+    function user_by_phone(?string $phone): ?User
     {
         $canonical = canonical_phone($phone);
 
@@ -116,7 +118,7 @@ if (! function_exists('user_by_phone')) {
             return null;
         }
 
-        return \App\Models\User::query()
+        return User::query()
             ->whereIn('phone', [$canonical, '91'.$canonical, '+91'.$canonical, '0'.$canonical])
             ->orderByRaw('CASE WHEN phone = ? THEN 0 ELSE 1 END', [$canonical])
             ->first();
@@ -432,11 +434,12 @@ if (! function_exists('asset_version')) {
 }
 
 if (! function_exists('organization_json_ld')) {
-    function organization_json_ld(?string $logoUrl = null): string
+    function organization_json_ld(?string $logoUrl = null, bool $indexable = true): string
     {
         $payload = [
             '@context' => 'https://schema.org',
             '@type' => 'Organization',
+            '@id' => route('home').'#organization',
             'name' => store_name(),
             'url' => route('home'),
             'logo' => $logoUrl ?: image_url(setting('store_logo'), 'favicon.ico'),
@@ -447,6 +450,14 @@ if (! function_exists('organization_json_ld')) {
             ],
             'sameAs' => seo_social_urls(),
         ];
+
+        if ($indexable && setting('store_email')) {
+            $payload['email'] = setting('store_email');
+        }
+
+        if ($indexable && setting('store_phone')) {
+            $payload['telephone'] = setting('store_phone');
+        }
 
         return json_encode(
             $payload,

@@ -527,23 +527,25 @@
     $transitMax = (int) ($days[1] ?? $transitMin);
     $returnDays = max(1, (int) setting('return_window_days', 7));
     $shipRate = number_format((float) setting('shipping_charge', 0), 2, '.', '');
-    $data = [
-        '@context' => 'https://schema.org',
-        '@type' => 'Product',
-        'name' => $product->name,
-        'url' => route('product.show', $product),
-        'description' => strip_tags((string) ($product->description ?: $product->short_description ?: $product->meta_description)),
-        'brand' => [
-            '@type' => 'Brand',
-            'name' => store_name(),
-        ],
-        'offers' => [
+    // Availability and price must describe what a customer can actually buy.
+    // Product::getAvailableStock() sums the *unfiltered* variants relation, so it
+    // reports InStock for a product whose only in-stock variant is disabled. The
+    // buyable set is activeVariants() - the same set the page renders options from.
+    $activeVariants = $product->activeVariants;
+    $hasVariants = $activeVariants->isNotEmpty() || $product->variants()->exists();
+    $inStock = $hasVariants
+        ? $activeVariants->contains(fn ($v) => (int) $v->stock > 0)
+        : ! $out;
+    $variantPrices = $activeVariants->map(fn ($v) => (float) $v->selling_price)->unique();
+
+    $buildOffer = function ($price, bool $available) use ($product, $shipRate, $transitMin, $transitMax, $returnDays) {
+        return [
             '@type' => 'Offer',
             'url' => route('product.show', $product),
             'priceCurrency' => 'INR',
-            'price' => number_format((float) $product->selling_price, 2, '.', ''),
+            'price' => number_format((float) $price, 2, '.', ''),
             'priceValidUntil' => now()->addYear()->toDateString(),
-            'availability' => $out ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+            'availability' => $available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             'itemCondition' => 'https://schema.org/NewCondition',
             'seller' => [
                 '@type' => 'Organization',
@@ -584,8 +586,42 @@
                 'returnMethod' => 'https://schema.org/ReturnByMail',
                 'returnFees' => 'https://schema.org/FreeReturn',
             ],
+        ];
+    };
+
+    $data = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $product->name,
+        'url' => route('product.show', $product),
+        'description' => strip_tags((string) ($product->description ?: $product->short_description ?: $product->meta_description)),
+        'brand' => [
+            '@type' => 'Brand',
+            'name' => store_name(),
         ],
     ];
+
+    // Differently priced active variants cannot be described by a single Offer:
+    // the base row price is not necessarily a price the customer can pay.
+    if ($activeVariants->isNotEmpty() && $variantPrices->count() > 1) {
+        $data['offers'] = [
+            '@type' => 'AggregateOffer',
+            'priceCurrency' => 'INR',
+            'lowPrice' => number_format($variantPrices->min(), 2, '.', ''),
+            'highPrice' => number_format($variantPrices->max(), 2, '.', ''),
+            'offerCount' => $activeVariants->count(),
+            'offers' => $activeVariants
+                ->map(fn ($v) => $buildOffer($v->selling_price, (int) $v->stock > 0))
+                ->values()
+                ->all(),
+        ];
+    } else {
+        $data['offers'] = $buildOffer(
+            $activeVariants->isNotEmpty() ? $activeVariants->first()->selling_price : $product->selling_price,
+            $inStock
+        );
+    }
+
     if ($images !== []) {
         $data['image'] = $images;
     }

@@ -5,7 +5,7 @@
 @section('meta_keywords', $category->meta_keywords ?: setting('meta_keywords'))
 @section('og_title', $category->meta_title ?: $category->name)
 @section('og_description', $category->meta_description ?: setting('meta_description'))
-@section('canonical', route('shop.category', $category))
+@section('canonical', $products->currentPage() > 1 ? '' : route('shop.category', $category))
 
 @section('content')
 

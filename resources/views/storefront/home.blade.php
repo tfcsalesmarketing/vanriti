@@ -237,36 +237,3 @@
 </section>
 
 @endsection
-
-@push('scripts')
-@php
-    $_logo = setting('store_logo');
-    if (! $_logo) { foreach (['svg', 'png', 'webp', 'jpg'] as $_ext) { if (file_exists(public_path('images/logo.' . $_ext))) { $_logo = 'images/logo.' . $_ext; break; } } }
-@endphp
-<script nonce="{{ $cspNonce }}" type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@@type": "Organization",
-    "name": {!! json_encode(store_name(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-    "url": {!! json_encode(route('home'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-    "logo": {!! json_encode(image_url($_logo, 'favicon.ico'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
-    @if (setting('store_email'))"email": {!! json_encode(setting('store_email'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},@endif
-    @if (setting('store_phone'))"telephone": {!! json_encode(setting('store_phone'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},@endif
-    @if (setting('store_address'))"address": {!! json_encode(setting('store_address'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},@endif
-    "sameAs": [
-        @php
-            $_socials = array_filter([
-                setting('facebook_url'),
-                setting('instagram_url'),
-                setting('twitter_url'),
-                setting('youtube_url'),
-                setting('linkedin_url'),
-            ]);
-        @endphp
-        @foreach ($_socials as $_social)
-        {!! json_encode($_social, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}@if (! $loop->last),@endif
-        @endforeach
-    ]
-}
-</script>
-@endpush
