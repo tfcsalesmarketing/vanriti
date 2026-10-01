@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DadiProductProfileController;
@@ -131,6 +132,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:manage-newsletters')->group(function () {
             Route::get('newsletters', [NewsletterController::class, 'index'])->name('newsletters.index');
             Route::delete('newsletters/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletters.destroy');
+        });
+
+        Route::middleware('permission:manage-newsletters')->group(function () {
+            Route::get('contact-messages', [ContactMessageController::class, 'index'])->name('contact-messages.index');
+            Route::get('contact-messages/{message}', [ContactMessageController::class, 'show'])->name('contact-messages.show');
+            Route::delete('contact-messages/{message}', [ContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
         });
 
         Route::resource('admins', AdminUserController::class)->except(['show'])->middleware('permission:manage-admins');

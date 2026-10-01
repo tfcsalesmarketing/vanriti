@@ -135,6 +135,14 @@
         </a>
     </li>
     @endif
+    @if ($admin->hasPermission('manage-newsletters'))
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.contact-messages.*') ? 'active' : '' }}"
+           href="{{ route('admin.contact-messages.index') }}">
+            <i class="bi bi-inbox"></i><span>Contact Inquiries</span>
+        </a>
+    </li>
+    @endif
 
     @if ($admin->hasPermission(['manage-media', 'manage-banners', 'manage-blogs', 'manage-pages', 'manage-faqs']))
     <li class="nav-heading">Content</li>
