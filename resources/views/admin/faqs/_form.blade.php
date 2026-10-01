@@ -1,5 +1,9 @@
 @php
     $faq = $faq ?? null;
+    $linkCategories = $linkCategories ?? collect();
+    $linkProducts = $linkProducts ?? collect();
+    $selectedCategories = old('related_categories', $faq?->categories->pluck('id')->toArray() ?? []);
+    $selectedProducts = old('related_products', $faq?->products->pluck('id')->toArray() ?? []);
 @endphp
 
 <div class="row g-3">
@@ -36,6 +40,30 @@
                             <option value="inactive" {{ old('status', $faq->status ?? '') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Internal Links</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Related Categories</label>
+                    <select name="related_categories[]" class="form-select form-select-sm" multiple size="5">
+                        @foreach ($linkCategories as $cat)
+                            <option value="{{ $cat->id }}" {{ in_array($cat->id, $selectedCategories) ? 'selected' : '' }}>{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">Hold Ctrl/Cmd to select multiple. Leave empty for no category links.</div>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label small fw-semibold">Related Products</label>
+                    <select name="related_products[]" class="form-select form-select-sm" multiple size="5">
+                        @foreach ($linkProducts as $prod)
+                            <option value="{{ $prod->id }}" {{ in_array($prod->id, $selectedProducts) ? 'selected' : '' }}>{{ $prod->name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">Hold Ctrl/Cmd to select multiple. Leave empty for no product links.</div>
                 </div>
             </div>
         </div>

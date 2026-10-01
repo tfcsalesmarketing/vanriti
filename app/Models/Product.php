@@ -121,6 +121,11 @@ class Product extends Model
         return $this->belongsToMany(Category::class, 'product_category');
     }
 
+    public function faqs(): BelongsToMany
+    {
+        return $this->belongsToMany(Faq::class, 'faq_product');
+    }
+
     public function primaryCategory()
     {
         return $this->categories()->wherePivot('is_primary', true)->first();

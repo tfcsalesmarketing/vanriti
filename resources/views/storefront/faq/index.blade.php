@@ -50,6 +50,31 @@
                             <div id="faq-item-{{ $faq->id }}" class="accordion-collapse collapse" data-bs-parent="#faq-{{ Str::slug($category) }}">
                                 <div class="accordion-body" style="line-height:1.7;color:var(--vr-text);">
                                     {!! nl2br(e($faq->answer)) !!}
+
+                                    @if ($faq->categories->isNotEmpty() || $faq->products->isNotEmpty())
+                                        <div class="faq-related mt-3 pt-3" style="border-top:1px solid var(--vr-border);">
+                                            @if ($faq->categories->isNotEmpty())
+                                                <div class="mb-2">
+                                                    <span class="small fw-semibold text-muted">Related Category:</span>
+                                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                                        @foreach ($faq->categories as $linkedCategory)
+                                                            <a href="{{ route('shop.category', $linkedCategory) }}" class="vr-chip">{{ $linkedCategory->name }}</a>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                            @if ($faq->products->isNotEmpty())
+                                                <div>
+                                                    <span class="small fw-semibold text-muted">Related Products:</span>
+                                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                                        @foreach ($faq->products->take(4) as $linkedProduct)
+                                                            <a href="{{ route('product.show', $linkedProduct) }}" class="vr-chip">{{ $linkedProduct->name }}</a>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

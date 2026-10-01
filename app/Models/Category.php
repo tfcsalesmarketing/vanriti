@@ -45,6 +45,11 @@ class Category extends Model
         return $this->belongsToMany(Product::class, 'product_category')->wherePivot('is_primary', true);
     }
 
+    public function faqs(): BelongsToMany
+    {
+        return $this->belongsToMany(Faq::class, 'faq_category');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');

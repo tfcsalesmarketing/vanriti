@@ -8,7 +8,10 @@ class FaqController extends Controller
 {
     public function index()
     {
-        $faqs = Faq::active()->get()->groupBy(fn ($f) => $f->category ?? 'General');
+        $faqs = Faq::active()
+            ->with(['categories' => fn ($q) => $q->where('status', 'active'), 'products' => fn ($q) => $q->where('status', 'active')])
+            ->get()
+            ->groupBy(fn ($f) => $f->category ?? 'General');
 
         return view('storefront.faq.index', compact('faqs'));
     }
