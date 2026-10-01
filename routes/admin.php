@@ -33,6 +33,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AdminAuthController::class, 'showLoginForm'])->name('login');
     Route::post('login', [AdminAuthController::class, 'login'])->name('login.submit')->middleware('throttle:5,1');
     Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
+    Route::post('password/change', [AdminAuthController::class, 'changePassword'])->name('password.change');
 
     Route::middleware(['admin.auth'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('permission:view-dashboard');

@@ -68,4 +68,29 @@ class AdminAuthController extends Controller
 
         return redirect()->route('admin.login')->with('success', 'You have been logged out.');
     }
+
+    public function changePassword(Request $request): RedirectResponse
+    {
+        $validated = Validator::make($request->all(), [
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ])->validate();
+
+        $admin = Auth::guard('admin')->user();
+
+        if (! Auth::guard('admin')->attempt([
+            'email' => $admin->email,
+            'password' => $validated['current_password'],
+        ])) {
+            throw ValidationException::withMessages([
+                'current_password' => 'The current password is incorrect.',
+            ]);
+        }
+
+        $admin->forceFill([
+            'password' => $validated['new_password'],
+        ])->save();
+
+        return back()->with('success', 'Password changed successfully.');
+    }
 }

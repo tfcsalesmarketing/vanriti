@@ -52,6 +52,11 @@
                             <li><span class="dropdown-item-text small text-muted">{{ auth('admin')->user()->email }}</span></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
+                                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminChangePasswordModal">
+                                    <i class="bi bi-shield-lock me-2"></i>Change Password
+                                </button>
+                            </li>
+                            <li>
                                 <form method="POST" action="{{ route('admin.logout') }}">
                                     @csrf
                                     <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
@@ -104,6 +109,48 @@
     </div>
 
     <div class="admin-sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <div class="modal fade" id="adminChangePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Change Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ route('admin.password.change') }}">
+                    @csrf
+                    <div class="modal-body">
+                        @if ($errors->has('current_password') || $errors->has('new_password'))
+                            <div class="alert alert-danger py-2 small">
+                                <ul class="mb-0 ps-3">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Current Password</label>
+                            <input type="password" name="current_password" class="form-control form-control-sm" required autocomplete="current-password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">New Password</label>
+                            <input type="password" name="new_password" class="form-control form-control-sm" required minlength="8" autocomplete="new-password">
+                            <div class="form-text">Minimum 8 characters.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Confirm New Password</label>
+                            <input type="password" name="new_password_confirmation" class="form-control form-control-sm" required autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script nonce="{{ $cspNonce }}" src="{{ asset('js/admin.js') }}?v=1.4"></script>
