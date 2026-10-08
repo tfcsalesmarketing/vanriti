@@ -209,11 +209,21 @@ class RefundService
      */
     protected function stageRefundAnalytics(Refund $refund): void
     {
-        if (! $refund->user_id) {
-            return;
+        if ($refund->user_id) {
+            $key = self::PENDING_REFUND_CACHE_KEY.$refund->user_id;
+        } else {
+            // Guest refund: keyed by the order's guest cart session (the
+            // forever vanriti_cart cookie) so the placing browser — not some
+            // other visitor — pulls the event on its next render.
+            $guestSessionId = $refund->order?->guest_session_id;
+
+            if (! is_string($guestSessionId) || $guestSessionId === '') {
+                return;
+            }
+
+            $key = self::PENDING_REFUND_CACHE_KEY.'guest_'.$guestSessionId;
         }
 
-        $key = self::PENDING_REFUND_CACHE_KEY.$refund->user_id;
         $pending = (array) cache()->get($key, []);
         $pending[$refund->id] = $this->ecommerce->refund($refund);
 

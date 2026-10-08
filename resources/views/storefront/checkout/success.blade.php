@@ -55,13 +55,36 @@
 
                     <div class="p-4 d-flex flex-column align-items-center gap-3">
                         <div class="d-flex gap-2 w-100 justify-content-center flex-wrap">
-                            <a href="{{ route('account.order', $order) }}" class="btn vr-app-btn px-4 py-2">
-                                <i class="ri-file-list-3-line me-1"></i> View Order Details
-                            </a>
-                            <a href="{{ route('track') }}" class="btn vr-app-outline-btn px-4 py-2">
-                                <i class="ri-map-pin-user-line me-1"></i> Track Delivery
-                            </a>
+                            @if ($order->isGuest())
+                                <a href="{{ $order->guestTrackingUrl() }}" class="btn vr-app-btn px-4 py-2">
+                                    <i class="ri-file-list-3-line me-1"></i> View Order Details
+                                </a>
+                                <a href="{{ route('track') }}" class="btn vr-app-outline-btn px-4 py-2">
+                                    <i class="ri-map-pin-user-line me-1"></i> Track Delivery
+                                </a>
+                            @else
+                                <a href="{{ route('account.order', $order) }}" class="btn vr-app-btn px-4 py-2">
+                                    <i class="ri-file-list-3-line me-1"></i> View Order Details
+                                </a>
+                                <a href="{{ route('track') }}" class="btn vr-app-outline-btn px-4 py-2">
+                                    <i class="ri-map-pin-user-line me-1"></i> Track Delivery
+                                </a>
+                            @endif
                         </div>
+
+                        @if ($order->isGuest() && ! auth()->check())
+                            <div class="alert alert-light border text-start small w-100 mb-0" style="border-radius:12px;">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <span class="text-muted">
+                                        <i class="ri-shield-check-line me-1 text-success"></i>
+                                        Save this order to your account for one-tap reorders and status alerts.
+                                    </span>
+                                    <a href="{{ route('checkout.create-account', array_filter(['order' => $order, 'token' => request('token')])) }}" class="btn vr-app-btn btn-sm text-nowrap">
+                                        Create your account
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
 
                         <a href="{{ route('shop.index') }}" class="small text-muted vr-link-underline">
                             <i class="ri-arrow-left-line me-1"></i> Continue Shopping

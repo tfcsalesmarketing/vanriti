@@ -273,10 +273,21 @@
         </script>
     @endif
     @php
+        // Refund analytics are staged server-side (admin action) and pulled
+        // exactly once by the customer's next render. Keyed by account id, or
+        // — for guest refunds — by the guest cart session cookie so the
+        // placing browser receives it without ever having signed in.
         $pendingRefundUserId = auth('web')->id();
         $pendingRefundEvents = $pendingRefundUserId
             ? cache()->pull(\App\Services\RefundService::PENDING_REFUND_CACHE_KEY.$pendingRefundUserId)
             : null;
+
+        if (empty($pendingRefundEvents)) {
+            $_refundGuestCartId = request()->cookie(\App\Services\CartService::COOKIE_NAME);
+            $pendingRefundEvents = is_string($_refundGuestCartId) && $_refundGuestCartId !== ''
+                ? cache()->pull(\App\Services\RefundService::PENDING_REFUND_CACHE_KEY.'guest_'.$_refundGuestCartId)
+                : null;
+        }
     @endphp
     @if (! empty($pendingRefundEvents) && is_array($pendingRefundEvents))
         @foreach ($pendingRefundEvents as $pendingRefundEvent)

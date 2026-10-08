@@ -30,24 +30,31 @@ class OrderService
     /**
      * Place an order from a cart. All pricing is recomputed server-side.
      *
+     * $user is null for a guest checkout: the order then stores guest_* contact
+     * fields and a hashed access token (the raw token is handed back through
+     * the session only, never persisted).
+     *
      * @param  array{
      *   billing: array,
      *   shipping: array,
      *   shipping_method: string,
      *   payment_method: string,
      *   coupon_code: ?string,
-     *   notes: ?string
+     *   notes: ?string,
+     *   guest?: ?array{name: ?string, mobile: ?string, email: ?string, session_id: ?string}
      * }  $orderData
      * @param  bool  $clearCart  Whether to delete the cart items once the order is committed.
      */
-    public function placeOrder(User $user, Cart $cart, array $orderData, bool $clearCart = true): Order
+    public function placeOrder(?User $user, Cart $cart, array $orderData, bool $clearCart = true): Order
     {
-        $order = DB::transaction(function () use ($user, $cart, $orderData, $clearCart) {
+        $rawGuestToken = null;
+
+        $order = DB::transaction(function () use ($user, $cart, $orderData, $clearCart, &$rawGuestToken) {
             if (! $cart->items()->exists()) {
                 throw new \RuntimeException('Your cart is empty.');
             }
 
-            if (! $user->isActive()) {
+            if ($user !== null && ! $user->isActive()) {
                 throw new \RuntimeException('Your account is restricted. Please contact support.');
             }
 
@@ -177,8 +184,19 @@ class OrderService
             );
             $taxSplit = $this->gstService->splitTax($taxAmount, $intraState);
 
+            // Guest orders: generate the raw access token once; only its
+            // SHA-256 hash goes into the row, the raw value is stashed in the
+            // placing browser's session after the transaction commits.
+            $guest = $orderData['guest'] ?? null;
+            $rawGuestToken = $user === null ? Str::random(40) : null;
+
             $order = Order::create([
-                'user_id' => $user->id,
+                'user_id' => $user?->id,
+                'guest_name' => $rawGuestToken !== null ? ($guest['name'] ?? null) : null,
+                'guest_email' => $rawGuestToken !== null ? ($guest['email'] ?? null) : null,
+                'guest_mobile' => $rawGuestToken !== null ? ($guest['mobile'] ?? null) : null,
+                'guest_session_id' => $rawGuestToken !== null ? ($guest['session_id'] ?? null) : null,
+                'access_token' => $rawGuestToken !== null ? hash('sha256', $rawGuestToken) : null,
                 'coupon_id' => $coupon?->id,
                 // A literal 'TEMP' placeholder is unsafe: order_number carries a
                 // UNIQUE index, so two concurrent checkouts would collide on the
@@ -245,6 +263,13 @@ class OrderService
 
             return $order->fresh();
         });
+
+        // The raw guest access token is handed back through the placing
+        // browser's session only (never stored server-side in plaintext), so
+        // the confirmation/tracking pages can authorise this visitor.
+        if ($rawGuestToken !== null) {
+            session()->put('guest_order_tokens.'.$order->id, $rawGuestToken);
+        }
 
         // The purchase-attribution hook runs AFTER the order transaction is
         // committed: a best-effort analytics failure must never roll back or

@@ -21,12 +21,43 @@ class RazorpayGateway implements PaymentGateway
 
     public function createOrder(Order $order, Payment $payment): array
     {
+        $order->loadMissing(['items.product', 'items.variant']);
+
+        $lineItems = $order->items
+            ->filter(fn ($item) => is_string($item->sku) && $item->sku !== '')
+            ->map(function ($item) {
+                $imageUrl = '';
+                if ($item->product) {
+                    $primaryImage = $item->product->getPrimaryImage();
+                    if ($primaryImage) {
+                        $imageUrl = image_url($primaryImage->image_path);
+                    }
+                }
+
+                return [
+                    'sku' => (string) $item->sku,
+                    'variant_id' => (string) ($item->product_variant_id ?? ''),
+                    'price' => (int) round($item->unit_price * 100),
+                    'offer_price' => (int) round($item->unit_price * 100),
+                    'quantity' => (int) $item->quantity,
+                    'name' => (string) ($item->product_name ?? ''),
+                    'description' => (string) ($item->product_name ?? ''),
+                    'image_url' => $imageUrl,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $amountPaise = (int) round($order->amount_due * 100);
+
         $response = Http::withBasicAuth($this->keyId, $this->keySecret)
             ->asJson()
             ->post('https://api.razorpay.com/v1/orders', [
-                'amount' => (int) round($order->amount_due * 100),
+                'amount' => $amountPaise,
                 'currency' => 'INR',
                 'receipt' => $order->order_number,
+                'line_items_total' => $amountPaise,
+                'line_items' => $lineItems,
                 'notes' => [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,

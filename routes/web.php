@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -10,13 +11,12 @@ use App\Http\Controllers\DadiController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsletterController;
-use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RazorpayWebhookController;
+use App\Http\Controllers\ShipMojoWebhookController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\ShipMojoWebhookController;
 use App\Http\Controllers\TrackController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Page;
@@ -86,8 +86,11 @@ Route::post('/otp/send', [OtpController::class, 'send'])->name('otp.send')->midd
 Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify')->middleware('throttle:otp.verify');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// ---------- Checkout (requires login; guest carts merge on login) ----------
-Route::middleware(['auth', 'active'])->group(function () {
+// ---------- Checkout (guest checkout + authenticated checkout) ----------
+// Guests may complete a full guest checkout here; authenticated-only account
+// routes stay behind the auth middleware below. The 'active' middleware still
+// applies so a restricted account can never place an order.
+Route::middleware('active')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:checkout');
     Route::post('/checkout/validate', [CheckoutController::class, 'validateFields'])->name('checkout.validate');
@@ -95,7 +98,13 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::get('/checkout/failed/{order}', [CheckoutController::class, 'failed'])->name('checkout.failed');
     Route::get('/checkout/pending/{order}', [CheckoutController::class, 'pending'])->name('checkout.pending');
+    // Post-purchase account creation: stages the session flags and hands off
+    // to the existing registration flow (linking happens on the Login event).
+    Route::get('/checkout/create-account/{order}', [CheckoutController::class, 'createAccount'])->name('checkout.create-account');
+});
 
+// ---------- Account (requires login; guest carts merge on login) ----------
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/account', [AccountController::class, 'dashboard'])->name('account.dashboard');
     Route::get('/account/orders', [AccountController::class, 'orders'])->name('account.orders');
     Route::get('/account/orders/{order}', [AccountController::class, 'orderShow'])->name('account.order');

@@ -14,7 +14,9 @@ class NotificationService
 {
     public function orderStatusChanged(Order $order, string $status): void
     {
-        $order->user->notify(new OrderStatusNotification($order, $status));
+        // Guest orders have no account to notify (status still reaches the
+        // customer through the signed tracking link / admin-driven channels).
+        $order->user?->notify(new OrderStatusNotification($order, $status));
     }
 
     public function orderPlaced(Order $order): void
@@ -53,7 +55,8 @@ class NotificationService
 
     public function refundStatusChanged(Refund $refund): void
     {
-        $refund->user->notify(new RefundStatusNotification($refund));
+        // Refunds on guest orders carry no user to notify.
+        $refund->user?->notify(new RefundStatusNotification($refund));
     }
 
     public function notifyAdmins(string $title, string $message, array $channels = ['database']): void

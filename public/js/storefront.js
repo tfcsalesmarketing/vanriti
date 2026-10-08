@@ -431,15 +431,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var form = btn.closest('form');
             if (!form) return;
 
-            var guestMeta = document.querySelector('meta[name="vr-is-guest"]');
-            if (guestMeta && guestMeta.getAttribute('content') === '1') {
-                if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
-                    window.vrLoginModal.pendingForm = form;
-                    window.vrLoginModal.open();
-                    return;
-                }
-            }
-
             var original = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';

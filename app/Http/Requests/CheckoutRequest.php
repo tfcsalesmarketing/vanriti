@@ -34,6 +34,10 @@ class CheckoutRequest extends FormRequest
             'shipping_state' => 'required|string|max:120',
             'shipping_pincode' => 'required|string|regex:/^[0-9]{6}$/',
             'shipping_country' => 'nullable|string|max:80',
+            // Guest checkout only: an optional contact email for order
+            // updates. Ignored for account orders (their email lives on the
+            // user row) — the controller reads it in the guest branch alone.
+            'email' => 'nullable|string|email|max:255',
             'billing_same' => 'nullable|in:1',
             'billing_name' => 'exclude_if:billing_same,1|required|string|max:255',
             'billing_mobile' => ['exclude_if:billing_same,1', 'required', 'string', 'max:15', 'regex:/^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$/'],

@@ -55,12 +55,21 @@
                         </div>
 
                         <div class="d-flex gap-2 w-100 justify-content-center flex-wrap">
-                            <a href="{{ route('account.order', $order) }}" class="btn vr-app-btn px-4 py-2">
-                                <i class="ri-file-list-3-line me-1"></i> View Order
-                            </a>
-                            <a href="{{ route('account.orders') }}" class="btn vr-app-outline-btn px-4 py-2">
-                                <i class="ri-list-check me-1"></i> My Orders
-                            </a>
+                            @if ($order->isGuest())
+                                <a href="{{ route('checkout.index') }}" class="btn vr-app-btn px-4 py-2">
+                                    <i class="ri-refresh-line me-1"></i> Retry Payment
+                                </a>
+                                <a href="{{ $order->guestTrackingUrl() }}" class="btn vr-app-outline-btn px-4 py-2">
+                                    <i class="ri-file-list-3-line me-1"></i> View Order
+                                </a>
+                            @else
+                                <a href="{{ route('account.order', $order) }}" class="btn vr-app-btn px-4 py-2">
+                                    <i class="ri-file-list-3-line me-1"></i> View Order
+                                </a>
+                                <a href="{{ route('account.orders') }}" class="btn vr-app-outline-btn px-4 py-2">
+                                    <i class="ri-list-check me-1"></i> My Orders
+                                </a>
+                            @endif
                         </div>
 
                         <a href="{{ route('shop.index') }}" class="small text-muted vr-link-underline">

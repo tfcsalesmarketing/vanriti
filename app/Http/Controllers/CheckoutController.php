@@ -10,6 +10,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Analytics\AnalyticsEventRecorder;
 use App\Services\Analytics\ConversionService;
 use App\Services\Analytics\EcommerceDataService;
 use App\Services\Analytics\MetaCapiService;
@@ -23,6 +24,7 @@ use App\Services\ShippingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -45,23 +47,20 @@ class CheckoutController extends Controller
     {
         $user = auth('web')->user();
 
-        if (! $user) {
-            return view('storefront.checkout.guest');
-        }
-
         $cart = $this->cartService->getCart(true);
 
         if (! $cart || ! $cart->items()->exists()) {
             return redirect()->route('cart.index');
         }
 
-        $addresses = $user->addresses()->get();
+        $addresses = $user ? $user->addresses()->get() : collect();
+        $addresses = $addresses instanceof Collection ? $addresses : collect($addresses);
 
         $selectedAddress = null;
-        if ($request->has('address_id')) {
+        if ($user && $request->has('address_id')) {
             $selectedAddress = $addresses->where('id', $request->address_id)->first();
         }
-        if (! $selectedAddress && $request->input('address') !== 'new') {
+        if ($user && ! $selectedAddress && $request->input('address') !== 'new') {
             $selectedAddress = $addresses->where('is_default', true)->first() ?? $addresses->first();
         }
 
@@ -83,9 +82,9 @@ class CheckoutController extends Controller
         $checkoutEcommerce = $this->ecommerceDataService->checkoutEcommerce($cart);
 
         // First-party analytics event (measurement only; never affects checkout).
-        app(\App\Services\Analytics\AnalyticsEventRecorder::class)->beginCheckout($cart);
+        app(AnalyticsEventRecorder::class)->beginCheckout($cart);
 
-        return view('storefront.checkout.index', compact(
+        return view($user ? 'storefront.checkout.index' : 'storefront.checkout.guest', compact(
             'cart', 'addresses', 'selectedAddress', 'subtotal',
             'availableMethods', 'shipping', 'couponDiscount', 'couponCode', 'user',
             'beginCheckoutPayload', 'checkoutEcommerce'
@@ -173,6 +172,15 @@ class CheckoutController extends Controller
             return $this->emptyCartResponse($user);
         }
 
+        if ($user === null) {
+            $orderData['guest'] = [
+                'name' => $validated['shipping_name'],
+                'mobile' => $validated['shipping_mobile'],
+                'email' => $validated['email'] ?? null,
+                'session_id' => $cart->session_id ?? $this->guestSessionId(),
+            ];
+        }
+
         $resumed = false;
 
         // Resume an abandoned Razorpay checkout before creating a new order so
@@ -250,7 +258,7 @@ class CheckoutController extends Controller
             try {
                 $payment = $this->paymentService->createPayment($order, 'cod');
                 $this->paymentService->initialize($order, $payment, 'cod');
-                app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'cod');
+                app(AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'cod');
             } catch (\Throwable $e) {
                 Log::error('COD payment initialisation failed.', ['error' => $e->getMessage()]);
 
@@ -271,7 +279,7 @@ class CheckoutController extends Controller
 
             $this->notifyCustomer($order, 'orderPlaced');
 
-            return redirect()->route('checkout.success', $order)->with('success', 'Order placed successfully!');
+            return $this->statusRedirect('checkout.success', $order, 'Order placed successfully!');
         }
 
         if ($validated['payment_method'] === 'razorpay') {
@@ -327,7 +335,7 @@ class CheckoutController extends Controller
                 $payment = $this->paymentService->createPayment($order, 'razorpay');
                 $init = $this->paymentService->initialize($order, $payment, 'razorpay');
                 // First-party analytics event (measurement only; never affects payment).
-                app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'razorpay');
+                app(AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'razorpay');
             });
 
             session()->forget('cart_coupon');
@@ -360,7 +368,7 @@ class CheckoutController extends Controller
      * If the session has an in-flight Razorpay order that still matches the
      * current cart, return it so the interrupted checkout can be resumed.
      */
-    protected function resumableRazorpayOrder(User $user, Cart $cart): ?Order
+    protected function resumableRazorpayOrder(?User $user, Cart $cart): ?Order
     {
         $stored = session('razorpay_inflight');
 
@@ -370,7 +378,7 @@ class CheckoutController extends Controller
 
         $order = Order::find($stored['order_id']);
 
-        if (! $order || $order->user_id !== $user->id) {
+        if (! $order || ! $this->orderBelongsToCurrentVisitor($order, $user)) {
             session()->forget('razorpay_inflight');
 
             return null;
@@ -397,18 +405,27 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Latest pending Razorpay order for a user that still matches the given cart
-     * exactly. Called after the cart row lock so a concurrent first submission
-     * (which committed while we waited) is resumed rather than duplicated.
+     * Latest pending Razorpay order for this visitor that still matches the
+     * given cart exactly. Called after the cart row lock so a concurrent first
+     * submission (which committed while we waited) is resumed rather than
+     * duplicated. Guests are matched on the cart's guest session id.
      */
-    protected function resumableRazorpayOrderForCart(User $user, Cart $cart): ?Order
+    protected function resumableRazorpayOrderForCart(?User $user, Cart $cart): ?Order
     {
-        $order = Order::where('user_id', $user->id)
-            ->where('payment_method', 'razorpay')
-            ->whereIn('payment_status', ['pending', 'processing'])
-            ->where('order_status', 'pending')
-            ->latest()
-            ->first();
+        $order = $user
+            ? Order::where('user_id', $user->id)
+                ->where('payment_method', 'razorpay')
+                ->whereIn('payment_status', ['pending', 'processing'])
+                ->where('order_status', 'pending')
+                ->latest()
+                ->first()
+            : Order::whereNull('user_id')
+                ->where('guest_session_id', (string) $cart->session_id)
+                ->where('payment_method', 'razorpay')
+                ->whereIn('payment_status', ['pending', 'processing'])
+                ->where('order_status', 'pending')
+                ->latest()
+                ->first();
 
         if (! $order) {
             return null;
@@ -505,20 +522,31 @@ class CheckoutController extends Controller
      * the payment is still pending. Surface the pending order instead of a
      * confusing "Your cart is empty." failure.
      */
-    protected function emptyCartResponse(User $user): RedirectResponse
+    protected function emptyCartResponse(?User $user): RedirectResponse
     {
-        $recent = Order::where('user_id', $user->id)
-            ->whereIn('payment_status', ['pending', 'processing'])
-            ->where('order_status', 'pending')
-            ->latest()
-            ->first();
+        $recent = null;
+
+        if ($user) {
+            $recent = Order::where('user_id', $user->id)
+                ->whereIn('payment_status', ['pending', 'processing'])
+                ->where('order_status', 'pending')
+                ->latest()
+                ->first();
+        } elseif ($guestSessionId = $this->guestSessionId()) {
+            $recent = Order::whereNull('user_id')
+                ->where('guest_session_id', $guestSessionId)
+                ->whereIn('payment_status', ['pending', 'processing'])
+                ->where('order_status', 'pending')
+                ->latest()
+                ->first();
+        }
 
         return $recent
-            ? redirect()->route('checkout.pending', $recent)
+            ? $this->statusRedirect('checkout.pending', $recent)
             : back()->withErrors(['checkout' => 'Your cart is empty.'])->withInput();
     }
 
-    protected function orderFailureResponse(User $user, \RuntimeException $e): RedirectResponse
+    protected function orderFailureResponse(?User $user, \RuntimeException $e): RedirectResponse
     {
         if ($e->getMessage() === 'Your cart is empty.') {
             return $this->emptyCartResponse($user);
@@ -534,9 +562,10 @@ class CheckoutController extends Controller
         $order = $orderId ? Order::find($orderId) : null;
 
         // Only the owner of an order may confirm its payment: without this a
-        // third party could flip another user's order to failed via the
-        // (CSRF-exempt) callback route.
-        if (! $order || $order->user_id !== auth('web')->id()) {
+        // third party could flip another user's (or a guest's) order to failed
+        // via the (CSRF-exempt) callback route. Guests are authorised by their
+        // session-held access token or the guest cart cookie.
+        if (! $order || ! $this->orderBelongsToCurrentVisitor($order, auth('web')->user())) {
             abort(403);
         }
 
@@ -555,7 +584,7 @@ class CheckoutController extends Controller
             $payment = $order->payments()->latest()->first();
 
             if (! $payment) {
-                return redirect()->route('checkout.failed', $order);
+                return $this->statusRedirect('checkout.failed', $order);
             }
 
             $gateway = new RazorpayGateway;
@@ -574,14 +603,14 @@ class CheckoutController extends Controller
                     if (($captured['status'] ?? '') !== 'captured') {
                         $this->failRazorpayCheckout($order, $payment, 'Payment was not captured by the gateway.');
 
-                        return redirect()->route('checkout.failed', $order);
+                        return $this->statusRedirect('checkout.failed', $order);
                     }
 
                     $expectedPaisa = (int) round((float) $order->amount_due * 100);
                     if ((int) ($captured['amount'] ?? 0) !== $expectedPaisa) {
                         $this->failRazorpayCheckout($order, $payment, 'Captured amount does not match the order total.');
 
-                        return redirect()->route('checkout.failed', $order);
+                        return $this->statusRedirect('checkout.failed', $order);
                     }
                 }
 
@@ -617,19 +646,19 @@ class CheckoutController extends Controller
 
                 $this->notifyCustomer($order, 'paymentSuccessful');
 
-                return redirect()->route('checkout.success', $order);
+                return $this->statusRedirect('checkout.success', $order);
             }
 
             $this->failRazorpayCheckout($order, $payment, 'Signature verification failed.');
 
-            return redirect()->route('checkout.failed', $order);
+            return $this->statusRedirect('checkout.failed', $order);
         } catch (\Throwable $e) {
             Log::error('Payment verification error', ['error' => $e->getMessage()]);
 
             $order = $orderId ? Order::find($orderId) : null;
 
             return $order
-                ? redirect()->route('checkout.pending', $order)
+                ? $this->statusRedirect('checkout.pending', $order)
                 : redirect()->route('home');
         }
     }
@@ -647,7 +676,7 @@ class CheckoutController extends Controller
 
     public function success(Order $order): View
     {
-        abort_if($order->user_id !== auth('web')->id(), 403);
+        abort_unless($this->orderBelongsToCurrentVisitor($order, auth('web')->user()), 403);
 
         $order->load(['items', 'payments', 'shipments.trackingEvents']);
 
@@ -700,7 +729,7 @@ class CheckoutController extends Controller
 
     public function failed(Order $order): View
     {
-        abort_if($order->user_id !== auth('web')->id(), 403);
+        abort_unless($this->orderBelongsToCurrentVisitor($order, auth('web')->user()), 403);
 
         $order->load(['items', 'payments']);
 
@@ -709,11 +738,108 @@ class CheckoutController extends Controller
 
     public function pending(Order $order): View
     {
-        abort_if($order->user_id !== auth('web')->id(), 403);
+        abort_unless($this->orderBelongsToCurrentVisitor($order, auth('web')->user()), 403);
 
         $order->load(['items', 'payments']);
 
         return view('storefront.checkout.pending', compact('order'));
+    }
+
+    /**
+     * Step 1 of post-purchase account creation: authorise the visitor for this
+     * guest order, stage the linking flag (raw token) and a registration
+     * prefill in the session, then hand off to the existing registration flow.
+     * The actual link to the new account happens on the Login event.
+     */
+    public function createAccount(Order $order): RedirectResponse
+    {
+        if (auth('web')->check()) {
+            return redirect()->route('account.dashboard');
+        }
+
+        abort_unless($this->orderBelongsToCurrentVisitor($order, null), 403);
+        abort_unless($order->isGuest(), 403);
+
+        $stashed = (array) session('guest_order_tokens', []);
+        $raw = $stashed[$order->id] ?? null;
+
+        if (is_string($raw) && $raw !== '') {
+            session(['post_purchase_link' => [(string) $order->id => $raw]]);
+        }
+
+        session(['post_purchase_prefill' => [
+            'name' => $order->guest_name ?: $order->shipping_name,
+            'email' => $order->guest_email ?: null,
+            'phone' => $order->guest_mobile ?: $order->shipping_mobile,
+        ]]);
+
+        return redirect()->route('register');
+    }
+
+    /**
+     * Authorisation for order-scoped pages/actions.
+     *
+     * Account orders: only the owning user. Guest orders: proof of ownership
+     * is the raw access token (request input or the server-side session
+     * stash, hashed comparison) or possession of the browser's guest cart
+     * cookie recorded on the order. Enumeration-safe: without one of those a
+     * visitor always gets 403.
+     */
+    protected function orderBelongsToCurrentVisitor(Order $order, ?User $user): bool
+    {
+        if ($order->user_id !== null) {
+            return $user !== null && (int) $order->user_id === (int) $user->id;
+        }
+
+        $token = request()->input('token');
+        if (is_string($token) && $token !== '' && $order->guestTokenValid($token)) {
+            return true;
+        }
+
+        $stashed = (array) session('guest_order_tokens', []);
+        $raw = $stashed[$order->id] ?? null;
+        if (is_string($raw) && $raw !== '' && $order->guestTokenValid($raw)) {
+            return true;
+        }
+
+        $guestSessionId = $this->guestSessionId();
+
+        return $guestSessionId !== null
+            && is_string($order->guest_session_id)
+            && $order->guest_session_id !== ''
+            && hash_equals($order->guest_session_id, $guestSessionId);
+    }
+
+    /**
+     * Redirect to a checkout status page, appending the guest access token as
+     * a query parameter for guest orders so the URL keeps working if the
+     * session is lost (the raw token only ever exists in this visitor's
+     * browser: session or redirect URL — never persisted server-side).
+     */
+    protected function statusRedirect(string $routeName, Order $order, ?string $message = null): RedirectResponse
+    {
+        $params = ['order' => $order];
+        $stashed = (array) session('guest_order_tokens', []);
+        $raw = $stashed[$order->id] ?? null;
+
+        if (is_string($raw) && $raw !== '') {
+            $params['token'] = $raw;
+        }
+
+        $redirect = redirect()->route($routeName, $params);
+
+        return $message !== null ? $redirect->with('success', $message) : $redirect;
+    }
+
+    /**
+     * The guest cart session id recorded on guest carts/orders (the forever
+     * vanriti_cart cookie), or null for an account visitor.
+     */
+    protected function guestSessionId(): ?string
+    {
+        $id = request()->cookie(CartService::COOKIE_NAME);
+
+        return is_string($id) && $id !== '' ? $id : null;
     }
 
     /**

@@ -12,6 +12,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -44,9 +45,17 @@ class CheckoutTest extends TestCase
         ];
     }
 
-    public function test_guest_is_redirected_to_login_on_checkout(): void
+    /**
+     * INTENTIONAL BEHAVIOR CHANGE (guest checkout feature): this test
+     * previously asserted a guest visiting /checkout was redirected to the
+     * login page. Guest checkout is now allowed — the auth gate was removed
+     * from the checkout routes. The guest flow itself is covered by
+     * GuestCheckoutTest.
+     */
+    public function test_guest_is_no_longer_redirected_to_login_on_checkout(): void
     {
-        $this->get(route('checkout.index'))->assertRedirect(route('login'));
+        // Empty guest cart → bounced to the cart page (not to login).
+        $this->get(route('checkout.index'))->assertRedirect(route('cart.index'));
     }
 
     public function test_full_cod_checkout_creates_order_with_correct_totals(): void
@@ -518,7 +527,7 @@ class CheckoutTest extends TestCase
         Setting::updateOrCreate(['key' => 'online_payment_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'razorpay_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'razorpay_key_id'], ['value' => 'rzp_test_key']);
-        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => \Illuminate\Support\Facades\Crypt::encryptString('rzp_test_secret')]);
+        Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => Crypt::encryptString('rzp_test_secret')]);
     }
 
     protected function fakeRazorpayOrder(): void
@@ -574,5 +583,105 @@ class CheckoutTest extends TestCase
         ]);
 
         return $order;
+    }
+
+    public function test_magic_checkout_script_is_rendered(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create(['selling_price' => 500, 'mrp' => 500, 'gst_rate' => 0, 'stock' => 10]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')->get(route('checkout.index'));
+
+        $response->assertOk();
+        $response->assertSee('https://checkout.razorpay.com/v1/magic-checkout.js', false);
+        $response->assertDontSee('https://checkout.razorpay.com/v1/checkout.js', false);
+    }
+
+    public function test_magic_checkout_one_click_checkout_flag_is_enabled(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create(['selling_price' => 500, 'mrp' => 500, 'gst_rate' => 0, 'stock' => 10]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')->get(route('checkout.index'));
+
+        $response->assertOk();
+        $response->assertSee('one_click_checkout: true', false);
+    }
+
+    public function test_magic_checkout_prefill_contact_is_present(): void
+    {
+        $user = User::factory()->create(['phone' => '9876543210']);
+        $product = Product::factory()->active()->create(['selling_price' => 500, 'mrp' => 500, 'gst_rate' => 0, 'stock' => 10]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')->get(route('checkout.index'));
+
+        $response->assertOk();
+        $response->assertSee('contact:', false);
+    }
+
+    public function test_razorpay_order_creation_includes_line_items(): void
+    {
+        $this->enableRazorpay();
+        $this->fakeRazorpayOrder();
+
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 800.00,
+            'mrp' => 1000.00,
+            'gst_rate' => 18,
+            'stock' => 25,
+        ]);
+
+        Inventory::create([
+            'stockable_type' => Product::class,
+            'stockable_id' => $product->id,
+            'stock_on_hand' => $product->stock,
+            'low_stock_threshold' => $product->low_stock_threshold ?? 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 2]);
+
+        $this->actingAs($user, 'web')->post(route('checkout.store'), $this->addressData('razorpay'));
+
+        Http::assertSent(function ($request) {
+            $data = $request->data();
+
+            return isset($data['line_items_total'])
+                && $data['line_items_total'] === 160000
+                && isset($data['line_items'])
+                && is_array($data['line_items'])
+                && count($data['line_items']) === 1
+                && $data['line_items'][0]['sku'] !== ''
+                && $data['line_items'][0]['quantity'] === 2
+                && $data['line_items'][0]['price'] === 80000
+                && $data['line_items'][0]['name'] !== '';
+        });
+    }
+
+    public function test_cod_does_not_invoke_magic_checkout(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create(['selling_price' => 500, 'mrp' => 500, 'gst_rate' => 0, 'stock' => 10]);
+
+        Inventory::create([
+            'stockable_type' => Product::class,
+            'stockable_id' => $product->id,
+            'stock_on_hand' => $product->stock,
+            'low_stock_threshold' => $product->low_stock_threshold ?? 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')->post(route('checkout.store'), $this->addressData('cod'));
+
+        $response->assertRedirect();
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertSame('cod', Payment::firstOrFail()->method);
     }
 }

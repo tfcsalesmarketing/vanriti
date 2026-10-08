@@ -69,7 +69,7 @@
                             <div class="mb-3">
                                 <label class="form-label small fw-semibold" for="reg_name">Full Name <span class="text-danger">*</span></label>
                                 <div class="vr-input-wrap">
-                                    <input type="text" id="reg_name" name="name" value="{{ old('name') }}"
+                                    <input type="text" id="reg_name" name="name" value="{{ old('name', session('post_purchase_prefill.name')) }}"
                                            class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
                                            placeholder="e.g. John Doe"
                                            autocomplete="name" autofocus>
@@ -81,7 +81,7 @@
                             <div class="mb-3">
                                 <label class="form-label small fw-semibold" for="reg_phone">Mobile Number <span class="text-danger">*</span></label>
                                 <div class="vr-input-wrap">
-                                    <input type="tel" id="reg_phone" name="phone" value="{{ old('phone') }}"
+                                    <input type="tel" id="reg_phone" name="phone" value="{{ old('phone', session('post_purchase_prefill.phone')) }}"
                                            class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
                                            autocomplete="tel" inputmode="numeric" maxlength="10"
                                            placeholder="10-digit mobile number">
@@ -95,7 +95,7 @@
                                     Email Address <span class="fw-normal text-muted">(optional)</span>
                                 </label>
                                 <div class="vr-input-wrap">
-                                    <input type="email" id="reg_email" name="email" value="{{ old('email') }}"
+                                    <input type="email" id="reg_email" name="email" value="{{ old('email', session('post_purchase_prefill.email')) }}"
                                            class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
                                            placeholder="e.g. john@example.com"
                                            autocomplete="email">

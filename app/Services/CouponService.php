@@ -144,8 +144,13 @@ class CouponService
      * Record a redemption. Called from inside the order transaction, so the
      * limits are re-verified under the coupon row lock that validate() took:
      * check and use are therefore a single atomic step.
+     *
+     * $user is null for guest checkouts: coupon_usages.user_id is nullable so
+     * the GLOBAL redemption limit still counts guest uses, while the
+     * per-customer limit (which cannot be evaluated for a guest) is skipped —
+     * validate() already refuses customer-scoped offers to guests.
      */
-    public function recordUsage(Coupon $coupon, User $user, int $orderId, float $discount): void
+    public function recordUsage(Coupon $coupon, ?User $user, int $orderId, float $discount): void
     {
         DB::transaction(function () use ($coupon, $user, $orderId, $discount) {
             $locked = Coupon::query()->whereKey($coupon->id)->lockForUpdate()->first();
@@ -158,12 +163,12 @@ class CouponService
                 throw new \RuntimeException('This coupon has reached its redemption limit.');
             }
 
-            if ($locked->per_customer_limit && $locked->usesByUser($user->id) >= $locked->per_customer_limit) {
+            if ($user && $locked->per_customer_limit && $locked->usesByUser($user->id) >= $locked->per_customer_limit) {
                 throw new \RuntimeException('You have already used this coupon.');
             }
 
             $locked->usages()->create([
-                'user_id' => $user->id,
+                'user_id' => $user?->id,
                 'order_id' => $orderId,
                 'discount_amount' => $discount,
             ]);

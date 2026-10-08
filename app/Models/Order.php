@@ -17,6 +17,11 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'user_id',
+        'guest_name',
+        'guest_email',
+        'guest_mobile',
+        'guest_session_id',
+        'access_token',
         'coupon_id',
         'billing_name',
         'billing_mobile',
@@ -209,6 +214,29 @@ class Order extends Model
             ?? $this->created_at;
 
         return $deliveredAt !== null && $deliveredAt->gt(now()->subDays($windowDays));
+    }
+
+    /**
+     * A guest order carries no account: customer identity lives in the
+     * guest_* columns and access is gated by the session-held raw token.
+     */
+    public function isGuest(): bool
+    {
+        return $this->user_id === null;
+    }
+
+    /**
+     * Verify a raw guest access token against the stored SHA-256 hash.
+     * Timing-safe; never exposes the hash. Returns false for account orders,
+     * empty input, or a missing hash.
+     */
+    public function guestTokenValid(?string $rawToken): bool
+    {
+        if (! $this->isGuest() || ! is_string($rawToken) || $rawToken === '' || ! is_string($this->access_token) || $this->access_token === '') {
+            return false;
+        }
+
+        return hash_equals($this->access_token, hash('sha256', $rawToken));
     }
 
     /**

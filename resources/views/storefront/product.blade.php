@@ -886,18 +886,6 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
         var isBuy = intent === 'buy'
             || (!!submitter && (submitter.classList.contains('js-pdp-buy') || submitter.classList.contains('js-bar-buy')));
 
-        if (isGuest()) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (buyNowInput) buyNowInput.value = isBuy ? '1' : '0';
-            form.setAttribute('data-intent', isBuy ? 'buy' : 'add');
-            if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
-                window.vrLoginModal.pendingForm = form;
-                window.vrLoginModal.open();
-            }
-            return;
-        }
-
         if (isBuy) {
             if (buyNowInput) buyNowInput.value = '1';
             return;
@@ -943,15 +931,6 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
             }
             var isBuy = btn.classList.contains('js-bar-buy');
             if (buyNowInput) buyNowInput.value = isBuy ? '1' : '0';
-
-            if (isGuest()) {
-                form.setAttribute('data-intent', isBuy ? 'buy' : 'add');
-                if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
-                    window.vrLoginModal.pendingForm = form;
-                    window.vrLoginModal.open();
-                }
-                return;
-            }
 
             if (isBuy) {
                 form.submit();

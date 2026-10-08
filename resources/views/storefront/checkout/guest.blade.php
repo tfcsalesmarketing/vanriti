@@ -3,26 +3,22 @@
 @section('robots', 'noindex, nofollow')
 
 @section('content')
-<div class="vr-section">
+{{-- Guest checkout: same form as the authenticated page, no account required. --}}
+<div class="vr-section pt-4">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="vr-cart-item p-5 text-center">
-                    <i class="bi bi-person-lock d-block mb-3" style="font-size:3rem;color:var(--vr-border);"></i>
-                    <h4 class="fw-bold mb-2">Please log in to checkout</h4>
-                    <p class="text-muted mb-4">You need an account to complete your purchase. It only takes a minute.</p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <a href="{{ route('login') }}" class="btn btn-vr">Log In</a>
-                        <a href="{{ route('register') }}" class="btn btn-vr-outline">Create Account</a>
-                    </div>
-                    <div class="mt-4">
-                        <a href="{{ route('cart.index') }}" class="small text-muted vr-link-underline">
-                            <i class="bi bi-arrow-left me-1"></i> Back to Cart
-                        </a>
-                    </div>
-                </div>
-            </div>
+        <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between gap-2 mb-0" style="border-radius:12px;">
+            <span class="small">
+                <i class="ri-user-smile-line me-1 text-success"></i>
+                Checking out as a <strong>guest</strong> — no account needed.
+            </span>
+            <span class="small text-muted">
+                <a href="{{ route('login') }}" class="vr-link-underline">Log in</a>
+                or
+                <a href="{{ route('register') }}" class="vr-link-underline">create an account</a>
+                to track orders faster next time.
+            </span>
         </div>
     </div>
 </div>
+@include('storefront.checkout.form')
 @endsection
