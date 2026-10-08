@@ -907,7 +907,8 @@ img { max-width: 100%; height: auto; }
 /* ---------- Toasts & Lightbox ---------- */
 #vrToastWrap {
     position: fixed;
-    top: 1.5rem;
+    top: auto;
+    bottom: 1.5rem;
     right: 1.5rem;
     z-index: 2000;
     display: flex;
@@ -940,6 +941,7 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 991.98px) {
     #vrToastWrap {
         top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+        bottom: auto;
         right: 1rem;
         max-width: min(92vw, 320px);
     }
