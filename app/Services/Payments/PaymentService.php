@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Models\Order;
 use App\Models\Payment;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PaymentService
@@ -93,21 +94,23 @@ class PaymentService
 
     public function markPaid(Payment $payment): void
     {
-        $payment->update([
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
+        DB::transaction(function () use ($payment) {
+            $payment->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
 
-        $order = $payment->order;
+            $order = $payment->order;
 
-        $totalPaid = (float) $order->payments()->where('status', 'paid')->sum('amount');
-        $outstanding = (float) $order->grand_total - $totalPaid;
+            $totalPaid = (float) $order->payments()->where('status', 'paid')->sum('amount');
+            $outstanding = (float) $order->grand_total - $totalPaid;
 
-        $order->update([
-            'payment_status' => $outstanding <= 0 ? 'paid' : 'pending',
-            'amount_paid' => $totalPaid,
-            'amount_due' => max(0, $outstanding),
-        ]);
+            $order->update([
+                'payment_status' => $outstanding <= 0 ? 'paid' : 'pending',
+                'amount_paid' => $totalPaid,
+                'amount_due' => max(0, $outstanding),
+            ]);
+        });
     }
 
     public function markFailed(Payment $payment, ?string $reason = null): void

@@ -7,6 +7,7 @@ use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
@@ -20,16 +21,25 @@ class InventoryService
         return DB::transaction(function () use ($type, $stockable, $quantityChange, $reason, $admin) {
             $inventory = Inventory::where('stockable_type', get_class($stockable))
                 ->where('stockable_id', $stockable->id)
+                ->lockForUpdate()
                 ->first();
 
             if (! $inventory) {
                 $threshold = $stockable instanceof Product ? $stockable->low_stock_threshold : $stockable->low_stock_threshold;
-                $inventory = Inventory::create([
-                    'stockable_type' => get_class($stockable),
-                    'stockable_id' => $stockable->id,
-                    'stock_on_hand' => (int) ($stockable->stock ?? 0),
-                    'low_stock_threshold' => $threshold,
-                ]);
+
+                try {
+                    $inventory = Inventory::create([
+                        'stockable_type' => get_class($stockable),
+                        'stockable_id' => $stockable->id,
+                        'stock_on_hand' => (int) ($stockable->stock ?? 0),
+                        'low_stock_threshold' => $threshold,
+                    ]);
+                } catch (UniqueConstraintViolationException $e) {
+                    $inventory = Inventory::where('stockable_type', get_class($stockable))
+                        ->where('stockable_id', $stockable->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                }
             }
 
             $before = (int) $inventory->stock_on_hand;
@@ -71,16 +81,26 @@ class InventoryService
         string $reason
     ): void {
         DB::transaction(function () use ($type, $stockable, $reference, $quantityChange, $reason) {
-            $inventory = Inventory::firstOrCreate(
-                [
-                    'stockable_type' => get_class($stockable),
-                    'stockable_id' => $stockable->id,
-                ],
-                [
-                    'stock_on_hand' => (int) $stockable->stock,
-                    'low_stock_threshold' => $stockable->low_stock_threshold,
-                ]
-            );
+            $inventory = Inventory::where('stockable_type', get_class($stockable))
+                ->where('stockable_id', $stockable->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $inventory) {
+                try {
+                    $inventory = Inventory::create([
+                        'stockable_type' => get_class($stockable),
+                        'stockable_id' => $stockable->id,
+                        'stock_on_hand' => (int) $stockable->stock,
+                        'low_stock_threshold' => $stockable->low_stock_threshold,
+                    ]);
+                } catch (UniqueConstraintViolationException $e) {
+                    $inventory = Inventory::where('stockable_type', get_class($stockable))
+                        ->where('stockable_id', $stockable->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                }
+            }
 
             $before = (int) $inventory->stock_on_hand;
             $after = $before + $quantityChange;

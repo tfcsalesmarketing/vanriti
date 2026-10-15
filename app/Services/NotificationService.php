@@ -9,6 +9,8 @@ use App\Models\Refund;
 use App\Models\ReturnRequest;
 use App\Notifications\AdminAlert;
 use App\Notifications\OrderStatusNotification;
+use App\Notifications\RefundStatusNotification;
+use App\Notifications\ReturnStatusNotification;
 
 class NotificationService
 {
