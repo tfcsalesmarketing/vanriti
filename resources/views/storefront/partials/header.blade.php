@@ -98,7 +98,7 @@
                         <i class="bi bi-person"></i>
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="vr-icon-link" title="Sign in" aria-label="Sign in">
+                    <a href="{{ route('login') }}" class="vr-icon-link" data-vr-login-modal-open title="Sign in" aria-label="Sign in">
                         <i class="bi bi-person"></i>
                     </a>
                 @endauth

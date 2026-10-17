@@ -166,8 +166,8 @@
                         </div>
                         <div class="small text-muted mb-4">Total payable is inclusive of GST.</div>
 
-                        <a href="{{ route('checkout.index') }}" class="btn vr-app-btn w-100 py-3 mb-3">
-                            <i class="ri-lock-2-line me-2"></i> Proceed to Checkout
+                        <a href="{{ route('checkout.index') }}" class="btn vr-app-btn w-100 py-3 mb-3 js-proceed-checkout" id="vrProceedCheckoutBtn">
+                            <i class="ri-flashlight-line me-2 text-warning"></i> Proceed to Checkout
                         </a>
 
                         <div class="p-3 bg-light rounded-3 text-center small text-muted">
@@ -185,10 +185,33 @@
 </div>
 @endsection
 
+@push('scripts')
 @if ($viewCartPayload)
-    @push('scripts')
     <script nonce="{{ $cspNonce }}">
     window.dataLayer.push({!! json_encode($viewCartPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     </script>
-    @endpush
 @endif
+<script nonce="{{ $cspNonce }}">
+(function () {
+    var checkoutBtn = document.getElementById('vrProceedCheckoutBtn');
+    if (!checkoutBtn) return;
+    checkoutBtn.addEventListener('click', function (e) {
+        var guestMeta = document.querySelector('meta[name="vr-is-guest"]');
+        var isGuest = guestMeta && guestMeta.getAttribute('content') === '1';
+        if (isGuest) {
+            e.preventDefault();
+            if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
+                window.vrLoginModal.open({
+                    title: '⚡ Fast Checkout with WhatsApp',
+                    subtitle: 'Enter your mobile number to checkout in seconds.',
+                    purpose: 'fast_checkout',
+                    redirect: '{{ route('checkout.index') }}'
+                });
+            } else {
+                window.location.href = checkoutBtn.href;
+            }
+        }
+    });
+})();
+</script>
+@endpush

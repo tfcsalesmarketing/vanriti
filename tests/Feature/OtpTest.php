@@ -268,4 +268,83 @@ class OtpTest extends TestCase
         $response->assertStatus(422);
         $response->assertJson(['result' => '0']);
     }
+
+    public function test_fast_checkout_sends_otp_to_unregistered_number_and_auto_creates_user(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.fc123']]], 200)]);
+
+        // 1. New phone number requests fast_checkout OTP
+        $sendResponse = $this->postJson('/otp/send', [
+            'phone' => '9812345678',
+            'purpose' => 'fast_checkout',
+        ]);
+
+        $sendResponse->assertOk();
+        $sendResponse->assertJson(['result' => '1']);
+
+        $this->assertDatabaseHas('otp_codes', [
+            'phone' => '9812345678',
+            'purpose' => 'fast_checkout',
+            'channel' => 'whatsapp',
+        ]);
+
+        $recorded = Http::recorded();
+        $sentCode = $recorded[0][0]['template']['components'][0]['parameters'][0]['text'] ?? null;
+        $this->assertNotNull($sentCode);
+
+        // 2. Verifying fast_checkout OTP auto-provisions user, logs them in, and returns redirect to checkout
+        $verifyResponse = $this->postJson('/otp/verify', [
+            'phone' => '9812345678',
+            'code' => $sentCode,
+            'purpose' => 'fast_checkout',
+        ]);
+
+        $verifyResponse->assertOk();
+        $verifyResponse->assertJson([
+            'result' => '1',
+            'redirect' => route('checkout.index'),
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'phone' => '9812345678',
+            'status' => 'active',
+        ]);
+
+        $createdUser = User::where('phone', '9812345678')->first();
+        $this->assertNotNull($createdUser->phone_verified_at);
+        $this->assertAuthenticatedAs($createdUser);
+    }
+
+    public function test_fast_checkout_logs_in_existing_user(): void
+    {
+        $existing = User::factory()->create([
+            'name' => 'Existing Customer',
+            'phone' => '9876500000',
+            'status' => 'active',
+        ]);
+
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.fc456']]], 200)]);
+
+        $this->postJson('/otp/send', [
+            'phone' => '9876500000',
+            'purpose' => 'fast_checkout',
+        ]);
+
+        $recorded = Http::recorded();
+        $sentCode = $recorded[0][0]['template']['components'][0]['parameters'][0]['text'] ?? null;
+
+        $verifyResponse = $this->postJson('/otp/verify', [
+            'phone' => '9876500000',
+            'code' => $sentCode,
+            'purpose' => 'fast_checkout',
+        ]);
+
+        $verifyResponse->assertOk();
+        $verifyResponse->assertJson([
+            'result' => '1',
+            'redirect' => route('checkout.index'),
+        ]);
+
+        $this->assertAuthenticatedAs($existing);
+    }
 }

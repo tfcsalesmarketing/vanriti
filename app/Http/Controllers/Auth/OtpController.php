@@ -16,7 +16,7 @@ use Illuminate\View\View;
 
 class OtpController extends Controller
 {
-    protected array $purposes = ['login', 'register', 'reset_password', 'change_phone'];
+    protected array $purposes = ['login', 'register', 'reset_password', 'change_phone', 'fast_checkout'];
 
     public function __construct(
         protected WhatsAppOtpService $whatsapp,
@@ -237,6 +237,57 @@ class OtpController extends Controller
             }
 
             return back()->with('success', 'Phone verified. You can now save your profile.');
+        }
+
+        // ── fast_checkout: 1-tap WhatsApp checkout & login (auto-provisions new user if not found) ──
+        if ($data['purpose'] === 'fast_checkout') {
+            $user = user_by_phone($phone);
+
+            if (! $user) {
+                $user = \App\Models\User::create([
+                    'name' => 'Customer '.substr($phone, -4),
+                    'phone' => $phone,
+                    'phone_verified_at' => now(),
+                    'last_login_at' => now(),
+                    'status' => 'active',
+                    'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(32)),
+                ]);
+            }
+
+            if ($user->status !== 'active') {
+                $suspended = 'Your account has been suspended. Contact support.';
+                if ($request->wantsJson()) {
+                    return response()->json(['result' => '0', 'message' => $suspended], 403);
+                }
+                return back()->with('error', $suspended);
+            }
+
+            if ($user->phone !== $phone && ! \App\Models\User::query()->where('phone', $phone)->whereKeyNot($user->id)->exists()) {
+                $user->phone = $phone;
+            }
+
+            $user->update([
+                'phone' => $user->phone,
+                'last_login_at' => now(),
+                'phone_verified_at' => $user->phone_verified_at ?? now(),
+            ]);
+
+            auth('web')->login($user);
+            session()->regenerate();
+            session()->regenerateToken();
+
+            $this->cartService->mergeGuestCartIntoUser($user);
+            $this->wishlistService->mergeGuestIntoUser($user);
+            $this->consentService->mergeAnonymousIntoUser($user);
+
+            $result['csrf_token'] = csrf_token();
+            $result['redirect'] = route('checkout.index');
+
+            if ($request->wantsJson()) {
+                return response()->json($result);
+            }
+
+            return redirect()->intended(route('checkout.index'));
         }
 
         // ── login: log the user in (negates the password step) ────────────────

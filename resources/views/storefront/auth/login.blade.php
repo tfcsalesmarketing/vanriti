@@ -253,7 +253,7 @@
                 otp.send({
                     phoneEl : phoneEl,
                     btn     : sendBtn,
-                    purpose : 'login',
+                    purpose : 'fast_checkout',
                     onSent  : function () {
                         // Show summary and reveal verify step
                         var digits = phoneEl.value.replace(/\D/g, '');
@@ -282,7 +282,7 @@
                     phoneEl   : phoneEl,
                     codeEl    : codeEl,
                     btn       : verifyBtn,
-                    purpose   : 'login',
+                    purpose   : 'fast_checkout',
                     onVerified: function (data) {
                         if (data && data.redirect) {
                             window.location.href = data.redirect;

@@ -283,7 +283,7 @@
                 </div>
                 <h5 class="fw-bold mb-1">Welcome to Store</h5>
                 <p class="text-muted small mb-4">Sign in to track orders, manage addresses, and save items to your wishlist.</p>
-                <a href="{{ route('login') }}" class="btn vr-app-btn w-100 mb-2">
+                <a href="{{ route('login') }}" class="btn vr-app-btn w-100 mb-2" data-vr-login-modal-open data-bs-dismiss="offcanvas">
                     <i class="ri-login-box-line me-2"></i> Sign In
                 </a>
                 <a href="{{ route('register') }}" class="btn vr-app-outline-btn w-100">

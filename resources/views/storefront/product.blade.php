@@ -824,7 +824,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
           });
     }
 
-    function ajaxAdd(btn) {
+    function ajaxAdd(btn, onSuccess) {
         if (!btn || btn.disabled) return;
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -844,7 +844,11 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
                   btn.innerHTML = original;
                   if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
                       window.vrLoginModal.pendingForm = form;
-                      window.vrLoginModal.open();
+                      window.vrLoginModal.open({
+                          title: '⚡ Fast Checkout with WhatsApp',
+                          purpose: 'fast_checkout',
+                          redirect: '{{ route('checkout.index') }}'
+                      });
                   } else {
                       toast(data.message || 'Please login to continue.', 'error');
                   }
@@ -868,6 +872,12 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
                       window.vrPdpAddToCartMeta(data.analytics);
                   }
               }
+              if (typeof onSuccess === 'function') {
+                  btn.innerHTML = original;
+                  btn.disabled = false;
+                  onSuccess(data);
+                  return;
+              }
               if (data.redirect_only) { window.location.href = data.redirect; return; }
               btn.innerHTML = original;
               setTimeout(function () { btn.disabled = false; }, 600);
@@ -886,19 +896,25 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
         var isBuy = intent === 'buy'
             || (!!submitter && (submitter.classList.contains('js-pdp-buy') || submitter.classList.contains('js-bar-buy')));
 
-        if (isGuest()) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (buyNowInput) buyNowInput.value = isBuy ? '1' : '0';
-            form.setAttribute('data-intent', isBuy ? 'buy' : 'add');
-            if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
-                window.vrLoginModal.pendingForm = form;
-                window.vrLoginModal.open();
-            }
-            return;
-        }
-
         if (isBuy) {
+            if (isGuest()) {
+                e.preventDefault();
+                e.stopPropagation();
+                var buyBtn = submitter || form.querySelector('.js-pdp-buy') || form.querySelector('.js-pdp-add');
+                ajaxAdd(buyBtn, function () {
+                    if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
+                        window.vrLoginModal.open({
+                            title: '⚡ Fast Checkout with WhatsApp',
+                            purpose: 'fast_checkout',
+                            redirect: '{{ route('checkout.index') }}'
+                        });
+                    } else {
+                        window.location.href = '{{ route('checkout.index') }}';
+                    }
+                });
+                return;
+            }
+
             if (buyNowInput) buyNowInput.value = '1';
             return;
         }
@@ -944,16 +960,22 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
             var isBuy = btn.classList.contains('js-bar-buy');
             if (buyNowInput) buyNowInput.value = isBuy ? '1' : '0';
 
-            if (isGuest()) {
-                form.setAttribute('data-intent', isBuy ? 'buy' : 'add');
-                if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
-                    window.vrLoginModal.pendingForm = form;
-                    window.vrLoginModal.open();
-                }
-                return;
-            }
-
             if (isBuy) {
+                if (isGuest()) {
+                    ajaxAdd(btn, function () {
+                        if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
+                            window.vrLoginModal.open({
+                                title: '⚡ Fast Checkout with WhatsApp',
+                                purpose: 'fast_checkout',
+                                redirect: '{{ route('checkout.index') }}'
+                            });
+                        } else {
+                            window.location.href = '{{ route('checkout.index') }}';
+                        }
+                    });
+                    return;
+                }
+
                 form.submit();
                 return;
             }

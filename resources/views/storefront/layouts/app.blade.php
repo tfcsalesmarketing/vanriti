@@ -60,6 +60,7 @@
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
     <link rel="stylesheet" href="{{ asset_version('css/storefront.css') }}">
+    <link rel="stylesheet" href="{{ asset_version('css/vr-login-premium.css') }}">
     @stack('styles')
     @stack('head')
     <script nonce="{{ $cspNonce }}" type="application/ld+json">

@@ -43,16 +43,16 @@ class CheckoutController extends Controller
 
     public function index(Request $request): View|RedirectResponse
     {
-        $user = auth('web')->user();
-
-        if (! $user) {
-            return view('storefront.checkout.guest');
-        }
-
         $cart = $this->cartService->getCart(true);
 
         if (! $cart || ! $cart->items()->exists()) {
             return redirect()->route('cart.index');
+        }
+
+        $user = auth('web')->user();
+
+        if (! $user) {
+            return view('storefront.checkout.guest');
         }
 
         $addresses = $user->addresses()->get();
