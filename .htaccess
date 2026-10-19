@@ -8,6 +8,12 @@
     RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|yarn\.lock|artisan)$ - [F,L]
     RewriteRule ^(storage|database|bootstrap/cache|tests)/ - [F,L]
 
+    # --- Canonical host: force non-www (301) ---
+    # Requires a DNS record for www.vanriti.com pointing at this server.
+    # Fires before the /public rewrite below; path and query string are preserved.
+    RewriteCond %{HTTP_HOST} ^www\.vanriti\.com$ [NC]
+    RewriteRule ^ https://vanriti.com%{REQUEST_URI} [L,R=301]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ public/$1 [L]
