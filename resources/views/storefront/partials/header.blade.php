@@ -44,10 +44,13 @@
                         <i class="ri-user-3-line"></i>
                     </button>
                 @else
-                    <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Sign In">
+                    <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Login">
                         <i class="ri-user-3-line"></i>
                     </button>
                 @endauth
+                <a href="{{ route("login") }}" class="vr-icon-link" title="Login" aria-label="Login">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                </a>
             </div>
 
             {{-- Desktop: logo + category nav --}}
@@ -98,7 +101,7 @@
                         <i class="bi bi-person"></i>
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="vr-icon-link" data-vr-login-modal-open title="Sign in" aria-label="Sign in">
+                    <a href="{{ route('login') }}" class="vr-icon-link"  title="Login" aria-label="Login">
                         <i class="bi bi-person"></i>
                     </a>
                 @endauth

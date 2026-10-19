@@ -72,8 +72,8 @@
                             <div class="vr-perk-item">
                                 <div class="vr-perk-icon-circle"><i class="ri-magic-line"></i></div>
                                 <div class="vr-perk-text">
-                                    <strong>Zero Password Required</strong>
-                                    <span>Auto-created account for new users</span>
+                                    <strong>WhatsApp OTP Verification</strong>
+                                    <span>Fast verification for your account</span>
                                 </div>
                             </div>
                         </div>
@@ -92,19 +92,7 @@
                             <span class="vr-kicker-sparkle">✨</span> FAST SIGN-IN
                         </div>
                         <h4 class="vr-form-heading" id="vrLoginModalTitle">Welcome to {{ store_name() }}</h4>
-                        <p class="vr-login-heading" id="vrLoginModalSubtitle">Quick WhatsApp verification or standard account login</p>
-                    </div>
-
-                    {{-- Mode Toggle Tabs --}}
-                    <div class="vr-tab-selector" role="tablist">
-                        <button type="button" class="vr-tab-btn active" data-vr-login-mode="otp" role="tab" aria-selected="true">
-                            <i class="ri-whatsapp-line"></i>
-                            <span>WhatsApp OTP</span>
-                        </button>
-                        <button type="button" class="vr-tab-btn" data-vr-login-mode="password" role="tab" aria-selected="false">
-                            <i class="ri-lock-line"></i>
-                            <span>Password</span>
-                        </button>
+                        <p class="vr-login-heading" id="vrLoginModalSubtitle">Quick WhatsApp verification for fast login</p>
                     </div>
 
                     {{-- ── PANEL 1: WhatsApp OTP (Default & Recommended) ── --}}
@@ -205,65 +193,7 @@
                         </div>
                     </div>
 
-                    {{-- ── PANEL 2: Password Login ── --}}
-                    <div class="vr-form-panel d-none" data-vr-login-panel="password">
-                        <form method="POST" action="{{ route('login.submit') }}" id="vrLoginModalForm" novalidate>
-                            @csrf
-                            <div class="vr-modal-alert d-none" data-vr-login-error role="alert">
-                                <i class="ri-error-warning-fill"></i>
-                                <span class="vr-alert-msg"></span>
-                            </div>
-
-                            <div class="vr-input-block">
-                                <label class="vr-label" for="vrLoginModalLogin">Email or Mobile Number</label>
-                                <div class="vr-standard-field">
-                                    <i class="ri-user-3-line vr-field-leading-icon"></i>
-                                    <input type="text" name="login" id="vrLoginModalLogin"
-                                           class="vr-standard-control"
-                                           placeholder="e.g. name@domain.com or 9876543210"
-                                           autocomplete="username">
-                                </div>
-                            </div>
-
-                            <div class="vr-input-block">
-                                <label class="vr-label" for="vrLoginModalPassword">Password</label>
-                                <div class="vr-standard-field">
-                                    <i class="ri-lock-2-line vr-field-leading-icon"></i>
-                                    <input type="password" name="password" id="vrLoginModalPassword"
-                                           class="vr-standard-control"
-                                           placeholder="Enter your password"
-                                           autocomplete="current-password">
-                                    <button type="button" class="vr-toggle-eye-btn" data-vr-login-eye aria-label="Show password">
-                                        <i class="ri-eye-line"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="vr-options-row">
-                                <label class="vr-checkbox-wrap">
-                                    <input type="checkbox" class="vr-checkbox" name="remember" id="vrLoginModalRemember" checked>
-                                    <span class="vr-checkbox-text">Remember me</span>
-                                </label>
-                                <a href="{{ route('password.request') }}" class="vr-forgot-pass-link">Forgot password?</a>
-                            </div>
-
-                            <button type="submit" class="vr-modal-btn vr-btn-primary" data-vr-login-submit>
-                                <span class="vr-btn-label">
-                                    <span>Sign In</span>
-                                    <i class="ri-arrow-right-line"></i>
-                                </span>
-                            </button>
-                        </form>
-                    </div>
-
                     {{-- Footer: Full registration link --}}
-                    <div class="vr-modal-footer-cta">
-                        <span>Prefer standard registration?</span>
-                        <a href="{{ route('register') }}" data-vr-login-register>
-                            Create an account <i class="ri-arrow-right-s-line"></i>
-                        </a>
-                    </div>
-                </div>
 
             </div>
         </div>

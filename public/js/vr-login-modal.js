@@ -135,9 +135,9 @@
         for (var i = 0; i < panels.length; i++) {
             panels[i].classList.toggle('d-none', panels[i].getAttribute('data-vr-login-panel') !== name);
         }
-        var toggles = all('[data-vr-login-mode]');
+        var  ]');
         for (var j = 0; j < toggles.length; j++) {
-            var isMatch = toggles[j].getAttribute('data-vr-login-mode') === name;
+            var isMatch =  ') === name;
             toggles[j].classList.toggle('active', isMatch);
             toggles[j].setAttribute('aria-selected', isMatch ? 'true' : 'false');
         }
@@ -394,7 +394,7 @@
         }
 
         // Form submit (password)
-        var form = byId('vrLoginModalForm');
+        var form = byId(' ');
         if (form) {
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
