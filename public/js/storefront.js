@@ -504,15 +504,6 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         e.stopPropagation();
 
-        var guestMeta = document.querySelector('meta[name="vr-is-guest"]');
-        if (guestMeta && guestMeta.getAttribute('content') === '1') {
-            if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
-                window.vrLoginModal.pendingForm = form;
-                window.vrLoginModal.open();
-                return;
-            }
-        }
-
         var btn = form.querySelector('.vr-wish-btn');
         if (btn) btn.disabled = true;
         var meta = document.querySelector('meta[name="csrf-token"]');

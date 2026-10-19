@@ -34,6 +34,43 @@ class WishlistTest extends TestCase
         $this->assertSame(0, $wishlist->fresh()->items()->count());
     }
 
+    public function test_guest_can_toggle_wishlist_without_login(): void
+    {
+        $product = Product::factory()->active()->create();
+
+        // Guest add — no account required, cookie-backed wishlist is created.
+        $this->withCookie('vanriti_wishlist', 'wish_guest_session')
+            ->post(route('wishlist.toggle', $product), [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJson(['added' => true]);
+
+        $wishlist = Wishlist::where('owner_type', 'guest')
+            ->where('session_id', 'wish_guest_session')
+            ->firstOrFail();
+        $this->assertSame(1, $wishlist->items()->count());
+
+        // Toggle again removes it — still no login required.
+        $this->withCookie('vanriti_wishlist', 'wish_guest_session')
+            ->post(route('wishlist.toggle', $product), [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJson(['added' => false]);
+
+        $this->assertSame(0, $wishlist->fresh()->items()->count());
+    }
+
+    public function test_guest_native_wishlist_post_does_not_redirect_to_login(): void
+    {
+        $product = Product::factory()->active()->create();
+
+        $response = $this->from(route('home'))->post(route('wishlist.toggle', $product));
+
+        $response->assertRedirect(route('home'));
+        $this->assertGuest('web');
+
+        $guestWishlist = Wishlist::where('owner_type', 'guest')->firstOrFail();
+        $this->assertSame(1, $guestWishlist->items()->count());
+    }
+
     public function test_wishlist_index_shows_items(): void
     {
         $user = User::factory()->create();

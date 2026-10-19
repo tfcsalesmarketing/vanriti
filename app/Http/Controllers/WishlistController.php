@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Services\WishlistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class WishlistController extends Controller
@@ -23,24 +22,11 @@ class WishlistController extends Controller
         return view('storefront.wishlist.index', compact('wishlistItems'));
     }
 
-    public function toggle(Request $request, Product $product): JsonResponse|RedirectResponse
+    public function toggle(Product $product): JsonResponse|RedirectResponse
     {
-        // ── Guest gate: toggling the wishlist requires an account ───────────────
-        // Mirror of CartController::add — guests are rejected server-side. AJAX
-        // callers get 401 with a pre-rendered login modal; plain form posts are
-        // redirected to the login page.
-        if (auth('web')->guest()) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'auth_required' => true,
-                    'message' => 'Please login to continue.',
-                    'login_modal' => view('storefront.partials.login-modal')->render(),
-                ], 401);
-            }
-
-            return redirect()->guest(route('login'));
-        }
-
+        // ── Guest wishlist: no account required ────────────────────────────────
+        // Guests get a cookie-backed wishlist (managed by WishlistService) that
+        // is merged into their account automatically on login / registration.
         try {
             $result = $this->wishlistService->toggle($product);
 
