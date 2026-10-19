@@ -1,8 +1,7 @@
 {{--
     storefront/partials/login-modal.blade.php
     ─────────────────────────────────────────────────────────────────────────────
-    Luxury Vanriti Login & Fast Checkout Modal
-    Dual-mode: Instant WhatsApp OTP (default) + Traditional Password
+    Luxury Vanriti Login - WhatsApp OTP Only
 --}}
 @php
     $loginLogo = setting('store_logo');
@@ -193,9 +192,13 @@
                         </div>
                     </div>
 
-                    {{-- Footer: Full registration link --}}
-
-            </div>
+                    {{-- Footer: link to full auth page for password login / registration --}}
+                    <div class="vr-modal-footer-cta">
+                        <a href="{{ route('login') }}">
+                            Use password or create an account <i class="ri-arrow-right-s-line"></i>
+                        </a>
+                    </div>
+                </div>
         </div>
     </div>
 </div>
@@ -210,6 +213,5 @@ window.vrLoginModal.phone = 'vrLoginModalOtpPhone';
 window.vrLoginModal.code = 'vrLoginModalOtpCode';
 window.vrLoginModal.sendBtn = 'vrLoginModalOtpSend';
 window.vrLoginModal.verifyBtn = 'vrLoginModalOtpVerify';
-window.vrLoginModal.passwordUrl = '{{ route('login.submit') }}';
 window.vrLoginModal.registerUrl = '{{ route('register') }}';
 </script>

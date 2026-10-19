@@ -48,9 +48,6 @@
                         <i class="ri-user-3-line"></i>
                     </button>
                 @endauth
-                <a href="{{ route("login") }}" class="vr-icon-link" title="Login" aria-label="Login">
-                    <i class="bi bi-box-arrow-in-right"></i>
-                </a>
             </div>
 
             {{-- Desktop: logo + category nav --}}
@@ -92,6 +89,11 @@
                     <li class="nav-item">
                         <a class="vr-nav-link" href="{{ route('contact.index') }}">Contact</a>
                     </li>
+                    @guest('web')
+                        <li class="nav-item">
+                            <a class="vr-nav-link {{ request()->routeIs('login') ? 'active' : '' }}" href="{{ route('login') }}">Login</a>
+                        </li>
+                    @endguest
                 </ul>
             </div>
 
@@ -101,7 +103,7 @@
                         <i class="bi bi-person"></i>
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="vr-icon-link"  title="Login" aria-label="Login">
+                    <a href="{{ route('login') }}" class="vr-icon-link" title="Login" aria-label="Login">
                         <i class="bi bi-person"></i>
                     </a>
                 @endauth
