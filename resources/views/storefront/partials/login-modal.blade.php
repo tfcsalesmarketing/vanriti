@@ -92,7 +92,7 @@
                             <span class="vr-kicker-sparkle">✨</span> FAST SIGN-IN
                         </div>
                         <h4 class="vr-form-heading" id="vrLoginModalTitle">Welcome to {{ store_name() }}</h4>
-                        <p class="vr-form-subheading" id="vrLoginModalSubtitle">Quick WhatsApp verification or standard account login</p>
+                        <p class="vr-login-heading" id="vrLoginModalSubtitle">Quick WhatsApp verification or standard account login</p>
                     </div>
 
                     {{-- Mode Toggle Tabs --}}
