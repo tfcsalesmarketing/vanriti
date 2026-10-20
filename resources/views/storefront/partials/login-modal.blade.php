@@ -201,6 +201,7 @@
                 </div>
         </div>
     </div>
+    </div>
 </div>
 
 <script nonce="{{ $cspNonce }}">

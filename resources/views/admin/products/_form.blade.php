@@ -103,6 +103,37 @@
         </div>
 
         <div class="card mb-3">
+            <div class="card-header fw-semibold">Product Video</div>
+            <div class="card-body">
+                @php $currentVideo = old('video_url', $product->video_url ?? ''); @endphp
+                @if (filled($currentVideo))
+                    <div class="alert alert-light border small py-2 mb-3 d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                        <span>Current video:
+                            <a href="{{ video_url($currentVideo) }}" target="_blank" rel="noopener" class="text-decoration-underline">{{ Str::limit(video_url($currentVideo), 60) }}</a>
+                        </span>
+                        <div class="form-check small mb-0">
+                            <input class="form-check-input" type="checkbox" name="remove_video" value="1" id="flagRemoveVideo">
+                            <label class="form-check-label" for="flagRemoveVideo">Remove video</label>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Video Link</label>
+                        <input type="url" name="video_url" class="form-control form-control-sm" value="{{ old('video_url', $product->video_url ?? '') }}" placeholder="https://www.youtube.com/watch?v=... or https://your-cdn.com/product.mp4">
+                        <div class="form-text">Paste a YouTube / Vimeo link or a direct .mp4 / .webm URL. Used as-is when no file is uploaded below.</div>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Upload Video</label>
+                        <input type="file" name="video" class="form-control form-control-sm" accept="video/mp4,video/webm,video/ogg,video/quicktime,.mp4,.webm,.ogv,.mov">
+                        <div class="form-text">MP4 / WebM / MOV / OGG, up to 50 MB. A saved file replaces the link above.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
             <div class="card-header fw-semibold">SEO</div>
             <div class="card-body">
                 <div class="row g-3">

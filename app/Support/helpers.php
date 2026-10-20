@@ -238,6 +238,56 @@ if (! function_exists('image_url')) {
     }
 }
 
+if (! function_exists('video_url')) {
+    /**
+     * Resolve a product video reference to an absolute URL.
+     *
+     * Accepts external links (https://... incl. youtube/vimeo), public files,
+     * storage/ paths and s3 object keys. Returns null when nothing is set.
+     */
+    function video_url(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        $path = trim($path);
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'storage/')) {
+            return asset($path);
+        }
+
+        if (file_exists(public_path($path))) {
+            return asset($path);
+        }
+
+        return Storage::disk('s3')->url($path);
+    }
+}
+
+if (! function_exists('video_mime')) {
+    /**
+     * Guess the MIME type of a direct video URL from its file extension,
+     * ignoring any query string (signed S3 URLs carry one).
+     */
+    function video_mime(?string $url): string
+    {
+        $path = strtolower(parse_url((string) $url, PHP_URL_PATH) ?? '');
+
+        return match (true) {
+            str_ends_with($path, '.webm') => 'video/webm',
+            str_ends_with($path, '.ogv'), str_ends_with($path, '.ogg') => 'video/ogg',
+            str_ends_with($path, '.mov') => 'video/quicktime',
+            str_ends_with($path, '.3gp') => 'video/3gpp',
+            default => 'video/mp4',
+        };
+    }
+}
+
 if (! function_exists('brand_logo_path')) {
     /**
      * Resolve the brand logo from settings, falling back to any logo shipped in

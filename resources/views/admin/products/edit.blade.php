@@ -67,7 +67,7 @@
     </div>
 </div>
 
-<form method="POST" action="{{ route('admin.products.update', $product->slug) }}">
+<form method="POST" action="{{ route('admin.products.update', $product->slug) }}" enctype="multipart/form-data">
     @csrf
     @method('PUT')
     @include('admin.products._form')

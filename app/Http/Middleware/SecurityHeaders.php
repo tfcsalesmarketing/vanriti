@@ -28,10 +28,11 @@ class SecurityHeaders
             "frame-ancestors 'self'",
             "form-action 'self'",
             "img-src 'self' data: blob: https:",
+            "media-src 'self' data: blob: https:",
             "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-            "script-src 'self' 'nonce-".csp_nonce()."' https://checkout.razorpay.com https://*.razorpay.com https://www.googletagmanager.com https://connect.facebook.net https://staticxx.facebook.com https://cdn.jsdelivr.net",
-            'frame-src https://checkout.razorpay.com https://*.razorpay.com https://www.googletagmanager.com https://staticxx.facebook.com',
+            "script-src 'self' 'nonce-".csp_nonce()."' https://checkout.razorpay.com https://*.razorpay.com https://www.googletagmanager.com https://connect.facebook.net https://staticxx.facebook.com https://cdn.jsdelivr.net https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+            'frame-src https://checkout.razorpay.com https://*.razorpay.com https://www.googletagmanager.com https://staticxx.facebook.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com',
             "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://www.googletagmanager.com https://connect.facebook.net https://graph.facebook.com https://*.google-analytics.com https://api.postalpincode.in",
         ]));
 

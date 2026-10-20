@@ -7,7 +7,7 @@
     <h5 class="mb-0 fw-bold">Add Product</h5>
 </div>
 
-<form method="POST" action="{{ route('admin.products.store') }}">
+<form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
     @csrf
     @include('admin.products._form')
 </form>

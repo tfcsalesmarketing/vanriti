@@ -88,6 +88,8 @@ class ProductController extends Controller
             'meta_description' => 'nullable|string|max:500',
             'meta_keywords' => 'nullable|string',
             'search_keywords' => 'nullable|string',
+            'video_url' => 'nullable|string|max:500',
+            'video' => 'nullable|file|mimes:mp4,webm,ogg,ogv,mov,3gp|max:51200',
             'is_featured' => 'nullable',
             'is_bestseller' => 'nullable',
             'is_new_arrival' => 'nullable',
@@ -104,6 +106,8 @@ class ProductController extends Controller
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_bestseller'] = $request->boolean('is_bestseller');
         $validated['is_new_arrival'] = $request->boolean('is_new_arrival');
+        $validated['video_url'] = $this->resolveVideoUrl($request, $validated['video_url'] ?? null);
+        unset($validated['video']);
 
         $categoryIds = $validated['category_ids'];
         $primaryCategoryId = $validated['primary_category_id'] ?? $categoryIds[0];
@@ -176,6 +180,8 @@ class ProductController extends Controller
             'meta_description' => 'nullable|string|max:500',
             'meta_keywords' => 'nullable|string',
             'search_keywords' => 'nullable|string',
+            'video_url' => 'nullable|string|max:500',
+            'video' => 'nullable|file|mimes:mp4,webm,ogg,ogv,mov,3gp|max:51200',
             'is_featured' => 'nullable',
             'is_bestseller' => 'nullable',
             'is_new_arrival' => 'nullable',
@@ -203,6 +209,13 @@ class ProductController extends Controller
         $primaryCategoryId = $validated['primary_category_id'] ?? $categoryIds[0];
         unset($validated['category_ids'], $validated['primary_category_id']);
 
+        $previousVideo = $product->video_url;
+        $validated['video_url'] = $this->resolveVideoUrl($request, $validated['video_url'] ?? null);
+        unset($validated['video']);
+        if ($validated['video_url'] !== $previousVideo) {
+            $this->deleteStoredVideo($previousVideo);
+        }
+
         $product->update($validated);
 
         DB::table('product_category')->where('product_id', $product->id)->delete();
@@ -226,6 +239,38 @@ class ProductController extends Controller
         $product->delete();
 
         return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
+    }
+
+    /**
+     * Decide the stored video reference: an uploaded file wins over a pasted
+     * link, the remove flag clears everything, otherwise the link is kept.
+     */
+    private function resolveVideoUrl(Request $request, ?string $link): ?string
+    {
+        if ($request->hasFile('video')) {
+            $stored = $request->file('video')->store('products/videos', 's3');
+
+            return $stored !== false ? $stored : null;
+        }
+
+        if ($request->boolean('remove_video')) {
+            return null;
+        }
+
+        $link = trim((string) $link);
+
+        return $link === '' ? null : $link;
+    }
+
+    private function deleteStoredVideo(?string $path): void
+    {
+        if (blank($path) || str_starts_with($path, 'http') || str_starts_with($path, 'storage/')) {
+            return;
+        }
+
+        if (Storage::disk('s3')->exists($path)) {
+            Storage::disk('s3')->delete($path);
+        }
     }
 
     public function storeImage(Request $request, Product $product)

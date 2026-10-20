@@ -94,6 +94,7 @@ class Product extends Model
         'meta_description',
         'meta_keywords',
         'search_keywords',
+        'video_url',
         'status',
         'is_featured',
         'is_bestseller',
@@ -249,6 +250,67 @@ class Product extends Model
     {
         return $this->images()->where('type', 'main')->first()
             ?? $this->images()->first();
+    }
+
+    /**
+     * Absolute URL for the product video, or null when no video is configured.
+     */
+    public function videoSrc(): ?string
+    {
+        return video_url($this->video_url);
+    }
+
+    /**
+     * 'youtube' | 'vimeo' | null (null means a direct media file).
+     */
+    public function videoProvider(): ?string
+    {
+        $raw = trim((string) $this->video_url);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (preg_match('#(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)([\w-]{6,})#i', $raw, $m)) {
+            return 'youtube';
+        }
+
+        if (preg_match('#(?:vimeo\.com/)(\d+)#i', $raw, $m)) {
+            return 'vimeo';
+        }
+
+        return null;
+    }
+
+    /**
+     * Embed id for a youtube/vimeo video_url, otherwise null.
+     */
+    public function videoEmbedId(): ?string
+    {
+        $raw = trim((string) $this->video_url);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (preg_match('#(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)([\w-]{6,})#i', $raw, $m)) {
+            return $m[1];
+        }
+
+        if (preg_match('#(?:vimeo\.com/)(\d+)#i', $raw, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * True when the configured video is a direct playable file (uploaded
+     * video or an .mp4/.webm/... link) rather than an embed provider.
+     */
+    public function hasVideoFile(): bool
+    {
+        $raw = trim((string) $this->video_url);
+
+        return $raw !== '' && $this->videoProvider() === null;
     }
 
     public function getRouteKeyName(): string

@@ -410,17 +410,101 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ---- Product gallery thumbnails ----
     var thumbs = document.querySelectorAll('.vr-gallery-thumb');
+    var zoomContainer = document.getElementById('vrZoomContainer');
+    var mainImageWrap = document.getElementById('vrMainImageWrap');
+    var stageVideo = document.getElementById('vrStageVideo');
+    var pdpVideo = document.getElementById('vrPdpVideo');
+    var plyrInstance = null;
+
+    function mimeFromUrl(url) {
+        var path = (url || '').split('#')[0].split('?')[0].toLowerCase();
+        if (/\.webm$/.test(path)) return 'video/webm';
+        if (/\.og[gv]$/.test(path)) return 'video/ogg';
+        if (/\.mov$/.test(path)) return 'video/quicktime';
+        if (/\.3gp$/.test(path)) return 'video/3gpp';
+        return 'video/mp4';
+    }
+
+    // data: {url, provider, embedId, poster}
+    function playVideo(data) {
+        if (!stageVideo || !pdpVideo || !window.Plyr) {
+            if (pdpVideo && pdpVideo.tagName === 'VIDEO' && data.url) {
+                pdpVideo.src = data.url;
+            }
+            try { if (pdpVideo) pdpVideo.play(); } catch (e) {}
+            return;
+        }
+
+        if (!plyrInstance) {
+            var opts = { ratio: '1:1', hideControls: false };
+            if (data.provider && data.embedId) {
+                opts.poster = data.poster || undefined;
+            }
+            plyrInstance = new window.Plyr(pdpVideo, opts);
+        }
+
+        if (data.provider && data.embedId) {
+            plyrInstance.source = {
+                type: 'video',
+                provider: data.provider,
+                sources: [{ src: data.embedId, provider: data.provider }],
+            };
+            if (data.poster) plyrInstance.poster = data.poster;
+        } else if (data.url && pdpVideo.tagName === 'VIDEO') {
+            plyrInstance.source = { type: 'video', sources: [{ src: data.url, type: mimeFromUrl(data.url) }] };
+        }
+
+        try { plyrInstance.play(); } catch (e) {}
+    }
+
+    function showVideoStage(thumb) {
+        if (!stageVideo) return;
+        if (mainImageWrap) mainImageWrap.classList.add('d-none');
+        stageVideo.classList.remove('d-none');
+        if (zoomContainer) zoomContainer.classList.add('is-video');
+
+        playVideo({
+            url: thumb.dataset.videoUrl,
+            provider: thumb.dataset.videoProvider,
+            embedId: thumb.dataset.videoEmbedId,
+            poster: thumb.dataset.poster,
+        });
+    }
+
+    function showImageStage(thumb) {
+        var target = thumb.dataset.image;
+        var main = document.querySelector('#vrMainImage');
+        if (main && target) {
+            main.src = target;
+        }
+        if (plyrInstance) { try { plyrInstance.pause(); } catch (e) {} }
+        if (stageVideo) stageVideo.classList.add('d-none');
+        if (mainImageWrap) mainImageWrap.classList.remove('d-none');
+        if (zoomContainer) zoomContainer.classList.remove('is-video');
+    }
+
     thumbs.forEach(function (thumb) {
         thumb.addEventListener('click', function () {
-            var target = thumb.dataset.image;
-            var main = document.querySelector('#vrMainImage');
-            if (main && target) {
-                main.src = target;
-                thumbs.forEach(function (t) { t.classList.remove('active'); });
-                thumb.classList.add('active');
+            if (thumb.dataset.video !== undefined) {
+                showVideoStage(thumb);
+            } else {
+                showImageStage(thumb);
             }
+            thumbs.forEach(function (t) { t.classList.remove('active'); });
+            thumb.classList.add('active');
         });
     });
+
+    // A product with a video but no images shows the player immediately.
+    if (stageVideo && !thumbs.length) {
+        if (zoomContainer) zoomContainer.classList.add('is-video');
+        playVideo({
+            url: stageVideo.getAttribute('data-video-url'),
+            provider: stageVideo.getAttribute('data-video-provider'),
+            embedId: stageVideo.getAttribute('data-video-embed-id'),
+            poster: stageVideo.getAttribute('data-video-poster'),
+        });
+    }
 
     // ---- Quick add to cart (AJAX) ----
     document.querySelectorAll('.js-add-cart').forEach(function (btn) {
@@ -548,10 +632,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ---- Product gallery lightbox ----
-    var mainImgWrap = document.getElementById('vrMainImageWrap');
     var lightbox = document.getElementById('vrLightbox');
-    if (mainImgWrap && lightbox) {
-        mainImgWrap.addEventListener('click', function () {
+    if (mainImageWrap && lightbox) {
+        mainImageWrap.addEventListener('click', function () {
             var img = document.getElementById('vrMainImage');
             if (img && img.tagName === 'IMG') {
                 document.getElementById('vrLightboxImg').src = img.src;

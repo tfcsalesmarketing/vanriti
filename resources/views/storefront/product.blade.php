@@ -17,6 +17,48 @@
 @php
     $img = $product->getPrimaryImage()?->image_path;
     $gallery = $product->images;
+    $videoSrc = $product->videoSrc();
+    $videoProvider = $product->videoProvider();
+    $videoEmbedId = $product->videoEmbedId();
+    $videoIsOnlyItem = false;
+    $galleryItems = $gallery->map(function ($image) {
+        return [
+            'kind' => 'image',
+            'path' => $image->image_path,
+            'url' => image_url($image->image_path),
+            'alt' => $image->alt_text ?: null,
+        ];
+    })->values();
+
+    if ($videoSrc) {
+        $videoItem = [
+            'kind' => 'video',
+            'url' => $videoSrc,
+            'provider' => $videoProvider,
+            'embed_id' => $videoEmbedId,
+            'poster' => $img ? image_url($img) : null,
+        ];
+        if ($galleryItems->isNotEmpty()) {
+            $galleryItems = $galleryItems->slice(0, 1)->push($videoItem)->concat($galleryItems->slice(1))->values();
+        } elseif ($img) {
+            $galleryItems = collect([[
+                'kind' => 'image',
+                'path' => $img,
+                'url' => image_url($img),
+                'alt' => null,
+            ], $videoItem]);
+        } else {
+            $galleryItems = collect([$videoItem]);
+            $videoIsOnlyItem = true;
+        }
+    } elseif ($galleryItems->isEmpty() && $img) {
+        $galleryItems = collect([[
+            'kind' => 'image',
+            'path' => $img,
+            'url' => image_url($img),
+            'alt' => null,
+        ]]);
+    }
     $available = $product->getAvailableStock();
     $out = $available <= 0;
     $low = ! $out && $product->isLowStock();
@@ -60,30 +102,63 @@
     <div class="row g-4 g-lg-5">
         <div class="col-lg-5">
             <div class="vr-zoom-container" id="vrZoomContainer">
-                @if ($img)
-                    <a href="#" id="vrMainImageWrap" class="vr-zoom d-block mb-3" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
-                        <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 vr-zoom-image" style="aspect-ratio:1/1;object-fit:contain;background:linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);padding:1.35rem;" fetchpriority="high">
-                    </a>
-                @else
-                    <a href="#" id="vrMainImageWrap" class="vr-zoom d-block mb-3" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
-                        <div id="vrMainImage" class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="aspect-ratio:1/1;">
-                            <i class="bi bi-image text-secondary display-4"></i>
-                        </div>
-                    </a>
+                <div id="vrMainImageWrap" class="vr-zoom d-block mb-3 {{ $videoIsOnlyItem ? 'd-none' : '' }}">
+                    @if ($img)
+                        <a href="#" class="d-block" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
+                            <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 vr-zoom-image" style="aspect-ratio:1/1;object-fit:contain;background:linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);padding:1.35rem;" fetchpriority="high">
+                        </a>
+                    @else
+                        <a href="#" class="d-block" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
+                            <div id="vrMainImage" class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="aspect-ratio:1/1;">
+                                <i class="bi bi-image text-secondary display-4"></i>
+                            </div>
+                        </a>
+                    @endif
+                </div>
+
+                @if ($videoSrc)
+                    <div id="vrStageVideo" class="vr-pdp-video mb-3 {{ $videoIsOnlyItem ? '' : 'd-none' }}"
+                         data-video-url="{{ $videoSrc }}"
+                         data-video-provider="{{ $videoProvider }}"
+                         data-video-embed-id="{{ $videoEmbedId }}"
+                         @if ($img) data-video-poster="{{ image_url($img) }}" @endif>
+                        @if ($videoProvider && $videoEmbedId)
+                            <div id="vrPdpVideo" class="vr-pdp-video-embed" data-plyr-provider="{{ $videoProvider }}" data-plyr-embed-id="{{ $videoEmbedId }}" @if ($img) data-poster="{{ image_url($img) }}" @endif></div>
+                        @else
+                            <video id="vrPdpVideo" class="vr-pdp-video-el" playsinline controls preload="metadata" @if ($img) poster="{{ image_url($img) }}" @endif>
+                                <source src="{{ $videoSrc }}" type="{{ video_mime($videoSrc) }}">
+                                Your browser does not support the video tag.
+                            </video>
+                        @endif
+                    </div>
                 @endif
+
                 <div class="vr-zoom-lens" id="vrZoomLens"></div>
                 <div class="vr-zoom-result" id="vrZoomResult"></div>
             </div>
 
-            @if ($gallery->count() > 1)
+            @if ($galleryItems->count() > 1)
                 <div class="row g-2">
-                    @foreach ($gallery as $image)
-                        @php $thumb = $image->image_path; @endphp
-                        <div class="col-3">
-                            <div class="vr-gallery-thumb {{ $thumb && $thumb === $img ? 'active' : '' }}" data-image="{{ image_url($thumb) }}">
-                                <img src="{{ image_url($thumb) }}" alt="{{ $image->alt_text ?: $product->name }}" class="img-fluid" style="aspect-ratio:1/1;object-fit:contain;background:#f7f4ea;padding:0.3rem;">
+                    @foreach ($galleryItems as $index => $item)
+                        @if ($item['kind'] === 'video')
+                            <div class="col-3">
+                                <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video">
+                                    @if ($item['poster'])
+                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid" style="aspect-ratio:1/1;object-fit:cover;background:#f7f4ea;">
+                                    @else
+                                        <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
+                                    @endif
+                                    <span class="vr-gallery-thumb-play"><i class="bi bi-play-fill"></i></span>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            @php $thumb = $item['path']; @endphp
+                            <div class="col-3">
+                                <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-image="{{ $item['url'] }}">
+                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid" style="aspect-ratio:1/1;object-fit:contain;background:#f7f4ea;padding:0.3rem;">
+                                </div>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             @endif
@@ -1032,6 +1107,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     var zoomFactor = 2.5;
 
     function activateZoom() {
+        if (container.classList.contains('is-video')) return;
         var src = img.src;
         if (!src) return;
 
@@ -1050,6 +1126,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     }
 
     function moveLens(e) {
+        if (container.classList.contains('is-video')) return;
         var rect = img.getBoundingClientRect();
         var x = e.clientX - rect.left;
         var y = e.clientY - rect.top;
@@ -1085,3 +1162,12 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 })();
 </script>
 @endpush
+
+@if ($videoSrc)
+@push('styles')
+<link rel="stylesheet" href="{{ asset_version('vendor/plyr/plyr.css') }}">
+@endpush
+@push('scripts')
+<script src="{{ asset_version('vendor/plyr/plyr.min.js') }}" defer></script>
+@endpush
+@endif
