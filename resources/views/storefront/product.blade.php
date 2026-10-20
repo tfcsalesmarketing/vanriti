@@ -101,7 +101,7 @@
 
     <div class="row g-4 g-lg-5">
         <div class="col-lg-5">
-            <div class="d-flex gap-3 align-items-start h-100" id="vrGalleryColumn">
+            <div class="d-flex gap-3 align-items-start h-lg-100" id="vrGalleryColumn">
                 <div class="d-flex flex-column gap-2 vr-gallery-thumbs-vertical d-none d-lg-flex"
                      style="flex: 0 0 auto; width: 90px; max-height: 480px; overflow-y: auto; padding-right: 2px; scroll-snap-type: y mandatory;">
                     @foreach ($galleryItems as $index => $item)
@@ -122,7 +122,7 @@
                     @endforeach
                 </div>
 
-                <div class="vr-zoom-container flex-grow-1" id="vrZoomContainer" style="height: 480px;">
+                <div class="vr-zoom-container flex-grow-1" id="vrZoomContainer" style="height: 100%; max-height: 480px;">
                     <div id="vrMainImageWrap" class="vr-zoom d-block {{ $videoIsOnlyItem ? 'd-none' : '' }}" style="height: 100%;">
                         @if ($img)
                             <a href="#" class="d-block h-100" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
