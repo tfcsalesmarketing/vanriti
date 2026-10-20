@@ -234,7 +234,11 @@ if (! function_exists('image_url')) {
             return asset($path);
         }
 
-        return Storage::disk('s3')->url($path);
+        try {
+            return Storage::disk('s3')->url($path);
+        } catch (Throwable $e) {
+            return asset($path);
+        }
     }
 }
 
@@ -265,7 +269,11 @@ if (! function_exists('video_url')) {
             return asset($path);
         }
 
-        return Storage::disk('s3')->url($path);
+        try {
+            return Storage::disk('s3')->url($path);
+        } catch (Throwable $e) {
+            return $path;
+        }
     }
 }
 
