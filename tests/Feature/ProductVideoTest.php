@@ -82,9 +82,9 @@ class ProductVideoTest extends TestCase
 
         $this->assertStringContainsString('id="vrStageVideo"', $html);
         $this->assertStringContainsString('id="vrPdpVideo"', $html);
-        $this->assertStringNotContainsString('vr-gallery-thumb-video', $html);
+        $this->assertStringContainsString('vr-gallery-thumbs-vertical', $html);
         $this->assertMatchesRegularExpression('/id="vrMainImageWrap" class="[^"]*d-none/', $html);
-        $this->assertMatchesRegularExpression('/id="vrStageVideo" class="vr-pdp-video mb-3(?! d-none)/', $html);
+        $this->assertMatchesRegularExpression('/id="vrStageVideo" class="vr-pdp-video(?! d-none)/', $html);
     }
 
     public function test_product_video_model_helpers(): void

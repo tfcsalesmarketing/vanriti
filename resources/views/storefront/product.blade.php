@@ -101,50 +101,72 @@
 
     <div class="row g-4 g-lg-5">
         <div class="col-lg-5">
-            <div class="vr-zoom-container" id="vrZoomContainer">
-                <div id="vrMainImageWrap" class="vr-zoom d-block mb-3 {{ $videoIsOnlyItem ? 'd-none' : '' }}">
-                    @if ($img)
-                        <a href="#" class="d-block" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
-                            <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 vr-zoom-image" style="aspect-ratio:1/1;object-fit:contain;background:linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);padding:1.35rem;" fetchpriority="high">
-                        </a>
-                    @else
-                        <a href="#" class="d-block" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
-                            <div id="vrMainImage" class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="aspect-ratio:1/1;">
-                                <i class="bi bi-image text-secondary display-4"></i>
+            <div class="d-flex gap-3 align-items-start h-100" id="vrGalleryColumn">
+                <div class="d-flex flex-column gap-2 vr-gallery-thumbs-vertical d-none d-lg-flex"
+                     style="flex: 0 0 auto; width: 90px; max-height: 480px; overflow-y: auto; padding-right: 2px; scroll-snap-type: y mandatory;">
+                    @foreach ($galleryItems as $index => $item)
+                        @if ($item['kind'] === 'video')
+                            <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
+                                @if ($item['poster'])
+                                    <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; background: #f7f4ea;">
+                                @else
+                                    <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
+                                @endif
+                                <span class="vr-gallery-thumb-play"><i class="bi bi-play-fill"></i></span>
                             </div>
-                        </a>
-                    @endif
+                        @else
+                            <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-image="{{ $item['url'] }}" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
+                                <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: contain; background: #f7f4ea; padding: 0.25rem;">
+                            </div>
+                        @endif
+                    @endforeach
                 </div>
 
-                @if ($videoSrc)
-                    <div id="vrStageVideo" class="vr-pdp-video mb-3 {{ $videoIsOnlyItem ? '' : 'd-none' }}"
-                         data-video-url="{{ $videoSrc }}"
-                         data-video-provider="{{ $videoProvider }}"
-                         data-video-embed-id="{{ $videoEmbedId }}"
-                         @if ($img) data-video-poster="{{ image_url($img) }}" @endif>
-                        @if ($videoProvider && $videoEmbedId)
-                            <div id="vrPdpVideo" class="vr-pdp-video-embed" data-plyr-provider="{{ $videoProvider }}" data-plyr-embed-id="{{ $videoEmbedId }}" @if ($img) data-poster="{{ image_url($img) }}" @endif></div>
+                <div class="vr-zoom-container flex-grow-1" id="vrZoomContainer" style="height: 480px;">
+                    <div id="vrMainImageWrap" class="vr-zoom d-block {{ $videoIsOnlyItem ? 'd-none' : '' }}" style="height: 100%;">
+                        @if ($img)
+                            <a href="#" class="d-block h-100" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
+                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 h-100 vr-zoom-image" style="object-fit: contain; background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%); padding: 1.35rem;" fetchpriority="high">
+                            </a>
                         @else
-                            <video id="vrPdpVideo" class="vr-pdp-video-el" playsinline controls preload="metadata" @if ($img) poster="{{ image_url($img) }}" @endif>
-                                <source src="{{ $videoSrc }}" type="{{ video_mime($videoSrc) }}">
-                                Your browser does not support the video tag.
-                            </video>
+                            <a href="#" class="d-block h-100" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
+                                <div id="vrMainImage" class="bg-light rounded-3 d-flex align-items-center justify-content-center w-100 h-100">
+                                    <i class="bi bi-image text-secondary display-4"></i>
+                                </div>
+                            </a>
                         @endif
                     </div>
-                @endif
 
-                <div class="vr-zoom-lens" id="vrZoomLens"></div>
-                <div class="vr-zoom-result" id="vrZoomResult"></div>
+                    @if ($videoSrc)
+                        <div id="vrStageVideo" class="vr-pdp-video {{ $videoIsOnlyItem ? '' : 'd-none' }} h-100"
+                             data-video-url="{{ $videoSrc }}"
+                             data-video-provider="{{ $videoProvider }}"
+                             data-video-embed-id="{{ $videoEmbedId }}"
+                             @if ($img) data-video-poster="{{ image_url($img) }}" @endif>
+                            @if ($videoProvider && $videoEmbedId)
+                                <div id="vrPdpVideo" class="vr-pdp-video-embed h-100" data-plyr-provider="{{ $videoProvider }}" data-plyr-embed-id="{{ $videoEmbedId }}" @if ($img) data-poster="{{ image_url($img) }}" @endif></div>
+                            @else
+                                <video id="vrPdpVideo" class="vr-pdp-video-el w-100 h-100" playsinline controls preload="metadata" @if ($img) poster="{{ image_url($img) }}" @endif>
+                                    <source src="{{ $videoSrc }}" type="{{ video_mime($videoSrc) }}">
+                                    Your browser does not support the video tag.
+                                </video>
+                            @endif
+                        </div>
+                    @endif
+
+                    <div class="vr-zoom-lens" id="vrZoomLens"></div>
+                    <div class="vr-zoom-result" id="vrZoomResult"></div>
+                </div>
             </div>
 
             @if ($galleryItems->count() > 1)
-                <div class="row g-2">
+                <div class="row g-2 d-lg-none mt-2">
                     @foreach ($galleryItems as $index => $item)
                         @if ($item['kind'] === 'video')
                             <div class="col-3">
                                 <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video">
                                     @if ($item['poster'])
-                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid" style="aspect-ratio:1/1;object-fit:cover;background:#f7f4ea;">
+                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; background: #f7f4ea;">
                                     @else
                                         <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
                                     @endif
@@ -152,10 +174,9 @@
                                 </div>
                             </div>
                         @else
-                            @php $thumb = $item['path']; @endphp
                             <div class="col-3">
                                 <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-image="{{ $item['url'] }}">
-                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid" style="aspect-ratio:1/1;object-fit:contain;background:#f7f4ea;padding:0.3rem;">
+                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: contain; background: #f7f4ea; padding: 0.25rem;">
                                 </div>
                             </div>
                         @endif
