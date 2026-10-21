@@ -342,11 +342,11 @@ if (! function_exists('clean_html')) {
         $allowedTags = [
             'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'mark', 'small', 'span', 'div',
             'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
-            'pre', 'code', 'hr', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'caption', 'sup', 'sub',
+            'pre', 'code', 'hr', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'caption', 'sup', 'sub', 'style',
         ];
 
         $dangerousTags = [
-            'script', 'style', 'iframe', 'frame', 'object', 'embed',
+            'script', 'iframe', 'frame', 'object', 'embed',
             'video', 'audio', 'source', 'track', 'link', 'meta', 'base',
             'form', 'input', 'textarea', 'select', 'button', 'svg', 'math',
             'template', 'noscript',
@@ -393,7 +393,9 @@ if (! function_exists('clean_html')) {
                         ? ['href', 'title']
                         : ($tag === 'img'
                             ? ['src', 'alt', 'title']
-                            : ['align', 'colspan', 'rowspan']);
+                            : ($tag === 'style'
+                                ? ['media', 'type']
+                                : ['align', 'colspan', 'rowspan', 'class', 'id', 'style']));
 
                     foreach (iterator_to_array($child->attributes) as $attr) {
                         $name = strtolower($attr->nodeName);
@@ -407,6 +409,15 @@ if (! function_exists('clean_html')) {
                         if (! in_array($name, $allowedAttrs, true)) {
                             $child->removeAttribute($attr->nodeName);
 
+                            continue;
+                        }
+
+                        if ($name === 'style') {
+                            $value = trim((string) $attr->nodeValue);
+                            if (preg_match('#expression\s*\(|url\s*\(\s*["\']?\s*javascript:|behavior\s*:|@import#i', $value)) {
+                                $child->removeAttribute($attr->nodeName);
+                                continue;
+                            }
                             continue;
                         }
 
@@ -429,7 +440,6 @@ if (! function_exists('clean_html')) {
 
                             if (! $isSafe) {
                                 $child->removeAttribute($attr->nodeName);
-
                                 continue;
                             }
                         }
