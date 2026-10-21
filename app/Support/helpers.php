@@ -343,6 +343,8 @@ if (! function_exists('clean_html')) {
             'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'mark', 'small', 'span', 'div',
             'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
             'pre', 'code', 'hr', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'caption', 'sup', 'sub', 'style',
+            'main', 'section', 'article', 'aside', 'header', 'footer', 'nav',
+            'figure', 'figcaption', 'dl', 'dt', 'dd', 'details', 'summary',
         ];
 
         $dangerousTags = [
@@ -464,6 +466,9 @@ if (! function_exists('clean_html')) {
         } else {
             $output = $dom->saveHTML();
         }
+
+        $output = trim($output);
+        $output = preg_replace('/^<\?xml[^>]*\??>\s*/i', '', $output);
 
         return trim($output);
     }
