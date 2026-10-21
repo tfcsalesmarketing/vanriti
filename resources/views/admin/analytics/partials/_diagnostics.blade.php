@@ -49,7 +49,7 @@
                                     <span class="badge text-bg-secondary">NOT CONFIGURED</span>
                                 @endif
                             </td>
-                            <td class="small text-muted">{{ $tracking['gtm_configured'] ? 'GTM '.$tracking['gtm_container_id'] : 'No GTM container ID configured; GA4/GTM may be inactive.' }}</td>
+                                    <td class="small text-muted">{{ $tracking['gtm_configured'] ? 'GTM '.$tracking['gtm_container_id'].' configured; GA4 unverified (Measurement ID and tag firing must be confirmed in GTM Preview).' : 'No GTM container ID configured; GA4/GTM may be inactive.' }}</td>
                         </tr>
                         <tr>
                             <td class="small">Meta Pixel</td>
@@ -72,8 +72,6 @@
                                         {{ ($capiConfig['configured'] ?? false) ? 'Configured' : 'Not configured' }}</span>
                                     <span class="d-block"><strong>Pixel:</strong>
                                         {{ $capiPixel !== '' ? $capiPixel : 'Not set' }}</span>
-                                    <span class="d-block"><strong>Delivery:</strong>
-                                        {{ $capiDelivery }}</span>
                                     <span class="d-block"><strong>Last successful delivery:</strong>
                                         {{ $capiLastSent ? \Carbon\Carbon::parse($capiLastSent)->toDayDateTimeString() : 'Never' }}</span>
                                     <span class="d-block"><strong>Recent delivered events (7 days):</strong>

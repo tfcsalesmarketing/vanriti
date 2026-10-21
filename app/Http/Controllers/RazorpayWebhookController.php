@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\PushOrderToShipMojo;
-use App\Jobs\SendMetaCapiPurchase;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Analytics\ConversionService;
@@ -116,7 +115,9 @@ class RazorpayWebhookController extends Controller
         $this->conversionService->recordPurchase($order);
 
         if ($this->metaCapiService->isConfigured()) {
-            SendMetaCapiPurchase::dispatch($order, route('checkout.success', $order));
+            $this->metaCapiService->deliver($order, [
+                'event_source_url' => route('checkout.success', $order),
+            ]);
         }
 
         $this->notifyCustomer($order, 'paymentSuccessful');

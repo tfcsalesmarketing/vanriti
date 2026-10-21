@@ -150,12 +150,6 @@ class MetaCapiService
                 'attempt' => $attempts,
                 'error' => $e->getMessage(),
             ]);
-
-            // Retry only on an async queue; a synchronous (test) or exhausted
-            // attempt must never fail the checkout request.
-            if (config('queue.default') !== 'sync' && $attempts < $this->maxAttempts()) {
-                throw $e;
-            }
         }
     }
 
@@ -185,6 +179,12 @@ class MetaCapiService
 
         if ($response->failed()) {
             throw new \RuntimeException($this->responseError($response));
+        }
+
+        $eventsReceived = (int) $response->json('events_received', 0);
+
+        if ($eventsReceived <= 0) {
+            throw new \RuntimeException('Meta CAPI error (HTTP '.$response->status().', events_received '.$eventsReceived.')');
         }
 
         Log::info('Meta CAPI: Purchase delivered', [

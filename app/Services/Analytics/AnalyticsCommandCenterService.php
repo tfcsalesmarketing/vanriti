@@ -925,7 +925,8 @@ class AnalyticsCommandCenterService
             'currency' => self::CURRENCY,
             'gtm_configured' => $gtmConfigured,
             'gtm_container_id' => (string) config('analytics.gtm_container_id', ''),
-            'ga4_configured' => $gtmConfigured,
+            'ga4_configured' => false,
+            'ga4_status' => 'unverified',
             'pixel_configured' => $pixelConfigured,
             'pixel_masked' => $pixelConfigured ? 'xxxx'.substr($pixelId, -4) : '',
             'capi' => $capi,
@@ -1039,13 +1040,13 @@ class AnalyticsCommandCenterService
             $detail = 'Configured with past deliveries, but no event was received in the last 7 days.';
         } elseif ($allTime > 0) {
             $status = 'unknown';
-            $label = 'Unknown / Parsing';
-            $detail = 'Configured, but the delivery ledger is still inconclusive - '.$awaiting
-                .' conversion(s) have no confirmed delivery yet while Meta finishes parsing your data.';
+            $label = 'Unknown / Awaiting Processing';
+            $detail = 'Configured, but no confirmed delivery yet: '.$awaiting
+                .' conversion(s) have no confirmed delivery.';
         } else {
             $status = 'unknown';
-            $label = 'Unknown / Parsing';
-            $detail = 'Configured, but no purchase conversions have been recorded yet, so delivery is unproven - Meta is still parsing your data.';
+            $label = 'Unknown / Awaiting Processing';
+            $detail = 'Configured, but no purchase conversions have been recorded yet, so delivery is unproven.';
         }
 
         return [
@@ -1137,7 +1138,7 @@ class AnalyticsCommandCenterService
                 $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API configured but not receiving', 'detail' => 'Configured, but there is no recent delivery evidence in the conversion ledger.'];
                 break;
             case 'unknown':
-                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API delivery unproven', 'detail' => $tracking['capi_status_detail'] ?? 'Configured, but the delivery ledger is inconclusive — Meta is still parsing your data.'];
+                $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API delivery unproven', 'detail' => $tracking['capi_status_detail'] ?? 'Configured, but delivery is not yet confirmed.'];
                 break;
             case 'not_configured':
                 $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API is not configured', 'detail' => $tracking['capi_status_detail'] ?? 'Server-side CAPI delivery is not configured; browser Pixel tracking may still be active.'];
@@ -1453,6 +1454,7 @@ class AnalyticsCommandCenterService
             'gtm_configured' => false,
             'gtm_container_id' => '',
             'ga4_configured' => false,
+            'ga4_status' => 'unverified',
             'pixel_configured' => false,
             'pixel_masked' => '',
             'capi' => [

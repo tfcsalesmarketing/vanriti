@@ -1116,9 +1116,9 @@ class AnalyticsCommandCenterTest extends TestCase
         $capi = $this->capi($range);
 
         $this->assertSame('unknown', $capi['status']);
-        $this->assertSame('Unknown / Parsing', $capi['label']);
+        $this->assertSame('Unknown / Awaiting Processing', $capi['label']);
         $this->assertSame(1, $capi['awaiting_delivery']);
-        $this->assertStringContainsString('inconclusive', $capi['detail']);
+        $this->assertStringContainsString('no confirmed delivery', $capi['detail']);
     }
 
     public function test_production_style_capi_configuration_is_detected(): void

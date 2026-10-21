@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
 use App\Jobs\PushOrderToShipMojo;
-use App\Jobs\SendMetaCapiPurchase;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Analytics\AnalyticsEventRecorder;
 use App\Services\Analytics\ConversionService;
 use App\Services\Analytics\EcommerceDataService;
 use App\Services\Analytics\MetaCapiService;
@@ -83,7 +83,7 @@ class CheckoutController extends Controller
         $checkoutEcommerce = $this->ecommerceDataService->checkoutEcommerce($cart);
 
         // First-party analytics event (measurement only; never affects checkout).
-        app(\App\Services\Analytics\AnalyticsEventRecorder::class)->beginCheckout($cart);
+        app(AnalyticsEventRecorder::class)->beginCheckout($cart);
 
         return view('storefront.checkout.index', compact(
             'cart', 'addresses', 'selectedAddress', 'subtotal',
@@ -250,7 +250,7 @@ class CheckoutController extends Controller
             try {
                 $payment = $this->paymentService->createPayment($order, 'cod');
                 $this->paymentService->initialize($order, $payment, 'cod');
-                app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'cod');
+                app(AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'cod');
             } catch (\Throwable $e) {
                 Log::error('COD payment initialisation failed.', ['error' => $e->getMessage()]);
 
@@ -327,7 +327,7 @@ class CheckoutController extends Controller
                 $payment = $this->paymentService->createPayment($order, 'razorpay');
                 $init = $this->paymentService->initialize($order, $payment, 'razorpay');
                 // First-party analytics event (measurement only; never affects payment).
-                app(\App\Services\Analytics\AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'razorpay');
+                app(AnalyticsEventRecorder::class)->addPaymentInfo($order->refresh(), 'razorpay');
             });
 
             session()->forget('cart_coupon');
@@ -684,18 +684,20 @@ class CheckoutController extends Controller
      */
     protected function dispatchMetaCapiPurchase(Order $order, Request $request): void
     {
-        if (! $this->metaCapiService->isConfigured()) {
-            return;
+        $context = [
+            'event_source_url' => route('checkout.success', $order),
+            'client_ip_address' => $request->ip(),
+            'client_user_agent' => $request->userAgent(),
+            'fbp' => $request->cookies->get('_fbp'),
+            'fbc' => $request->cookies->get('_fbc'),
+        ];
+
+        $testEventCode = trim((string) setting('meta_test_event_code', ''));
+        if ($testEventCode !== '') {
+            $context['test_event_code'] = $testEventCode;
         }
 
-        SendMetaCapiPurchase::dispatch(
-            $order,
-            route('checkout.success', $order),
-            $request->cookies->get('_fbp'),
-            $request->cookies->get('_fbc'),
-            $request->ip(),
-            $request->userAgent(),
-        );
+        $this->metaCapiService->deliver($order, $context);
     }
 
     public function failed(Order $order): View
