@@ -101,12 +101,12 @@
 
     <div class="row g-4 g-lg-5">
         <div class="col-lg-5">
-            <div class="d-flex gap-3 align-items-start h-lg-100" id="vrGalleryColumn">
+            <div class="d-flex gap-3 align-items-start h-lg-100" id="vrGalleryColumn" style="margin-bottom: 10px;">
                 <div class="d-flex flex-column gap-2 vr-gallery-thumbs-vertical d-none d-lg-flex"
                      style="flex: 0 0 auto; width: 90px; max-height: 480px; overflow-y: auto; padding-right: 2px; scroll-snap-type: y mandatory;">
                     @foreach ($galleryItems as $index => $item)
                         @if ($item['kind'] === 'video')
-                            <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
+                            <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
                                 @if ($item['poster'])
                                     <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; background: #f7f4ea;">
                                 @else
@@ -115,21 +115,22 @@
                                 <span class="vr-gallery-thumb-play"><i class="bi bi-play-fill"></i></span>
                             </div>
                         @else
-                            <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-image="{{ $item['url'] }}" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
+                            <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
                                 <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: contain; background: #f7f4ea; padding: 0.25rem;">
                             </div>
                         @endif
                     @endforeach
                 </div>
 
-                <div class="vr-zoom-container flex-grow-1" id="vrZoomContainer" style="height: 100%; max-height: 480px;">
-                    <div id="vrMainImageWrap" class="vr-zoom d-block {{ $videoIsOnlyItem ? 'd-none' : '' }}" style="height: 100%;">
+                <div class="vr-zoom-container flex-grow-1 position-relative" id="vrZoomContainer" style="width: 100%; aspect-ratio: 1 / 1; max-height: 480px;">
+                    <div id="vrMainImageWrap" class="vr-zoom d-block position-relative {{ $videoIsOnlyItem ? 'd-none' : '' }}" style="width: 100%; height: 100%;">
                         @if ($img)
-                            <a href="#" class="d-block h-100" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
-                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 h-100 vr-zoom-image" style="object-fit: contain; background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%); padding: 1.35rem;" fetchpriority="high">
+                            <a href="#" class="d-block h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open>
+                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 h-100 vr-zoom-image" style="object-fit: contain; background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%); padding: 1.25rem;" fetchpriority="high">
+                                <span class="vr-main-zoom-badge" aria-hidden="true"><i class="bi bi-arrows-fullscreen"></i></span>
                             </a>
                         @else
-                            <a href="#" class="d-block h-100" role="button" aria-label="Zoom product image" data-bs-toggle="modal" data-bs-target="#vrLightbox">
+                            <a href="#" class="d-block h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open>
                                 <div id="vrMainImage" class="bg-light rounded-3 d-flex align-items-center justify-content-center w-100 h-100">
                                     <i class="bi bi-image text-secondary display-4"></i>
                                 </div>
@@ -160,11 +161,11 @@
             </div>
 
             @if ($galleryItems->count() > 1)
-                <div class="row g-2 d-lg-none mt-2">
+                <div class="row g-2 d-lg-none" id="vrGalleryMobileThumbs" style="margin-top: 10px;">
                     @foreach ($galleryItems as $index => $item)
                         @if ($item['kind'] === 'video')
                             <div class="col-3">
-                                <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video">
+                                <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="width: 100%; aspect-ratio: 1/1;">
                                     @if ($item['poster'])
                                         <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; background: #f7f4ea;">
                                     @else
@@ -175,7 +176,7 @@
                             </div>
                         @else
                             <div class="col-3">
-                                <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-image="{{ $item['url'] }}">
+                                <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="width: 100%; aspect-ratio: 1/1;">
                                     <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: contain; background: #f7f4ea; padding: 0.25rem;">
                                 </div>
                             </div>
@@ -534,16 +535,45 @@
     @endif
 </div>
 
-<div class="modal fade vr-lightbox" id="vrLightbox" tabindex="-1" role="dialog" aria-modal="true" aria-label="{{ $product->name }} image">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<div class="modal fade vr-lightbox" id="vrLightbox" tabindex="-1" role="dialog" aria-modal="true" aria-label="{{ $product->name }} media viewer">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
-            <div class="modal-body text-center">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                <img id="vrLightboxImg" src="" alt="{{ $product->name }}">
+            <div class="modal-body text-center position-relative">
+                <button type="button" class="btn-close vr-lightbox-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn vr-lightbox-nav vr-lightbox-prev" aria-label="Previous media" title="Previous (Left arrow)"><i class="bi bi-chevron-left"></i></button>
+                <button type="button" class="btn vr-lightbox-nav vr-lightbox-next" aria-label="Next media" title="Next (Right arrow)"><i class="bi bi-chevron-right"></i></button>
+                <div id="vrLightboxStage" class="vr-lightbox-stage"></div>
+                <div class="d-flex align-items-center justify-content-center mt-2">
+                    <span id="vrLightboxCounter" class="vr-lightbox-counter badge bg-dark bg-opacity-75 px-3 py-2 small fw-semibold"></span>
+                </div>
+                @if ($galleryItems->count() > 1)
+                    <div id="vrLightboxThumbs" class="vr-lightbox-thumbs">
+                        @foreach ($galleryItems as $index => $item)
+                            <div class="vr-lightbox-thumb {{ $index === 0 ? 'active' : '' }}" data-lightbox-index="{{ $index }}" role="button" aria-label="View media {{ $index + 1 }}">
+                                @if ($item['kind'] === 'video')
+                                    <div class="position-relative w-100 h-100 d-flex align-items-center justify-content-center bg-dark">
+                                        @if ($item['poster'])
+                                            <img src="{{ $item['poster'] }}" alt="{{ $product->name }}" style="object-fit: cover;">
+                                        @else
+                                            <i class="bi bi-play-circle text-white"></i>
+                                        @endif
+                                        <i class="bi bi-play-fill position-absolute text-white" style="font-size: 0.9rem;"></i>
+                                    </div>
+                                @else
+                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}">
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     </div>
 </div>
+
+<script id="vrGalleryData" type="application/json">
+{!! json_encode($galleryItems->values()->all(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
+</script>
 
 <div class="vr-mobile-bar d-lg-none" id="vrMobileBar">
     <div class="container d-flex align-items-center gap-2">

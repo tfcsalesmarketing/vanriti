@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    VANRITI Storefront â€” Premium "Clean Luxury" Redesign
    Brand palette: forest #263D25, olive #6F8736, ivory #F7F4EA, white
    Fonts: Inter (UI)
@@ -986,9 +986,48 @@ img { max-width: 100%; height: auto; }
 
 .vr-zoom { cursor: zoom-in; }
 
-/* Image Zoom */
-.vr-zoom-container { position: relative; overflow: visible; }
-.vr-zoom-container .vr-zoom { cursor: crosshair; }
+/* Image Zoom & Gallery Column */
+#vrGalleryColumn {
+    margin-bottom: 10px;
+}
+.vr-zoom-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 480px;
+    margin-bottom: 10px;
+    border-radius: var(--vr-radius);
+    background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);
+    overflow: hidden;
+}
+.vr-zoom-container .vr-zoom {
+    cursor: zoom-in;
+    width: 100%;
+    height: 100%;
+}
+.vr-main-zoom-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(4px);
+    color: var(--vr-green-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+    z-index: 3;
+    transition: transform var(--vr-transition-fast), background var(--vr-transition-fast);
+}
+.vr-zoom-container:hover .vr-main-zoom-badge {
+    transform: scale(1.1);
+    background: #ffffff;
+}
 .vr-zoom-lens {
     position: absolute;
     width: 180px;
@@ -1020,13 +1059,159 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 1200px) {
     .vr-zoom-result { width: 340px; height: 340px; }
 }
-@media (max-width: 991px) {
+@media (max-width: 991.98px) {
     .vr-zoom-lens, .vr-zoom-result { display: none !important; }
+    .vr-zoom-container {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        max-height: none;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+    #vrGalleryColumn {
+        margin-bottom: 10px;
+    }
+    #vrGalleryMobileThumbs {
+        margin-top: 10px !important;
+    }
+    .vr-gallery-thumb { position: relative; z-index: 2; }
 }
-.vr-lightbox .modal-content { background: transparent; border: 0; }
-.vr-lightbox .modal-body { padding: 0; }
-.vr-lightbox img { width: 100%; border-radius: var(--vr-radius); max-height: 82vh; object-fit: contain; background: #fff; }
-.vr-lightbox .btn-close { position: absolute; top: -2.6rem; right: 0; filter: invert(1); opacity: 0.9; }
+
+/* Lightbox Modal & Controls */
+.vr-lightbox .modal-dialog {
+    max-width: min(94vw, 1100px);
+}
+.vr-lightbox .modal-content {
+    background: transparent;
+    border: 0;
+}
+.vr-lightbox .modal-body {
+    padding: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.vr-lightbox .btn-close,
+.vr-lightbox .vr-lightbox-close {
+    position: absolute;
+    top: -2.7rem;
+    right: 0;
+    filter: invert(1);
+    opacity: 0.95;
+    z-index: 1070;
+    width: 2.2rem;
+    height: 2.2rem;
+    background-size: 1.25rem;
+    cursor: pointer;
+}
+.vr-lightbox-stage {
+    min-height: 45vh;
+    max-height: 72vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    user-select: none;
+    touch-action: pan-y;
+}
+.vr-lightbox-stage img {
+    max-width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    border-radius: var(--vr-radius);
+    background: #ffffff;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    display: block;
+}
+.vr-lightbox-stage video,
+.vr-lightbox-stage iframe {
+    max-width: 100%;
+    max-height: 72vh;
+    border-radius: var(--vr-radius);
+    background: #000;
+}
+.vr-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1060;
+    width: 3.1rem;
+    height: 3.1rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: #111111;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.32);
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: transform var(--vr-transition-fast), background var(--vr-transition-fast), color var(--vr-transition-fast);
+}
+.vr-lightbox-nav:hover {
+    background: #ffffff;
+    color: var(--vr-green-dark);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.42);
+}
+.vr-lightbox-prev {
+    left: 0.5rem;
+}
+.vr-lightbox-next {
+    right: 0.5rem;
+}
+@media (min-width: 992px) {
+    .vr-lightbox-prev { left: -1.8rem; }
+    .vr-lightbox-next { right: -1.8rem; }
+}
+.vr-lightbox-counter {
+    color: #fff;
+    letter-spacing: 0.5px;
+    font-size: 0.88rem;
+}
+.vr-lightbox-thumbs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 12px;
+    overflow-x: auto;
+    max-width: 92vw;
+    padding: 6px 4px;
+    scroll-behavior: smooth;
+}
+.vr-lightbox-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    overflow: hidden;
+    cursor: pointer;
+    opacity: 0.65;
+    transition: all var(--vr-transition-fast);
+    flex-shrink: 0;
+    background: #fff;
+}
+.vr-lightbox-thumb:hover {
+    opacity: 0.95;
+    border-color: rgba(255, 255, 255, 0.9);
+}
+.vr-lightbox-thumb.active {
+    border-color: #ffffff;
+    opacity: 1;
+    box-shadow: 0 0 0 3px var(--vr-green);
+    transform: scale(1.08);
+}
+.vr-lightbox-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #f7f4ea;
+    padding: 2px;
+}
 
 /* Rating Stars */
 .rating-stars i { color: #E6E2D6; transition: color var(--vr-transition-fast); }

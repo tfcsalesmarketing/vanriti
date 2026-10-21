@@ -483,17 +483,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (zoomContainer) zoomContainer.classList.remove('is-video');
     }
 
-    thumbs.forEach(function (thumb) {
-        thumb.addEventListener('click', function () {
-            if (thumb.dataset.video !== undefined) {
-                showVideoStage(thumb);
-            } else {
-                showImageStage(thumb);
-            }
-            thumbs.forEach(function (t) { t.classList.remove('active'); });
-            thumb.classList.add('active');
-        });
-    });
 
     // A product with a video but no images shows the player immediately.
     if (stageVideo && !thumbs.length) {
@@ -631,16 +620,304 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ---- Product gallery lightbox ----
+    // ---- Product gallery lightbox with prev/next for images and videos ----
     var lightbox = document.getElementById('vrLightbox');
-    if (mainImageWrap && lightbox) {
-        mainImageWrap.addEventListener('click', function () {
-            var img = document.getElementById('vrMainImage');
-            if (img && img.tagName === 'IMG') {
-                document.getElementById('vrLightboxImg').src = img.src;
+    var lightboxStage = document.getElementById('vrLightboxStage');
+    var lightboxCounter = document.getElementById('vrLightboxCounter');
+    var lightboxPrev = document.querySelector('.vr-lightbox-prev');
+    var lightboxNext = document.querySelector('.vr-lightbox-next');
+
+    var galleryItems = [];
+    var galleryDataEl = document.getElementById('vrGalleryData');
+    if (galleryDataEl) {
+        try {
+            var parsed = JSON.parse(galleryDataEl.textContent || '[]');
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                galleryItems = parsed;
+            }
+        } catch (err) {
+            galleryItems = [];
+        }
+    }
+
+    if (!galleryItems.length) {
+        document.querySelectorAll('.vr-gallery-thumb').forEach(function (thumb) {
+            var item = null;
+            if (thumb.hasAttribute('data-video')) {
+                item = {
+                    kind: 'video',
+                    url: thumb.getAttribute('data-video-url') || '',
+                    provider: thumb.getAttribute('data-video-provider') || '',
+                    embedId: thumb.getAttribute('data-video-embed-id') || '',
+                    poster: thumb.getAttribute('data-video-poster') || '',
+                    alt: (thumb.querySelector('img') && thumb.querySelector('img').alt) || ''
+                };
+            } else if (thumb.getAttribute('data-image')) {
+                item = {
+                    kind: 'image',
+                    url: thumb.getAttribute('data-image') || '',
+                    alt: (thumb.querySelector('img') && thumb.querySelector('img').alt) || ''
+                };
+            }
+            if (item && item.url) {
+                galleryItems.push(item);
             }
         });
     }
+
+    if (!galleryItems.length) {
+        var mainImg = document.getElementById('vrMainImage');
+        if (mainImg && mainImg.tagName === 'IMG' && mainImg.src) {
+            galleryItems.push({
+                kind: 'image',
+                url: mainImg.src,
+                alt: mainImg.alt || ''
+            });
+        }
+    }
+
+    var currentGalleryIndex = 0;
+    var lightboxIndex = 0;
+
+    function embedUrl(item) {
+        var eid = item.embedId || item.embed_id || '';
+        if (item.provider === 'youtube' && eid) {
+            return 'https://www.youtube.com/embed/' + encodeURIComponent(eid) + '?rel=0&autoplay=1';
+        }
+        if (item.provider === 'vimeo' && eid) {
+            return 'https://player.vimeo.com/video/' + encodeURIComponent(eid) + '?autoplay=1';
+        }
+        return item.url;
+    }
+
+    function selectGalleryItem(index) {
+        if (!galleryItems.length) return;
+        index = (index + galleryItems.length) % galleryItems.length;
+        currentGalleryIndex = index;
+        var item = galleryItems[index];
+
+        // Sync active state on all thumbnail rows (both vertical desktop and horizontal mobile)
+        document.querySelectorAll('.vr-gallery-thumb').forEach(function (t) {
+            var idxAttr = t.getAttribute('data-gallery-index');
+            if (idxAttr !== null) {
+                t.classList.toggle('active', parseInt(idxAttr, 10) === index);
+            } else {
+                var url = t.getAttribute('data-video-url') || t.getAttribute('data-image');
+                t.classList.toggle('active', url === item.url);
+            }
+        });
+
+        if (item.kind === 'video') {
+            if (mainImageWrap) mainImageWrap.classList.add('d-none');
+            if (stageVideo) stageVideo.classList.remove('d-none');
+            if (zoomContainer) zoomContainer.classList.add('is-video');
+            playVideo({
+                url: item.url,
+                provider: item.provider,
+                embedId: item.embedId || item.embed_id,
+                poster: item.poster
+            });
+        } else {
+            var main = document.querySelector('#vrMainImage');
+            if (main && item.url) {
+                main.src = item.url;
+                if (item.alt) main.alt = item.alt;
+            }
+            if (plyrInstance) { try { plyrInstance.pause(); } catch (e) {} }
+            if (stageVideo) stageVideo.classList.add('d-none');
+            if (mainImageWrap) mainImageWrap.classList.remove('d-none');
+            if (zoomContainer) zoomContainer.classList.remove('is-video');
+        }
+    }
+
+    function renderLightbox() {
+        if (!lightboxStage || !galleryItems.length) {
+            return;
+        }
+        var item = galleryItems[lightboxIndex];
+        lightboxStage.innerHTML = '';
+
+        if (item.kind === 'video') {
+            var embedIdVal = item.embedId || item.embed_id;
+            if (item.provider && embedIdVal) {
+                var iframe = document.createElement('iframe');
+                iframe.src = embedUrl(item);
+                iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.style.width = '100%';
+                iframe.style.height = '68vh';
+                iframe.style.border = '0';
+                lightboxStage.appendChild(iframe);
+            } else if (item.url) {
+                var video = document.createElement('video');
+                video.src = item.url;
+                video.controls = true;
+                video.playsInline = true;
+                video.autoplay = true;
+                video.poster = item.poster || '';
+                video.style.maxWidth = '100%';
+                video.style.maxHeight = '72vh';
+                lightboxStage.appendChild(video);
+            }
+        } else {
+            var img = document.createElement('img');
+            img.src = item.url;
+            img.alt = item.alt || '';
+            img.className = 'img-fluid';
+            lightboxStage.appendChild(img);
+        }
+
+        if (lightboxCounter) {
+            lightboxCounter.textContent = (lightboxIndex + 1) + ' / ' + galleryItems.length;
+        }
+
+        // Toggle nav arrows if only 1 item
+        if (lightboxPrev && lightboxNext) {
+            var showArrows = galleryItems.length > 1;
+            lightboxPrev.style.display = showArrows ? 'inline-flex' : 'none';
+            lightboxNext.style.display = showArrows ? 'inline-flex' : 'none';
+        }
+
+        // Highlight active lightbox thumb & scroll it into view
+        document.querySelectorAll('.vr-lightbox-thumb').forEach(function (lt) {
+            var ltIdx = parseInt(lt.getAttribute('data-lightbox-index'), 10);
+            var isCurrent = ltIdx === lightboxIndex;
+            lt.classList.toggle('active', isCurrent);
+            if (isCurrent && typeof lt.scrollIntoView === 'function') {
+                lt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        });
+
+        // Keep page stage aligned with current lightbox item
+        selectGalleryItem(lightboxIndex);
+    }
+
+    function openLightbox(index) {
+        if (!lightbox || !galleryItems.length) {
+            return;
+        }
+        lightboxIndex = (index + galleryItems.length) % galleryItems.length;
+        renderLightbox();
+        var BootstrapModal = (window.bootstrap && window.bootstrap.Modal)
+            || (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+            || null;
+        var modal = BootstrapModal ? BootstrapModal.getOrCreateInstance(lightbox) : null;
+        if (modal) {
+            modal.show();
+        } else if (lightbox) {
+            lightbox.classList.add('show');
+            lightbox.style.display = 'block';
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    function stepLightbox(direction) {
+        if (!galleryItems.length) return;
+        lightboxIndex = (lightboxIndex + direction + galleryItems.length) % galleryItems.length;
+        renderLightbox();
+    }
+
+    function findGalleryIndex(thumb) {
+        var idxAttr = thumb.getAttribute('data-gallery-index');
+        if (idxAttr !== null) {
+            var parsedIdx = parseInt(idxAttr, 10);
+            if (!isNaN(parsedIdx)) return parsedIdx;
+        }
+        var url = thumb.hasAttribute('data-video') ? thumb.getAttribute('data-video-url') : thumb.getAttribute('data-image');
+        var kind = thumb.hasAttribute('data-video') ? 'video' : 'image';
+        for (var i = 0; i < galleryItems.length; i++) {
+            if (galleryItems[i].kind === kind && galleryItems[i].url === url) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    if (lightboxPrev) {
+        lightboxPrev.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            stepLightbox(-1);
+        });
+    }
+    if (lightboxNext) {
+        lightboxNext.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            stepLightbox(1);
+        });
+    }
+
+    // Lightbox thumb click
+    document.addEventListener('click', function (e) {
+        var lt = e.target.closest ? e.target.closest('.vr-lightbox-thumb') : null;
+        if (!lt) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var idx = parseInt(lt.getAttribute('data-lightbox-index'), 10);
+        if (!isNaN(idx)) {
+            lightboxIndex = idx;
+            renderLightbox();
+        }
+    });
+
+    // Keyboard navigation: ArrowLeft / ArrowRight
+    document.addEventListener('keydown', function (e) {
+        if (!lightbox) return;
+        var isOpen = lightbox.classList.contains('show') || lightbox.style.display === 'block';
+        if (!isOpen) return;
+
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            stepLightbox(-1);
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            stepLightbox(1);
+        }
+    });
+
+    // Touch swipe navigation for mobile
+    var touchStartX = 0;
+    var touchStartY = 0;
+    if (lightboxStage) {
+        lightboxStage.addEventListener('touchstart', function (e) {
+            if (!e.touches || !e.touches[0]) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        lightboxStage.addEventListener('touchend', function (e) {
+            if (!e.changedTouches || !e.changedTouches[0]) return;
+            var diffX = e.changedTouches[0].clientX - touchStartX;
+            var diffY = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX < 0) {
+                    stepLightbox(1);
+                } else {
+                    stepLightbox(-1);
+                }
+            }
+        }, { passive: true });
+    }
+
+    // Main image click opens lightbox at current viewed index
+    var mainImageLink = mainImageWrap ? mainImageWrap.querySelector('a') : null;
+    if (mainImageLink && lightbox) {
+        mainImageLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openLightbox(currentGalleryIndex);
+        });
+    }
+
+    // Thumbnail click updates main stage image only (does NOT pop up modal)
+    document.querySelectorAll('.vr-gallery-thumb').forEach(function (thumb) {
+        thumb.addEventListener('click', function (e) {
+            e.preventDefault();
+            var idx = findGalleryIndex(thumb);
+            selectGalleryItem(idx);
+        });
+    });
 
     // ---- Mobile App Drawer Stagger Animations ----
     document.querySelectorAll('.vr-app-drawer').forEach(function (drawer) {
