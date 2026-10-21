@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (card) updateCartTotals(card, next);
 
             var form = input.closest('form');
-            if (form && form.dataset.autoQty) {
+            if (form && form.hasAttribute('data-auto-qty')) {
                 form.requestSubmit();
             }
         });

@@ -78,7 +78,7 @@
                                         </div>
 
                                         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                            <form action="{{ route('cart.update', $item) }}" method="POST" data-auto-qty>
+                                            <form action="{{ route('cart.update', $item) }}" method="POST" data-auto-qty="1">
                                                 @csrf
                                                 <div class="vr-qty">
                                                     <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity" {{ $item->quantity <= 1 ? 'disabled' : '' }}><i class="bi bi-dash"></i></button>
