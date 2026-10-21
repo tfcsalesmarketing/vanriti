@@ -1219,6 +1219,9 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 <link rel="stylesheet" href="{{ asset_version('vendor/plyr/plyr.css') }}">
 @endpush
 @push('scripts')
-<script src="{{ asset_version('vendor/plyr/plyr.min.js') }}" defer></script>
+<script nonce="{{ $cspNonce }}">
+window.vrPlyrIconUrl = "{{ asset('vendor/plyr/plyr.svg') }}";
+</script>
+<script nonce="{{ $cspNonce }}" src="{{ asset_version('vendor/plyr/plyr.min.js') }}"></script>
 @endpush
 @endif

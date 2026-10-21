@@ -416,6 +416,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var pdpVideo = document.getElementById('vrPdpVideo');
     var plyrInstance = null;
 
+    function getPlyrIconUrl() {
+        if (window.vrPlyrIconUrl) return window.vrPlyrIconUrl;
+        var base = window.location.origin;
+        if (window.location.pathname.indexOf('/vanriti') === 0) {
+            base += '/vanriti';
+        }
+        return base + '/vendor/plyr/plyr.svg';
+    }
+
     function mimeFromUrl(url) {
         var path = (url || '').split('#')[0].split('?')[0].toLowerCase();
         if (/\.webm$/.test(path)) return 'video/webm';
@@ -425,36 +434,72 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'video/mp4';
     }
 
+    function pauseMainVideo() {
+        if (plyrInstance) {
+            try { plyrInstance.pause(); } catch (e) {}
+        }
+        if (pdpVideo && typeof pdpVideo.pause === 'function') {
+            try { pdpVideo.pause(); } catch (e) {}
+        }
+    }
+
     // data: {url, provider, embedId, poster}
     function playVideo(data) {
-        if (!stageVideo || !pdpVideo || !window.Plyr) {
-            if (pdpVideo && pdpVideo.tagName === 'VIDEO' && data.url) {
+        if (!stageVideo || !pdpVideo) return;
+
+        if (!window.Plyr) {
+            if (pdpVideo.tagName === 'VIDEO' && data.url) {
                 pdpVideo.src = data.url;
             }
-            try { if (pdpVideo) pdpVideo.play(); } catch (e) {}
+            try { if (pdpVideo.play) pdpVideo.play(); } catch (e) {}
             return;
         }
 
         if (!plyrInstance) {
-            var opts = { ratio: '1:1', hideControls: false };
+            var opts = {
+                ratio: '1:1',
+                hideControls: true,
+                resetOnEnd: true,
+                iconUrl: getPlyrIconUrl(),
+                controls: [
+                    'play-large',
+                    'play',
+                    'progress',
+                    'current-time',
+                    'mute',
+                    'volume',
+                    'fullscreen'
+                ]
+            };
             if (data.provider && data.embedId) {
                 opts.poster = data.poster || undefined;
             }
-            plyrInstance = new window.Plyr(pdpVideo, opts);
+            try {
+                plyrInstance = new window.Plyr(pdpVideo, opts);
+            } catch (err) {
+                console.warn('Plyr initialization failed, using native controls', err);
+            }
         }
 
-        if (data.provider && data.embedId) {
-            plyrInstance.source = {
-                type: 'video',
-                provider: data.provider,
-                sources: [{ src: data.embedId, provider: data.provider }],
-            };
-            if (data.poster) plyrInstance.poster = data.poster;
-        } else if (data.url && pdpVideo.tagName === 'VIDEO') {
-            plyrInstance.source = { type: 'video', sources: [{ src: data.url, type: mimeFromUrl(data.url) }] };
+        if (plyrInstance) {
+            if (data.provider && data.embedId) {
+                plyrInstance.source = {
+                    type: 'video',
+                    provider: data.provider,
+                    sources: [{ src: data.embedId, provider: data.provider }],
+                };
+                if (data.poster) plyrInstance.poster = data.poster;
+            } else if (data.url && pdpVideo.tagName === 'VIDEO') {
+                plyrInstance.source = {
+                    type: 'video',
+                    sources: [{ src: data.url, type: mimeFromUrl(data.url) }]
+                };
+            }
+            try { plyrInstance.play(); } catch (e) {}
+        } else if (pdpVideo.tagName === 'VIDEO' && data.url) {
+            pdpVideo.src = data.url;
+            try { pdpVideo.play(); } catch (e) {}
         }
-
-        try { plyrInstance.play(); } catch (e) {}
     }
 
     function showVideoStage(thumb) {
@@ -477,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (main && target) {
             main.src = target;
         }
-        if (plyrInstance) { try { plyrInstance.pause(); } catch (e) {} }
+        pauseMainVideo();
         if (stageVideo) stageVideo.classList.add('d-none');
         if (mainImageWrap) mainImageWrap.classList.remove('d-none');
         if (zoomContainer) zoomContainer.classList.remove('is-video');
@@ -690,7 +735,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return item.url;
     }
 
-    function selectGalleryItem(index) {
+    function selectGalleryItem(index, shouldPlayVideo) {
+        if (typeof shouldPlayVideo === 'undefined') shouldPlayVideo = true;
         if (!galleryItems.length) return;
         index = (index + galleryItems.length) % galleryItems.length;
         currentGalleryIndex = index;
@@ -711,31 +757,53 @@ document.addEventListener('DOMContentLoaded', function () {
             if (mainImageWrap) mainImageWrap.classList.add('d-none');
             if (stageVideo) stageVideo.classList.remove('d-none');
             if (zoomContainer) zoomContainer.classList.add('is-video');
-            playVideo({
-                url: item.url,
-                provider: item.provider,
-                embedId: item.embedId || item.embed_id,
-                poster: item.poster
-            });
+            if (shouldPlayVideo) {
+                playVideo({
+                    url: item.url,
+                    provider: item.provider,
+                    embedId: item.embedId || item.embed_id,
+                    poster: item.poster
+                });
+            } else {
+                pauseMainVideo();
+            }
         } else {
             var main = document.querySelector('#vrMainImage');
             if (main && item.url) {
                 main.src = item.url;
                 if (item.alt) main.alt = item.alt;
             }
-            if (plyrInstance) { try { plyrInstance.pause(); } catch (e) {} }
+            pauseMainVideo();
             if (stageVideo) stageVideo.classList.add('d-none');
             if (mainImageWrap) mainImageWrap.classList.remove('d-none');
             if (zoomContainer) zoomContainer.classList.remove('is-video');
         }
     }
 
+    function stopLightboxMedia() {
+        if (!lightboxStage) return;
+        lightboxStage.querySelectorAll('video').forEach(function (v) {
+            try {
+                v.pause();
+                v.removeAttribute('src');
+                v.load();
+            } catch (e) {}
+        });
+        lightboxStage.querySelectorAll('iframe').forEach(function (f) {
+            try { f.src = 'about:blank'; } catch (e) {}
+        });
+        lightboxStage.innerHTML = '';
+    }
+
     function renderLightbox() {
         if (!lightboxStage || !galleryItems.length) {
             return;
         }
+        // Always stop existing media and pause main-stage video before rendering next slide
+        stopLightboxMedia();
+        pauseMainVideo();
+
         var item = galleryItems[lightboxIndex];
-        lightboxStage.innerHTML = '';
 
         if (item.kind === 'video') {
             var embedIdVal = item.embedId || item.embed_id;
@@ -757,6 +825,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 video.poster = item.poster || '';
                 video.style.maxWidth = '100%';
                 video.style.maxHeight = '72vh';
+                video.style.borderRadius = '8px';
+                video.style.background = '#000';
                 lightboxStage.appendChild(video);
             }
         } else {
@@ -788,14 +858,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Keep page stage aligned with current lightbox item
-        selectGalleryItem(lightboxIndex);
+        // Keep page stage thumbnails aligned, BUT DO NOT AUTOPLAY MAIN STAGE!
+        selectGalleryItem(lightboxIndex, false);
     }
 
     function openLightbox(index) {
         if (!lightbox || !galleryItems.length) {
             return;
         }
+        pauseMainVideo();
         lightboxIndex = (index + galleryItems.length) % galleryItems.length;
         renderLightbox();
         var BootstrapModal = (window.bootstrap && window.bootstrap.Modal)
@@ -907,6 +978,14 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             e.stopPropagation();
             openLightbox(currentGalleryIndex);
+        });
+    }
+
+    if (lightbox) {
+        lightbox.addEventListener('hide.bs.modal', stopLightboxMedia);
+        lightbox.addEventListener('hidden.bs.modal', stopLightboxMedia);
+        lightbox.querySelectorAll('[data-bs-dismiss="modal"], .btn-close, .vr-lightbox-close').forEach(function (btn) {
+            btn.addEventListener('click', stopLightboxMedia);
         });
     }
 
