@@ -418,8 +418,10 @@ if (! function_exists('clean_html')) {
                             $value = trim((string) $attr->nodeValue);
                             if (preg_match('#expression\s*\(|url\s*\(\s*["\']?\s*javascript:|behavior\s*:|@import#i', $value)) {
                                 $child->removeAttribute($attr->nodeName);
+
                                 continue;
                             }
+
                             continue;
                         }
 
@@ -442,6 +444,7 @@ if (! function_exists('clean_html')) {
 
                             if (! $isSafe) {
                                 $child->removeAttribute($attr->nodeName);
+
                                 continue;
                             }
                         }
