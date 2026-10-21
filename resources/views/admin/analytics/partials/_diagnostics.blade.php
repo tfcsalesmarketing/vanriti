@@ -72,6 +72,8 @@
                                         {{ ($capiConfig['configured'] ?? false) ? 'Configured' : 'Not configured' }}</span>
                                     <span class="d-block"><strong>Pixel:</strong>
                                         {{ $capiPixel !== '' ? $capiPixel : 'Not set' }}</span>
+                                    <span class="d-block"><strong>Delivery:</strong>
+                                        {{ $capiDelivery }}</span>
                                     <span class="d-block"><strong>Last successful delivery:</strong>
                                         {{ $capiLastSent ? \Carbon\Carbon::parse($capiLastSent)->toDayDateTimeString() : 'Never' }}</span>
                                     <span class="d-block"><strong>Recent delivered events (7 days):</strong>
