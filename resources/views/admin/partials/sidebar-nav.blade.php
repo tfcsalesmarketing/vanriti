@@ -110,6 +110,18 @@
             <i class="bi bi-people"></i><span>Customers</span>
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.carts.*') ? 'active' : '' }}"
+           href="{{ route('admin.carts.index') }}">
+            <i class="bi bi-cart"></i><span>Cart Items</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.wishlists.*') ? 'active' : '' }}"
+           href="{{ route('admin.wishlists.index') }}">
+            <i class="bi bi-heart"></i><span>Wishlist Items</span>
+        </a>
+    </li>
     @endif
     @if ($admin->hasPermission('manage-coupons'))
     <li class="nav-item">

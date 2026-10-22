@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BlogController;
+use App\Http\Controllers\Admin\CartWishlistController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\CouponController;
@@ -114,6 +115,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
             Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
             Route::post('customers/{user}/toggle', [CustomerController::class, 'toggleStatus'])->name('customers.toggle');
+            Route::get('carts', [CartWishlistController::class, 'carts'])->name('carts.index');
+            Route::get('wishlists', [CartWishlistController::class, 'wishlists'])->name('wishlists.index');
         });
 
         Route::resource('coupons', CouponController::class)->except(['show'])->middleware('permission:manage-coupons');
