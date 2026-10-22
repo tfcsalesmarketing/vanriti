@@ -17,7 +17,7 @@ class CartWishlistController extends Controller
     public function carts(Request $request): View
     {
         $query = CartItem::query()
-            ->with(['cart.owner', 'product', 'variant'])
+            ->with(['cart', 'product', 'variant'])
             ->orderByDesc('created_at');
 
         if ($productId = $request->integer('product_id')) {
