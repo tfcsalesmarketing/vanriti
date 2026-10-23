@@ -32,11 +32,17 @@
                     <li><i class="ri-map-pin-2-line"></i>{!! nl2br(e(setting('store_address', ''))) !!}</li>
                     <li><i class="ri-mail-line"></i>{{ setting('store_email', '') }}</li>
                     <li><i class="ri-phone-line"></i>{{ setting('store_phone', '') }}</li>
+                    <li>
+                        <a href="https://wa.me/919211946606?text={{ urlencode('Hi Vanriti, I would like to inquire about your products.') }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none d-inline-flex align-items-center gap-2" style="color:inherit;">
+                            <i class="ri-whatsapp-line text-success"></i> +91 92119 46606
+                        </a>
+                    </li>
                 </ul>
                 @php
                     $_socials = array_filter([
-                        'facebook' => setting('facebook_url'),
+                        'whatsapp' => 'https://wa.me/919211946606?text=' . urlencode('Hi Vanriti, I would like to inquire about your products.'),
                         'instagram' => setting('instagram_url'),
+                        'facebook' => setting('facebook_url'),
                         'twitter' => setting('twitter_url'),
                         'youtube' => setting('youtube_url'),
                         'linkedin' => setting('linkedin_url'),

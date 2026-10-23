@@ -13,6 +13,30 @@ class CheckoutRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->filled('selected_address') && $this->input('selected_address') !== 'new') {
+            $user = auth('web')->user();
+            if ($user) {
+                $addr = $user->addresses()->find($this->input('selected_address'));
+                if ($addr) {
+                    $this->merge([
+                        'shipping_name' => $this->input('shipping_name') ?: $addr->full_name,
+                        'shipping_mobile' => $this->input('shipping_mobile') ?: $addr->mobile,
+                        'shipping_address_line1' => $this->input('shipping_address_line1') ?: $addr->address_line1,
+                        'shipping_address_line2' => $this->input('shipping_address_line2') ?: $addr->address_line2,
+                        'shipping_landmark' => $this->input('shipping_landmark') ?: $addr->landmark,
+                        'shipping_city' => $this->input('shipping_city') ?: $addr->city,
+                        'shipping_state' => $this->input('shipping_state') ?: $addr->state,
+                        'shipping_pincode' => $this->input('shipping_pincode') ?: $addr->pincode,
+                        'shipping_country' => $this->input('shipping_country') ?: ($addr->country ?? 'India'),
+                    ]);
+                }
+            }
+        }
+
+        if (! $this->has('shipping_method') || blank($this->input('shipping_method'))) {
+            $this->merge(['shipping_method' => 'standard']);
+        }
+
         $shipping = canonical_phone($this->input('shipping_mobile'));
         $billing = canonical_phone($this->input('billing_mobile'));
 

@@ -52,7 +52,7 @@
                                 <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
                                     <i class="ri-map-pin-2-line text-success"></i> 1. Delivery Address
                                 </h5>
-                                <button type="button" class="btn vr-app-outline-btn btn-sm" onclick="openAddressModal()">
+                                <button type="button" class="btn vr-app-outline-btn btn-sm js-add-checkout-address" id="btnCheckoutAddAddress" data-action="add-address">
                                     <i class="ri-add-line me-1"></i> Add New Address
                                 </button>
                             </div>
@@ -68,8 +68,8 @@
                                                            class="form-check-input mt-1 address-radio"
                                                            data-address-id="{{ $addr->id }}"
                                                            {{ ($selectedAddress && $selectedAddress->id === $addr->id) ? 'checked' : '' }}>
-                                                    <div class="flex-grow-1">
-                                                        <div class="d-flex align-items-center gap-2">
+                                                    <div class="flex-grow-1 min-w-0">
+                                                        <div class="d-flex align-items-center gap-2 flex-wrap">
                                                             <span class="fw-bold text-dark">{{ $addr->full_name }}</span>
                                                             <span class="vr-type-chip">{{ $addr->type }}</span>
                                                             @if ($addr->is_default)
@@ -79,7 +79,7 @@
                                                         <div class="small text-muted mt-1">{{ $addr->full_address }}</div>
                                                         <div class="small text-muted mt-1"><i class="ri-phone-line me-1"></i> {{ $addr->mobile }}</div>
                                                     </div>
-                                                    <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-auto" onclick="event.preventDefault();openAddressModal({{ $addr->id }})" title="Edit address">
+                                                    <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-auto js-edit-checkout-address" data-address-id="{{ $addr->id }}" title="Edit address">
                                                         <i class="ri-edit-line fs-5"></i>
                                                     </button>
                                                 </label>
@@ -100,20 +100,20 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Full Name</label>
-                                        <input type="text" name="shipping_name" class="form-control" required maxlength="255"
+                                        <input type="text" name="shipping_name" class="form-control" data-required-field="1" {{ $addresses->count() > 0 && $selectedAddress ? '' : 'required' }} maxlength="255"
                                                value="{{ old('shipping_name', $selectedAddress->full_name ?? $user->name ?? '') }}">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Mobile Number</label>
-                                        <input type="tel" name="shipping_mobile" class="form-control" required inputmode="tel" maxlength="20"
+                                        <input type="tel" name="shipping_mobile" class="form-control" data-required-field="1" {{ $addresses->count() > 0 && $selectedAddress ? '' : 'required' }} inputmode="tel" maxlength="20"
                                                pattern="^(?:\+91[\s-]?|0)?[6-9][0-9][\s-]?[0-9]{3}[\s-]?[0-9]{5}$"
                                                value="{{ old('shipping_mobile', $selectedAddress->mobile ?? '') }}">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold">Address Line 1</label>
-                                        <input type="text" name="shipping_address_line1" class="form-control" required maxlength="255"
+                                        <input type="text" name="shipping_address_line1" class="form-control" data-required-field="1" {{ $addresses->count() > 0 && $selectedAddress ? '' : 'required' }} maxlength="255"
                                                value="{{ old('shipping_address_line1', $selectedAddress->address_line1 ?? '') }}" placeholder="House/Flat No., Building Name, Street">
                                         <div class="invalid-feedback"></div>
                                     </div>
@@ -133,7 +133,7 @@
                                             <span class="vr-pincode-tip"><i class="ri-map-pin-2-line"></i> Auto-fills city &amp; state</span>
                                         </label>
                                         <input type="text" name="shipping_pincode" id="shipping_pincode"
-                                               class="form-control" required pattern="[0-9]{6}"
+                                               class="form-control" data-required-field="1" {{ $addresses->count() > 0 && $selectedAddress ? '' : 'required' }} pattern="[0-9]{6}"
                                                value="{{ old('shipping_pincode', $selectedAddress->pincode ?? '') }}"
                                                maxlength="6" inputmode="numeric" placeholder="6-digit pincode"
                                                data-pincode-input data-pincode-prefix="shipping_">
@@ -142,14 +142,14 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">City</label>
-                                        <input type="text" name="shipping_city" class="form-control" required maxlength="120"
+                                        <input type="text" name="shipping_city" class="form-control" data-required-field="1" {{ $addresses->count() > 0 && $selectedAddress ? '' : 'required' }} maxlength="120"
                                                value="{{ old('shipping_city', $selectedAddress->city ?? '') }}"
                                                placeholder="Auto-filled from pincode">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">State</label>
-                                        <input type="text" name="shipping_state" class="form-control" required maxlength="120"
+                                        <input type="text" name="shipping_state" class="form-control" data-required-field="1" {{ $addresses->count() > 0 && $selectedAddress ? '' : 'required' }} maxlength="120"
                                                value="{{ old('shipping_state', $selectedAddress->state ?? '') }}"
                                                placeholder="Auto-filled from pincode">
                                         <div class="invalid-feedback"></div>
@@ -226,47 +226,12 @@
                             </div>
                         </div>
 
-                        {{-- Shipping Method Section --}}
-                        <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
-                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
-                                <i class="ri-truck-line text-success"></i> 2. Shipping Options
-                            </h5>
-                            <div class="d-flex flex-column gap-2">
-                                <label class="vr-selection-card d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <input type="radio" name="shipping_method" value="standard" class="form-check-input"
-                                               {{ old('shipping_method', 'standard') === 'standard' ? 'checked' : '' }}>
-                                        <div>
-                                            <span class="fw-bold text-dark d-block">Standard Delivery</span>
-                                            <span class="small text-muted">Estimated delivery in {{ $shipping['estimated_days'] ?? '3-7' }} business days</span>
-                                        </div>
-                                    </div>
-                                    <span class="fw-bold">
-                                        @if ($shipping['charge'] <= 0)
-                                            <span class="text-success">FREE</span>
-                                        @else
-                                            {{ format_price($shipping['charge']) }}
-                                        @endif
-                                    </span>
-                                </label>
-                                <label class="vr-selection-card d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <input type="radio" name="shipping_method" value="express" class="form-check-input"
-                                               {{ old('shipping_method') === 'express' ? 'checked' : '' }}>
-                                        <div>
-                                            <span class="fw-bold text-dark d-block">Express Delivery</span>
-                                            <span class="small text-muted">Estimated delivery in 2-4 business days</span>
-                                        </div>
-                                    </div>
-                                    <span class="fw-bold text-dark">{{ format_price(($shipping['charge'] ?? 49) + 50) }}</span>
-                                </label>
-                            </div>
-                        </div>
+                        <input type="hidden" name="shipping_method" value="standard">
 
                         {{-- Payment Method Section --}}
                         <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
                             <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
-                                <i class="ri-bank-card-line text-success"></i> 3. Payment Method
+                                <i class="ri-bank-card-line text-success"></i> 2. Payment Method
                             </h5>
                             <div class="d-flex flex-column gap-2">
                                 @foreach ($availableMethods as $method => $details)
@@ -552,9 +517,27 @@
             window.vrPincodeLookup(modalPincodeEl, modalCityEl, modalStateEl, modalStatusEl);
         }
 
-        var bsModal = new bootstrap.Modal(modal);
+        var bsModal = bootstrap.Modal.getOrCreateInstance(modal);
         bsModal.show();
     };
+
+    // Attach click handlers for add/edit address buttons (CSP-safe)
+    document.addEventListener('click', function (e) {
+        var addBtn = e.target.closest('[data-action="add-address"], .js-add-checkout-address');
+        if (addBtn) {
+            e.preventDefault();
+            window.openAddressModal();
+            return;
+        }
+        var editBtn = e.target.closest('.js-edit-checkout-address');
+        if (editBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            var id = editBtn.dataset.addressId;
+            window.openAddressModal(id);
+            return;
+        }
+    });
 
     document.getElementById('addressModalSaveBtn').addEventListener('click', function () {
         var form = document.getElementById('addressModalForm');
@@ -603,14 +586,15 @@
             }
 
             if (result.data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
+                var m = bootstrap.Modal.getOrCreateInstance(document.getElementById('addressModal'));
+                if (m) m.hide();
                 window.location.reload();
             }
         }).catch(function () {
             btn.disabled = false;
             btn.querySelector('.btn-text').textContent = 'Save Address';
             btn.querySelector('.spinner-border').classList.add('d-none');
-            vrToast('Something went wrong. Please try again.', 'error');
+            if (window.vrToast) window.vrToast('Something went wrong. Please try again.', 'error');
         });
     });
 })();
@@ -638,7 +622,16 @@ function fillShipping(addr) {
 }
 
 function toggleNewAddressFields(show) {
-    if (newAddressFields) newAddressFields.classList.toggle('d-none', !show);
+    if (newAddressFields) {
+        newAddressFields.classList.toggle('d-none', !show);
+        newAddressFields.querySelectorAll('[data-required-field]').forEach(function(input) {
+            if (show) {
+                input.setAttribute('required', '');
+            } else {
+                input.removeAttribute('required');
+            }
+        });
+    }
 }
 
 addressRadios.forEach(function (radio) {
@@ -672,6 +665,22 @@ if (addressRadios.length > 0) {
         if (data) {
             try { fillShipping(JSON.parse(data)); } catch (e) {}
         }
+    } else if (!checked) {
+        var firstRadio = document.querySelector('.address-radio');
+        if (firstRadio && firstRadio.value !== 'new') {
+            firstRadio.checked = true;
+            var label = firstRadio.closest('label');
+            if (label) label.classList.add('selected');
+            toggleNewAddressFields(false);
+            var data = label ? label.dataset.address : null;
+            if (data) {
+                try { fillShipping(JSON.parse(data)); } catch (e) {}
+            }
+        } else {
+            toggleNewAddressFields(true);
+        }
+    } else {
+        toggleNewAddressFields(true);
     }
 }
 

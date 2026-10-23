@@ -56,10 +56,10 @@
 
                     @if (setting('whatsapp_number'))
                         <div class="d-flex align-items-start gap-3 mb-3">
-                            <i class="bi bi-whatsapp" style="color:var(--vr-green);font-size:1.2rem;margin-top:2px;"></i>
+                            <i class="ri-whatsapp-fill text-success" style="font-size:1.35rem;margin-top:2px;"></i>
                             <div>
                                 <div class="fw-semibold small">WhatsApp</div>
-                                <a href="https://wa.me/{{ setting('whatsapp_number') }}" target="_blank" rel="noopener">{{ setting('whatsapp_number') }}</a>
+                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', setting('whatsapp_number', '919211946606')) }}?text={{ urlencode('Hi Vanriti, I would like to inquire about your products.') }}" target="_blank" rel="noopener">{{ setting('whatsapp_number') }}</a>
                             </div>
                         </div>
                     @endif

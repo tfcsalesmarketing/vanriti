@@ -228,6 +228,7 @@
         @yield('content')
     </main>
     @include('storefront.partials.login-modal')
+    @include('storefront.partials.whatsapp-button')
     @include('storefront.partials.footer')
 
     {{-- Guest flag is in <head> as meta[name="vr-is-guest"]; CartController/WishlistController remain authoritative. --}}

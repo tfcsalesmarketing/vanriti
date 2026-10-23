@@ -15,7 +15,7 @@
                     <h4 class="fw-bold mb-1">My Addresses</h4>
                     <p class="text-muted small mb-0">Manage saved shipping locations</p>
                 </div>
-                <button type="button" class="btn vr-app-btn btn-sm py-2 px-3" onclick="openEditModal()">
+                <button type="button" class="btn vr-app-btn btn-sm py-2 px-3" id="btnAddNewAddress" data-action="add-address">
                     <i class="ri-add-line me-1"></i> Add New Address
                 </button>
             </div>
@@ -27,7 +27,7 @@
                     </div>
                     <h5 class="fw-bold mb-2">No Saved Addresses</h5>
                     <p class="text-muted small mb-4">Add your shipping address for faster checkout.</p>
-                    <button type="button" class="btn vr-app-btn px-4 py-2" onclick="openEditModal()">
+                    <button type="button" class="btn vr-app-btn px-4 py-2" id="btnEmptyAddAddress" data-action="add-address">
                         <i class="ri-add-line me-1"></i> Add Your First Address
                     </button>
                 </div>
@@ -59,8 +59,9 @@
                                     <span class="fw-semibold text-dark"><i class="ri-phone-line me-1"></i> {{ $address->mobile }}</span>
                                 </p>
                                 <div class="d-flex align-items-center gap-2 pt-2 border-top mt-auto flex-wrap">
-                                    <button type="button" class="btn vr-app-outline-btn btn-sm py-1 px-3"
-                                            onclick='openEditModal(@json($address))'>
+                                    <button type="button" class="btn vr-app-outline-btn btn-sm py-1 px-3 js-edit-address"
+                                            data-action="edit-address"
+                                            data-address="{{ htmlspecialchars(json_encode($address)) }}">
                                         <i class="ri-edit-line me-1"></i> Edit
                                     </button>
                                     @if (! $address->is_default)
@@ -166,7 +167,7 @@
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
                 <button type="button" class="btn vr-app-outline-btn" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn vr-app-btn" id="addressSaveBtn" onclick="submitAddressForm()">
+                <button type="button" class="btn vr-app-btn" id="addressSaveBtn">
                     <span class="btn-text">Save Address</span>
                     <span class="spinner-border spinner-border-sm d-none" role="status"></span>
                 </button>
@@ -178,7 +179,14 @@
 
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
-var addressModal = null;
+function getAddressModalInstance() {
+    var el = document.getElementById('addressModal');
+    if (!el) return null;
+    if (window.bootstrap && typeof window.bootstrap.Modal !== 'undefined') {
+        return window.bootstrap.Modal.getOrCreateInstance(el);
+    }
+    return null;
+}
 
 // Init pincode lookup for modal
 (function() {
@@ -191,40 +199,71 @@ var addressModal = null;
     }
 })();
 
-function openEditModal(address) {
+window.openEditModal = function(address) {
     var form = document.getElementById('addressForm');
+    if (!form) return;
     form.reset();
     form.querySelectorAll('.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
     var statusEl = document.getElementById('af_pincode_status');
     if (statusEl) statusEl.textContent = '';
 
-    document.getElementById('addressModalTitle').textContent = address ? 'Edit Address' : 'Add New Address';
-    document.getElementById('addressFormMethod').value = address ? 'PUT' : 'POST';
-    document.getElementById('addressFormId').value = address ? address.id : '';
+    var modalTitle = document.getElementById('addressModalTitle');
+    if (modalTitle) modalTitle.textContent = address ? 'Edit Address' : 'Add New Address';
+
+    var methodInput = document.getElementById('addressFormMethod');
+    if (methodInput) methodInput.value = address ? 'PUT' : 'POST';
+
+    var idInput = document.getElementById('addressFormId');
+    if (idInput) idInput.value = address ? address.id : '';
 
     if (address) {
-        document.getElementById('af_full_name').value = address.full_name || '';
-        document.getElementById('af_mobile').value = address.mobile || '';
-        document.getElementById('af_address_line1').value = address.address_line1 || '';
-        document.getElementById('af_address_line2').value = address.address_line2 || '';
-        document.getElementById('af_landmark').value = address.landmark || '';
-        // Set city & state BEFORE pincode so they show existing data
-        document.getElementById('af_city').value = address.city || '';
-        document.getElementById('af_state').value = address.state || '';
-        document.getElementById('af_pincode').value = address.pincode || '';
-        document.getElementById('af_type').value = address.type || 'home';
-        document.getElementById('af_is_default').checked = !!address.is_default;
+        var setVal = function(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+        setVal('af_full_name', address.full_name);
+        setVal('af_mobile', address.mobile);
+        setVal('af_address_line1', address.address_line1);
+        setVal('af_address_line2', address.address_line2);
+        setVal('af_landmark', address.landmark);
+        setVal('af_city', address.city);
+        setVal('af_state', address.state);
+        setVal('af_pincode', address.pincode);
+        setVal('af_type', address.type || 'home');
+        var defCheck = document.getElementById('af_is_default');
+        if (defCheck) defCheck.checked = !!address.is_default;
     }
 
-    if (!addressModal) {
-        addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
+    var m = getAddressModalInstance();
+    if (m) m.show();
+};
+
+// Event delegation for opening address modal (works safely under strict CSP)
+document.addEventListener('click', function(e) {
+    var addBtn = e.target.closest('[data-action="add-address"]');
+    if (addBtn) {
+        e.preventDefault();
+        window.openEditModal();
+        return;
     }
-    addressModal.show();
-}
+    var editBtn = e.target.closest('[data-action="edit-address"]');
+    if (editBtn) {
+        e.preventDefault();
+        var raw = editBtn.getAttribute('data-address');
+        try {
+            window.openEditModal(raw ? JSON.parse(raw) : null);
+        } catch(err) {
+            window.openEditModal();
+        }
+        return;
+    }
+});
 
 function submitAddressForm() {
     var form = document.getElementById('addressForm');
     var btn = document.getElementById('addressSaveBtn');
+    if (!form || !btn) return;
+
     var id = document.getElementById('addressFormId').value;
     var isEdit = !!id;
     var url = isEdit ? '/account/addresses/' + id : '/account/addresses';
@@ -249,18 +288,27 @@ function submitAddressForm() {
             btn.disabled = false;
             btn.querySelector('.btn-text').textContent = 'Save Address';
             btn.querySelector('.spinner-border').classList.add('d-none');
-            vrToast(Object.values(data.errors).flat(), 'error');
+            if (window.vrToast) window.vrToast(Object.values(data.errors).flat(), 'error');
             return;
         }
         if (data.success) {
-            addressModal.hide();
+            var m = getAddressModalInstance();
+            if (m) m.hide();
             window.location.reload();
         }
     }).catch(function() {
         btn.disabled = false;
         btn.querySelector('.btn-text').textContent = 'Save Address';
         btn.querySelector('.spinner-border').classList.add('d-none');
-        vrToast('Something went wrong. Please try again.', 'error');
+        if (window.vrToast) window.vrToast('Something went wrong. Please try again.', 'error');
+    });
+}
+
+var saveBtn = document.getElementById('addressSaveBtn');
+if (saveBtn) {
+    saveBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        submitAddressForm();
     });
 }
 </script>

@@ -3852,4 +3852,110 @@ img { max-width: 100%; height: auto; }
     }
 }
 
+/* ==========================================================================
+   WHATSAPP FLOATING ACTION BUTTON (FAB)
+   ========================================================================== */
+.vr-whatsapp-fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 1040;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #25D366;
+    color: #ffffff !important;
+    padding: 8px 18px 8px 12px;
+    border-radius: 999px;
+    text-decoration: none !important;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.42), 0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, background 0.2s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.vr-whatsapp-fab:hover {
+    background: #20ba59;
+    color: #ffffff !important;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(37, 211, 102, 0.55), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.vr-whatsapp-fab:active {
+    transform: scale(0.95);
+}
+
+.vr-whatsapp-fab-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #ffffff;
+}
+
+.vr-whatsapp-fab-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    color: #ffffff;
+}
+
+/* Subtle glowing pulse ring */
+.vr-whatsapp-fab-pulse {
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    border: 2px solid rgba(37, 211, 102, 0.7);
+    animation: vrWaRadar 2.4s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    pointer-events: none;
+}
+
+@keyframes vrWaRadar {
+    0% {
+        transform: scale(0.98);
+        opacity: 0.85;
+    }
+    70% {
+        transform: scale(1.18);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1.18);
+        opacity: 0;
+    }
+}
+
+/* Mobile: Compact circular icon floating nicely above the mobile dock */
+@media (max-width: 991.98px) {
+    .vr-whatsapp-fab {
+        bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+        right: 16px;
+        width: 52px;
+        height: 52px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 50%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), 0 4px 14px rgba(37, 211, 102, 0.45);
+    }
+
+    .vr-whatsapp-fab-label {
+        display: none;
+    }
+
+    .vr-whatsapp-fab-icon {
+        width: 100%;
+        height: 100%;
+        font-size: 1.75rem;
+    }
+
+    .vr-whatsapp-fab-pulse {
+        border-radius: 50%;
+    }
+}
+
+
 
