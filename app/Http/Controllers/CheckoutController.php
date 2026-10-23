@@ -709,9 +709,23 @@ class CheckoutController extends Controller
         return view('storefront.checkout.failed', compact('order'));
     }
 
-    public function pending(Order $order): View
+    public function pending(Order $order, Request $request): View
     {
         abort_if($order->user_id !== auth('web')->id(), 403);
+
+        if ($request->boolean('dismissed') && $order->order_status === 'pending' && in_array($order->payment_status, ['pending', 'processing'], true)) {
+            $payment = $order->payments()->latest()->first();
+            if ($payment && in_array($payment->status, ['pending', 'processing'], true)) {
+                $existing = (array) ($payment->gateway_response ?? []);
+                $existing['dropoff_reason'] = 'Customer closed payment gateway modal without completing payment';
+                $existing['dropoff_at'] = now()->toIso8601String();
+                $payment->update(['gateway_response' => $existing]);
+            }
+            if (! str_contains((string) $order->internal_notes, 'Customer closed payment modal')) {
+                $orderNotes = trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . '[' . now()->format('d-M-Y H:i') . '] Customer closed payment modal without completing payment.');
+                $order->update(['internal_notes' => $orderNotes]);
+            }
+        }
 
         $order->load(['items', 'payments']);
 

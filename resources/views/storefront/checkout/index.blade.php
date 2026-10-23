@@ -813,8 +813,8 @@ function openRazorpay(data) {
         theme: { color: '#263D25' },
         modal: {
             ondismiss: function () {
-                // User closed the payment dialog — redirect to pending
-                window.location.href = '{{ url("/checkout/pending") }}/' + data.order_id;
+                // User closed the payment dialog — redirect to pending with dismissal tracking
+                window.location.href = '{{ url("/checkout/pending") }}/' + data.order_id + '?dismissed=1';
             }
         }
     });

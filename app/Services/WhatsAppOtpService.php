@@ -68,6 +68,15 @@ class WhatsAppOtpService
     }
 
     /**
+     * Abandoned checkout recovery messages, independent of the OTP switch.
+     */
+    public function recoveryEnabled(): bool
+    {
+        return $this->isConfigured()
+            && (bool) setting('whatsapp_recovery_enabled', true);
+    }
+
+    /**
      * Send a 6-digit OTP to the given WhatsApp number.
      *
      * @return array<string, mixed>
@@ -405,6 +414,92 @@ class WhatsAppOtpService
             ]);
 
             return $this->failure('WhatsApp order confirmation request failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Abandoned-checkout recovery WhatsApp message (Meta approved template).
+     *
+     * Variables:
+     * 1: Customer Name
+     * 2: Cart / Order Total (e.g. 1499.00)
+     * 3: Order Number
+     * Dynamic URL button carries the checkout/order recovery link.
+     *
+     * @return array{result: string, message: string}
+     */
+    public function sendAbandonedCheckoutRecovery(string $phone, string $name, string $orderNumber, string $totalAmount, string $checkoutUrl): array
+    {
+        if (! $this->recoveryEnabled()) {
+            return $this->failure('WhatsApp checkout recovery is not enabled or configured yet.');
+        }
+
+        $template = (string) setting('whatsapp_recovery_template_name', 'checkout_recovery');
+
+        if ($template === '') {
+            return $this->failure('WhatsApp checkout recovery template is not configured yet.');
+        }
+
+        $phone = $this->toE164($phone);
+        $name = trim($name) !== '' ? trim($name) : 'Customer';
+
+        try {
+            $response = Http::withHeaders($this->headers())
+                ->timeout(10)
+                ->post(
+                    $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
+                    [
+                        'messaging_product' => 'whatsapp',
+                        'recipient_type' => 'individual',
+                        'to' => $phone,
+                        'type' => 'template',
+                        'template' => [
+                            'name' => $template,
+                            'language' => ['code' => 'en'],
+                            'components' => [
+                                [
+                                    'type' => 'body',
+                                    'parameters' => [
+                                        ['type' => 'text', 'text' => $name],
+                                        ['type' => 'text', 'text' => $totalAmount],
+                                        ['type' => 'text', 'text' => $orderNumber],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'sub_type' => 'url',
+                                    'index' => '0',
+                                    'parameters' => [
+                                        ['type' => 'url', 'url' => $checkoutUrl],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ]
+                );
+
+            $body = $response->json();
+
+            if ($response->failed() || ! empty($body['error'] ?? null)) {
+                Log::warning('WhatsApp checkout recovery send failed.', [
+                    'phone' => $phone,
+                    'order' => $orderNumber,
+                    'status' => $response->status(),
+                    'body' => $body,
+                ]);
+
+                return $this->failure('WhatsApp recovery could not be sent: ' . ($body['error']['message'] ?? 'API error'));
+            }
+
+            return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
+        } catch (\Throwable $e) {
+            Log::warning('WhatsApp checkout recovery request failed.', [
+                'phone' => $phone,
+                'order' => $orderNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->failure('WhatsApp recovery request failed: '.$e->getMessage());
         }
     }
 

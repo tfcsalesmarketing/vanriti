@@ -1,4 +1,4 @@
-﻿@extends('admin.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Orders')
 
@@ -145,21 +145,48 @@
                             <td>
                                 <div class="fw-semibold small">{{ $order->user?->name ?: $order->billing_name }}</div>
                                 <div class="text-muted small">{{ $order->user?->email }}</div>
+                                @php
+                                    $custPhone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
+                                    $cleanPhone = preg_replace('/[^0-9]/', '', $custPhone);
+                                    if (strlen($cleanPhone) === 10) {
+                                        $cleanPhone = '91' . $cleanPhone;
+                                    }
+                                    $recoveryMsg = "Hi " . ($order->user?->name ?: $order->billing_name) . ", we noticed your order #" . $order->order_number . " at Vanriti was not completed. You can complete your order here: " . route('account.order', $order) . " - Let us know if you need any assistance!";
+                                    $waUrl = $cleanPhone ? "https://wa.me/{$cleanPhone}?text=" . rawurlencode($recoveryMsg) : null;
+                                    $latestPayment = $order->payments->sortByDesc('created_at')->first();
+                                    $failReason = $latestPayment?->gateway_response['failure_reason'] ?? $order->cancellation_reason;
+                                    $dropReason = $latestPayment?->gateway_response['dropoff_reason'] ?? null;
+                                @endphp
+                                @if ($custPhone)
+                                    <div class="text-muted small" style="font-size:0.75rem;"><i class="bi bi-telephone me-1"></i>{{ $custPhone }}</div>
+                                @endif
                             </td>
                             <td class="text-center small">{{ $order->items_count }}</td>
                             <td class="text-end fw-semibold small">{{ format_price($order->grand_total) }}</td>
                             @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped'], true))
-                                <td class="small">{{ $shipment?->courier ?: 'â€”' }}</td>
-                                <td class="small">{{ $shipment?->awb_number ?: 'â€”' }}</td>
+                                <td class="small">{{ $shipment?->courier ?: '—' }}</td>
+                                <td class="small">{{ $shipment?->awb_number ?: '—' }}</td>
                             @endif
                             <td>
                                 <span class="badge bg-{{ $paymentClasses[$order->payment_status] ?? 'secondary' }}">{{ ucwords(str_replace('_', ' ', $order->payment_status)) }}</span>
+                                @if ($failReason && in_array($order->payment_status, ['failed', 'cancelled'], true))
+                                    <div class="text-danger small mt-1" style="font-size:0.72rem; max-width: 140px; line-height: 1.2;" title="{{ $failReason }}">
+                                        <i class="bi bi-exclamation-circle-fill"></i> {{ Str::limit($failReason, 30) }}
+                                    </div>
+                                @elseif ($dropReason && in_array($order->payment_status, ['pending', 'processing'], true))
+                                    <div class="text-warning small mt-1" style="font-size:0.72rem; line-height: 1.2;" title="{{ $dropReason }}">
+                                        <i class="bi bi-box-arrow-right"></i> Quit Gateway
+                                    </div>
+                                @endif
                             </td>
                             <td>
                                 <span class="badge bg-{{ $orderClasses[$order->order_status] ?? 'secondary' }}">{{ ucwords(str_replace('_', ' ', $order->order_status)) }}</span>
                             </td>
                             <td class="text-end">
                                 <div class="d-flex gap-1 justify-content-end">
+                                    @if ($waUrl)
+                                        <a href="{{ $waUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success" title="Chat on WhatsApp / Reach Customer"><i class="bi bi-whatsapp"></i></a>
+                                    @endif
                                     @if ($activeTab === 'ready_to_ship')
                                         <a href="{{ route('admin.orders.shipmojo.label', $order) }}" class="btn btn-sm btn-outline-dark" title="Download Label"><i class="bi bi-printer"></i></a>
                                     @endif

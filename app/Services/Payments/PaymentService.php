@@ -113,7 +113,7 @@ class PaymentService
         });
     }
 
-    public function markFailed(Payment $payment, ?string $reason = null): void
+    public function markFailed(Payment $payment, ?string $reason = null, array $gatewayData = []): void
     {
         if (in_array($payment->status, ['paid', 'refunded'], true)) {
             Log::warning('Cannot fail an already settled payment.', [
@@ -124,13 +124,33 @@ class PaymentService
             return;
         }
 
+        $existing = (array) ($payment->gateway_response ?? []);
+        if ($reason !== null || ! empty($gatewayData)) {
+            $existing['failure_reason'] = $reason ?? ($existing['failure_reason'] ?? 'Payment failed');
+            if (! empty($gatewayData)) {
+                $existing['failure_details'] = $gatewayData;
+            }
+        }
+
         $payment->update([
             'status' => 'failed',
             'failed_at' => now(),
+            'gateway_response' => $existing,
         ]);
 
-        $payment->order()->update([
-            'payment_status' => 'failed',
-        ]);
+        $order = $payment->order;
+        if ($order) {
+            $orderUpdates = ['payment_status' => 'failed'];
+            if ($reason && ! $order->cancellation_reason) {
+                $orderUpdates['cancellation_reason'] = $reason;
+            }
+            if ($reason) {
+                $note = '[' . now()->format('d-M-Y H:i') . "] Payment failed: {$reason}";
+                if (! str_contains((string) $order->internal_notes, $reason)) {
+                    $orderUpdates['internal_notes'] = trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . $note);
+                }
+            }
+            $order->update($orderUpdates);
+        }
     }
 }

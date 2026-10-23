@@ -9,8 +9,20 @@
         <small class="text-muted">Placed on {{ $order->created_at->format('d M Y, h:i A') }}</small>
     </div>
     <div class="d-flex gap-2">
-        @php $oClass = ['cancelled'=>'danger','failed'=>'danger','delivered'=>'success','shipped'=>'info','out_for_delivery'=>'info','pending'=>'secondary','confirmed'=>'primary','processing'=>'warning','packed'=>'warning']; @endphp
+        @php
+            $oClass = ['cancelled'=>'danger','failed'=>'danger','delivered'=>'success','shipped'=>'info','out_for_delivery'=>'info','pending'=>'secondary','confirmed'=>'primary','processing'=>'warning','packed'=>'warning'];
+            $custPhone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
+            $cleanPhone = preg_replace('/[^0-9]/', '', $custPhone);
+            if (strlen($cleanPhone) === 10) {
+                $cleanPhone = '91' . $cleanPhone;
+            }
+            $recoveryMsg = "Hi " . ($order->user?->name ?: $order->billing_name) . ", we noticed your order #" . $order->order_number . " at Vanriti was not completed. You can complete your order here: " . route('account.order', $order) . " - Let us know if you need any assistance!";
+            $waUrl = $cleanPhone ? "https://wa.me/{$cleanPhone}?text=" . rawurlencode($recoveryMsg) : null;
+        @endphp
         <span class="badge bg-{{ $oClass[$order->order_status] ?? 'secondary' }} align-self-center">{{ ucwords(str_replace('_', ' ', $order->order_status)) }}</span>
+        @if ($waUrl)
+            <a href="{{ $waUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success"><i class="bi bi-whatsapp me-1"></i>Reach on WhatsApp</a>
+        @endif
         <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>
@@ -53,7 +65,12 @@
                 <div class="text-muted small">Customer</div>
                 <div class="fw-bold small">{{ $order->user?->name ?: $order->billing_name }}</div>
                 <div class="text-muted small">{{ $order->user?->email }}</div>
-                <div class="text-muted small">{{ $order->user?->phone ?: $order->billing_mobile }}</div>
+                <div class="text-muted small">{{ $custPhone }}</div>
+                @if ($waUrl)
+                    <div class="mt-2">
+                        <a href="{{ $waUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success py-1 px-2 small" style="font-size:0.75rem;"><i class="bi bi-whatsapp me-1"></i>Chat on WhatsApp</a>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -199,12 +216,25 @@
             <div class="card-header">Payments</div>
             <div class="card-body">
                 @forelse ($order->payments as $payment)
-                    <div class="d-flex justify-content-between small mb-2">
-                        <div>
-                            <span class="badge bg-{{ $payment->status === 'paid' ? 'success' : 'secondary' }}">{{ ucwords($payment->status) }}</span>
-                            <div class="text-muted mt-1">{{ $payment->method ?: 'N/A' }} @if ($payment->payment_reference) · {{ $payment->payment_reference }} @endif</div>
+                    <div class="small mb-3 pb-2 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-{{ $payment->status === 'paid' ? 'success' : ($payment->status === 'failed' ? 'danger' : 'secondary') }}">{{ ucwords($payment->status) }}</span>
+                                <div class="text-muted mt-1">{{ $payment->method ?: 'N/A' }} @if ($payment->payment_reference) · {{ $payment->payment_reference }} @endif</div>
+                            </div>
+                            <div class="fw-semibold">{{ format_price($payment->amount) }}</div>
                         </div>
-                        <div class="fw-semibold">{{ format_price($payment->amount) }}</div>
+                        @if (!empty($payment->gateway_response['failure_reason']))
+                            <div class="alert alert-danger py-1 px-2 mt-2 mb-0 small" style="font-size:0.75rem;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <strong>Failure Reason:</strong> {{ $payment->gateway_response['failure_reason'] }}
+                            </div>
+                        @elseif (!empty($payment->gateway_response['dropoff_reason']))
+                            <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small" style="font-size:0.75rem;">
+                                <i class="bi bi-box-arrow-right me-1"></i>
+                                <strong>Drop-off Note:</strong> {{ $payment->gateway_response['dropoff_reason'] }}
+                            </div>
+                        @endif
                     </div>
                 @empty
                     <div class="text-muted small">No payments recorded.</div>

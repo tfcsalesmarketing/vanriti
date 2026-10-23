@@ -148,13 +148,32 @@ class RazorpayWebhookController extends Controller
             return response()->json(['status' => 'order not found'], 404);
         }
 
-        $this->paymentService->markFailed($payment, 'Payment failed at Razorpay.');
+        $errorDesc = (string) ($entity['error_description'] ?? 'Payment failed at Razorpay');
+        $errorReason = (string) ($entity['error_reason'] ?? '');
+        $errorSource = (string) ($entity['error_source'] ?? '');
+        $errorCode = (string) ($entity['error_code'] ?? '');
+
+        $reasonParts = array_filter([
+            $errorDesc,
+            $errorReason ? "Reason: {$errorReason}" : null,
+            $errorSource ? "Source: {$errorSource}" : null,
+            $errorCode ? "Code: {$errorCode}" : null,
+        ]);
+        $fullReason = implode(' | ', $reasonParts);
+
+        $this->paymentService->markFailed($payment, $fullReason, [
+            'error_description' => $errorDesc,
+            'error_reason' => $errorReason,
+            'error_source' => $errorSource,
+            'error_code' => $errorCode,
+            'razorpay_payment_id' => $entity['id'] ?? null,
+        ]);
 
         // Cancel the order and release the reserved stock. markFailed leaves the
         // order status untouched, so a still-open order remains cancellable.
         try {
             if ($order->fresh()->isCancellable()) {
-                $this->orderService->cancelOrder($order, 'Payment failed at Razorpay; stock restored.');
+                $this->orderService->cancelOrder($order, "Payment failed at Razorpay: {$errorDesc}; stock restored.");
             }
         } catch (\Throwable $e) {
             Log::warning('Could not cancel an order after a failed Razorpay payment.', [

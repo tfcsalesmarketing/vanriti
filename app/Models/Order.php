@@ -55,6 +55,7 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'whatsapp_confirmation_sent_at',
+        'whatsapp_recovery_sent_at',
         'order_status',
         'cancellation_reason',
         'internal_notes',
@@ -67,6 +68,7 @@ class Order extends Model
             'is_billing_same' => 'boolean',
             'cancelled_at' => 'datetime',
             'whatsapp_confirmation_sent_at' => 'datetime',
+            'whatsapp_recovery_sent_at' => 'datetime',
         ];
     }
 

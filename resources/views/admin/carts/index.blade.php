@@ -114,6 +114,22 @@
                             @if ($item->cart?->owner_type === \App\Models\User::class && $item->cart?->owner)
                                 <div class="fw-semibold">{{ $item->cart->owner->name }}</div>
                                 <div class="text-muted" style="font-size:0.75rem;">{{ $item->cart->owner->email }}</div>
+                                @php
+                                    $cartUserPhone = trim((string) ($item->cart->owner->phone ?? ''));
+                                    $cleanCartPhone = preg_replace('/[^0-9]/', '', $cartUserPhone);
+                                    if (strlen($cleanCartPhone) === 10) {
+                                        $cleanCartPhone = '91' . $cleanCartPhone;
+                                    }
+                                    $cartProdName = $item->product?->name ?? 'items';
+                                    $cartRecoveryMsg = "Hi " . ($item->cart->owner->name ?? 'there') . ", we noticed you left " . $cartProdName . " in your cart at Vanriti. You can finish your checkout here: " . route('cart.index') . " - Let us know if you need any assistance!";
+                                    $cartWaUrl = $cleanCartPhone ? "https://wa.me/{$cleanCartPhone}?text=" . rawurlencode($cartRecoveryMsg) : null;
+                                @endphp
+                                @if ($cartUserPhone)
+                                    <div class="text-muted" style="font-size:0.75rem;"><i class="bi bi-telephone me-1"></i>{{ $cartUserPhone }}</div>
+                                    @if ($cartWaUrl)
+                                        <a href="{{ $cartWaUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success py-0 px-1 mt-1 small" style="font-size:0.7rem;"><i class="bi bi-whatsapp me-1"></i>Recover Cart</a>
+                                    @endif
+                                @endif
                             @else
                                 <div class="fw-semibold">Guest</div>
                                 <div class="text-muted" style="font-size:0.75rem;">{{ $item->cart?->session_id }}</div>
