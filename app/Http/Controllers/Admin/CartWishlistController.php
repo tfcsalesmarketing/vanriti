@@ -261,23 +261,13 @@ class CartWishlistController extends Controller
             return back()->with('error', 'Customer has no phone number on their account.');
         }
 
-        $cart->loadMissing('items.product.images', 'items.variant');
-        if ($cart->items->isEmpty()) {
-            return back()->with('error', 'Cart is empty.');
-        }
-
+        $cart->loadMissing('items.product.images');
         $firstItem = $cart->items->first();
         $product = $firstItem?->product;
-
-        $itemDescriptions = [];
-        foreach ($cart->items as $ci) {
-            $pName = $ci->product?->name ?: 'Item';
-            if ($ci->variant) {
-                $pName .= ' (' . $ci->variant->name . ')';
-            }
-            $itemDescriptions[] = "{$pName} (x{$ci->quantity})";
+        $productName = $product?->name ?: 'your item';
+        if ($cart->items->count() > 1) {
+            $productName .= ' (+' . ($cart->items->count() - 1) . ' more)';
         }
-        $productName = \Illuminate\Support\Str::limit(implode(', ', $itemDescriptions), 80);
 
         $whatsappImage = $product?->getWhatsAppImage()?->image_path;
         $rawImage = $whatsappImage ?: $product?->getPrimaryImage()?->image_path;
@@ -292,20 +282,6 @@ class CartWishlistController extends Controller
         $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
         $recoveryUrl = url('/cart');
 
-        // Pre-initialize WhatsApp checkout session so customer can order directly from WhatsApp
-        try {
-            $checkoutService = app(\App\Services\WhatsAppCheckoutService::class);
-            $session = $checkoutService->createSessionFromAbandonedCart($phone, $cart, $user);
-
-            // Attempt direct interactive Order Review if within 24h window
-            if (! empty($session->customer_name) && ! empty($session->pincode) && ! empty($session->address_data['address_line1'])) {
-                $session->transitionTo(\App\Models\WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
-                $checkoutService->sendOrderReviewMessage($session);
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::info('Direct WhatsApp review send skipped: ' . $e->getMessage());
-        }
-
         $result = $whatsapp->sendAbandonedCheckoutRecovery(
             $phone,
             $name,
@@ -319,7 +295,7 @@ class CartWishlistController extends Controller
         if (($result['result'] ?? '0') === '1') {
             $cart->update(['whatsapp_recovery_sent_at' => now()]);
 
-            return back()->with('success', "WhatsApp cart recovery message sent to {$phone}! The customer can now place their order directly from WhatsApp.");
+            return back()->with('success', "WhatsApp cart recovery template sent successfully via Meta Cloud API to {$phone}!");
         }
 
         return back()->with('error', 'Meta WhatsApp API delivery failed: ' . ($result['message'] ?? 'Unknown error'));
