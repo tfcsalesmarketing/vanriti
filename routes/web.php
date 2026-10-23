@@ -19,6 +19,8 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ShipMojoWebhookController;
 use App\Http\Controllers\TrackController;
+use App\Http\Controllers\WhatsAppPaymentController;
+use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Page;
 use Illuminate\Support\Facades\Route;
@@ -119,6 +121,20 @@ Route::middleware(['auth', 'active'])->group(function () {
 Route::post('/razorpay/webhook', [RazorpayWebhookController::class, 'handle'])
     ->name('razorpay.webhook')
     ->middleware('throttle:120,1');
+
+// ---------- WhatsApp Cloud API webhook (Meta server-to-server) ----------
+Route::get('/whatsapp/webhook', [WhatsAppWebhookController::class, 'verify'])
+    ->name('whatsapp.webhook.verify');
+Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle'])
+    ->name('whatsapp.webhook.handle')
+    ->middleware('throttle:120,1');
+
+// ---------- WhatsApp browser payment initiation & verification ----------
+Route::get('/checkout/whatsapp-pay/{token}', [WhatsAppPaymentController::class, 'show'])
+    ->name('checkout.whatsapp.pay');
+Route::post('/checkout/whatsapp-pay/{token}/verify', [WhatsAppPaymentController::class, 'verify'])
+    ->name('checkout.whatsapp.pay.verify')
+    ->middleware('throttle:30,1');
 
 // ---------- ShipMojo status webhook (server-to-server, secret verified) ----------
 Route::post('/shipmojo/webhook', [ShipMojoWebhookController::class, 'handle'])

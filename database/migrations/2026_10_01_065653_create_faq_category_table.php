@@ -8,14 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('faq_category', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('faq_id')->constrained('faqs')->cascadeOnDelete();
-            $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
-            $table->timestamps();
+        if (! Schema::hasTable('faq_category')) {
+            Schema::create('faq_category', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('faq_id')->constrained('faqs')->cascadeOnDelete();
+                $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
+                $table->timestamps();
 
-            $table->unique(['faq_id', 'category_id']);
-        });
+                $table->unique(['faq_id', 'category_id']);
+            });
+        }
     }
 
     public function down(): void

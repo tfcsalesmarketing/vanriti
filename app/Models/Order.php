@@ -54,6 +54,7 @@ class Order extends Model
         'amount_paid',
         'payment_method',
         'payment_status',
+        'checkout_source',
         'whatsapp_confirmation_sent_at',
         'whatsapp_recovery_sent_at',
         'order_status',
@@ -61,6 +62,11 @@ class Order extends Model
         'internal_notes',
         'cancelled_at',
     ];
+
+    public function whatsAppCheckoutSession(): HasOne
+    {
+        return $this->hasOne(WhatsAppCheckoutSession::class);
+    }
 
     protected function casts(): array
     {

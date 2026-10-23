@@ -1,0 +1,739 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\User;
+use App\Models\WhatsAppCheckoutSession;
+use App\Services\Payments\PaymentService;
+use App\Services\Payments\RazorpayGateway;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
+class WhatsAppCheckoutService
+{
+    public function __construct(
+        protected WhatsAppCloudApiService $apiService,
+        protected WhatsAppShippingService $shippingService,
+        protected OrderService $orderService,
+        protected PaymentService $paymentService,
+    ) {}
+
+    /**
+     * Handle incoming cart submitted by customer from Meta Catalogue / multi-product message.
+     *
+     * @param  array<int, array{product_retailer_id: string, quantity: int|string, item_price?: mixed}>  $incomingItems
+     */
+    public function handleIncomingCart(string $phone, ?string $waId, array $incomingItems, string $messageId): array
+    {
+        $phone = $this->apiService->formatRecipientPhone($phone);
+
+        if (empty($incomingItems)) {
+            $msg = "Your cart is empty. Please select products from our catalogue to place an order. 🌿";
+            $this->apiService->sendTextMessage($phone, $msg);
+            return ['success' => false, 'message' => $msg];
+        }
+
+        // 1. Authoritative resolution of products and variants
+        $resolvedItems = [];
+        $errors = [];
+        $merchandiseSubtotal = 0.0;
+
+        foreach ($incomingItems as $idx => $item) {
+            $retailerId = trim((string) ($item['product_retailer_id'] ?? ''));
+            $quantity = max(1, (int) ($item['quantity'] ?? 1));
+
+            $resolution = $this->resolveProductItem($retailerId);
+
+            if (! $resolution['found']) {
+                $errors[] = "Product '{$retailerId}' was not found in our catalogue.";
+                continue;
+            }
+
+            $product = $resolution['product'];
+            $variant = $resolution['variant'];
+
+            if ($product->status !== 'active') {
+                $errors[] = "'{$product->name}' is currently unavailable.";
+                continue;
+            }
+
+            if ($variant && $variant->status !== 'active') {
+                $errors[] = "The selected option for '{$product->name}' is currently unavailable.";
+                continue;
+            }
+
+            // Check stock authoritatively
+            $availableStock = $variant ? (int) $variant->stock : (int) $product->stock;
+            if ($availableStock < $quantity) {
+                if ($availableStock <= 0) {
+                    $errors[] = "'{$product->name}' is currently out of stock.";
+                } else {
+                    $errors[] = "Only {$availableStock} unit(s) of '{$product->name}' are available.";
+                }
+                continue;
+            }
+
+            // Authoritative price
+            $unitPrice = (float) ($variant ? $variant->selling_price : $product->selling_price);
+            $mrp = (float) ($variant ? ($variant->mrp ?? $variant->selling_price) : ($product->mrp ?? $product->selling_price));
+            $lineTotal = round($unitPrice * $quantity, 2);
+            $merchandiseSubtotal += $lineTotal;
+
+            $resolvedItems[] = [
+                'product_id' => $product->id,
+                'product_variant_id' => $variant?->id,
+                'retailer_id' => $retailerId,
+                'name' => $product->name . ($variant ? ' (' . $variant->name . ')' : ''),
+                'sku' => $variant?->sku ?? $product->sku,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'mrp' => $mrp,
+                'gst_rate' => (float) ($variant?->gst_rate ?? $product->gst_rate ?? 0),
+                'line_total' => $lineTotal,
+            ];
+        }
+
+        if (! empty($errors) || empty($resolvedItems)) {
+            $errorMsg = "We noticed an issue with your selected items:\n\n"
+                . implode("\n", array_map(fn($e) => "• " . $e, $errors))
+                . "\n\nPlease update your selection or browse our catalogue again. 🌿";
+
+            $this->apiService->sendTextMessage($phone, $errorMsg);
+
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        // Calculate WhatsApp isolated shipping
+        $shippingCalc = $this->shippingService->calculate($merchandiseSubtotal);
+        $shippingCharge = $shippingCalc['charge'];
+        $grandTotal = round($merchandiseSubtotal + $shippingCharge, 2);
+
+        // 2. Create or initialize checkout session
+        $cartData = [
+            'items' => $resolvedItems,
+            'subtotal' => $merchandiseSubtotal,
+            'shipping_charge' => $shippingCharge,
+            'grand_total' => $grandTotal,
+        ];
+
+        $session = WhatsAppCheckoutSession::createForCustomer($phone, $waId, $cartData);
+        $session->update([
+            'subtotal' => $merchandiseSubtotal,
+            'shipping_charge' => $shippingCharge,
+            'grand_total' => $grandTotal,
+            'status' => WhatsAppCheckoutSession::STATUS_COLLECTING_NAME,
+            'last_message_id' => $messageId,
+        ]);
+
+        // 3. Prompt for customer name (Step 4)
+        $prompt = "Welcome to VANRITI! 🌿\nPlease enter your full name to continue with your order.";
+        $this->apiService->sendTextMessage($phone, $prompt);
+
+        return ['success' => true, 'session' => $session];
+    }
+
+    /**
+     * Process conversational customer input (text or button reply).
+     */
+    public function handleIncomingMessage(string $phone, string $text, string $messageId = ''): array
+    {
+        return $this->processCustomerInput($phone, $text, null, $messageId ?: ('gen_' . uniqid('', true)));
+    }
+
+    /**
+     * Process conversational customer input (text or button reply).
+     */
+    public function processCustomerInput(string $phone, ?string $text, ?string $buttonId, string $messageId): array
+    {
+        $phone = $this->apiService->formatRecipientPhone($phone);
+        $text = trim((string) $text);
+        $action = strtoupper(trim((string) ($buttonId ?: $text)));
+
+        $session = WhatsAppCheckoutSession::findActiveForPhone($phone);
+
+        if (! $session) {
+            // General greeting or catalogue invite if no active checkout
+            if (in_array($action, ['HI', 'HELLO', 'HEY', 'ORDER', 'CATALOGUE', 'CATALOG', 'SHOP'], true)) {
+                $this->apiService->sendCatalogueMessage($phone);
+                return ['success' => true, 'action' => 'catalogue_sent'];
+            }
+
+            $fallback = "Welcome to VANRITI! 🌿\nWe specialize in pure Ayurvedic and natural skincare.\n\nType *SHOP* or open our catalogue to explore our products.";
+            $this->apiService->sendTextMessage($phone, $fallback);
+            return ['success' => true, 'action' => 'greeting_sent'];
+        }
+
+        // Global Cancel check
+        if (in_array($action, ['CANCEL', 'CANCEL_ORDER', 'STOP', 'EXIT', 'QUIT'], true)) {
+            $session->transitionTo(WhatsAppCheckoutSession::STATUS_CANCELLED);
+            $msg = "Your VANRITI order has been cancelled. Feel free to browse our catalogue anytime! 🌿";
+            $this->apiService->sendTextMessage($phone, $msg);
+            return ['success' => true, 'action' => 'cancelled'];
+        }
+
+        // Process according to state machine
+        switch ($session->status) {
+            case WhatsAppCheckoutSession::STATUS_COLLECTING_NAME:
+                return $this->handleCollectingName($session, $text, $messageId);
+
+            case WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE:
+                return $this->handleCollectingPincode($session, $text, $messageId);
+
+            case WhatsAppCheckoutSession::STATUS_COLLECTING_ADDRESS:
+                return $this->handleCollectingAddress($session, $text, $messageId);
+
+            case WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION:
+                return $this->handleOrderConfirmation($session, $action, $messageId);
+
+            case WhatsAppCheckoutSession::STATUS_AWAITING_PAYMENT_METHOD:
+                return $this->handlePaymentMethodSelection($session, $action, $messageId);
+
+            case WhatsAppCheckoutSession::STATUS_PAYMENT_PENDING:
+                return $this->handlePaymentPendingInquiry($session, $action, $messageId);
+
+            default:
+                $this->apiService->sendTextMessage(
+                    $phone,
+                    "Your session has ended. Send *SHOP* to explore products and start a new order. 🌿"
+                );
+                return ['success' => true, 'action' => 'session_reset'];
+        }
+    }
+
+    /**
+     * Step 4: Validate name and ask for PIN code.
+     */
+    protected function handleCollectingName(WhatsAppCheckoutSession $session, string $text, string $messageId): array
+    {
+        $cleanName = preg_replace('/[^a-zA-Z\s\.\']/', '', $text);
+        if (strlen(trim($cleanName)) < 2) {
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Please enter a valid full name to continue with your order."
+            );
+            return ['success' => false, 'error' => 'invalid_name'];
+        }
+
+        $session->update([
+            'customer_name' => ucwords(strtolower(trim($cleanName))),
+            'last_message_id' => $messageId,
+        ]);
+
+        $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE);
+
+        // Step 5: Ask for PIN code
+        $this->apiService->sendTextMessage(
+            $session->phone,
+            "Please enter your 6-digit delivery PIN code."
+        );
+
+        return ['success' => true, 'action' => 'pincode_requested'];
+    }
+
+    /**
+     * Step 5: Validate 6-digit PIN code and delivery serviceability.
+     */
+    protected function handleCollectingPincode(WhatsAppCheckoutSession $session, string $text, string $messageId): array
+    {
+        $pincode = preg_replace('/[^0-9]/', '', $text);
+
+        if (! $this->shippingService->isValidPincodeFormat($pincode)) {
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Please enter a valid 6-digit Indian delivery PIN code."
+            );
+            return ['success' => false, 'error' => 'invalid_pincode_format'];
+        }
+
+        if (! $this->shippingService->isServiceable($pincode)) {
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Sorry, we currently do not deliver to PIN code {$pincode}. Please provide an alternative delivery PIN code."
+            );
+            return ['success' => false, 'error' => 'unserviceable_pincode'];
+        }
+
+        // Best effort postal lookup for city/state
+        $postal = $this->shippingService->lookupPostalDetails($pincode);
+
+        $addr = (array) ($session->address_data ?? []);
+        $addr['pincode'] = $pincode;
+        if (! empty($postal['city'])) $addr['city'] = $postal['city'];
+        if (! empty($postal['state'])) $addr['state'] = $postal['state'];
+
+        $session->update([
+            'pincode' => $pincode,
+            'address_data' => $addr,
+            'last_message_id' => $messageId,
+        ]);
+
+        $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_ADDRESS);
+
+        // Step 6: Collect complete delivery address
+        $cityNote = ! empty($postal['city']) ? " (City: {$postal['city']}, State: {$postal['state']})" : '';
+        $this->apiService->sendTextMessage(
+            $session->phone,
+            "Please enter your complete delivery address, including house/flat number, building, street, locality and landmark{$cityNote}."
+        );
+
+        return ['success' => true, 'action' => 'address_requested'];
+    }
+
+    /**
+     * Step 6: Collect address & calculate order review summary.
+     */
+    protected function handleCollectingAddress(WhatsAppCheckoutSession $session, string $text, string $messageId): array
+    {
+        if (strlen($text) < 6) {
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Please provide a complete address with house/flat number and street name so we can deliver your order smoothly."
+            );
+            return ['success' => false, 'error' => 'incomplete_address'];
+        }
+
+        $addr = (array) ($session->address_data ?? []);
+        $addr['address_line1'] = $text;
+        $addr['city'] = $addr['city'] ?? 'City';
+        $addr['state'] = $addr['state'] ?? 'State';
+        $addr['pincode'] = $session->pincode ?: ($addr['pincode'] ?? '110001');
+
+        // Recalculate order summary (Step 7)
+        $subtotal = (float) $session->subtotal;
+        $shippingCalc = $this->shippingService->calculate($subtotal);
+        $shippingCharge = $shippingCalc['charge'];
+        $grandTotal = round($subtotal + $shippingCharge, 2);
+
+        $session->update([
+            'address_data' => $addr,
+            'shipping_charge' => $shippingCharge,
+            'grand_total' => $grandTotal,
+            'last_message_id' => $messageId,
+        ]);
+
+        $session->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
+
+        // Send Order Review message with buttons
+        $this->sendOrderReviewMessage($session);
+
+        return ['success' => true, 'action' => 'review_presented'];
+    }
+
+    /**
+     * Present the customer with readable order summary and interactive buttons.
+     */
+    public function sendOrderReviewMessage(WhatsAppCheckoutSession $session): void
+    {
+        $addr = (array) ($session->address_data ?? []);
+        $items = (array) ($session->cart_data['items'] ?? []);
+
+        $itemsText = '';
+        foreach ($items as $item) {
+            $linePrice = format_price($item['line_total']);
+            $itemsText .= "• {$item['name']} × {$item['quantity']} — {$linePrice}\n";
+        }
+
+        $deliveryText = $session->shipping_charge <= 0 ? 'FREE' : format_price($session->shipping_charge);
+
+        $summaryBody = "VANRITI — ORDER REVIEW 🌿\n\n"
+            . "Customer name: {$session->customer_name}\n"
+            . "Delivery address:\n"
+            . "{$addr['address_line1']}\n"
+            . "{$addr['city']}, {$addr['state']} - {$session->pincode}\n\n"
+            . "Items:\n" . $itemsText . "\n"
+            . "Subtotal: " . format_price($session->subtotal) . "\n"
+            . "Delivery: {$deliveryText}\n"
+            . "Final total: " . format_price($session->grand_total) . "\n\n"
+            . "Please confirm your order details to proceed to payment.";
+
+        $buttons = [
+            ['id' => 'CONFIRM_ORDER', 'title' => 'Confirm Order'],
+            ['id' => 'EDIT_ADDRESS', 'title' => 'Edit Address'],
+            ['id' => 'CANCEL_ORDER', 'title' => 'Cancel'],
+        ];
+
+        $res = $this->apiService->sendInteractiveButtonMessage(
+            $session->phone,
+            $summaryBody,
+            $buttons,
+            headerText: 'VANRITI — Order Review',
+            footerText: 'Reply CONFIRM, EDIT, or CANCEL'
+        );
+
+        if (! $res['success']) {
+            // Text fallback if interactive message fails
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                $summaryBody . "\n\nReply with *CONFIRM* to proceed, *EDIT* to change address, or *CANCEL*."
+            );
+        }
+    }
+
+    /**
+     * Handle Customer confirmation or address edit.
+     */
+    protected function handleOrderConfirmation(WhatsAppCheckoutSession $session, string $action, string $messageId): array
+    {
+        if (in_array($action, ['EDIT_ADDRESS', 'EDIT', 'CHANGE'], true)) {
+            $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE);
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Please enter your 6-digit delivery PIN code to update your address."
+            );
+            return ['success' => true, 'action' => 'edit_requested'];
+        }
+
+        if (in_array($action, ['CONFIRM_ORDER', 'CONFIRM', 'OK', 'YES', 'PROCEED', 'CONTINUE'], true)) {
+            $session->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_PAYMENT_METHOD);
+
+            $paymentBody = "How would you like to pay for your VANRITI order of " . format_price($session->grand_total) . "?";
+
+            $buttons = [
+                ['id' => 'PAY_COD', 'title' => 'Cash on Delivery'],
+                ['id' => 'PAY_ONLINE', 'title' => 'Online Payment'],
+            ];
+
+            $res = $this->apiService->sendInteractiveButtonMessage(
+                $session->phone,
+                $paymentBody,
+                $buttons,
+                headerText: 'Payment Method',
+                footerText: 'Reply COD or ONLINE'
+            );
+
+            if (! $res['success']) {
+                $this->apiService->sendTextMessage(
+                    $session->phone,
+                    $paymentBody . "\n\nReply with *COD* for Cash on Delivery or *ONLINE* for Razorpay/UPI/Cards."
+                );
+            }
+
+            return ['success' => true, 'action' => 'payment_method_prompted'];
+        }
+
+        $this->apiService->sendTextMessage(
+            $session->phone,
+            "Please confirm your order by tapping *Confirm Order* (or reply *CONFIRM*), or reply *EDIT* to update your address."
+        );
+
+        return ['success' => false, 'error' => 'invalid_confirmation_choice'];
+    }
+
+    /**
+     * Handle payment selection: Option A: COD, Option B: Razorpay.
+     */
+    protected function handlePaymentMethodSelection(WhatsAppCheckoutSession $session, string $action, string $messageId): array
+    {
+        if (in_array($action, ['PAY_COD', 'COD', 'CASH ON DELIVERY', 'CASH'], true)) {
+            return $this->finalizeCodOrder($session);
+        }
+
+        if (in_array($action, ['PAY_ONLINE', 'ONLINE', 'ONLINE PAYMENT', 'ONLINE_PAYMENT', 'PAY ONLINE', 'RAZORPAY', 'UPI', 'PREPAID'], true)) {
+            return $this->initializeRazorpayOrder($session);
+        }
+
+        $this->apiService->sendTextMessage(
+            $session->phone,
+            "Please choose a payment method:\nReply *COD* for Cash on Delivery or *ONLINE* for secure Razorpay payment."
+        );
+
+        return ['success' => false, 'error' => 'invalid_payment_method'];
+    }
+
+    /**
+     * Option A: Cash on Delivery finalization.
+     */
+    public function finalizeCodOrder(WhatsAppCheckoutSession $session): array
+    {
+        if ($session->order_id && $session->status === WhatsAppCheckoutSession::STATUS_ORDER_CONFIRMED) {
+            return ['success' => true, 'already_confirmed' => true];
+        }
+
+        try {
+            $order = $this->createOrderFromSession($session, 'cod');
+
+            $order->update([
+                'payment_status' => 'pending',
+                'order_status' => 'confirmed',
+            ]);
+
+            $session->transitionTo(WhatsAppCheckoutSession::STATUS_ORDER_CONFIRMED, [
+                'order_id' => $order->id,
+                'payment_method' => 'cod',
+            ]);
+
+            // Order confirmation message
+            $confirmation = "🎉 Your VANRITI order has been placed successfully!\n\n"
+                . "Order ID: {$order->order_number}\n"
+                . "Order total: " . format_price($order->grand_total) . "\n"
+                . "Payment method: Cash on Delivery\n\n"
+                . "We'll keep you updated on your order.\n"
+                . "Thank you for shopping with VANRITI! 🌿";
+
+            $this->apiService->sendTextMessage($session->phone, $confirmation);
+
+            return ['success' => true, 'order' => $order];
+        } catch (\Throwable $e) {
+            Log::error('WhatsApp COD order placement error: ' . $e->getMessage(), ['session_id' => $session->id]);
+
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Could not finalize your order: {$e->getMessage()}\nPlease try again or contact support."
+            );
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Option B: Razorpay Online Payment initiation.
+     */
+    public function initializeRazorpayOrder(WhatsAppCheckoutSession $session): array
+    {
+        try {
+            // Create pending order if not already created
+            $order = $session->order;
+            if (! $order) {
+                $order = $this->createOrderFromSession($session, 'razorpay');
+            }
+
+            // Create payment record and Razorpay order
+            $payment = $order->payments()->where('method', 'razorpay')->latest()->first();
+            if (! $payment || $payment->status === 'failed') {
+                $payment = $this->paymentService->createPayment($order, 'razorpay');
+            }
+
+            $gateway = new RazorpayGateway();
+            $rpOrder = $gateway->createOrder($order, $payment);
+
+            $session->transitionTo(WhatsAppCheckoutSession::STATUS_PAYMENT_PENDING, [
+                'order_id' => $order->id,
+                'razorpay_order_id' => $rpOrder['id'],
+                'payment_method' => 'razorpay',
+            ]);
+
+            $paymentUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+
+            $msg = "Please complete your payment of " . format_price($order->grand_total) . " for VANRITI order {$order->order_number}:\n\n"
+                . "👉 {$paymentUrl}\n\n"
+                . "This secure payment link supports UPI, Cards, NetBanking, and Wallets. Once paid, your order will be confirmed immediately. 🌿";
+
+            $this->apiService->sendTextMessage($session->phone, $msg);
+
+            return ['success' => true, 'order' => $order, 'payment_url' => $paymentUrl];
+        } catch (\Throwable $e) {
+            Log::error('WhatsApp Razorpay initialization error: ' . $e->getMessage(), ['session_id' => $session->id]);
+
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Could not initialize online payment: {$e->getMessage()}\nYou can reply *COD* to place your order with Cash on Delivery instead."
+            );
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Handle payment verification for online WhatsApp orders.
+     */
+    public function handlePaymentSuccess(WhatsAppCheckoutSession $session, Payment $payment, Order $order): void
+    {
+        $session->transitionTo(WhatsAppCheckoutSession::STATUS_ORDER_CONFIRMED, [
+            'payment_method' => 'razorpay',
+        ]);
+
+        $safeRef = $payment->gateway_response['webhook_payment_id'] ?? ($payment->payment_reference ?: 'Razorpay');
+
+        $msg = "✅ Payment successful!\n\n"
+            . "Your VANRITI order {$order->order_number} is confirmed.\n"
+            . "Amount paid: " . format_price($order->grand_total) . "\n"
+            . "Payment reference: {$safeRef}\n\n"
+            . "Thank you for choosing VANRITI! 🌿";
+
+        $this->apiService->sendTextMessage($session->phone, $msg);
+    }
+
+    /**
+     * Handle payment failure message and retry link.
+     */
+    public function handlePaymentFailure(WhatsAppCheckoutSession $session, Order $order, ?string $reason = null): void
+    {
+        $retryUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+
+        $msg = "We couldn't complete the payment for VANRITI order {$order->order_number}.\n"
+            . "Your order has not been confirmed as paid.\n\n"
+            . "Please try again using the secure payment link:\n"
+            . "👉 {$retryUrl}\n\n"
+            . "Or reply *COD* to switch your order to Cash on Delivery. 🌿";
+
+        $this->apiService->sendTextMessage($session->phone, $msg);
+    }
+
+    /**
+     * Respond to inquiry during PAYMENT_PENDING state.
+     */
+    protected function handlePaymentPendingInquiry(WhatsAppCheckoutSession $session, string $action, string $messageId): array
+    {
+        if (in_array($action, ['COD', 'SWITCH TO COD', 'PAY COD'], true)) {
+            return $this->finalizeCodOrder($session);
+        }
+
+        $order = $session->order;
+        if ($order && $order->payment_status === 'paid') {
+            $this->apiService->sendTextMessage(
+                $session->phone,
+                "Your VANRITI order {$order->order_number} is already paid and confirmed! 🌿"
+            );
+            return ['success' => true, 'action' => 'already_paid'];
+        }
+
+        $paymentUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+        $msg = "Your payment is currently pending for order " . ($order?->order_number ?? '') . ".\n\n"
+            . "Complete your payment here:\n👉 {$paymentUrl}\n\n"
+            . "Or reply *COD* if you'd like to switch to Cash on Delivery.";
+
+        $this->apiService->sendTextMessage($session->phone, $msg);
+
+        return ['success' => true, 'action' => 'pending_reminder_sent'];
+    }
+
+    /**
+     * Authoritatively creates an internal Order from the session data using OrderService.
+     */
+    public function createOrderFromSession(WhatsAppCheckoutSession $session, string $paymentMethod): Order
+    {
+        return DB::transaction(function () use ($session, $paymentMethod) {
+            $phone = $session->phone;
+
+            // 1. Map/create customer user by phone
+            $user = User::query()->where('phone', $phone)->first();
+            if (! $user) {
+                $user = User::create([
+                    'name' => $session->customer_name ?: 'WhatsApp Customer',
+                    'phone' => $phone,
+                    'status' => 'active',
+                    'phone_verified_at' => now(),
+                    'password' => bcrypt(Str::random(32)),
+                ]);
+            }
+
+            // 2. Build ephemeral cart for authoritative OrderService validation
+            $cart = Cart::create([
+                'owner_type' => User::class,
+                'owner_id' => $user->id,
+            ]);
+
+            $cartItems = $session->cart_data['items'] ?? [];
+            foreach ($cartItems as $item) {
+                $cart->items()->create([
+                    'product_id' => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'mrp' => $item['mrp'] ?? $item['unit_price'],
+                    'gst_rate' => $item['gst_rate'] ?? 0,
+                ]);
+            }
+
+            $addr = (array) ($session->address_data ?? []);
+            $pincode = $session->pincode ?: ($addr['pincode'] ?? '110001');
+
+            $addressData = [
+                'full_name' => $session->customer_name ?: 'WhatsApp Customer',
+                'mobile' => $session->phone,
+                'address_line1' => $addr['address_line1'] ?? 'Delivery Address',
+                'address_line2' => $addr['address_line2'] ?? null,
+                'landmark' => $addr['landmark'] ?? null,
+                'city' => $addr['city'] ?? 'City',
+                'state' => $addr['state'] ?? 'State',
+                'pincode' => $pincode,
+                'country' => 'India',
+            ];
+
+            $orderData = [
+                'billing' => $addressData,
+                'shipping' => $addressData,
+                'shipping_method' => 'standard',
+                'shipping_charge' => (float) $session->shipping_charge,
+                'payment_method' => $paymentMethod,
+                'checkout_source' => 'whatsapp',
+                'coupon_code' => null,
+                'notes' => 'WhatsApp Commerce Checkout (Customer: ' . $session->phone . ')',
+            ];
+
+            $order = $this->orderService->placeOrder($user, $cart, $orderData, clearCart: true);
+
+            $session->update([
+                'order_id' => $order->id,
+                'payment_method' => $paymentMethod,
+            ]);
+
+            return $order;
+        });
+    }
+
+    /**
+     * Resolve product/variant from retailer identifier.
+     * Matches variant SKU, product SKU, product ID, variant ID, barcode.
+     *
+     * @return array{found: bool, product: ?Product, variant: ?ProductVariant}
+     */
+    public function resolveProductItem(string $identifier): array
+    {
+        $id = trim($identifier);
+        if ($id === '') {
+            return ['found' => false, 'product' => null, 'variant' => null];
+        }
+
+        // 1. Try matching Variant by SKU
+        $variant = ProductVariant::with('product')
+            ->where('sku', $id)
+            ->first();
+
+        if ($variant && $variant->product) {
+            return ['found' => true, 'product' => $variant->product, 'variant' => $variant];
+        }
+
+        // 2. Try matching Product by SKU
+        $product = Product::where('sku', $id)->first();
+        if ($product) {
+            $defaultVariant = $product->variants()->where('is_default', true)->first();
+            return ['found' => true, 'product' => $product, 'variant' => $defaultVariant];
+        }
+
+        // 3. Try matching by barcode
+        $productByBarcode = Product::where('barcode', $id)->first();
+        if ($productByBarcode) {
+            return ['found' => true, 'product' => $productByBarcode, 'variant' => null];
+        }
+
+        // 4. Try matching numeric ID directly
+        if (is_numeric($id)) {
+            $productById = Product::find((int) $id);
+            if ($productById) {
+                return ['found' => true, 'product' => $productById, 'variant' => null];
+            }
+
+            $variantById = ProductVariant::with('product')->find((int) $id);
+            if ($variantById && $variantById->product) {
+                return ['found' => true, 'product' => $variantById->product, 'variant' => $variantById];
+            }
+        }
+
+        // 5. Try stripped retailer ID (e.g. "VANRITI-12" or "VAN-12")
+        if (preg_match('/(?:VANRITI|PROD|SKU)-?([0-9]+)/i', $id, $m)) {
+            $p = Product::find((int) $m[1]);
+            if ($p) {
+                return ['found' => true, 'product' => $p, 'variant' => null];
+            }
+        }
+
+        return ['found' => false, 'product' => null, 'variant' => null];
+    }
+}

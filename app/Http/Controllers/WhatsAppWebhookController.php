@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\WhatsAppWebhookLog;
+use App\Services\WhatsAppCheckoutService;
+use App\Services\WhatsAppCloudApiService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+
+class WhatsAppWebhookController extends Controller
+{
+    public function __construct(
+        protected WhatsAppCloudApiService $apiService,
+        protected WhatsAppCheckoutService $checkoutService,
+    ) {}
+
+    /**
+     * Meta Webhook Verification (GET).
+     * Responds to Meta's challenge handshake.
+     */
+    public function verify(Request $request): Response
+    {
+        $mode = $request->input('hub_mode', $request->input('hub.mode'));
+        $verifyToken = $request->input('hub_verify_token', $request->input('hub.verify_token'));
+        $challenge = $request->input('hub_challenge', $request->input('hub.challenge'));
+
+        $configuredToken = (string) setting('whatsapp_webhook_verify_token', 'vanriti_whatsapp_secret_token');
+
+        if ($mode === 'subscribe' && $verifyToken === $configuredToken) {
+            return response((string) $challenge, 200, ['Content-Type' => 'text/plain']);
+        }
+
+        Log::warning('WhatsApp webhook verification rejected: token mismatch', [
+            'received' => $verifyToken,
+            'mode' => $mode,
+        ]);
+
+        return response('Forbidden', 403);
+    }
+
+    /**
+     * Meta Webhook Event Processing (POST).
+     */
+    public function handle(Request $request): JsonResponse
+    {
+        $rawContent = $request->getContent();
+        $signature = $request->header('x-hub-signature-256');
+
+        // Signature check
+        if (! $this->apiService->verifyWebhookSignature($rawContent, $signature)) {
+            Log::warning('WhatsApp webhook rejected: invalid X-Hub-Signature-256');
+            return response()->json(['status' => 'invalid signature'], 400);
+        }
+
+        $payload = $request->all();
+
+        // Check if event is from whatsapp_business_account
+        $entry = $payload['entry'][0] ?? null;
+        if (! $entry) {
+            return response()->json(['status' => 'no entry']);
+        }
+
+        $changes = $entry['changes'][0]['value'] ?? null;
+        if (! $changes) {
+            return response()->json(['status' => 'no change']);
+        }
+
+        // Ignore status delivery notifications (sent, delivered, read) to avoid advancing checkout
+        if (! empty($changes['statuses']) && empty($changes['messages'])) {
+            return response()->json(['status' => 'status update ignored']);
+        }
+
+        $messages = $changes['messages'] ?? [];
+        if (empty($messages)) {
+            return response()->json(['status' => 'no messages']);
+        }
+
+        foreach ($messages as $msg) {
+            $messageId = (string) ($msg['id'] ?? '');
+            $from = (string) ($msg['from'] ?? '');
+            $type = (string) ($msg['type'] ?? '');
+            $waId = (string) ($changes['contacts'][0]['wa_id'] ?? $from);
+
+            // Deduplication by provider message ID
+            if ($messageId !== '' && WhatsAppWebhookLog::isDuplicate($messageId)) {
+                Log::info('WhatsApp webhook: ignoring duplicate message', ['id' => $messageId]);
+                continue;
+            }
+
+            WhatsAppWebhookLog::create([
+                'message_id' => $messageId ?: ('gen_' . uniqid('', true)),
+                'from_phone' => $from,
+                'event_type' => $type,
+                'payload' => $msg,
+                'processed' => true,
+            ]);
+
+            try {
+                if ($type === 'order') {
+                    // Step 2: Receive customer's cart
+                    $orderData = $msg['order'] ?? [];
+                    $productItems = $orderData['product_items'] ?? [];
+                    $this->checkoutService->handleIncomingCart($from, $waId, $productItems, $messageId);
+                } elseif ($type === 'interactive') {
+                    $interactive = $msg['interactive'] ?? [];
+                    $buttonId = $interactive['button_reply']['id']
+                        ?? ($interactive['list_reply']['id'] ?? null);
+                    $buttonTitle = $interactive['button_reply']['title']
+                        ?? ($interactive['list_reply']['title'] ?? null);
+
+                    $this->checkoutService->processCustomerInput($from, $buttonTitle, $buttonId, $messageId);
+                } elseif ($type === 'text') {
+                    $text = $msg['text']['body'] ?? '';
+                    $this->checkoutService->processCustomerInput($from, $text, null, $messageId);
+                }
+            } catch (\Throwable $e) {
+                Log::error('WhatsApp message processing exception', [
+                    'message_id' => $messageId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+            }
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+}

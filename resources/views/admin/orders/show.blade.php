@@ -36,7 +36,14 @@
         <div class="card h-100">
             <div class="card-body">
                 <div class="text-muted small">Order Number</div>
-                <div class="fw-bold">{{ $order->order_number }}</div>
+                <div class="fw-bold d-flex align-items-center gap-2">
+                    {{ $order->order_number }}
+                    @if (($order->checkout_source ?? '') === 'whatsapp')
+                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-whatsapp"></i> WhatsApp</span>
+                    @else
+                        <span class="badge bg-light text-secondary border">Web</span>
+                    @endif
+                </div>
                 <div class="text-muted small mt-2">Date</div>
                 <div class="fw-semibold small">{{ $order->created_at->format('d M Y, h:i A') }}</div>
             </div>
@@ -120,6 +127,36 @@
         </div>
     </div>
 </div>
+
+@if ($order->whatsAppCheckoutSession)
+@php $waSession = $order->whatsAppCheckoutSession; @endphp
+<div class="card mb-3 border-success-subtle">
+    <div class="card-header bg-success-subtle text-success fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-whatsapp me-2"></i>WhatsApp Commerce Session</span>
+        <span class="badge bg-success text-white">{{ $waSession->status }}</span>
+    </div>
+    <div class="card-body small">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="text-muted">Customer Phone</div>
+                <div class="fw-semibold">{{ $waSession->phone }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted">Session Token</div>
+                <div class="font-monospace small text-truncate" title="{{ $waSession->session_token }}">{{ $waSession->session_token }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted">Razorpay Order ID</div>
+                <div class="font-monospace">{{ $waSession->razorpay_order_id ?: '—' }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted">Created / Expires</div>
+                <div>{{ $waSession->created_at->format('d M H:i') }} / {{ $waSession->expires_at?->format('d M H:i') ?: '—' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="card mb-3">
     <div class="card-header">Items</div>

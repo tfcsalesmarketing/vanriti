@@ -122,6 +122,17 @@ class RazorpayWebhookController extends Controller
 
         $this->notifyCustomer($order, 'paymentSuccessful');
 
+        if ($order->checkout_source === 'whatsapp' || $order->whatsAppCheckoutSession) {
+            try {
+                $session = $order->whatsAppCheckoutSession;
+                if ($session) {
+                    app(\App\Services\WhatsAppCheckoutService::class)->handlePaymentSuccess($session, $payment, $order);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp payment success message could not be sent from webhook', ['error' => $e->getMessage()]);
+            }
+        }
+
         return response()->json(['status' => 'ok']);
     }
 
@@ -183,6 +194,17 @@ class RazorpayWebhookController extends Controller
         }
 
         $this->notifyCustomer($order, 'paymentFailed');
+
+        if ($order->checkout_source === 'whatsapp' || $order->whatsAppCheckoutSession) {
+            try {
+                $session = $order->whatsAppCheckoutSession;
+                if ($session) {
+                    app(\App\Services\WhatsAppCheckoutService::class)->handlePaymentFailure($session, $order, $fullReason);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp payment failure message could not be sent from webhook', ['error' => $e->getMessage()]);
+            }
+        }
 
         return response()->json(['status' => 'ok']);
     }

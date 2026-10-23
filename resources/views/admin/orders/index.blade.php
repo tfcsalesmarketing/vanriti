@@ -140,7 +140,12 @@
                             @if ($tabBulkActions)
                                 <td><input type="checkbox" class="form-check-input order-check" name="order_ids[]" value="{{ $order->id }}"></td>
                             @endif
-                            <td class="small text-primary fw-semibold">{{ $order->order_number }}</td>
+                            <td class="small text-primary fw-semibold">
+                                {{ $order->order_number }}
+                                @if (($order->checkout_source ?? '') === 'whatsapp')
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" title="Placed via WhatsApp Commerce"><i class="bi bi-whatsapp"></i> WA</span>
+                                @endif
+                            </td>
                             <td class="small">{{ $order->created_at->format('d M Y') }}</td>
                             <td>
                                 <div class="fw-semibold small">{{ $order->user?->name ?: $order->billing_name }}</div>

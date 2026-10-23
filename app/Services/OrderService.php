@@ -162,10 +162,13 @@ class OrderService
             // Shipping
             $shippingAddress = new Address($orderData['shipping']);
             $shipping = $this->shippingService->calculate($subtotal, $shippingAddress, $orderData['shipping_method'] ?? 'standard');
+            $shippingCharge = array_key_exists('shipping_charge', $orderData)
+                ? (float) $orderData['shipping_charge']
+                : (float) $shipping['charge'];
 
             // Selling prices are GST-inclusive: the payable total is exactly
             // what the customer saw (no tax added on top).
-            $grandTotal = round(max(0, $subtotal + $shipping['charge'] - $couponDiscount), 2);
+            $grandTotal = round(max(0, $subtotal + $shippingCharge - $couponDiscount), 2);
 
             $minOrder = (float) (setting('min_order_amount', 1) ?: 1);
             if ($subtotal < $minOrder) {
@@ -192,8 +195,9 @@ class OrderService
                 'subtotal' => $subtotal,
                 'discount_amount' => round($discountAmount, 2),
                 'coupon_discount' => $couponDiscount,
-                'shipping_charge' => $shipping['charge'],
+                'shipping_charge' => $shippingCharge,
                 'shipping_method' => $orderData['shipping_method'] ?? 'standard',
+                'checkout_source' => $orderData['checkout_source'] ?? 'web',
                 'taxable_amount' => $taxableAmount,
                 'tax_amount' => $taxAmount,
                 'cgst_amount' => $taxSplit['cgst'],
