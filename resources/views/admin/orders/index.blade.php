@@ -29,82 +29,120 @@
     ];
 @endphp
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
-        <h5 class="mb-0 fw-bold">Orders</h5>
-        <small class="text-muted">{{ $orders->total() }} orders in "{{ $tabs[$activeTab] }}"</small>
+        <h5 class="mb-0 fw-bold">Orders Management</h5>
+        <div class="text-muted small mt-0.5">Showing {{ $orders->total() }} order(s) in <span class="fw-semibold text-dark">{{ $tabs[$activeTab] }}</span></div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ route('admin.orders.index', ['tab' => 'pending']) }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+            <i class="bi bi-clock-history"></i><span>Pending ({{ $tabCounts['pending'] ?? 0 }})</span>
+        </a>
+        <a href="{{ route('admin.orders.index', ['tab' => 'ready_to_ship']) }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1">
+            <i class="bi bi-box-seam"></i><span>Ready to Ship ({{ $tabCounts['ready_to_ship'] ?? 0 }})</span>
+        </a>
     </div>
 </div>
 
-{{-- Tab navigation --}}
-<ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto">
-    @foreach ($tabs as $key => $label)
-        <li class="nav-item">
-            <a class="nav-link {{ $activeTab === $key ? 'active fw-semibold' : '' }}"
-               href="{{ route('admin.orders.index', array_merge(request()->except('tab', 'page'), ['tab' => $key])) }}">
-                {{ $label }}
-                <span class="badge {{ $activeTab === $key ? 'text-bg-primary' : 'text-bg-secondary' }} ms-1">{{ $tabCounts[$key] }}</span>
-            </a>
-        </li>
-    @endforeach
-</ul>
+{{-- Modern Segmented Status Tabs --}}
+<div class="card mb-3 border-0 bg-transparent">
+    <ul class="nav nav-tabs flex-nowrap overflow-auto pb-1" style="border-bottom: 2px solid var(--vanriti-border);">
+        @foreach ($tabs as $key => $label)
+            @php
+                $isActive = $activeTab === $key;
+                $count = $tabCounts[$key] ?? 0;
+            @endphp
+            <li class="nav-item">
+                <a class="nav-link {{ $isActive ? 'active fw-bold' : '' }}"
+                   href="{{ route('admin.orders.index', array_merge(request()->except('tab', 'page'), ['tab' => $key])) }}"
+                   style="white-space: nowrap;">
+                    {{ $label }}
+                    <span class="badge {{ $isActive ? 'bg-success text-white' : 'bg-light text-muted border' }} ms-1.5" style="font-size:0.72rem;">
+                        {{ $count }}
+                    </span>
+                </a>
+            </li>
+        @endforeach
+    </ul>
+</div>
 
-<div class="card mb-3">
-    <div class="card-body py-2">
-        <form method="GET" action="{{ route('admin.orders.index') }}" class="row g-2 align-items-end">
-            <input type="hidden" name="tab" value="{{ $activeTab }}">
-            <div class="col-md-3">
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Search order #, email, name..." value="{{ request('q') }}">
+{{-- Streamlined Filter Bar --}}
+<div class="card filter-card mb-3">
+    <form method="GET" action="{{ route('admin.orders.index') }}" class="row g-2 align-items-center">
+        <input type="hidden" name="tab" value="{{ $activeTab }}">
+        <div class="col-12 col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" class="form-control border-start-0" placeholder="Order #, email, phone, name..." value="{{ request('q') }}">
             </div>
-            <div class="col-md-2">
-                <select name="order_status" class="form-select form-select-sm">
-                    <option value="">All Order Status</option>
-                    @foreach ($orderStatuses as $status)
-                        <option value="{{ $status }}" {{ request('order_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="payment_status" class="form-select form-select-sm">
-                    <option value="">All Payment Status</option>
-                    @foreach ($paymentStatuses as $status)
-                        <option value="{{ $status }}" {{ request('payment_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-2">
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
-            </div>
-            <div class="col-md-2">
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}">
-            </div>
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-sm btn-dark w-100"><i class="bi bi-search"></i></button>
-            </div>
-            <div class="col-md-2">
-                <a href="{{ route('admin.orders.index', ['tab' => $activeTab]) }}" class="btn btn-sm btn-outline-secondary w-100">Reset</a>
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="order_status" class="form-select form-select-sm">
+                <option value="">All Order Status</option>
+                @foreach ($orderStatuses as $status)
+                    <option value="{{ $status }}" {{ request('order_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="payment_status" class="form-select form-select-sm">
+                <option value="">All Payment Status</option>
+                @foreach ($paymentStatuses as $status)
+                    <option value="{{ $status }}" {{ request('payment_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <input type="date" name="date_from" class="form-control form-control-sm" title="From Date" value="{{ request('date_from') }}">
+        </div>
+        <div class="col-6 col-md-2">
+            <input type="date" name="date_to" class="form-control form-control-sm" title="To Date" value="{{ request('date_to') }}">
+        </div>
+        <div class="col-12 col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-dark flex-fill" title="Apply Filters"><i class="bi bi-funnel"></i></button>
+            <a href="{{ route('admin.orders.index', ['tab' => $activeTab]) }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
 </div>
 
 @if ($tabBulkActions)
-<div class="card mb-3">
-    <div class="card-body py-2 d-flex align-items-center gap-3 flex-wrap">
-        <div class="form-check">
+{{-- Top Bulk Actions Bar --}}
+<div class="card mb-3 border bg-light-subtle">
+    <div class="card-body py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
+        <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="select-all">
-            <label class="form-check-label small" for="select-all">Select all on page</label>
+            <label class="form-check-label small fw-semibold cursor-pointer" for="select-all">Select all on page</label>
         </div>
-        <span class="small text-muted"><span id="selected-count">0</span> selected</span>
+        <span class="small text-muted border-start ps-3"><strong id="selected-count" class="text-dark">0</strong> order(s) selected</span>
+        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+            @foreach ($tabBulkActions as $action)
+                <button type="submit" form="bulk-form" class="btn btn-sm btn-{{ $action['btn'] }}"
+                    data-action="{{ $action['route'] }}" data-confirm="{{ $action['confirm'] }}"
+                    data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}"
+                    onclick="return bulkSubmit(this)">
+                    <i class="bi {{ $action['icon'] }} me-1"></i>{{ $action['label'] }}
+                </button>
+            @endforeach
+        </div>
+        <small class="text-muted ms-auto d-none d-md-inline">{{ $tabCounts[$activeTab] }} order(s) in this view</small>
+    </div>
+</div>
+
+{{-- Modern Floating Bulk Action Bar (fixed at bottom center) --}}
+<div class="bulk-floating-bar" id="bulkFloatingBar">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="small fw-bold"><span id="floating-selected-count">0</span> Orders Selected</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
         @foreach ($tabBulkActions as $action)
-            <button type="submit" form="bulk-form" class="btn btn-sm btn-{{ $action['btn'] }}"
+            <button type="submit" form="bulk-form" class="btn btn-sm btn-light text-dark fw-semibold"
                 data-action="{{ $action['route'] }}" data-confirm="{{ $action['confirm'] }}"
                 data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}"
                 onclick="return bulkSubmit(this)">
                 <i class="bi {{ $action['icon'] }} me-1"></i>{{ $action['label'] }}
             </button>
         @endforeach
-        <small class="text-muted ms-auto">{{ $tabCounts[$activeTab] }} order(s) in this tab</small>
     </div>
 </div>
 @endif
@@ -117,20 +155,20 @@
                 <thead>
                     <tr>
                         @if ($tabBulkActions)
-                            <th style="width:36px;"><input type="checkbox" class="form-check-input row-select-all"></th>
+                            <th style="width:38px;"><input type="checkbox" class="form-check-input row-select-all" aria-label="Select All"></th>
                         @endif
                         <th>Order #</th>
                         <th>Date</th>
-                        <th>Customer</th>
+                        <th>Customer Details</th>
                         <th class="text-center">Items</th>
-                        <th class="text-end">Total</th>
+                        <th class="text-end">Total Amount</th>
                         @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped'], true))
-                            <th>Courier</th>
-                            <th>AWB</th>
+                            <th>Courier Partner</th>
+                            <th>AWB Number</th>
                         @endif
                         <th>Payment</th>
-                        <th>Status</th>
-                        <th class="text-end">Actions</th>
+                        <th>Fulfillment</th>
+                        <th class="text-end" style="min-width: 140px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,16 +178,21 @@
                             @if ($tabBulkActions)
                                 <td><input type="checkbox" class="form-check-input order-check" name="order_ids[]" value="{{ $order->id }}"></td>
                             @endif
-                            <td class="small text-primary fw-semibold">
-                                {{ $order->order_number }}
+                            <td>
+                                <a href="{{ route('admin.orders.show', $order) }}" class="fw-bold text-decoration-none text-primary small">
+                                    {{ $order->order_number }}
+                                </a>
                                 @if (($order->checkout_source ?? '') === 'whatsapp')
                                     <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" title="Placed via WhatsApp Commerce"><i class="bi bi-whatsapp"></i> WA</span>
                                 @endif
                             </td>
-                            <td class="small">{{ $order->created_at->format('d M Y') }}</td>
+                            <td class="small text-muted" style="white-space: nowrap;">
+                                {{ $order->created_at->format('d M Y') }}
+                                <div style="font-size: 0.72rem; color: #8C9E90;">{{ $order->created_at->format('h:i A') }}</div>
+                            </td>
                             <td>
-                                <div class="fw-semibold small">{{ $order->user?->name ?: $order->billing_name }}</div>
-                                <div class="text-muted small">{{ $order->user?->email }}</div>
+                                <div class="fw-semibold small text-dark">{{ $order->user?->name ?: $order->billing_name }}</div>
+                                <div class="text-muted small" style="font-size:0.75rem;">{{ $order->user?->email ?: 'No email' }}</div>
                                 @php
                                     $custPhone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
                                     $cleanPhone = preg_replace('/[^0-9]/', '', $custPhone);
@@ -163,20 +206,24 @@
                                     $dropReason = $latestPayment?->gateway_response['dropoff_reason'] ?? null;
                                 @endphp
                                 @if ($custPhone)
-                                    <div class="text-muted small" style="font-size:0.75rem;"><i class="bi bi-telephone me-1"></i>{{ $custPhone }}</div>
+                                    <div class="text-muted small" style="font-size:0.75rem;">
+                                        <i class="bi bi-telephone me-1 text-muted"></i>{{ $custPhone }}
+                                    </div>
                                 @endif
                             </td>
-                            <td class="text-center small">{{ $order->items_count }}</td>
-                            <td class="text-end fw-semibold small">{{ format_price($order->grand_total) }}</td>
+                            <td class="text-center small"><span class="badge bg-light text-dark border">{{ $order->items_count }}</span></td>
+                            <td class="text-end fw-bold small text-dark">{{ format_price($order->grand_total) }}</td>
                             @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped'], true))
-                                <td class="small">{{ $shipment?->courier ?: '—' }}</td>
-                                <td class="small">{{ $shipment?->awb_number ?: '—' }}</td>
+                                <td class="small fw-semibold text-secondary">{{ $shipment?->courier ?: '—' }}</td>
+                                <td class="small font-monospace" style="font-size:0.78rem;">{{ $shipment?->awb_number ?: '—' }}</td>
                             @endif
                             <td>
-                                <span class="badge bg-{{ $paymentClasses[$order->payment_status] ?? 'secondary' }}">{{ ucwords(str_replace('_', ' ', $order->payment_status)) }}</span>
+                                <span class="badge badge-soft-{{ $paymentClasses[$order->payment_status] ?? 'secondary' }}">
+                                    {{ ucwords(str_replace('_', ' ', $order->payment_status)) }}
+                                </span>
                                 @if ($failReason && in_array($order->payment_status, ['failed', 'cancelled'], true))
-                                    <div class="text-danger small mt-1" style="font-size:0.72rem; max-width: 140px; line-height: 1.2;" title="{{ $failReason }}">
-                                        <i class="bi bi-exclamation-circle-fill"></i> {{ Str::limit($failReason, 30) }}
+                                    <div class="text-danger small mt-1" style="font-size:0.72rem; max-width: 150px; line-height: 1.2;" title="{{ $failReason }}">
+                                        <i class="bi bi-exclamation-circle-fill"></i> {{ Str::limit($failReason, 28) }}
                                     </div>
                                 @elseif ($dropReason && in_array($order->payment_status, ['pending', 'processing'], true))
                                     <div class="text-warning small mt-1" style="font-size:0.72rem; line-height: 1.2;" title="{{ $dropReason }}">
@@ -185,36 +232,58 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="badge bg-{{ $orderClasses[$order->order_status] ?? 'secondary' }}">{{ ucwords(str_replace('_', ' ', $order->order_status)) }}</span>
+                                <span class="badge badge-soft-{{ $orderClasses[$order->order_status] ?? 'secondary' }}">
+                                    {{ ucwords(str_replace('_', ' ', $order->order_status)) }}
+                                </span>
                             </td>
                             <td class="text-end">
-                                <div class="d-flex gap-1 justify-content-end">
+                                <div class="d-flex gap-1 justify-content-end align-items-center">
                                     @if ($custPhone)
                                         <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" class="d-inline" onsubmit="return confirm('Send WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
                                             @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Send WhatsApp via Meta API"><i class="bi bi-whatsapp"></i></button>
+                                            <button type="submit" class="btn btn-sm btn-outline-success p-1 px-2" title="Send WhatsApp Recovery via Meta API">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </button>
                                         </form>
                                     @endif
                                     @if ($activeTab === 'ready_to_ship')
-                                        <a href="{{ route('admin.orders.shipmojo.label', $order) }}" class="btn btn-sm btn-outline-dark" title="Download Label"><i class="bi bi-printer"></i></a>
+                                        <a href="{{ route('admin.orders.shipmojo.label', $order) }}" class="btn btn-sm btn-outline-dark p-1 px-2" title="Download Shipping Label">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
                                     @endif
-                                    <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
-                                    <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-sm btn-outline-secondary p-1 px-2" title="View Order Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Edit Order">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" class="text-center py-4 text-muted">No orders found.</td>
+                            <td colspan="12">
+                                <div class="empty-state py-5">
+                                    <div class="empty-state-icon"><i class="bi bi-bag-x"></i></div>
+                                    <div class="empty-state-title">No Orders Found</div>
+                                    <p class="empty-state-desc">There are no orders matching your current filter in this pipeline tab.</p>
+                                    <a href="{{ route('admin.orders.index', ['tab' => $activeTab]) }}" class="btn btn-sm btn-outline-secondary mt-2">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Clear Filters
+                                    </a>
+                                </div>
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </form>
-    <div class="card-footer">
-        {{ $orders->links() }}
-    </div>
+    @if ($orders->hasPages())
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <span class="small text-muted">Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} entries</span>
+            <div>{{ $orders->links() }}</div>
+        </div>
+    @endif
 </div>
 @endsection
 
@@ -296,8 +365,20 @@ function submitLabels(form) {
 
     const count = () => boxes().filter(b => b.checked).length;
 
+    const floatingCounter = document.getElementById('floating-selected-count');
+    const floatingBar = document.getElementById('bulkFloatingBar');
+
     const refresh = () => {
-        counter.textContent = count();
+        const c = count();
+        if (counter) counter.textContent = c;
+        if (floatingCounter) floatingCounter.textContent = c;
+        if (floatingBar) {
+            if (c > 0) {
+                floatingBar.classList.add('active');
+            } else {
+                floatingBar.classList.remove('active');
+            }
+        }
         if (toolbarAll) toolbarAll.checked = boxes().length > 0 && boxes().every(b => b.checked);
         if (rowAll) rowAll.checked = toolbarAll.checked;
     };

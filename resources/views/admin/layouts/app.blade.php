@@ -10,10 +10,10 @@
     <link rel="apple-touch-icon" href="{{ brand_favicon_url() }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=1.4">
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=1.5">
 </head>
 <body>
     <div class="admin-wrapper">
@@ -22,11 +22,13 @@
                 $_adminLogo = brand_logo_path();
             @endphp
             <div class="sidebar-brand">
-                @if ($_adminLogo)
-                    <img src="{{ image_url($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
-                @else
-                    <span class="brand-text" style="color:var(--vanriti-green);">{{ strtoupper(store_name()) }}</span>
-                @endif
+                <a href="{{ route('admin.dashboard') }}" class="d-inline-flex align-items-center text-decoration-none">
+                    @if ($_adminLogo)
+                        <img src="{{ image_url($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
+                    @else
+                        <span class="brand-text">{{ strtoupper(store_name()) }}</span>
+                    @endif
+                </a>
             </div>
             <nav class="sidebar-nav">
                 @include('admin.partials.sidebar-nav')
@@ -35,31 +37,48 @@
 
         <div class="admin-main">
             <header class="admin-topbar">
-                <button class="btn btn-link d-lg-none text-dark" id="sidebarToggle" type="button">
+                <button class="btn btn-link d-lg-none text-dark p-0 me-2" id="sidebarToggle" type="button" aria-label="Toggle Navigation">
                     <i class="bi bi-list fs-3"></i>
                 </button>
-                <div class="topbar-title">
-                    <h5 class="mb-0 fw-bold" style="font-family:'Inter',sans-serif;">@yield('title', 'Dashboard')</h5>
+                <div class="topbar-title me-auto">
+                    <h5>@yield('title', 'Dashboard')</h5>
                 </div>
-                <div class="ms-auto d-flex align-items-center gap-3">
+
+                {{-- Universal Quick Jump / Search Trigger --}}
+                <div class="topbar-search-trigger d-none d-md-flex" data-bs-toggle="modal" data-bs-target="#adminCommandPaletteModal" title="Quick Navigation (Ctrl+K)">
+                    <i class="bi bi-search"></i>
+                    <span>Quick jump to...</span>
+                    <kbd class="ms-auto">Ctrl K</kbd>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('home') }}" target="_blank" class="btn btn-light-sm d-none d-sm-inline-flex align-items-center gap-1.5" title="Open Storefront in New Tab">
+                        <i class="bi bi-shop text-muted"></i>
+                        <span class="d-none d-md-inline">Live Store</span>
+                        <i class="bi bi-arrow-up-right small text-muted" style="font-size:0.7rem;"></i>
+                    </a>
+
                     <div class="dropdown">
                         <button class="btn btn-light-sm dropdown-toggle d-flex align-items-center gap-2" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="avatar-circle">{{ strtoupper(substr(auth('admin')->user()->name, 0, 1)) }}</span>
                             <span class="d-none d-sm-inline fw-semibold small">{{ auth('admin')->user()->name }}</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><span class="dropdown-item-text small text-muted">{{ auth('admin')->user()->email }}</span></li>
-                            <li><hr class="dropdown-divider"></li>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 200px;">
+                            <li class="px-3 py-2 border-bottom">
+                                <div class="fw-semibold small">{{ auth('admin')->user()->name }}</div>
+                                <div class="text-muted small" style="font-size:0.75rem;">{{ auth('admin')->user()->email }}</div>
+                            </li>
                             <li>
-                                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminChangePasswordModal">
-                                    <i class="bi bi-shield-lock me-2"></i>Change Password
+                                <button type="button" class="dropdown-item py-2" data-bs-toggle="modal" data-bs-target="#adminChangePasswordModal">
+                                    <i class="bi bi-shield-lock me-2 text-muted"></i>Change Password
                                 </button>
                             </li>
+                            <li><hr class="dropdown-divider my-1"></li>
                             <li>
                                 <form method="POST" action="{{ route('admin.logout') }}">
                                     @csrf
-                                    <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
+                                    <button type="submit" class="dropdown-item text-danger py-2"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
                                 </form>
                             </li>
                         </ul>
@@ -152,8 +171,65 @@
         </div>
     </div>
 
+    {{-- Universal Command Palette Modal --}}
+    <div class="modal fade command-palette-modal" id="adminCommandPaletteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg">
+                <div class="command-palette-input-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="commandPaletteSearch" class="command-palette-input" placeholder="Type a destination or shortcut... (e.g. orders, products, settings)" autocomplete="off">
+                    <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="command-palette-results" id="commandPaletteResults">
+                    <div class="command-palette-group-title">Primary Navigation</div>
+                    <a href="{{ route('admin.dashboard') }}" class="command-palette-item" data-keywords="dashboard stats analytics home">
+                        <i class="bi bi-grid-1x2"></i><span>Dashboard</span><span class="item-meta">Main Overview</span>
+                    </a>
+                    @if (auth('admin')->user()->hasPermission('manage-orders'))
+                    <a href="{{ route('admin.orders.index') }}" class="command-palette-item" data-keywords="orders shipmojo shipments sales">
+                        <i class="bi bi-cart-check"></i><span>Orders</span><span class="item-meta">Manage & Ship</span>
+                    </a>
+                    @endif
+                    @if (auth('admin')->user()->hasPermission('manage-products'))
+                    <a href="{{ route('admin.products.index') }}" class="command-palette-item" data-keywords="products catalog items sku">
+                        <i class="bi bi-box-seam"></i><span>Products</span><span class="item-meta">Catalogue</span>
+                    </a>
+                    @endif
+                    @if (auth('admin')->user()->hasPermission('manage-inventory'))
+                    <a href="{{ route('admin.inventory.index') }}" class="command-palette-item" data-keywords="inventory stock alerts count">
+                        <i class="bi bi-box2"></i><span>Inventory</span><span class="item-meta">Stock Alerts</span>
+                    </a>
+                    @endif
+                    @if (auth('admin')->user()->hasPermission('manage-customers'))
+                    <a href="{{ route('admin.customers.index') }}" class="command-palette-item" data-keywords="customers users shoppers">
+                        <i class="bi bi-people"></i><span>Customers</span><span class="item-meta">User Directory</span>
+                    </a>
+                    <a href="{{ route('admin.carts.index') }}" class="command-palette-item" data-keywords="carts abandoned recovery wishlist">
+                        <i class="bi bi-cart"></i><span>Abandoned Carts</span><span class="item-meta">Retention</span>
+                    </a>
+                    @endif
+                    @if (auth('admin')->user()->hasPermission('manage-coupons'))
+                    <a href="{{ route('admin.coupons.index') }}" class="command-palette-item" data-keywords="coupons discounts promo vouchers">
+                        <i class="bi bi-ticket-perforated"></i><span>Coupons</span><span class="item-meta">Discounts</span>
+                    </a>
+                    @endif
+                    @if (auth('admin')->user()->hasPermission('manage-settings'))
+                    <a href="{{ route('admin.settings.index') }}" class="command-palette-item" data-keywords="settings configuration whatsapp razorpay shipmojo">
+                        <i class="bi bi-gear"></i><span>Settings</span><span class="item-meta">Store Config</span>
+                    </a>
+                    @endif
+
+                    <div class="command-palette-group-title mt-2">External Links</div>
+                    <a href="{{ route('home') }}" target="_blank" class="command-palette-item" data-keywords="storefront shop live website home">
+                        <i class="bi bi-shop"></i><span>Visit Live Storefront</span><i class="bi bi-arrow-up-right ms-auto text-muted small"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script nonce="{{ $cspNonce }}" src="{{ asset('js/admin.js') }}?v=1.4"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('js/admin.js') }}?v=1.5"></script>
     @stack('scripts')
 </body>
 </html>

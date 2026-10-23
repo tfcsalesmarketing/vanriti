@@ -533,4 +533,57 @@
     if (typeof MutationObserver !== 'undefined') {
         new MutationObserver(initFileUploaders).observe(document.body, { childList: true, subtree: true });
     }
+
+    // ── Command Palette Keyboard Shortcut (Ctrl+K / Cmd+K) ──
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            var modalEl = document.getElementById('adminCommandPaletteModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+
+    var paletteModal = document.getElementById('adminCommandPaletteModal');
+    if (paletteModal) {
+        paletteModal.addEventListener('shown.bs.modal', function () {
+            var searchInput = document.getElementById('commandPaletteSearch');
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+                filterCommandItems('');
+            }
+        });
+    }
+
+    var commandInput = document.getElementById('commandPaletteSearch');
+    if (commandInput) {
+        commandInput.addEventListener('input', function () {
+            filterCommandItems(this.value.toLowerCase().trim());
+        });
+    }
+
+    function filterCommandItems(query) {
+        var items = document.querySelectorAll('.command-palette-item');
+        var titles = document.querySelectorAll('.command-palette-group-title');
+
+        items.forEach(function (item) {
+            var text = item.textContent.toLowerCase();
+            var keywords = (item.getAttribute('data-keywords') || '').toLowerCase();
+            var matches = !query || text.indexOf(query) !== -1 || keywords.indexOf(query) !== -1;
+            item.style.display = matches ? 'flex' : 'none';
+        });
+
+        titles.forEach(function (title) {
+            var nextEl = title.nextElementSibling;
+            var hasVisible = false;
+            while (nextEl && !nextEl.classList.contains('command-palette-group-title')) {
+                if (nextEl.style.display !== 'none') hasVisible = true;
+                nextEl = nextEl.nextElementSibling;
+            }
+            title.style.display = hasVisible ? 'block' : 'none';
+        });
+    }
 })();

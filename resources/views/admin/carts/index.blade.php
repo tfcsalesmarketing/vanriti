@@ -1,89 +1,94 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Cart Items')
+@section('title', 'Cart Items & Recovery')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
-        <h5 class="mb-0 fw-bold">Cart Items</h5>
-        <small class="text-muted">{{ $cartItems->total() }} cart line items</small>
+        <h5 class="mb-0 fw-bold">Cart Items & Retention</h5>
+        <div class="text-muted small mt-0.5">Track live shopping carts, customer drop-offs, and trigger WhatsApp cart recoveries</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-light text-dark border px-3 py-1.5 fw-semibold">
+            <i class="bi bi-cart3 me-1 text-primary"></i>{{ $cartItems->total() }} Active Line Items
+        </span>
     </div>
 </div>
 
-<div class="card mb-3">
-    <div class="card-body py-2">
-        <form method="GET" action="{{ route('admin.carts.index') }}" class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label small mb-1">Product</label>
-                <select name="product_id" class="form-select form-select-sm">
-                    <option value="">All products</option>
-                    @foreach ($products as $product)
-                        <option value="{{ $product->id }}" @selected(request('product_id') == $product->id)>{{ $product->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small mb-1">User</label>
-                <select name="user_id" class="form-select form-select-sm">
-                    <option value="">All users</option>
-                    @foreach ($users as $user)
-                        <option value="{{ $user->id }}" @selected(request('user_id') == $user->id)>{{ $user->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small mb-1">Owner</label>
-                <select name="owner_type" class="form-select form-select-sm">
-                    <option value="">All</option>
-                    <option value="users" @selected(request('owner_type') === 'users')>Registered users</option>
-                    <option value="guests" @selected(request('owner_type') === 'guests')>Guests</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small mb-1">From</label>
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small mb-1">To</label>
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small mb-1">Guest session</label>
-                <input type="text" name="session_id" class="form-control form-control-sm" placeholder="Session ID" value="{{ request('session_id') }}">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-search me-1"></i>Filter</button>
-            </div>
-            <div class="col-auto">
-                <a href="{{ route('admin.carts.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
-            </div>
-        </form>
-    </div>
+<div class="card filter-card mb-3">
+    <form method="GET" action="{{ route('admin.carts.index') }}" class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold text-muted mb-1">Product</label>
+            <select name="product_id" class="form-select form-select-sm">
+                <option value="">All Products</option>
+                @foreach ($products as $product)
+                    <option value="{{ $product->id }}" @selected(request('product_id') == $product->id)>{{ $product->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Customer</label>
+            <select name="user_id" class="form-select form-select-sm">
+                <option value="">All Users</option>
+                @foreach ($users as $user)
+                    <option value="{{ $user->id }}" @selected(request('user_id') == $user->id)>{{ $user->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Owner Type</label>
+            <select name="owner_type" class="form-select form-select-sm">
+                <option value="">All</option>
+                <option value="users" @selected(request('owner_type') === 'users')>Registered Users</option>
+                <option value="guests" @selected(request('owner_type') === 'guests')>Guests</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Added From</label>
+            <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Added To</label>
+            <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}">
+        </div>
+        <div class="col-12 col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-dark flex-fill" title="Apply Filter"><i class="bi bi-funnel"></i></button>
+            <a href="{{ route('admin.carts.index') }}" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
 </div>
 
 @if ($topProducts->isNotEmpty())
-<div class="card mb-3">
-    <div class="card-header fw-bold small">Most added to cart</div>
+<div class="card table-card mb-3">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-fire text-danger"></i>
+            <span>Most Added to Cart</span>
+        </div>
+        <small class="text-muted">High demand intent</small>
+    </div>
     <div class="table-responsive">
         <table class="table table-sm mb-0 align-middle">
             <thead>
                 <tr>
+                    <th style="width: 36px;">#</th>
                     <th>Product</th>
-                    <th class="text-end">Quantity</th>
-                    <th class="text-end">Cart lines</th>
-                    <th class="text-end">Carts</th>
+                    <th class="text-center">Total Quantity</th>
+                    <th class="text-center">Cart Lines</th>
+                    <th class="text-end">Distinct Carts</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($topProducts as $product)
+                @foreach ($topProducts as $idx => $product)
                     <tr>
-                        <td class="small">
-                            <div class="fw-semibold">{{ $product->product_name }}</div>
-                            <div class="text-muted" style="font-size:0.75rem;">{{ $product->product_sku }}</div>
+                        <td class="text-muted fw-bold small text-center">{{ $idx + 1 }}</td>
+                        <td>
+                            <div class="fw-semibold small text-dark">{{ $product->product_name }}</div>
+                            <div class="text-muted font-monospace" style="font-size:0.73rem;">{{ $product->product_sku ?: '—' }}</div>
                         </td>
-                        <td class="text-end">{{ (int) $product->total_quantity }}</td>
-                        <td class="text-end">{{ (int) $product->line_count }}</td>
-                        <td class="text-end">{{ (int) $product->cart_count }}</td>
+                        <td class="text-center small"><span class="badge bg-light text-dark border">{{ (int) $product->total_quantity }}</span></td>
+                        <td class="text-center small">{{ (int) $product->line_count }}</td>
+                        <td class="text-end small fw-bold text-dark">{{ (int) $product->cart_count }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -97,22 +102,25 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Added</th>
-                    <th>User / Session</th>
-                    <th>Product</th>
+                    <th>Added Date</th>
+                    <th>Customer / Session</th>
+                    <th>Product Details</th>
                     <th>Variant</th>
                     <th class="text-center">Qty</th>
-                    <th class="text-end">Unit price</th>
-                    <th class="text-end">Line total</th>
+                    <th class="text-end">Unit Price</th>
+                    <th class="text-end">Line Total</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($cartItems as $item)
                     <tr>
-                        <td class="small text-muted">{{ $item->created_at?->format('d M Y H:i') }}</td>
+                        <td class="small text-muted" style="white-space: nowrap;">
+                            {{ $item->created_at?->format('d M Y') }}
+                            <div style="font-size:0.72rem; color:#8C9E90;">{{ $item->created_at?->format('h:i A') }}</div>
+                        </td>
                         <td class="small">
                             @if ($item->cart?->owner_type === \App\Models\User::class && $item->cart?->owner)
-                                <div class="fw-semibold">{{ $item->cart->owner->name }}</div>
+                                <div class="fw-bold text-dark">{{ $item->cart->owner->name }}</div>
                                 <div class="text-muted" style="font-size:0.75rem;">{{ $item->cart->owner->email }}</div>
                                 @php
                                     $cartUserPhone = trim((string) ($item->cart->owner->phone ?? ''));
@@ -120,42 +128,58 @@
                                     if (strlen($cleanCartPhone) === 10) {
                                         $cleanCartPhone = '91' . $cleanCartPhone;
                                     }
-                                    $cartProdName = $item->product?->name ?? 'items';
-                                    $cartRecoveryMsg = "Hi " . ($item->cart->owner->name ?? 'there') . ", we noticed you left " . $cartProdName . " in your cart at Vanriti. You can finish your checkout here: " . route('cart.index') . " - Let us know if you need any assistance!";
-                                    $cartWaUrl = $cleanCartPhone ? "https://wa.me/{$cleanCartPhone}?text=" . rawurlencode($cartRecoveryMsg) : null;
                                 @endphp
                                 @if ($cartUserPhone && $item->cart)
-                                    <div class="text-muted" style="font-size:0.75rem;"><i class="bi bi-telephone me-1"></i>{{ $cartUserPhone }}</div>
+                                    <div class="text-muted mt-0.5" style="font-size:0.75rem;">
+                                        <i class="bi bi-telephone me-1 text-muted"></i>{{ $cartUserPhone }}
+                                    </div>
                                     <form method="POST" action="{{ route('admin.carts.send-recovery-whatsapp', $item->cart) }}" class="mt-1" onsubmit="return confirm('Send WhatsApp cart recovery template via Meta API to {{ $cartUserPhone }}?');">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-outline-success py-0 px-1 small" style="font-size:0.7rem;"><i class="bi bi-whatsapp me-1"></i>Send via Meta API</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-success py-0.5 px-2 small" style="font-size:0.72rem;">
+                                            <i class="bi bi-whatsapp me-1"></i>Send Meta Recovery
+                                        </button>
                                     </form>
                                 @endif
                             @else
-                                <div class="fw-semibold">Guest</div>
-                                <div class="text-muted" style="font-size:0.75rem;">{{ $item->cart?->session_id }}</div>
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <span class="badge bg-light text-muted border">Guest</span>
+                                </div>
+                                <div class="text-muted font-monospace mt-0.5" style="font-size:0.72rem;">{{ Str::limit($item->cart?->session_id, 24) }}</div>
                             @endif
                         </td>
                         <td class="small">
-                            <div class="fw-semibold">{{ $item->product?->name }}</div>
-                            <div class="text-muted" style="font-size:0.75rem;">{{ $item->product?->sku }}</div>
+                            <div class="fw-bold text-dark">{{ $item->product?->name }}</div>
+                            <div class="text-muted font-monospace" style="font-size:0.73rem;">{{ $item->product?->sku ?: '—' }}</div>
                         </td>
-                        <td class="small text-muted">{{ $item->variant?->name ?: 'Default' }}</td>
-                        <td class="text-center">{{ $item->quantity }}</td>
-                        <td class="text-end">{{ format_price($item->unit_price) }}</td>
-                        <td class="text-end fw-semibold">{{ format_price($item->unit_price * $item->quantity) }}</td>
+                        <td class="small">
+                            <span class="badge bg-light text-secondary border">{{ $item->variant?->name ?: 'Default' }}</span>
+                        </td>
+                        <td class="text-center small"><span class="badge bg-light text-dark border">{{ $item->quantity }}</span></td>
+                        <td class="text-end small">{{ format_price($item->unit_price) }}</td>
+                        <td class="text-end small fw-bold text-dark">{{ format_price($item->unit_price * $item->quantity) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">No cart items found.</td>
+                        <td colspan="7">
+                            <div class="empty-state py-5">
+                                <div class="empty-state-icon"><i class="bi bi-cart-x"></i></div>
+                                <div class="empty-state-title">No Cart Items Found</div>
+                                <p class="empty-state-desc">No active or abandoned cart items match the selected criteria.</p>
+                                <a href="{{ route('admin.carts.index') }}" class="btn btn-sm btn-outline-secondary mt-2">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Clear Filters
+                                </a>
+                            </div>
+                        </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-</div>
-
-<div class="mt-3">
-    {{ $cartItems->links() }}
+    @if ($cartItems->hasPages())
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <span class="small text-muted">Showing {{ $cartItems->firstItem() }} to {{ $cartItems->lastItem() }} of {{ $cartItems->total() }} entries</span>
+            <div>{{ $cartItems->links() }}</div>
+        </div>
+    @endif
 </div>
 @endsection
