@@ -428,11 +428,10 @@ class WhatsAppOtpService
     /**
      * Abandoned-checkout recovery WhatsApp message (Meta approved template).
      *
-     * Variables:
-     * 1: Customer Name
-     * 2: Cart / Order Total (e.g. 1499.00)
-     * 3: Order Number
-     * Dynamic URL button carries the checkout/order recovery link.
+     * Automatically adapts to whether the approved Meta template has:
+     * - 1, 2, or 3 body parameters
+     * - A dynamic URL button vs static / no button
+     * - Language code 'en' vs 'en_US'
      *
      * @return array{result: string, message: string}
      */
@@ -459,17 +458,29 @@ class WhatsAppOtpService
             $urlSuffix = 'cart';
         }
 
-        $buildPayload = function (bool $withButton) use ($template, $phone, $name, $totalAmount, $orderNumber, $urlSuffix) {
-            $components = [
-                [
+        // Ordered candidate values for placeholders {{1}}, {{2}}, {{3}}
+        $candidateParams = [
+            $name,
+            $totalAmount,
+            $orderNumber,
+        ];
+
+        $postTemplate = function (string $lang, int $paramCount, bool $withButton) use ($template, $phone, $candidateParams, $urlSuffix) {
+            $components = [];
+
+            if ($paramCount > 0) {
+                $bodyParams = [];
+                for ($i = 0; $i < $paramCount; $i++) {
+                    $bodyParams[] = [
+                        'type' => 'text',
+                        'text' => $candidateParams[$i] ?? '',
+                    ];
+                }
+                $components[] = [
                     'type' => 'body',
-                    'parameters' => [
-                        ['type' => 'text', 'text' => $name],
-                        ['type' => 'text', 'text' => $totalAmount],
-                        ['type' => 'text', 'text' => $orderNumber],
-                    ],
-                ],
-            ];
+                    'parameters' => $bodyParams,
+                ];
+            }
 
             if ($withButton) {
                 $components[] = [
@@ -482,61 +493,81 @@ class WhatsAppOtpService
                 ];
             }
 
-            return [
-                'messaging_product' => 'whatsapp',
-                'recipient_type' => 'individual',
-                'to' => $phone,
-                'type' => 'template',
-                'template' => [
-                    'name' => $template,
-                    'language' => ['code' => 'en'],
-                    'components' => $components,
-                ],
-            ];
-        };
-
-        try {
             $response = Http::withHeaders($this->headers())
                 ->timeout(10)
                 ->post(
                     $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
-                    $buildPayload(true)
+                    [
+                        'messaging_product' => 'whatsapp',
+                        'recipient_type' => 'individual',
+                        'to' => $phone,
+                        'type' => 'template',
+                        'template' => [
+                            'name' => $template,
+                            'language' => ['code' => $lang],
+                            'components' => $components,
+                        ],
+                    ]
                 );
 
-            $body = $response->json();
+            return [$response, $response->json()];
+        };
 
-            // If template in Meta has no button or has a static URL button, retry without dynamic button parameter
-            if ($response->failed() && isset($body['error']['message']) && (str_contains($body['error']['message'], 'button') || str_contains($body['error']['message'], 'components.1'))) {
-                $response = Http::withHeaders($this->headers())
-                    ->timeout(10)
-                    ->post(
-                        $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
-                        $buildPayload(false)
-                    );
-                $body = $response->json();
+        $lastBody = null;
+
+        // Try languages: 'en' then 'en_US'
+        foreach (['en', 'en_US'] as $lang) {
+            // First attempt: standard 3 params + URL button
+            [$resp, $body] = $postTemplate($lang, 3, true);
+            $lastBody = $body;
+
+            if ($resp->successful() && empty($body['error'])) {
+                return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
             }
 
-            if ($response->failed() || ! empty($body['error'] ?? null)) {
-                Log::warning('WhatsApp checkout recovery send failed.', [
-                    'phone' => $phone,
-                    'order' => $orderNumber,
-                    'status' => $response->status(),
-                    'body' => $body,
-                ]);
+            $errCode = $body['error']['code'] ?? null;
+            $details = (string) ($body['error']['error_data']['details'] ?? '');
 
-                return $this->failure('WhatsApp recovery could not be sent: ' . ($body['error']['message'] ?? 'API error'));
+            // If template does not exist in this language code, try next language
+            if ($errCode === 132001) {
+                continue;
             }
 
-            return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
-        } catch (\Throwable $e) {
-            Log::warning('WhatsApp checkout recovery request failed.', [
-                'phone' => $phone,
-                'order' => $orderNumber,
-                'error' => $e->getMessage(),
-            ]);
+            // If parameter count mismatch (#132000), check Meta's exact requirement or adapt
+            if ($errCode === 132000) {
+                // If Meta details indicate the expected parameter count in body:
+                $expectedParams = null;
+                if (preg_match('/expected number of params \((\d+)\)/', $details, $matches)) {
+                    $expectedParams = (int) $matches[1];
+                }
 
-            return $this->failure('WhatsApp recovery request failed: '.$e->getMessage());
+                // If button was the issue or expected count was given:
+                $paramCountsToTry = $expectedParams !== null ? [$expectedParams] : [3, 2, 1, 0];
+
+                foreach ([false, true] as $btnState) {
+                    foreach ($paramCountsToTry as $count) {
+                        [$respRetry, $bodyRetry] = $postTemplate($lang, $count, $btnState);
+                        $lastBody = $bodyRetry;
+
+                        if ($respRetry->successful() && empty($bodyRetry['error'])) {
+                            return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
+                        }
+                    }
+                }
+            }
         }
+
+        $errMsg = $lastBody['error']['message'] ?? 'API error';
+        $details = $lastBody['error']['error_data']['details'] ?? '';
+        $fullMsg = $details ? "{$errMsg} ({$details})" : $errMsg;
+
+        Log::warning('WhatsApp checkout recovery send failed.', [
+            'phone' => $phone,
+            'order' => $orderNumber,
+            'body' => $lastBody,
+        ]);
+
+        return $this->failure('WhatsApp recovery could not be sent: ' . $fullMsg);
     }
 
     protected function failure(string $message): array
