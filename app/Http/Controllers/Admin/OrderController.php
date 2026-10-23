@@ -333,4 +333,38 @@ class OrderController extends Controller
 
         return redirect()->back()->with('success', 'Note added.');
     }
+
+    public function sendRecoveryWhatsApp(Order $order, \App\Services\WhatsAppOtpService $whatsapp): RedirectResponse
+    {
+        $phone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
+
+        if ($phone === '') {
+            return back()->with('error', 'No mobile number found for this customer.');
+        }
+
+        $name = trim((string) ($order->user?->name ?: $order->billing_name)) ?: 'Customer';
+        $total = (string) number_format((float) $order->grand_total, 2, '.', '');
+        $recoveryUrl = route('account.order', $order);
+
+        $result = $whatsapp->sendAbandonedCheckoutRecovery(
+            $phone,
+            $name,
+            $order->order_number,
+            $total,
+            $recoveryUrl
+        );
+
+        if (($result['result'] ?? '0') === '1') {
+            $order->update(['whatsapp_recovery_sent_at' => now()]);
+            $adminName = auth('admin')->user()?->name ?? 'Admin';
+            $note = '[' . now()->format('d-M-Y H:i') . "] WhatsApp checkout recovery template sent via Meta Cloud API by {$adminName}";
+            $order->update([
+                'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . $note),
+            ]);
+
+            return back()->with('success', "WhatsApp recovery template sent successfully via Meta Cloud API to {$phone}!");
+        }
+
+        return back()->with('error', 'Meta WhatsApp API delivery failed: ' . ($result['message'] ?? 'Unknown error'));
+    }
 }

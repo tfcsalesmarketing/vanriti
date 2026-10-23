@@ -7,10 +7,11 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\Wishlist;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use App\Services\WhatsAppOtpService;
 
 class CartWishlistController extends Controller
 {
@@ -246,5 +247,39 @@ class CartWishlistController extends Controller
         }
 
         return $query->get();
+    }
+
+    public function sendRecoveryWhatsApp(Cart $cart, WhatsAppOtpService $whatsapp): RedirectResponse
+    {
+        $user = $cart->owner;
+        if (! $user instanceof User) {
+            return back()->with('error', 'Cannot send WhatsApp message to anonymous guest without registered account.');
+        }
+
+        $phone = trim((string) $user->phone);
+        if ($phone === '') {
+            return back()->with('error', 'Customer has no phone number on their account.');
+        }
+
+        $name = trim((string) $user->name) ?: 'Customer';
+        $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');
+        $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
+        $recoveryUrl = url('/cart');
+
+        $result = $whatsapp->sendAbandonedCheckoutRecovery(
+            $phone,
+            $name,
+            $cartRef,
+            $total,
+            $recoveryUrl
+        );
+
+        if (($result['result'] ?? '0') === '1') {
+            $cart->update(['whatsapp_recovery_sent_at' => now()]);
+
+            return back()->with('success', "WhatsApp cart recovery template sent successfully via Meta Cloud API to {$phone}!");
+        }
+
+        return back()->with('error', 'Meta WhatsApp API delivery failed: ' . ($result['message'] ?? 'Unknown error'));
     }
 }

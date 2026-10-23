@@ -184,8 +184,11 @@
                             </td>
                             <td class="text-end">
                                 <div class="d-flex gap-1 justify-content-end">
-                                    @if ($waUrl)
-                                        <a href="{{ $waUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success" title="Chat on WhatsApp / Reach Customer"><i class="bi bi-whatsapp"></i></a>
+                                    @if ($custPhone)
+                                        <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" class="d-inline" onsubmit="return confirm('Send WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Send WhatsApp via Meta API"><i class="bi bi-whatsapp"></i></button>
+                                        </form>
                                     @endif
                                     @if ($activeTab === 'ready_to_ship')
                                         <a href="{{ route('admin.orders.shipmojo.label', $order) }}" class="btn btn-sm btn-outline-dark" title="Download Label"><i class="bi bi-printer"></i></a>

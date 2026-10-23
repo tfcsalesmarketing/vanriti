@@ -124,11 +124,12 @@
                                     $cartRecoveryMsg = "Hi " . ($item->cart->owner->name ?? 'there') . ", we noticed you left " . $cartProdName . " in your cart at Vanriti. You can finish your checkout here: " . route('cart.index') . " - Let us know if you need any assistance!";
                                     $cartWaUrl = $cleanCartPhone ? "https://wa.me/{$cleanCartPhone}?text=" . rawurlencode($cartRecoveryMsg) : null;
                                 @endphp
-                                @if ($cartUserPhone)
+                                @if ($cartUserPhone && $item->cart)
                                     <div class="text-muted" style="font-size:0.75rem;"><i class="bi bi-telephone me-1"></i>{{ $cartUserPhone }}</div>
-                                    @if ($cartWaUrl)
-                                        <a href="{{ $cartWaUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success py-0 px-1 mt-1 small" style="font-size:0.7rem;"><i class="bi bi-whatsapp me-1"></i>Recover Cart</a>
-                                    @endif
+                                    <form method="POST" action="{{ route('admin.carts.send-recovery-whatsapp', $item->cart) }}" class="mt-1" onsubmit="return confirm('Send WhatsApp cart recovery template via Meta API to {{ $cartUserPhone }}?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success py-0 px-1 small" style="font-size:0.7rem;"><i class="bi bi-whatsapp me-1"></i>Send via Meta API</button>
+                                    </form>
                                 @endif
                             @else
                                 <div class="fw-semibold">Guest</div>

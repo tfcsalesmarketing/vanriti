@@ -20,8 +20,11 @@
             $waUrl = $cleanPhone ? "https://wa.me/{$cleanPhone}?text=" . rawurlencode($recoveryMsg) : null;
         @endphp
         <span class="badge bg-{{ $oClass[$order->order_status] ?? 'secondary' }} align-self-center">{{ ucwords(str_replace('_', ' ', $order->order_status)) }}</span>
-        @if ($waUrl)
-            <a href="{{ $waUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success"><i class="bi bi-whatsapp me-1"></i>Reach on WhatsApp</a>
+        @if ($custPhone)
+            <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" class="d-inline" onsubmit="return confirm('Send automated WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-whatsapp me-1"></i>Send via Meta API</button>
+            </form>
         @endif
         <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
@@ -66,9 +69,12 @@
                 <div class="fw-bold small">{{ $order->user?->name ?: $order->billing_name }}</div>
                 <div class="text-muted small">{{ $order->user?->email }}</div>
                 <div class="text-muted small">{{ $custPhone }}</div>
-                @if ($waUrl)
+                @if ($custPhone)
                     <div class="mt-2">
-                        <a href="{{ $waUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success py-1 px-2 small" style="font-size:0.75rem;"><i class="bi bi-whatsapp me-1"></i>Chat on WhatsApp</a>
+                        <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" onsubmit="return confirm('Send automated WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2 small" style="font-size:0.75rem;"><i class="bi bi-whatsapp me-1"></i>Send via Meta API</button>
+                        </form>
                     </div>
                 @endif
             </div>

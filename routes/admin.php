@@ -77,6 +77,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('orders/{order}/shipmojo/cancel', [ShipMojoController::class, 'cancelShipment'])->name('orders.shipmojo.cancel');
             Route::get('orders/{order}/shipmojo/label', [ShipMojoController::class, 'getLabel'])->name('orders.shipmojo.label');
             Route::post('orders/{order}/shipmojo/track', [ShipMojoController::class, 'syncTracking'])->name('orders.shipmojo.track');
+            Route::post('orders/{order}/send-recovery-whatsapp', [OrderController::class, 'sendRecoveryWhatsApp'])->name('orders.send-recovery-whatsapp');
         });
 
         // Payment status is a financial action: it needs the dedicated
@@ -116,6 +117,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
             Route::post('customers/{user}/toggle', [CustomerController::class, 'toggleStatus'])->name('customers.toggle');
             Route::get('carts', [CartWishlistController::class, 'carts'])->name('carts.index');
+            Route::post('carts/{cart}/send-recovery-whatsapp', [CartWishlistController::class, 'sendRecoveryWhatsApp'])->name('carts.send-recovery-whatsapp');
             Route::get('wishlists', [CartWishlistController::class, 'wishlists'])->name('wishlists.index');
         });
 
