@@ -244,8 +244,8 @@ class WhatsAppCheckoutService
      */
     protected function handleCollectingName(WhatsAppCheckoutSession $session, string $text, string $messageId): array
     {
-        $cleanName = preg_replace('/[^a-zA-Z\s\.\']/', '', $text);
-        if (strlen(trim($cleanName)) < 2) {
+        $cleanName = preg_replace('/[^\p{L}\s\.\'-]/u', '', $text);
+        if (mb_strlen(trim($cleanName)) < 2) {
             $this->apiService->sendTextMessage(
                 $session->phone,
                 "Please enter a valid full name to continue with your order."
@@ -261,10 +261,18 @@ class WhatsAppCheckoutService
         $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE);
 
         // Step 5: Ask for PIN code
-        $this->apiService->sendTextMessage(
+        $sendRes = $this->apiService->sendTextMessage(
             $session->phone,
             "Please enter your 6-digit delivery PIN code."
         );
+
+        if (! ($sendRes['success'] ?? false)) {
+            Log::error('Failed to send WhatsApp pincode prompt', [
+                'phone' => $session->phone,
+                'session_id' => $session->id,
+                'error' => $sendRes['message'] ?? 'Unknown error',
+            ]);
+        }
 
         return ['success' => true, 'action' => 'pincode_requested'];
     }

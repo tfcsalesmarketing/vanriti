@@ -30,11 +30,17 @@ class WhatsAppWebhookController extends Controller
         $configuredToken = (string) (setting('whatsapp_webhook_verify_token', '') ?: env('WHATSAPP_WEBHOOK_VERIFY_TOKEN', 'vanriti_whatsapp_secret_token'));
 
         if ($request->has('diagnostics') && $verifyToken === $configuredToken) {
+            $secret = (string) (secret_setting('whatsapp_app_secret', '') ?: env('WHATSAPP_APP_SECRET', ''));
+            $recentLogs = WhatsAppWebhookLog::latest()->take(5)->get(['id', 'from_phone', 'event_type', 'created_at']);
+            $recentSessions = \App\Models\WhatsAppCheckoutSession::latest()->take(5)->get(['id', 'phone', 'status', 'customer_name', 'created_at']);
+
             return response(json_encode([
                 'api_configured' => $this->apiService->isConfigured(),
                 'phone_number_id' => $this->apiService->phoneNumberId(),
                 'has_access_token' => ! empty($this->apiService->accessToken()),
-                'token_len' => strlen($this->apiService->accessToken()),
+                'has_app_secret' => ! empty($secret),
+                'recent_webhook_logs' => $recentLogs,
+                'recent_checkout_sessions' => $recentSessions,
                 'php_version' => PHP_VERSION,
                 'app_env' => config('app.env'),
             ]), 200, ['Content-Type' => 'application/json']);
