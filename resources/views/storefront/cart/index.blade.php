@@ -54,50 +54,54 @@
                 <div class="col-lg-8">
                     <div class="d-flex flex-column gap-3">
                         @foreach ($cartItems as $item)
-                            <div class="vr-cat-card p-2.5 p-sm-3" data-unit-price="{{ $item->unit_price }}">
-                                <div class="d-flex gap-2.5 gap-sm-3 align-items-start">
-                                    <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0">
+                            <div class="vr-cat-card vr-cart-item-card" data-unit-price="{{ $item->unit_price }}">
+                                <div class="vr-cart-item-main">
+                                    <a href="{{ route('product.show', $item->product->slug) }}" class="vr-cart-item-thumb">
                                         <img src="{{ image_url($item->product->getPrimaryImage()?->image_path, 'images/placeholder.png') }}"
                                              alt="{{ $item->product->name }}"
-                                             class="vr-cart-img"
-                                             style="width:72px;height:72px;object-fit:contain;padding:0.25rem;border-radius:12px;background:var(--vr-cream);">
+                                             class="vr-cart-item-img"
+                                             loading="lazy">
                                     </a>
 
-                                    <div class="flex-grow-1 min-w-0">
-                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                                            <div class="min-w-0 pe-1">
-                                                <a href="{{ route('product.show', $item->product->slug) }}" class="fw-semibold text-dark text-decoration-none d-block text-truncate" title="{{ $item->product->name }}">
+                                    <div class="vr-cart-item-info">
+                                        <div class="vr-cart-item-top">
+                                            <div class="vr-cart-item-heading">
+                                                <a href="{{ route('product.show', $item->product->slug) }}" class="vr-cart-item-title" title="{{ $item->product->name }}">
                                                     {{ $item->product->name }}
                                                 </a>
                                                 @if ($item->variant)
-                                                    <span class="small text-muted d-block text-truncate">{{ $item->variant->name }}</span>
+                                                    <span class="vr-cart-item-variant">{{ $item->variant->name }}</span>
                                                 @endif
                                             </div>
-                                            <div class="text-end flex-shrink-0">
-                                                <div class="fw-bold fs-6 text-nowrap">{{ format_price($item->unit_price) }}</div>
-                                            </div>
-                                        </div>
 
-                                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top flex-wrap gap-2">
-                                            <form action="{{ route('cart.update', $item) }}" method="POST" data-auto-qty="1">
+                                            <form action="{{ route('cart.remove', $item) }}" method="POST" class="vr-cart-item-remove-form">
                                                 @csrf
-                                                <div class="vr-qty">
-                                                    <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity" {{ $item->quantity <= 1 ? 'disabled' : '' }}><i class="bi bi-dash"></i></button>
-                                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="5" readonly aria-label="Quantity">
-                                                    <button type="button" class="qty-plus" data-step="1" aria-label="Increase quantity" {{ $item->quantity >= 5 ? 'disabled' : '' }}><i class="bi bi-plus"></i></button>
-                                                </div>
+                                                <button type="submit" class="vr-cart-item-remove-btn" title="Remove {{ $item->product->name }}" aria-label="Remove {{ $item->product->name }}">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
                                             </form>
-
-                                            <div class="d-flex align-items-center gap-2.5 ms-auto">
-                                                <span class="fw-bold text-dark vr-line-total text-nowrap">{{ format_price($item->unit_price * $item->quantity) }}</span>
-                                                <form action="{{ route('cart.remove', $item) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm btn-link text-muted p-1" title="Remove" aria-label="Remove {{ $item->product->name }}">
-                                                        <i class="ri-delete-bin-line fs-5 text-danger"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
                                         </div>
+
+                                        <div class="vr-cart-item-price-row">
+                                            <span class="vr-cart-item-unit-label">Price:</span>
+                                            <span class="vr-cart-item-unit-price">{{ format_price($item->unit_price) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="vr-cart-item-footer">
+                                    <form action="{{ route('cart.update', $item) }}" method="POST" data-auto-qty="1" class="vr-cart-item-qty-form">
+                                        @csrf
+                                        <div class="vr-qty">
+                                            <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity" {{ $item->quantity <= 1 ? 'disabled' : '' }}><i class="bi bi-dash"></i></button>
+                                            <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="5" readonly aria-label="Quantity">
+                                            <button type="button" class="qty-plus" data-step="1" aria-label="Increase quantity" {{ $item->quantity >= 5 ? 'disabled' : '' }}><i class="bi bi-plus"></i></button>
+                                        </div>
+                                    </form>
+
+                                    <div class="vr-cart-item-total">
+                                        <span class="vr-cart-item-total-label">Subtotal</span>
+                                        <span class="vr-line-total">{{ format_price($item->unit_price * $item->quantity) }}</span>
                                     </div>
                                 </div>
                             </div>

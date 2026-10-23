@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (plusBtn) plusBtn.disabled = qty >= MAX_QTY;
 
         var subtotal = 0;
-        document.querySelectorAll('.vr-cat-card[data-unit-price]').forEach(function (c) {
+        document.querySelectorAll('.vr-cat-card[data-unit-price], .vr-cart-item-card[data-unit-price]').forEach(function (c) {
             var p = parseFloat(c.dataset.unitPrice) || 0;
             var q = parseInt(c.querySelector('.vr-qty input').value || '1', 10);
             subtotal += p * q;
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (next === current) return;
             input.value = next;
 
-            var card = input.closest('.vr-cat-card');
+            var card = input.closest('.vr-cart-item-card') || input.closest('.vr-cat-card');
             if (card) updateCartTotals(card, next);
 
             var form = input.closest('form');

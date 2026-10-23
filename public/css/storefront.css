@@ -3538,6 +3538,225 @@ img { max-width: 100%; height: auto; }
 /* ══════════════════════════════════════════════════════════════════════════
    MOBILE ALIGNMENT & SCREEN RESPONSIVENESS (Cart & Checkout)
    ══════════════════════════════════════════════════════════════════════════ */
+.min-w-0 {
+    min-width: 0 !important;
+}
+
+/* ==========================================================================
+   PREMIUM CART ITEM CARD SYSTEM
+   ========================================================================== */
+.vr-cart-item-card {
+    background: #ffffff;
+    border: 1px solid rgba(22, 51, 0, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(22, 51, 0, 0.04);
+    padding: 1rem 1.15rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transform: none !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vr-cart-item-card:hover {
+    border-color: rgba(35, 83, 0, 0.2);
+    box-shadow: 0 4px 18px rgba(22, 51, 0, 0.07);
+    transform: none !important;
+}
+
+/* Card Main Area (Image + Info) */
+.vr-cart-item-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Thumbnail */
+.vr-cart-item-thumb {
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: #FAF8F2;
+    border: 1px solid rgba(230, 226, 214, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+    overflow: hidden;
+    text-decoration: none;
+    transition: transform 0.25s ease;
+}
+
+.vr-cart-item-thumb:hover {
+    transform: scale(1.02);
+}
+
+.vr-cart-item-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* Info container: MUST use flex: 1 1 0%, min-width: 0, width: 0 to enforce hard flex constraints and prevent overflowing text! */
+.vr-cart-item-info {
+    flex: 1 1 0%;
+    min-width: 0;
+    width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Header with Title and Delete Button */
+.vr-cart-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.vr-cart-item-heading {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+.vr-cart-item-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--vr-dark, #163300);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    margin: 0;
+}
+
+.vr-cart-item-title:hover {
+    color: var(--vr-green, #235300);
+}
+
+.vr-cart-item-variant {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6c757d;
+    background: #f4f6f3;
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-top: 3px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Remove button */
+.vr-cart-item-remove-form {
+    margin: 0;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.vr-cart-item-remove-btn {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    margin: -3px -3px 0 0;
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.vr-cart-item-remove-btn:hover {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.08);
+}
+
+/* Price Line */
+.vr-cart-item-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-top: 2px;
+}
+
+.vr-cart-item-unit-label {
+    font-size: 0.72rem;
+    color: #8c98a4;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.vr-cart-item-unit-price {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+/* Footer (Quantity Stepper & Total) */
+.vr-cart-item-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 0.65rem;
+    border-top: 1px dashed rgba(22, 51, 0, 0.1);
+    margin-top: 0.1rem;
+    width: 100%;
+}
+
+.vr-cart-item-qty-form {
+    margin: 0;
+    display: inline-flex;
+}
+
+.vr-cart-item-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    line-height: 1.2;
+}
+
+.vr-cart-item-total-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #8c98a4;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+}
+
+.vr-cart-item-total .vr-line-total {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--vr-dark, #163300);
+    letter-spacing: -0.01em;
+}
+
 @media (max-width: 767.98px) {
     .vr-selection-card {
         padding: 0.85rem 0.95rem;
@@ -3580,6 +3799,55 @@ img { max-width: 100%; height: auto; }
 
     .vr-qty input {
         width: 34px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vr-cart-item-card {
+        padding: 0.85rem;
+        border-radius: 14px;
+        gap: 0.65rem;
+    }
+
+    .vr-cart-item-thumb {
+        width: 70px;
+        height: 70px;
+        min-width: 70px;
+        border-radius: 10px;
+        padding: 0.25rem;
+    }
+
+    .vr-cart-item-title {
+        font-size: 0.88rem;
+        line-height: 1.3;
+    }
+
+    .vr-cart-item-unit-price {
+        font-size: 0.84rem;
+    }
+
+    .vr-cart-item-footer {
+        padding-top: 0.55rem;
+    }
+
+    .vr-cart-item-total .vr-line-total {
+        font-size: 0.98rem;
+    }
+
+    .vr-qty {
+        height: 32px;
+    }
+
+    .vr-qty button {
+        width: 30px;
+        height: 32px;
+        font-size: 0.95rem;
+    }
+
+    .vr-qty input {
+        width: 30px;
+        height: 32px;
         font-size: 0.85rem;
     }
 }
