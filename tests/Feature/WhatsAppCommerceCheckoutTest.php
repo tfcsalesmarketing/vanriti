@@ -229,6 +229,55 @@ class WhatsAppCommerceCheckoutTest extends TestCase
         $this->assertNull($session);
     }
 
+    public function test_incoming_single_referred_product_message_starts_checkout_and_prompts_for_name(): void
+    {
+        $product = $this->createProduct(['selling_price' => 299.00, 'sku' => 'VAN-LIPBALM-01']);
+        $phone = '919876543210';
+
+        // When a user taps "Message Business" on a product in WhatsApp catalog
+        $singleItemPayload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [
+                [
+                    'changes' => [
+                        [
+                            'value' => [
+                                'messages' => [
+                                    [
+                                        'id' => 'wamid.refprod1001',
+                                        'from' => $phone,
+                                        'timestamp' => (string) time(),
+                                        'type' => 'text',
+                                        'text' => [
+                                            'body' => 'Hi, I want this item',
+                                        ],
+                                        'context' => [
+                                            'from' => '10987654321',
+                                            'referred_product' => [
+                                                'catalog_id' => '12345678',
+                                                'product_retailer_id' => 'VAN-LIPBALM-01',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $res = $this->postJson('/whatsapp/webhook', $singleItemPayload);
+        $res->assertStatus(200);
+
+        $session = WhatsAppCheckoutSession::where('phone', $phone)->latest()->first();
+        $this->assertNotNull($session);
+        $this->assertEquals(WhatsAppCheckoutSession::STATUS_COLLECTING_NAME, $session->status);
+        $this->assertEquals(299.00, (float) $session->subtotal);
+        $this->assertEquals(79.00, (float) $session->shipping_charge);
+        $this->assertEquals(378.00, (float) $session->grand_total);
+    }
+
     public function test_conversation_progression_name_pincode_address_confirmation(): void
     {
         $product = $this->createProduct(['selling_price' => 599.00, 'sku' => 'VAN-CREAM-50']); // >= 499 free delivery

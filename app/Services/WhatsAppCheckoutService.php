@@ -158,6 +158,25 @@ class WhatsAppCheckoutService
         $session = WhatsAppCheckoutSession::findActiveForPhone($phone);
 
         if (! $session) {
+            // Check if customer pasted or shared a product link
+            if (preg_match('#(?:products/|product/)([a-z0-9-]+)#i', $text, $urlMatch)) {
+                $slug = $urlMatch[1];
+                $res = $this->resolveProductItem($slug);
+                if ($res['found']) {
+                    return $this->handleIncomingCart($phone, $phone, [
+                        ['product_retailer_id' => $res['variant']?->sku ?? $res['product']->sku, 'quantity' => 1],
+                    ], $messageId);
+                }
+            }
+
+            // Check if customer typed a product SKU directly
+            $res = $this->resolveProductItem($text);
+            if ($res['found']) {
+                return $this->handleIncomingCart($phone, $phone, [
+                    ['product_retailer_id' => $res['variant']?->sku ?? $res['product']->sku, 'quantity' => 1],
+                ], $messageId);
+            }
+
             // General greeting or catalogue invite if no active checkout
             if (in_array($action, ['HI', 'HELLO', 'HEY', 'ORDER', 'CATALOGUE', 'CATALOG', 'SHOP'], true)) {
                 $this->apiService->sendCatalogueMessage($phone);
@@ -732,6 +751,13 @@ class WhatsAppCheckoutService
             if ($p) {
                 return ['found' => true, 'product' => $p, 'variant' => null];
             }
+        }
+
+        // 6. Try matching by slug
+        $productBySlug = Product::where('slug', Str::slug($id))->first();
+        if ($productBySlug) {
+            $defaultVariant = $productBySlug->variants()->where('is_default', true)->first();
+            return ['found' => true, 'product' => $productBySlug, 'variant' => $defaultVariant];
         }
 
         return ['found' => false, 'product' => null, 'variant' => null];

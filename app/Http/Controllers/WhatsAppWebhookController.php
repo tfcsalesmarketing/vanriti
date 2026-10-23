@@ -49,6 +49,12 @@ class WhatsAppWebhookController extends Controller
         $rawContent = $request->getContent();
         $signature = $request->header('x-hub-signature-256');
 
+        Log::info('WhatsApp webhook received', [
+            'has_signature' => ! empty($signature),
+            'content_length' => strlen($rawContent),
+            'body' => $request->all(),
+        ]);
+
         // Signature check
         if (! $this->apiService->verifyWebhookSignature($rawContent, $signature)) {
             Log::warning('WhatsApp webhook rejected: invalid X-Hub-Signature-256');
@@ -99,11 +105,25 @@ class WhatsAppWebhookController extends Controller
             ]);
 
             try {
+                // Check if user clicked "Message Business" on a product card or shared an item
+                $referredProduct = $msg['context']['referred_product']
+                    ?? ($msg['referral']['product'] ?? ($msg['referral'] ?? null));
+
                 if ($type === 'order') {
-                    // Step 2: Receive customer's cart
+                    // Step 2: Receive customer's multi-product cart
                     $orderData = $msg['order'] ?? [];
                     $productItems = $orderData['product_items'] ?? [];
                     $this->checkoutService->handleIncomingCart($from, $waId, $productItems, $messageId);
+                } elseif ($referredProduct && ! empty($referredProduct['product_retailer_id'])) {
+                    // Single product from Catalog ("Message Business")
+                    $retailerId = (string) $referredProduct['product_retailer_id'];
+                    Log::info('WhatsApp webhook: single product received from catalog', [
+                        'from' => $from,
+                        'retailer_id' => $retailerId,
+                    ]);
+                    $this->checkoutService->handleIncomingCart($from, $waId, [
+                        ['product_retailer_id' => $retailerId, 'quantity' => 1],
+                    ], $messageId);
                 } elseif ($type === 'interactive') {
                     $interactive = $msg['interactive'] ?? [];
                     $buttonId = $interactive['button_reply']['id']
