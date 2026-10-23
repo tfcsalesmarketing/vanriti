@@ -27,6 +27,8 @@ class WhatsAppWebhookController extends Controller
         $verifyToken = $request->input('hub_verify_token', $request->input('hub.verify_token'));
         $challenge = $request->input('hub_challenge', $request->input('hub.challenge'));
 
+        $configuredToken = (string) (setting('whatsapp_webhook_verify_token', '') ?: env('WHATSAPP_WEBHOOK_VERIFY_TOKEN', 'vanriti_whatsapp_secret_token'));
+
         if ($request->has('diagnostics') && $verifyToken === $configuredToken) {
             return response(json_encode([
                 'api_configured' => $this->apiService->isConfigured(),
