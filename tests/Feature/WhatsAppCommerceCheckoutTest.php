@@ -639,4 +639,72 @@ class WhatsAppCommerceCheckoutTest extends TestCase
         $res2->assertStatus(200);
         $this->assertEquals(1, WhatsAppWebhookLog::where('message_id', $msgId)->count());
     }
+
+    public function test_customer_can_add_more_items_to_existing_cart_to_reach_free_shipping(): void
+    {
+        $p1 = $this->createProduct(['sku' => 'VAN-SKU-300', 'selling_price' => 300.00]);
+        $p2 = $this->createProduct(['sku' => 'VAN-SKU-250', 'selling_price' => 250.00]);
+        $phone = '919876543210';
+
+        $checkoutService = app(WhatsAppCheckoutService::class);
+
+        // 1. Customer sends 1st cart (Product 1 = ₹300.00, below 499 threshold)
+        $res = $checkoutService->handleIncomingCart($phone, $phone, [
+            ['product_retailer_id' => 'VAN-SKU-300', 'quantity' => 1],
+        ], 'msg_cart_1');
+        $this->assertTrue($res['success']);
+
+        $session = WhatsAppCheckoutSession::findActiveForPhone($phone);
+        $this->assertNotNull($session);
+        $this->assertEquals(300.00, (float) $session->subtotal);
+        $this->assertEquals(79.00, (float) $session->shipping_charge);
+
+        // 2. Customer provides name, pincode, address
+        $checkoutService->handleIncomingMessage($phone, 'Amit Sharma', 'msg_name');
+        $checkoutService->handleIncomingMessage($phone, '110001', 'msg_pin');
+        $checkoutService->handleIncomingMessage($phone, 'Sector 15, Block B, Flat 101', 'msg_addr');
+
+        $session->refresh();
+        $this->assertEquals(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION, $session->status);
+        $this->assertEquals(300.00, (float) $session->subtotal);
+        $this->assertEquals(79.00, (float) $session->shipping_charge);
+        $this->assertEquals(379.00, (float) $session->grand_total);
+
+        // 3. Customer asks to add more items
+        $addRes = $checkoutService->handleIncomingMessage($phone, 'ADD_ITEMS', 'msg_add_items');
+        $this->assertTrue($addRes['success']);
+        $this->assertEquals('catalogue_sent_for_add_items', $addRes['action']);
+
+        // 4. Customer submits 2nd cart with Product 2 (₹250.00)
+        $cart2Res = $checkoutService->handleIncomingCart($phone, $phone, [
+            ['product_retailer_id' => 'VAN-SKU-250', 'quantity' => 1],
+        ], 'msg_cart_2');
+        $this->assertTrue($cart2Res['success']);
+        $this->assertEquals('cart_merged', $cart2Res['action']);
+
+        // 5. Verify the cart was merged, customer details preserved, and shipping dropped to 0!
+        $session->refresh();
+        $this->assertEquals(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION, $session->status);
+        $this->assertEquals('Amit Sharma', $session->customer_name);
+        $this->assertEquals('110001', $session->pincode);
+        $this->assertCount(2, $session->cart_data['items']);
+        $this->assertEquals(550.00, (float) $session->subtotal);
+        $this->assertEquals(0.00, (float) $session->shipping_charge); // >= 499 gets FREE shipping
+        $this->assertEquals(550.00, (float) $session->grand_total);
+
+        // 6. Customer confirms order
+        $confirmRes = $checkoutService->handleIncomingMessage($phone, 'CONFIRM_ORDER', 'msg_confirm');
+        $this->assertTrue($confirmRes['success']);
+
+        // 7. Customer selects COD
+        $codRes = $checkoutService->handleIncomingMessage($phone, 'PAY_COD', 'msg_cod');
+        $this->assertTrue($codRes['success']);
+
+        $session->refresh();
+        $order = Order::find($session->order_id);
+        $this->assertNotNull($order);
+        $this->assertEquals(550.00, (float) $order->grand_total);
+        $this->assertEquals(0.00, (float) $order->shipping_charge);
+        $this->assertCount(2, $order->items);
+    }
 }

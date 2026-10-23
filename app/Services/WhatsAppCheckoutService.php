@@ -116,12 +116,90 @@ class WhatsAppCheckoutService
             return ['success' => false, 'errors' => $errors];
         }
 
+        // 2. Check if the customer already has an active session we can add items into
+        $existingSession = WhatsAppCheckoutSession::findActiveForPhone($phone);
+
+        if ($existingSession && ! $existingSession->isTerminal() && ! empty($existingSession->cart_data['items'])) {
+            $existingItems = (array) ($existingSession->cart_data['items'] ?? []);
+
+            foreach ($resolvedItems as $newItem) {
+                $foundIdx = null;
+                foreach ($existingItems as $idx => $oldItem) {
+                    if (($oldItem['product_id'] ?? null) === $newItem['product_id']
+                        && ($oldItem['product_variant_id'] ?? null) === $newItem['product_variant_id']) {
+                        $foundIdx = $idx;
+                        break;
+                    }
+                }
+
+                if ($foundIdx !== null) {
+                    $existingItems[$foundIdx]['quantity'] += $newItem['quantity'];
+                    $existingItems[$foundIdx]['line_total'] = round($existingItems[$foundIdx]['unit_price'] * $existingItems[$foundIdx]['quantity'], 2);
+                } else {
+                    $existingItems[] = $newItem;
+                }
+            }
+
+            $mergedSubtotal = 0.0;
+            foreach ($existingItems as $item) {
+                $mergedSubtotal += (float) ($item['line_total'] ?? 0);
+            }
+            $mergedSubtotal = round($mergedSubtotal, 2);
+
+            $shippingCalc = $this->shippingService->calculate($mergedSubtotal);
+            $shippingCharge = $shippingCalc['charge'];
+            $grandTotal = round($mergedSubtotal + $shippingCharge, 2);
+
+            $cartData = [
+                'items' => $existingItems,
+                'subtotal' => $mergedSubtotal,
+                'shipping_charge' => $shippingCharge,
+                'grand_total' => $grandTotal,
+            ];
+
+            $existingSession->update([
+                'cart_data' => $cartData,
+                'subtotal' => $mergedSubtotal,
+                'shipping_charge' => $shippingCharge,
+                'grand_total' => $grandTotal,
+                'last_message_id' => $messageId,
+            ]);
+
+            // If customer has already entered address/is reviewing order:
+            if (! empty($existingSession->customer_name) && ! empty($existingSession->pincode) && ! empty($existingSession->address_data['address_line1'])) {
+                $existingSession->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
+
+                $addedMsg = "🌿 *Added to your order!*\nYour cart has been updated with the new item(s).";
+                $this->apiService->sendTextMessage($phone, $addedMsg);
+
+                $this->sendOrderReviewMessage($existingSession);
+
+                return ['success' => true, 'session' => $existingSession, 'action' => 'cart_merged'];
+            }
+
+            if (empty($existingSession->customer_name)) {
+                $prompt = "🌿 Items added to your cart!\nPlease enter your full name to continue with your order.";
+                $this->apiService->sendTextMessage($phone, $prompt);
+                return ['success' => true, 'session' => $existingSession, 'action' => 'name_requested'];
+            }
+
+            if (empty($existingSession->pincode)) {
+                $prompt = "🌿 Items added to your cart!\nPlease enter your 6-digit delivery PIN code.";
+                $this->apiService->sendTextMessage($phone, $prompt);
+                return ['success' => true, 'session' => $existingSession, 'action' => 'pincode_requested'];
+            }
+
+            $prompt = "🌿 Items added to your cart!\nPlease enter your complete delivery address.";
+            $this->apiService->sendTextMessage($phone, $prompt);
+            return ['success' => true, 'session' => $existingSession, 'action' => 'address_requested'];
+        }
+
         // Calculate WhatsApp isolated shipping
         $shippingCalc = $this->shippingService->calculate($merchandiseSubtotal);
         $shippingCharge = $shippingCalc['charge'];
         $grandTotal = round($merchandiseSubtotal + $shippingCharge, 2);
 
-        // 2. Create or initialize checkout session
+        // 3. Create fresh checkout session when no active session exists
         $cartData = [
             'items' => $resolvedItems,
             'subtotal' => $merchandiseSubtotal,
@@ -138,7 +216,7 @@ class WhatsAppCheckoutService
             'last_message_id' => $messageId,
         ]);
 
-        // 3. Prompt for customer name (Step 4)
+        // Prompt for customer name (Step 4)
         $prompt = "Welcome to VANRITI! 🌿\nPlease enter your full name to continue with your order.";
         $sendRes = $this->apiService->sendTextMessage($phone, $prompt);
         if (! ($sendRes['success'] ?? false)) {
@@ -380,7 +458,12 @@ class WhatsAppCheckoutService
             $itemsText .= "• {$item['name']} × {$item['quantity']} — {$linePrice}\n";
         }
 
-        $deliveryText = $session->shipping_charge <= 0 ? 'FREE' : format_price($session->shipping_charge);
+        $subtotal = (float) $session->subtotal;
+        $shippingCalc = $this->shippingService->calculate($subtotal);
+        $freeThreshold = (float) $shippingCalc['free_threshold'];
+        $hasDeliveryCharge = $session->shipping_charge > 0;
+
+        $deliveryText = $hasDeliveryCharge ? format_price($session->shipping_charge) : 'FREE 🎉';
 
         $summaryBody = "VANRITI — ORDER REVIEW 🌿\n\n"
             . "Customer name: {$session->customer_name}\n"
@@ -390,37 +473,73 @@ class WhatsAppCheckoutService
             . "Items:\n" . $itemsText . "\n"
             . "Subtotal: " . format_price($session->subtotal) . "\n"
             . "Delivery: {$deliveryText}\n"
-            . "Final total: " . format_price($session->grand_total) . "\n\n"
-            . "Please confirm your order details to proceed to payment.";
+            . "Final total: " . format_price($session->grand_total) . "\n";
 
-        $buttons = [
-            ['id' => 'CONFIRM_ORDER', 'title' => 'Confirm Order'],
-            ['id' => 'EDIT_ADDRESS', 'title' => 'Edit Address'],
-            ['id' => 'CANCEL_ORDER', 'title' => 'Cancel'],
-        ];
+        if ($hasDeliveryCharge && $subtotal < $freeThreshold) {
+            $diff = round($freeThreshold - $subtotal, 2);
+            $summaryBody .= "\n💡 *Standard delivery of " . format_price($session->shipping_charge) . " applies.*"
+                . "\nAdd items worth *" . format_price($diff) . "* more to get *FREE Delivery*! 🌿\n\n"
+                . "Click *Add More Items* below to add products from our catalogue, or *Confirm Order* to proceed.";
+
+            $buttons = [
+                ['id' => 'CONFIRM_ORDER', 'title' => 'Confirm Order'],
+                ['id' => 'ADD_ITEMS', 'title' => 'Add More Items'],
+                ['id' => 'EDIT_ADDRESS', 'title' => 'Edit Address'],
+            ];
+            $footerText = 'Reply CONFIRM, ADD, or EDIT';
+        } else {
+            $summaryBody .= "\n🎉 *You unlocked FREE Delivery!*\n\n"
+                . "Please confirm your order details to proceed to payment.";
+
+            $buttons = [
+                ['id' => 'CONFIRM_ORDER', 'title' => 'Confirm Order'],
+                ['id' => 'EDIT_ADDRESS', 'title' => 'Edit Address'],
+                ['id' => 'CANCEL_ORDER', 'title' => 'Cancel'],
+            ];
+            $footerText = 'Reply CONFIRM, EDIT, or CANCEL';
+        }
 
         $res = $this->apiService->sendInteractiveButtonMessage(
             $session->phone,
             $summaryBody,
             $buttons,
             headerText: 'VANRITI — Order Review',
-            footerText: 'Reply CONFIRM, EDIT, or CANCEL'
+            footerText: $footerText
         );
 
         if (! $res['success']) {
-            // Text fallback if interactive message fails
+            $textPrompt = $hasDeliveryCharge && $subtotal < $freeThreshold
+                ? "\n\nReply *CONFIRM* to proceed, *ADD* to add more items, or *EDIT* to change address."
+                : "\n\nReply *CONFIRM* to proceed, *EDIT* to change address, or *CANCEL*.";
+
             $this->apiService->sendTextMessage(
                 $session->phone,
-                $summaryBody . "\n\nReply with *CONFIRM* to proceed, *EDIT* to change address, or *CANCEL*."
+                $summaryBody . $textPrompt
             );
         }
     }
 
     /**
-     * Handle Customer confirmation or address edit.
+     * Handle Customer confirmation, item additions, or address edit.
      */
     protected function handleOrderConfirmation(WhatsAppCheckoutSession $session, string $action, string $messageId): array
     {
+        if (in_array($action, ['ADD_ITEMS', 'ADD', 'ADD_MORE', 'ADD MORE', 'EDIT_ORDER', 'EDIT ORDER', 'MORE ITEMS', 'CATALOGUE', 'SHOP'], true)) {
+            $subtotal = (float) $session->subtotal;
+            $shippingCalc = $this->shippingService->calculate($subtotal);
+            $threshold = (float) $shippingCalc['free_threshold'];
+            $diff = max(0, round($threshold - $subtotal, 2));
+
+            $prompt = "🌿 *Add More Items to Your Order*\n\n"
+                . ($diff > 0 ? "You need just *" . format_price($diff) . "* more to unlock *FREE Delivery*!\n\n" : "")
+                . "Browse our catalogue below and send the items you'd like to add. Any items you send will be added directly to your current order! 🌿";
+
+            $this->apiService->sendTextMessage($session->phone, $prompt);
+            $this->apiService->sendCatalogueMessage($session->phone);
+
+            return ['success' => true, 'action' => 'catalogue_sent_for_add_items'];
+        }
+
         if (in_array($action, ['EDIT_ADDRESS', 'EDIT', 'CHANGE'], true)) {
             $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE);
             $this->apiService->sendTextMessage(
@@ -460,7 +579,7 @@ class WhatsAppCheckoutService
 
         $this->apiService->sendTextMessage(
             $session->phone,
-            "Please confirm your order by tapping *Confirm Order* (or reply *CONFIRM*), or reply *EDIT* to update your address."
+            "Please confirm your order by tapping *Confirm Order* (or reply *CONFIRM*), reply *ADD* to add more items, or *EDIT* to update your address."
         );
 
         return ['success' => false, 'error' => 'invalid_confirmation_choice'];
@@ -471,6 +590,12 @@ class WhatsAppCheckoutService
      */
     protected function handlePaymentMethodSelection(WhatsAppCheckoutSession $session, string $action, string $messageId): array
     {
+        if (in_array($action, ['BACK', 'EDIT', 'EDIT_ORDER', 'ADD_ITEMS', 'ADD MORE', 'ADD'], true)) {
+            $session->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
+            $this->sendOrderReviewMessage($session);
+            return ['success' => true, 'action' => 'review_represented'];
+        }
+
         if (in_array($action, ['PAY_COD', 'COD', 'CASH ON DELIVERY', 'CASH'], true)) {
             return $this->finalizeCodOrder($session);
         }
