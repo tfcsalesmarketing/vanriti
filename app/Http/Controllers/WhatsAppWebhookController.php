@@ -27,7 +27,22 @@ class WhatsAppWebhookController extends Controller
         $verifyToken = $request->input('hub_verify_token', $request->input('hub.verify_token'));
         $challenge = $request->input('hub_challenge', $request->input('hub.challenge'));
 
-        $configuredToken = (string) (setting('whatsapp_webhook_verify_token', '') ?: env('WHATSAPP_WEBHOOK_VERIFY_TOKEN', 'vanriti_whatsapp_secret_token'));
+        if ($request->has('diagnostics') && $verifyToken === $configuredToken) {
+            return response(json_encode([
+                'api_configured' => $this->apiService->isConfigured(),
+                'phone_number_id' => $this->apiService->phoneNumberId(),
+                'has_access_token' => ! empty($this->apiService->accessToken()),
+                'token_len' => strlen($this->apiService->accessToken()),
+                'php_version' => PHP_VERSION,
+                'app_env' => config('app.env'),
+            ]), 200, ['Content-Type' => 'application/json']);
+        }
+
+        if ($request->filled('test_send') && $verifyToken === $configuredToken) {
+            $to = (string) $request->input('test_send');
+            $res = $this->apiService->sendTextMessage($to, "VANRITI Live Test from Hostinger: Cloud API is connected! 🌿");
+            return response(json_encode($res), 200, ['Content-Type' => 'application/json']);
+        }
 
         if ($mode === 'subscribe' && $verifyToken === $configuredToken) {
             return response((string) $challenge, 200, ['Content-Type' => 'text/plain']);
