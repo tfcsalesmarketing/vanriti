@@ -46,6 +46,7 @@ class SendAbandonedCheckoutReminders extends Command
 
         $sentCount = 0;
 
+        // Part 1: Unpaid/abandoned checkouts (initiated checkout)
         foreach ($orders as $order) {
             $phone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
 
@@ -85,7 +86,67 @@ class SendAbandonedCheckoutReminders extends Command
             }
         }
 
-        $this->info("Completed: Sent {$sentCount} checkout recovery reminder(s).");
+        // Part 2: Abandoned carts (items added to cart but customer never clicked checkout)
+        $carts = \App\Models\Cart::query()
+            ->where('owner_type', \App\Models\User::class)
+            ->whereHas('items')
+            ->whereNull('whatsapp_recovery_sent_at')
+            ->where('updated_at', '<=', $minCutoff)
+            ->where('updated_at', '>=', $maxCutoff)
+            ->with(['owner', 'items.product'])
+            ->latest('updated_at')
+            ->limit(50)
+            ->get();
+
+        foreach ($carts as $cart) {
+            $user = $cart->owner;
+            if (! $user instanceof \App\Models\User) {
+                continue;
+            }
+
+            $phone = trim((string) $user->phone);
+            if ($phone === '') {
+                continue;
+            }
+
+            // If user has already placed an order in the last 24h, don't ping them about old cart items
+            $hasRecentOrder = Order::where('user_id', $user->id)
+                ->where('created_at', '>=', $maxCutoff)
+                ->whereNotIn('order_status', ['cancelled', 'failed'])
+                ->exists();
+
+            if ($hasRecentOrder) {
+                $cart->update(['whatsapp_recovery_sent_at' => now()]);
+                continue;
+            }
+
+            $name = trim((string) $user->name) ?: 'Customer';
+            $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');
+            $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
+            $recoveryUrl = url('/cart');
+
+            $result = $whatsapp->sendAbandonedCheckoutRecovery(
+                $phone,
+                $name,
+                $cartRef,
+                $total,
+                $recoveryUrl
+            );
+
+            if (($result['result'] ?? '0') === '1') {
+                $cart->update(['whatsapp_recovery_sent_at' => now()]);
+                $sentCount++;
+                $this->info("Cart recovery WhatsApp sent to {$phone} ({$name})");
+            } else {
+                Log::warning('WhatsApp cart recovery reminder skipped or failed.', [
+                    'cart_id' => $cart->id,
+                    'phone' => $phone,
+                    'error' => $result['message'] ?? 'Unknown error',
+                ]);
+            }
+        }
+
+        $this->info("Completed: Sent {$sentCount} recovery reminder(s).");
 
         return self::SUCCESS;
     }

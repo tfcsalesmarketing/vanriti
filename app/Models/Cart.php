@@ -12,7 +12,15 @@ class Cart extends Model
         'owner_type',
         'owner_id',
         'session_id',
+        'whatsapp_recovery_sent_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'whatsapp_recovery_sent_at' => 'datetime',
+        ];
+    }
 
     public function owner(): MorphTo
     {
