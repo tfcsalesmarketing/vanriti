@@ -104,7 +104,14 @@ class WhatsAppCheckoutService
                 . implode("\n", array_map(fn($e) => "• " . $e, $errors))
                 . "\n\nPlease update your selection or browse our catalogue again. 🌿";
 
-            $this->apiService->sendTextMessage($phone, $errorMsg);
+            $sendRes = $this->apiService->sendTextMessage($phone, $errorMsg);
+            if (! ($sendRes['success'] ?? false)) {
+                Log::error('Failed to send WhatsApp cart error message to customer', [
+                    'phone' => $phone,
+                    'error' => $sendRes['message'] ?? 'Unknown send error',
+                    'raw_errors' => $errors,
+                ]);
+            }
 
             return ['success' => false, 'errors' => $errors];
         }
@@ -133,7 +140,14 @@ class WhatsAppCheckoutService
 
         // 3. Prompt for customer name (Step 4)
         $prompt = "Welcome to VANRITI! 🌿\nPlease enter your full name to continue with your order.";
-        $this->apiService->sendTextMessage($phone, $prompt);
+        $sendRes = $this->apiService->sendTextMessage($phone, $prompt);
+        if (! ($sendRes['success'] ?? false)) {
+            Log::error('Failed to send WhatsApp name prompt to customer', [
+                'phone' => $phone,
+                'session_id' => $session->id,
+                'error' => $sendRes['message'] ?? 'Unknown send error',
+            ]);
+        }
 
         return ['success' => true, 'session' => $session];
     }
@@ -710,19 +724,32 @@ class WhatsAppCheckoutService
             return ['found' => false, 'product' => null, 'variant' => null];
         }
 
-        // 1. Try matching Variant by SKU
+        $cleanId = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($id));
+
+        // 1. Try matching Variant by SKU (exact, case-insensitive, normalized)
         $variant = ProductVariant::with('product')
             ->where('sku', $id)
+            ->orWhereRaw('LOWER(sku) = ?', [strtolower($id)])
             ->first();
 
         if ($variant && $variant->product) {
             return ['found' => true, 'product' => $variant->product, 'variant' => $variant];
         }
 
-        // 2. Try matching Product by SKU
-        $product = Product::where('sku', $id)->first();
+        // 2. Try matching Product by SKU (exact, case-insensitive, normalized)
+        $product = Product::where('sku', $id)
+            ->orWhereRaw('LOWER(sku) = ?', [strtolower($id)])
+            ->first();
+
+        if (! $product && ! empty($cleanId)) {
+            $product = Product::all()->first(function ($p) use ($cleanId) {
+                return preg_replace('/[^a-zA-Z0-9]/', '', strtolower((string) $p->sku)) === $cleanId;
+            });
+        }
+
         if ($product) {
-            $defaultVariant = $product->variants()->where('is_default', true)->first();
+            $defaultVariant = $product->variants()->where('is_default', true)->first()
+                ?? $product->variants()->where('status', 'active')->first();
             return ['found' => true, 'product' => $product, 'variant' => $defaultVariant];
         }
 
@@ -736,7 +763,9 @@ class WhatsAppCheckoutService
         if (is_numeric($id)) {
             $productById = Product::find((int) $id);
             if ($productById) {
-                return ['found' => true, 'product' => $productById, 'variant' => null];
+                $defaultVariant = $productById->variants()->where('is_default', true)->first()
+                    ?? $productById->variants()->where('status', 'active')->first();
+                return ['found' => true, 'product' => $productById, 'variant' => $defaultVariant];
             }
 
             $variantById = ProductVariant::with('product')->find((int) $id);
@@ -745,19 +774,34 @@ class WhatsAppCheckoutService
             }
         }
 
-        // 5. Try stripped retailer ID (e.g. "VANRITI-12" or "VAN-12")
-        if (preg_match('/(?:VANRITI|PROD|SKU)-?([0-9]+)/i', $id, $m)) {
+        // 5. Try stripped retailer ID (e.g. "VANRITI-12", "VAN-12", "PROD_12")
+        if (preg_match('/(?:VANRITI|VAN|PROD|SKU|FB|ITEM)[-_]?([0-9]+)/i', $id, $m)) {
             $p = Product::find((int) $m[1]);
             if ($p) {
-                return ['found' => true, 'product' => $p, 'variant' => null];
+                $defaultVariant = $p->variants()->where('is_default', true)->first()
+                    ?? $p->variants()->where('status', 'active')->first();
+                return ['found' => true, 'product' => $p, 'variant' => $defaultVariant];
             }
         }
 
         // 6. Try matching by slug
-        $productBySlug = Product::where('slug', Str::slug($id))->first();
+        $productBySlug = Product::where('slug', Str::slug($id))
+            ->orWhere('slug', strtolower($id))
+            ->first();
         if ($productBySlug) {
-            $defaultVariant = $productBySlug->variants()->where('is_default', true)->first();
+            $defaultVariant = $productBySlug->variants()->where('is_default', true)->first()
+                ?? $productBySlug->variants()->where('status', 'active')->first();
             return ['found' => true, 'product' => $productBySlug, 'variant' => $defaultVariant];
+        }
+
+        // 7. Try matching by Product name (exact or case-insensitive)
+        $productByName = Product::where('name', $id)
+            ->orWhereRaw('LOWER(name) = ?', [strtolower($id)])
+            ->first();
+        if ($productByName) {
+            $defaultVariant = $productByName->variants()->where('is_default', true)->first()
+                ?? $productByName->variants()->where('status', 'active')->first();
+            return ['found' => true, 'product' => $productByName, 'variant' => $defaultVariant];
         }
 
         return ['found' => false, 'product' => null, 'variant' => null];

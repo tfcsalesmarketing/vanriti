@@ -9,12 +9,15 @@ class WhatsAppCloudApiService
 {
     protected string $baseUrl = 'https://graph.facebook.com/v21.0';
 
+    public function accessToken(): string
+    {
+        return (string) (secret_setting('whatsapp_access_token', '') ?: env('WHATSAPP_ACCESS_TOKEN', ''));
+    }
+
     protected function headers(): array
     {
-        $token = (string) secret_setting('whatsapp_access_token', '');
-
         return [
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer ' . $this->accessToken(),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
@@ -22,13 +25,13 @@ class WhatsAppCloudApiService
 
     public function phoneNumberId(): string
     {
-        return (string) setting('whatsapp_phone_number_id', '');
+        return (string) (setting('whatsapp_phone_number_id', '') ?: env('WHATSAPP_PHONE_NUMBER_ID', ''));
     }
 
     public function isConfigured(): bool
     {
         return ! empty($this->phoneNumberId())
-            && ! empty(secret_setting('whatsapp_access_token', ''));
+            && ! empty($this->accessToken());
     }
 
     /**
@@ -36,7 +39,7 @@ class WhatsAppCloudApiService
      */
     public function verifyWebhookSignature(string $rawBody, ?string $signatureHeader): bool
     {
-        $appSecret = (string) secret_setting('whatsapp_app_secret', '');
+        $appSecret = (string) (secret_setting('whatsapp_app_secret', '') ?: env('WHATSAPP_APP_SECRET', ''));
 
         // If no app secret configured yet, return true in local/testing or log warning
         if ($appSecret === '') {

@@ -18,9 +18,15 @@ if (! function_exists('setting')) {
 if (! function_exists('secret_setting')) {
     function secret_setting(string $key, mixed $default = null): mixed
     {
-        $value = setting($key, $default);
+        $value = setting($key, null);
 
-        if ($value === null) {
+        if ($value === null || $value === '') {
+            $envKey = strtoupper($key);
+            $envVal = env($envKey);
+            if ($envVal !== null && $envVal !== '') {
+                return $envVal;
+            }
+
             return $default;
         }
 
@@ -28,6 +34,12 @@ if (! function_exists('secret_setting')) {
             try {
                 return Crypt::decryptString($value);
             } catch (Throwable) {
+                $envKey = strtoupper($key);
+                $envVal = env($envKey);
+                if ($envVal !== null && $envVal !== '') {
+                    return $envVal;
+                }
+
                 // Fail closed: an undecryptable secret must never be sent to a
                 // gateway as if it were the plaintext value.
                 Log::error('Stored secret could not be decrypted.', ['key' => $key]);

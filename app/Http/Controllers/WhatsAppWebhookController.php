@@ -27,7 +27,7 @@ class WhatsAppWebhookController extends Controller
         $verifyToken = $request->input('hub_verify_token', $request->input('hub.verify_token'));
         $challenge = $request->input('hub_challenge', $request->input('hub.challenge'));
 
-        $configuredToken = (string) setting('whatsapp_webhook_verify_token', 'vanriti_whatsapp_secret_token');
+        $configuredToken = (string) (setting('whatsapp_webhook_verify_token', '') ?: env('WHATSAPP_WEBHOOK_VERIFY_TOKEN', 'vanriti_whatsapp_secret_token'));
 
         if ($mode === 'subscribe' && $verifyToken === $configuredToken) {
             return response((string) $challenge, 200, ['Content-Type' => 'text/plain']);
@@ -109,25 +109,29 @@ class WhatsAppWebhookController extends Controller
                 $referredProduct = $msg['context']['referred_product']
                     ?? ($msg['referral']['product'] ?? ($msg['referral'] ?? null));
 
+                $referredRetailerId = trim((string) (
+                    $referredProduct['product_retailer_id']
+                    ?? ($referredProduct['retailer_id'] ?? ($referredProduct['id'] ?? ''))
+                ));
+
                 if ($type === 'order') {
                     // Step 2: Receive customer's multi-product cart
-                    $orderData = $msg['order'] ?? [];
+                    $orderData = $msg['order'] ?? ($msg['interactive']['order'] ?? []);
                     $productItems = $orderData['product_items'] ?? [];
                     $this->checkoutService->handleIncomingCart($from, $waId, $productItems, $messageId);
-                } elseif ($referredProduct && ! empty($referredProduct['product_retailer_id'])) {
+                } elseif (! empty($referredRetailerId)) {
                     // Single product from Catalog ("Message Business")
-                    $retailerId = (string) $referredProduct['product_retailer_id'];
                     Log::info('WhatsApp webhook: single product received from catalog', [
                         'from' => $from,
-                        'retailer_id' => $retailerId,
+                        'retailer_id' => $referredRetailerId,
                     ]);
                     $this->checkoutService->handleIncomingCart($from, $waId, [
-                        ['product_retailer_id' => $retailerId, 'quantity' => 1],
+                        ['product_retailer_id' => $referredRetailerId, 'quantity' => 1],
                     ], $messageId);
                 } elseif ($type === 'interactive') {
                     $interactive = $msg['interactive'] ?? [];
                     $buttonId = $interactive['button_reply']['id']
-                        ?? ($interactive['list_reply']['id'] ?? null);
+                        ?? ($interactive['list_reply']['id'] ?? ($interactive['nfm_reply']['response_json'] ?? null));
                     $buttonTitle = $interactive['button_reply']['title']
                         ?? ($interactive['list_reply']['title'] ?? null);
 
