@@ -466,18 +466,22 @@ class WhatsAppOtpService
             $urlSuffix = 'cart';
         }
 
-        $postTemplate = function (string $lang, int $paramCount, bool $withHeader, bool $withButton) use ($template, $phone, $name, $productName, $totalAmount, $orderNumber, $urlSuffix, $imageUrl) {
+        $isPublicHttps = ! empty($imageUrl) && str_starts_with($imageUrl, 'https://') && ! str_contains($imageUrl, 'localhost') && ! str_contains($imageUrl, '127.0.0.1');
+        $resolvedImageUrl = $isPublicHttps ? $imageUrl : 'https://vanriti.com/images/logo.webp';
+        $productText = $productName !== '' ? $productName : $name;
+
+        $postTemplate = function (string $lang, array $bodyParams, bool $withHeader, bool $withButton) use ($template, $phone, $urlSuffix, $resolvedImageUrl) {
             $components = [];
 
             // 1. Header Media (Image)
-            if ($withHeader && ! empty($imageUrl) && ! str_contains($imageUrl, 'localhost') && ! str_contains($imageUrl, '127.0.0.1')) {
+            if ($withHeader) {
                 $components[] = [
                     'type' => 'header',
                     'parameters' => [
                         [
                             'type' => 'image',
                             'image' => [
-                                'link' => $imageUrl,
+                                'link' => $resolvedImageUrl,
                             ],
                         ],
                     ],
@@ -485,32 +489,14 @@ class WhatsAppOtpService
             }
 
             // 2. Body Parameters
-            if ($paramCount > 0) {
-                $bodyParams = [];
-                if ($paramCount === 1) {
-                    $bodyParams = [
-                        ['type' => 'text', 'text' => $productName !== '' ? $productName : $name],
-                    ];
-                } elseif ($paramCount === 2) {
-                    $bodyParams = [
-                        ['type' => 'text', 'text' => $name],
-                        ['type' => 'text', 'text' => $productName !== '' ? $productName : $totalAmount],
-                    ];
-                } else {
-                    $bodyParams = [
-                        ['type' => 'text', 'text' => $name],
-                        ['type' => 'text', 'text' => $totalAmount],
-                        ['type' => 'text', 'text' => $orderNumber],
-                    ];
-                }
-
+            if (! empty($bodyParams)) {
                 $components[] = [
                     'type' => 'body',
                     'parameters' => $bodyParams,
                 ];
             }
 
-            // 3. Dynamic URL Button
+            // 3. Dynamic URL Button (only if template has dynamic url button)
             if ($withButton) {
                 $components[] = [
                     'type' => 'button',
@@ -525,7 +511,7 @@ class WhatsAppOtpService
             $response = Http::withHeaders($this->headers())
                 ->timeout(10)
                 ->post(
-                    $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
+                    $this->baseUrl.'/' . setting('whatsapp_phone_number_id', '') . '/messages',
                     [
                         'messaging_product' => 'whatsapp',
                         'recipient_type' => 'individual',
@@ -542,49 +528,53 @@ class WhatsAppOtpService
             return [$response, $response->json()];
         };
 
+        // Candidate payload variations to match Meta template definitions
+        $configsToTry = [
+            // 1. Exact match for checkout_recovery: Image header, named "text" param, static URL button (no button params)
+            ['withHeader' => true, 'withButton' => false, 'bodyParams' => [['type' => 'text', 'parameter_name' => 'text', 'text' => $productText]]],
+            // 2. Positional single param: Image header, static URL button
+            ['withHeader' => true, 'withButton' => false, 'bodyParams' => [['type' => 'text', 'text' => $productText]]],
+            // 3. Named param with dynamic URL button
+            ['withHeader' => true, 'withButton' => true, 'bodyParams' => [['type' => 'text', 'parameter_name' => 'text', 'text' => $productText]]],
+            // 4. Positional single param with dynamic URL button
+            ['withHeader' => true, 'withButton' => true, 'bodyParams' => [['type' => 'text', 'text' => $productText]]],
+            // 5. Classic 3-param template: Name, Total, Order Ref with dynamic button
+            ['withHeader' => false, 'withButton' => true, 'bodyParams' => [
+                ['type' => 'text', 'text' => $name],
+                ['type' => 'text', 'text' => $totalAmount],
+                ['type' => 'text', 'text' => $orderNumber],
+            ]],
+            // 6. Classic 3-param template without button
+            ['withHeader' => false, 'withButton' => false, 'bodyParams' => [
+                ['type' => 'text', 'text' => $name],
+                ['type' => 'text', 'text' => $totalAmount],
+                ['type' => 'text', 'text' => $orderNumber],
+            ]],
+            // 7. Header image only, no body params
+            ['withHeader' => true, 'withButton' => false, 'bodyParams' => []],
+        ];
+
         $lastBody = null;
-        $hasImage = ! empty($imageUrl) && ! str_contains($imageUrl, 'localhost') && ! str_contains($imageUrl, '127.0.0.1');
 
-        // Try languages: 'en' then 'en_US'
+        // Try languages: 'en' first (Meta default for Indian accounts), then 'en_US'
         foreach (['en', 'en_US'] as $lang) {
-            // First attempt: Header image (if available) + 1 body param (SKU name) + URL button
-            $initialParamCount = $productName !== '' ? 1 : 3;
-            [$resp, $body] = $postTemplate($lang, $initialParamCount, $hasImage, true);
-            $lastBody = $body;
+            foreach ($configsToTry as $cfg) {
+                [$resp, $body] = $postTemplate($lang, $cfg['bodyParams'], $cfg['withHeader'], $cfg['withButton']);
+                $lastBody = $body;
 
-            if ($resp->successful() && empty($body['error'])) {
-                return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
-            }
-
-            $errCode = $body['error']['code'] ?? null;
-            $details = (string) ($body['error']['error_data']['details'] ?? '');
-
-            // If template does not exist in this language code, try next language
-            if ($errCode === 132001) {
-                continue;
-            }
-
-            // If error #132000 (param count mismatch) or #100 (image header issue / button issue), adapt:
-            if ($errCode === 132000 || $errCode === 100) {
-                $expectedParams = null;
-                if (preg_match('/expected number of params \((\d+)\)/', $details, $matches)) {
-                    $expectedParams = (int) $matches[1];
+                if ($resp->successful() && empty($body['error'])) {
+                    return [
+                        'result' => '1',
+                        'message' => 'WhatsApp checkout recovery sent.',
+                        'data' => ['phone' => $phone, 'order' => $orderNumber],
+                    ];
                 }
 
-                $headerStates = $hasImage ? [true, false] : [false];
-                $paramCountsToTry = $expectedParams !== null ? [$expectedParams] : [1, 2, 3, 0];
+                $errCode = $body['error']['code'] ?? null;
 
-                foreach ($headerStates as $hdrState) {
-                    foreach ([true, false] as $btnState) {
-                        foreach ($paramCountsToTry as $count) {
-                            [$respRetry, $bodyRetry] = $postTemplate($lang, $count, $hdrState, $btnState);
-                            $lastBody = $bodyRetry;
-
-                            if ($respRetry->successful() && empty($bodyRetry['error'])) {
-                                return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
-                            }
-                        }
-                    }
+                // If template does not exist in this language at all, immediately switch language
+                if ($errCode === 132001) {
+                    break;
                 }
             }
         }
