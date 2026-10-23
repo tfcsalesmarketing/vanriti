@@ -353,6 +353,14 @@ class WhatsAppOtpService
 
         $phone = $this->toE164($phone);
 
+        $orderUrlSuffix = ltrim((string) parse_url($orderUrl, PHP_URL_PATH), '/');
+        if ($query = parse_url($orderUrl, PHP_URL_QUERY)) {
+            $orderUrlSuffix .= '?' . $query;
+        }
+        if ($orderUrlSuffix === '') {
+            $orderUrlSuffix = 'account/orders';
+        }
+
         try {
             $response = Http::withHeaders($this->headers())
                 ->timeout(8)
@@ -443,42 +451,70 @@ class WhatsAppOtpService
         $phone = $this->toE164($phone);
         $name = trim($name) !== '' ? trim($name) : 'Customer';
 
+        $urlSuffix = ltrim((string) parse_url($checkoutUrl, PHP_URL_PATH), '/');
+        if ($query = parse_url($checkoutUrl, PHP_URL_QUERY)) {
+            $urlSuffix .= '?' . $query;
+        }
+        if ($urlSuffix === '') {
+            $urlSuffix = 'cart';
+        }
+
+        $buildPayload = function (bool $withButton) use ($template, $phone, $name, $totalAmount, $orderNumber, $urlSuffix) {
+            $components = [
+                [
+                    'type' => 'body',
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $name],
+                        ['type' => 'text', 'text' => $totalAmount],
+                        ['type' => 'text', 'text' => $orderNumber],
+                    ],
+                ],
+            ];
+
+            if ($withButton) {
+                $components[] = [
+                    'type' => 'button',
+                    'sub_type' => 'url',
+                    'index' => '0',
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $urlSuffix],
+                    ],
+                ];
+            }
+
+            return [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $phone,
+                'type' => 'template',
+                'template' => [
+                    'name' => $template,
+                    'language' => ['code' => 'en'],
+                    'components' => $components,
+                ],
+            ];
+        };
+
         try {
             $response = Http::withHeaders($this->headers())
                 ->timeout(10)
                 ->post(
                     $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
-                    [
-                        'messaging_product' => 'whatsapp',
-                        'recipient_type' => 'individual',
-                        'to' => $phone,
-                        'type' => 'template',
-                        'template' => [
-                            'name' => $template,
-                            'language' => ['code' => 'en'],
-                            'components' => [
-                                [
-                                    'type' => 'body',
-                                    'parameters' => [
-                                        ['type' => 'text', 'text' => $name],
-                                        ['type' => 'text', 'text' => $totalAmount],
-                                        ['type' => 'text', 'text' => $orderNumber],
-                                    ],
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'sub_type' => 'url',
-                                    'index' => '0',
-                                    'parameters' => [
-                                        ['type' => 'url', 'url' => $checkoutUrl],
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ]
+                    $buildPayload(true)
                 );
 
             $body = $response->json();
+
+            // If template in Meta has no button or has a static URL button, retry without dynamic button parameter
+            if ($response->failed() && isset($body['error']['message']) && (str_contains($body['error']['message'], 'button') || str_contains($body['error']['message'], 'components.1'))) {
+                $response = Http::withHeaders($this->headers())
+                    ->timeout(10)
+                    ->post(
+                        $this->baseUrl.'/'.setting('whatsapp_phone_number_id', '').'/messages',
+                        $buildPayload(false)
+                    );
+                $body = $response->json();
+            }
 
             if ($response->failed() || ! empty($body['error'] ?? null)) {
                 Log::warning('WhatsApp checkout recovery send failed.', [
