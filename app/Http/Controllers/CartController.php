@@ -203,16 +203,37 @@ class CartController extends Controller
         return back()->with('success', 'Cart cleared.');
     }
 
-    public function applyCoupon(Request $request): RedirectResponse
+    public function applyCoupon(Request $request): RedirectResponse|JsonResponse
     {
         $request->validate([
             'code' => 'nullable|string|max:50',
         ]);
 
-        $code = strtoupper(trim($request->code));
+        $code = strtoupper(trim((string) $request->code));
 
         if ($code === '') {
             session()->forget('cart_coupon');
+
+            if ($request->expectsJson()) {
+                $subtotal = $this->cartService->subtotal();
+                $shipping = $this->shippingService->calculate($subtotal);
+                $total = $subtotal + ($shipping['charge'] > 0 ? $shipping['charge'] : 0);
+
+                return response()->json([
+                    'success' => true,
+                    'action' => 'removed',
+                    'message' => 'Coupon removed.',
+                    'coupon_code' => null,
+                    'discount' => 0,
+                    'formatted_discount' => format_price(0),
+                    'subtotal' => $subtotal,
+                    'formatted_subtotal' => format_price($subtotal),
+                    'shipping_charge' => $shipping['charge'],
+                    'formatted_shipping' => $shipping['charge'] <= 0 ? 'FREE' : format_price($shipping['charge']),
+                    'total' => $total,
+                    'formatted_total' => format_price($total),
+                ]);
+            }
 
             return back()->with('success', 'Coupon removed.');
         }
@@ -220,12 +241,26 @@ class CartController extends Controller
         $cart = $this->cartService->getCart(true);
 
         if (! $cart || ! $cart->items()->exists()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your cart is empty.',
+                ], 422);
+            }
+
             return back()->with('error', 'Your cart is empty.');
         }
 
         $result = $this->couponService->validate($code, $cart, auth('web')->user());
 
         if (! $result['valid']) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'],
+                ], 422);
+            }
+
             return back()->with('error', $result['message']);
         }
 
@@ -239,6 +274,31 @@ class CartController extends Controller
         $message = $result['message'];
         if ($result['discount'] > 0) {
             $message .= ' You saved '.format_price($result['discount']).'.';
+        }
+
+        if ($request->expectsJson()) {
+            $subtotal = $this->cartService->subtotal();
+            $discount = (float) $result['discount'];
+            $subtotalAfterDiscount = max(0, $subtotal - $discount);
+            $shipping = $this->shippingService->calculate($subtotalAfterDiscount);
+            $total = $subtotalAfterDiscount + ($shipping['charge'] > 0 ? $shipping['charge'] : 0);
+
+            return response()->json([
+                'success' => true,
+                'action' => 'applied',
+                'message' => $message,
+                'coupon_code' => strtoupper($result['coupon']->code),
+                'discount' => $discount,
+                'formatted_discount' => format_price($discount),
+                'subtotal' => $subtotal,
+                'formatted_subtotal' => format_price($subtotal),
+                'subtotal_after_discount' => $subtotalAfterDiscount,
+                'formatted_subtotal_after_discount' => format_price($subtotalAfterDiscount),
+                'shipping_charge' => $shipping['charge'],
+                'formatted_shipping' => $shipping['charge'] <= 0 ? 'FREE' : format_price($shipping['charge']),
+                'total' => $total,
+                'formatted_total' => format_price($total),
+            ]);
         }
 
         return back()->with('success', $message);

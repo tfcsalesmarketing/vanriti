@@ -218,7 +218,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var minusBtn = card.querySelector('.qty-minus');
         var plusBtn = card.querySelector('.qty-plus');
-        if (minusBtn) minusBtn.disabled = qty <= 1;
+        if (minusBtn) {
+            minusBtn.disabled = false;
+            if (qty <= 1) {
+                minusBtn.classList.add('is-remove', 'text-danger');
+                minusBtn.setAttribute('title', 'Remove from cart');
+                minusBtn.setAttribute('aria-label', 'Remove from cart');
+                var icon = minusBtn.querySelector('i');
+                if (icon) icon.className = 'ri-delete-bin-line';
+            } else {
+                minusBtn.classList.remove('is-remove', 'text-danger');
+                minusBtn.setAttribute('title', 'Decrease quantity');
+                minusBtn.setAttribute('aria-label', 'Decrease quantity');
+                var icon = minusBtn.querySelector('i');
+                if (icon) icon.className = 'bi bi-dash';
+            }
+        }
         if (plusBtn) plusBtn.disabled = qty >= MAX_QTY;
 
         var subtotal = 0;
@@ -231,11 +246,23 @@ document.addEventListener('DOMContentLoaded', function () {
         var summarySubtotal = document.getElementById('vrSummarySubtotal');
         if (summarySubtotal) summarySubtotal.textContent = formatPrice(subtotal);
 
+        // Deduct applied coupon discount if present
+        var discountVal = 0;
+        var discountRow = document.getElementById('vrCartDiscountRow');
+        if (discountRow && !discountRow.classList.contains('d-none')) {
+            var discEl = document.getElementById('vrCartDiscountAmount');
+            if (discEl) {
+                var rawDisc = discEl.textContent.replace(/[^\d.]/g, '');
+                discountVal = parseFloat(rawDisc) || 0;
+            }
+        }
+
         var shippingEl = document.getElementById('vrSummaryShipping');
         var totalEl = document.getElementById('vrSummaryTotal');
         var freeThreshold = parseFloat(document.querySelector('.vr-shipping-banner')?.dataset.freeThreshold) || 499;
-        var shippingCharge = subtotal >= freeThreshold ? 0 : 49;
-        var total = subtotal + shippingCharge;
+        var subtotalAfterDiscount = Math.max(0, subtotal - discountVal);
+        var shippingCharge = subtotalAfterDiscount >= freeThreshold ? 0 : 49;
+        var total = subtotalAfterDiscount + shippingCharge;
         if (shippingEl) {
             shippingEl.textContent = shippingCharge <= 0 ? 'FREE' : formatPrice(shippingCharge);
             shippingEl.className = shippingCharge <= 0 ? 'text-success fw-semibold' : 'text-dark fw-semibold';
@@ -266,11 +293,25 @@ document.addEventListener('DOMContentLoaded', function () {
             var input = this.parentElement.querySelector('input');
             var step = parseInt(this.dataset.step || (this.classList.contains('qty-minus') ? -1 : 1), 10);
             var current = parseInt(input.value || '1', 10);
+            var card = input.closest('.vr-cart-item-card') || input.closest('.vr-cat-card');
+
+            // When quantity is 1 and minus is clicked -> remove item from cart
+            if (current <= 1 && step < 0) {
+                var removeForm = card ? card.querySelector('.vr-cart-item-remove-form') : null;
+                if (removeForm) {
+                    if (typeof removeForm.requestSubmit === 'function') {
+                        removeForm.requestSubmit();
+                    } else {
+                        removeForm.submit();
+                    }
+                    return;
+                }
+            }
+
             var next = Math.max(1, Math.min(MAX_QTY, current + step));
             if (next === current) return;
             input.value = next;
 
-            var card = input.closest('.vr-cart-item-card') || input.closest('.vr-cat-card');
             if (card) updateCartTotals(card, next);
 
             var form = input.closest('form');
@@ -1133,4 +1174,258 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     };
+
+    // ---- Interactive Coupon Widgets (Cart & Checkout AJAX) ----
+    function initCouponWidgets() {
+        var widgets = document.querySelectorAll('.vr-coupon-widget');
+        if (!widgets.length) return;
+
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        var token = meta ? meta.getAttribute('content') : '';
+
+        function updateAllSummaryPrices(data, isApplied) {
+            // Cart Summary
+            var cartDiscountRow = document.getElementById('vrCartDiscountRow');
+            var cartDiscountCode = document.getElementById('vrCartDiscountCode');
+            var cartDiscountAmount = document.getElementById('vrCartDiscountAmount');
+            var cartSummaryShipping = document.getElementById('vrSummaryShipping');
+            var cartSummaryTotal = document.getElementById('vrSummaryTotal');
+
+            if (cartDiscountRow) {
+                if (isApplied) {
+                    cartDiscountRow.classList.remove('d-none');
+                    if (cartDiscountCode) cartDiscountCode.textContent = data.coupon_code;
+                    if (cartDiscountAmount) cartDiscountAmount.textContent = '-' + data.formatted_discount;
+                } else {
+                    cartDiscountRow.classList.add('d-none');
+                }
+            }
+            if (cartSummaryShipping && data.formatted_shipping) {
+                cartSummaryShipping.textContent = data.formatted_shipping;
+                cartSummaryShipping.className = data.shipping_charge <= 0 ? 'text-success fw-semibold' : 'text-dark fw-semibold';
+            }
+            if (cartSummaryTotal && data.formatted_total) {
+                cartSummaryTotal.textContent = data.formatted_total;
+            }
+
+            // Checkout Summary
+            var checkoutCouponRow = document.getElementById('vrCheckoutCouponRow');
+            var checkoutBadgeCode = document.getElementById('vrCheckoutCouponBadgeCode');
+            var checkoutCouponDiscount = document.getElementById('vrCheckoutCouponDiscount');
+            var checkoutSubtotalAfterDiscountRow = document.getElementById('vrCheckoutSubtotalAfterDiscountRow');
+            var checkoutSubtotalAfterDiscount = document.getElementById('vrCheckoutSubtotalAfterDiscount');
+            var checkoutShipping = document.getElementById('vrCheckoutShipping');
+            var checkoutTotal = document.getElementById('vrCheckoutTotal');
+
+            if (checkoutCouponRow) {
+                if (isApplied) {
+                    checkoutCouponRow.classList.remove('d-none');
+                    if (checkoutBadgeCode) checkoutBadgeCode.textContent = data.coupon_code;
+                    if (checkoutCouponDiscount) checkoutCouponDiscount.textContent = '-' + data.formatted_discount;
+                } else {
+                    checkoutCouponRow.classList.add('d-none');
+                }
+            }
+            if (checkoutSubtotalAfterDiscountRow) {
+                if (isApplied) {
+                    checkoutSubtotalAfterDiscountRow.classList.remove('d-none');
+                    if (checkoutSubtotalAfterDiscount) checkoutSubtotalAfterDiscount.textContent = data.formatted_subtotal_after_discount;
+                } else {
+                    checkoutSubtotalAfterDiscountRow.classList.add('d-none');
+                }
+            }
+            if (checkoutShipping && data.formatted_shipping) {
+                checkoutShipping.textContent = data.formatted_shipping;
+                checkoutShipping.className = data.shipping_charge <= 0 ? 'text-success fw-semibold' : 'text-dark fw-semibold';
+            }
+            if (checkoutTotal && data.formatted_total) {
+                checkoutTotal.textContent = data.formatted_total;
+            }
+
+            // Sync state of all coupon widgets on the page
+            widgets.forEach(function (w) {
+                var cForm = w.querySelector('.vr-coupon-form');
+                var cCard = w.querySelector('.vr-applied-coupon-card');
+                var cInput = w.querySelector('input[name="code"], input[name="coupon_code_input"]');
+                var cBadge = w.querySelector('.vr-coupon-badge');
+                var cDiscText = w.querySelector('.vr-coupon-discount-text');
+
+                if (isApplied) {
+                    if (cForm) cForm.classList.add('d-none');
+                    if (cCard) cCard.classList.remove('d-none');
+                    if (cBadge) cBadge.textContent = data.coupon_code;
+                    if (cDiscText) cDiscText.textContent = data.formatted_discount;
+                } else {
+                    if (cCard) cCard.classList.add('d-none');
+                    if (cForm) cForm.classList.remove('d-none');
+                    if (cInput) {
+                        cInput.value = '';
+                        cInput.classList.remove('is-invalid');
+                    }
+                }
+            });
+        }
+
+        widgets.forEach(function (widget) {
+            var url = widget.dataset.url || '/cart/apply-coupon';
+            var form = widget.querySelector('.vr-coupon-form');
+            var appliedCard = widget.querySelector('.vr-applied-coupon-card');
+            var input = widget.querySelector('input[name="code"], input[name="coupon_code_input"]');
+            var applyBtn = widget.querySelector('.js-coupon-apply-btn');
+            var feedback = widget.querySelector('.vr-coupon-feedback');
+            var feedbackText = widget.querySelector('.vr-coupon-feedback-text');
+            var removeBtn = widget.querySelector('.js-coupon-remove-btn');
+
+            function showError(msg) {
+                if (input) input.classList.add('is-invalid');
+                if (feedback) {
+                    if (feedbackText) feedbackText.textContent = msg || 'Invalid coupon code.';
+                    else feedback.textContent = msg || 'Invalid coupon code.';
+                    feedback.classList.remove('d-none');
+                }
+            }
+
+            function clearError() {
+                if (input) input.classList.remove('is-invalid');
+                if (feedback) feedback.classList.add('d-none');
+            }
+
+            function setApplyLoading(loading) {
+                if (applyBtn) {
+                    applyBtn.disabled = loading;
+                    var label = applyBtn.querySelector('.js-btn-label');
+                    var spinner = applyBtn.querySelector('.js-btn-spinner');
+                    if (label && spinner) {
+                        if (loading) {
+                            label.classList.add('d-none');
+                            spinner.classList.remove('d-none');
+                        } else {
+                            label.classList.remove('d-none');
+                            spinner.classList.add('d-none');
+                        }
+                    }
+                }
+                if (input) input.disabled = loading;
+            }
+
+            function setRemoveLoading(loading) {
+                if (!removeBtn) return;
+                removeBtn.disabled = loading;
+                var icon = removeBtn.querySelector('i');
+                if (icon) {
+                    icon.className = loading ? 'spinner-border spinner-border-sm' : 'ri-delete-bin-line';
+                }
+            }
+
+            if (input) {
+                input.addEventListener('input', function () {
+                    clearError();
+                    this.value = this.value.toUpperCase();
+                });
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        doApply();
+                    }
+                });
+            }
+
+            function doApply() {
+                clearError();
+                var code = input ? input.value.trim().toUpperCase() : '';
+                if (!code) {
+                    showError('Please enter a coupon code.');
+                    if (input) input.focus();
+                    return;
+                }
+
+                setApplyLoading(true);
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({ code: code })
+                })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, status: res.status, data: data };
+                    });
+                })
+                .then(function (res) {
+                    setApplyLoading(false);
+                    if (!res.ok || !res.data.success) {
+                        var errMsg = res.data.message || (res.data.errors && res.data.errors.code ? res.data.errors.code[0] : 'Failed to apply coupon.');
+                        showError(errMsg);
+                        return;
+                    }
+
+                    // Success!
+                    updateAllSummaryPrices(res.data, true);
+                    toast(res.data.message || ('Coupon "' + res.data.coupon_code + '" applied!'));
+                })
+                .catch(function () {
+                    setApplyLoading(false);
+                    showError('Could not apply coupon. Please try again.');
+                });
+            }
+
+            if (form && form.tagName === 'FORM') {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    doApply();
+                });
+            }
+
+            if (applyBtn) {
+                applyBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    doApply();
+                });
+            }
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    setRemoveLoading(true);
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': token
+                        },
+                        body: JSON.stringify({ code: '' })
+                    })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            return { ok: res.ok, status: res.status, data: data };
+                        });
+                    })
+                    .then(function (res) {
+                        setRemoveLoading(false);
+                        if (!res.ok || !res.data.success) {
+                            toast(res.data.message || 'Could not remove coupon.', 'error');
+                            return;
+                        }
+
+                        // Removed!
+                        updateAllSummaryPrices(res.data, false);
+                        toast(res.data.message || 'Coupon removed.');
+                    })
+                    .catch(function () {
+                        setRemoveLoading(false);
+                        toast('Could not remove coupon.', 'error');
+                    });
+                });
+            }
+        });
+    }
+
+    initCouponWidgets();
 });

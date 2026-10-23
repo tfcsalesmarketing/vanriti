@@ -239,4 +239,78 @@ class CartTest extends TestCase
             ->assertDontSee('FLAT100')
             ->assertSee('1000');
     }
+
+    public function test_ajax_coupon_returns_json_on_success(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 1000.00,
+            'mrp' => 1000.00,
+            'gst_rate' => 0,
+            'stock' => 10,
+        ]);
+
+        Coupon::factory()->create([
+            'code' => 'SAVE150',
+            'discount_type' => 'fixed',
+            'discount_value' => 150,
+            'min_cart_value' => 0,
+            'first_order_only' => false,
+            'per_customer_limit' => 5,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')
+            ->postJson(route('cart.coupon'), ['code' => 'SAVE150']);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'action' => 'applied',
+                'coupon_code' => 'SAVE150',
+                'discount' => 150,
+            ]);
+    }
+
+    public function test_ajax_coupon_returns_json_error_on_invalid_coupon(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 1000.00,
+            'stock' => 10,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')
+            ->postJson(route('cart.coupon'), ['code' => 'NONEXISTENT']);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Invalid coupon code.',
+            ]);
+    }
+
+    public function test_ajax_coupon_returns_json_on_removal(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->active()->create([
+            'selling_price' => 1000.00,
+            'stock' => 10,
+        ]);
+
+        $this->actingAs($user, 'web')->post(route('cart.add', $product), ['quantity' => 1]);
+
+        $response = $this->actingAs($user, 'web')
+            ->postJson(route('cart.coupon'), ['code' => '']);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'action' => 'removed',
+                'discount' => 0,
+            ]);
+    }
 }

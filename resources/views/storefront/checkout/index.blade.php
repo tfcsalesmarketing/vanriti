@@ -271,18 +271,44 @@
                                 <i class="ri-file-list-3-line text-success"></i> Order Summary
                             </h5>
 
-                            <div class="mb-3">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-white border-end-0"><i class="ri-coupon-3-line text-muted"></i></span>
-                                    <input type="text" name="code" class="form-control form-control-sm border-start-0" placeholder="Coupon code"
-                                           form="couponCheckoutForm" value="{{ $couponCode ?? '' }}">
-                                    @if ($couponCode)
-                                        <button type="submit" form="removeCouponForm" class="btn btn-sm btn-outline-secondary text-nowrap">
-                                            <i class="ri-close-line me-1"></i>Remove
+                            {{-- Coupon Widget --}}
+                            <div class="vr-coupon-widget mb-3" id="vrCheckoutCouponWidget" data-url="{{ route('cart.coupon') }}">
+                                {{-- Applied state --}}
+                                <div class="vr-applied-coupon-card p-2.5 rounded-3 border border-success-subtle {{ $couponCode ? '' : 'd-none' }}" id="vrCheckoutAppliedCouponCard" style="background: rgba(22, 101, 52, 0.05);">
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <div class="d-flex align-items-center gap-2 min-w-0">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center text-success flex-shrink-0" style="width:32px;height:32px;background:rgba(22, 101, 52, 0.12);">
+                                                <i class="ri-checkbox-circle-fill fs-5"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                    <span class="badge bg-success text-white fw-bold text-uppercase px-2 py-0.5 vr-coupon-badge" style="letter-spacing:0.5px;">{{ $couponCode }}</span>
+                                                    <span class="badge bg-success-subtle text-success small">Applied</span>
+                                                </div>
+                                                <div class="small text-muted text-truncate mt-0.5 vr-coupon-savings" style="font-size:0.8rem;">
+                                                    You save <strong class="text-success vr-coupon-discount-text">{{ format_price($couponDiscount) }}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm text-danger border-0 p-1 d-flex align-items-center gap-1 js-coupon-remove-btn" title="Remove coupon" aria-label="Remove coupon">
+                                            <i class="ri-delete-bin-line"></i> <span class="d-none d-sm-inline small">Remove</span>
                                         </button>
-                                    @else
-                                        <button type="submit" form="couponCheckoutForm" class="btn vr-app-outline-btn btn-sm text-nowrap">Apply</button>
-                                    @endif
+                                    </div>
+                                </div>
+
+                                {{-- Input state --}}
+                                <div class="vr-coupon-form {{ $couponCode ? 'd-none' : '' }}" id="vrCheckoutCouponForm">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0"><i class="ri-coupon-3-line text-muted"></i></span>
+                                        <input type="text" name="coupon_code_input" class="form-control form-control-sm border-start-0 text-uppercase" placeholder="Enter coupon code" autocomplete="off" maxlength="50">
+                                        <button type="button" class="btn vr-app-btn btn-sm text-nowrap js-coupon-apply-btn">
+                                            <span class="js-btn-label">Apply</span>
+                                            <span class="spinner-border spinner-border-sm d-none js-btn-spinner" role="status" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                    <div class="vr-coupon-feedback mt-1.5 small text-danger d-none" role="alert">
+                                        <i class="ri-error-warning-line me-1"></i><span class="vr-coupon-feedback-text"></span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -307,24 +333,22 @@
 
                             <div class="d-flex justify-content-between small mb-2 text-muted">
                                 <span>Subtotal <span class="text-muted" style="font-size:0.85em;">(incl. GST)</span></span>
-                                <span class="text-dark fw-semibold">{{ format_price($subtotal) }}</span>
+                                <span class="text-dark fw-semibold" id="vrCheckoutSubtotal">{{ format_price($subtotal) }}</span>
                             </div>
 
-                            @if ($couponDiscount > 0)
-                                <div class="d-flex justify-content-between small mb-2 text-success">
-                                    <span><i class="ri-price-tag-3-line me-1"></i>Discount ({{ $couponCode }})</span>
-                                    <span>-{{ format_price($couponDiscount) }}</span>
-                                </div>
+                            <div class="d-flex justify-content-between small mb-2 text-success {{ $couponDiscount > 0 ? '' : 'd-none' }}" id="vrCheckoutCouponRow">
+                                <span><i class="ri-price-tag-3-line me-1"></i>Discount (<span id="vrCheckoutCouponBadgeCode">{{ $couponCode }}</span>)</span>
+                                <span id="vrCheckoutCouponDiscount">-{{ format_price($couponDiscount) }}</span>
+                            </div>
 
-                                <div class="d-flex justify-content-between small mb-2 text-muted">
-                                    <span>Subtotal after discount</span>
-                                    <span class="text-dark fw-semibold">{{ format_price(max(0, $subtotal - $couponDiscount)) }}</span>
-                                </div>
-                            @endif
+                            <div class="d-flex justify-content-between small mb-2 text-muted {{ $couponDiscount > 0 ? '' : 'd-none' }}" id="vrCheckoutSubtotalAfterDiscountRow">
+                                <span>Subtotal after discount</span>
+                                <span class="text-dark fw-semibold" id="vrCheckoutSubtotalAfterDiscount">{{ format_price(max(0, $subtotal - $couponDiscount)) }}</span>
+                            </div>
 
                             <div class="d-flex justify-content-between small mb-2 text-muted">
                                 <span>Shipping</span>
-                                <span>
+                                <span id="vrCheckoutShipping">
                                     @if ($shipping['charge'] <= 0)
                                         <span class="text-success fw-semibold">FREE</span>
                                     @else
@@ -337,7 +361,7 @@
 
                             <div class="d-flex justify-content-between fw-bold fs-5 mb-1">
                                 <span>Total</span>
-                                <span class="text-success">{{ format_price(max(0, $subtotal - $couponDiscount + $shipping['charge'])) }}</span>
+                                <span class="text-success" id="vrCheckoutTotal">{{ format_price(max(0, $subtotal - $couponDiscount + $shipping['charge'])) }}</span>
                             </div>
                             <div class="small text-muted mb-3">Total payable is inclusive of GST.</div>
 
@@ -352,17 +376,6 @@
                     </div>
                 </div>
             </form>
-
-            <form id="couponCheckoutForm" method="POST" action="{{ route('cart.coupon') }}" style="display:none;">
-                @csrf
-            </form>
-
-            @if ($couponCode)
-                <form id="removeCouponForm" method="POST" action="{{ route('cart.coupon') }}" style="display:none;">
-                    @csrf
-                    <input type="hidden" name="code" value="">
-                </form>
-            @endif
         @endif
     </div>
 </div>

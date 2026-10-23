@@ -3951,10 +3951,52 @@ img { max-width: 100%; height: auto; }
         height: 100%;
         font-size: 1.75rem;
     }
-
     .vr-whatsapp-fab-pulse {
         border-radius: 50%;
     }
+}
+
+/* ---------- Coupon Widget & Applied State ---------- */
+.vr-coupon-widget {
+    position: relative;
+}
+
+.vr-applied-coupon-card {
+    background: rgba(22, 101, 52, 0.05);
+    border: 1px dashed rgba(22, 101, 52, 0.3) !important;
+    border-radius: 12px;
+    transition: all 0.25s ease;
+}
+
+.vr-applied-coupon-card:hover {
+    background: rgba(22, 101, 52, 0.08);
+}
+
+.vr-coupon-badge {
+    font-size: 0.8rem;
+    letter-spacing: 0.75px;
+    box-shadow: 0 2px 6px rgba(22, 101, 52, 0.15);
+}
+
+.vr-coupon-feedback {
+    font-size: 0.82rem;
+    color: #dc2626;
+}
+
+.vr-coupon-form input.is-invalid {
+    border-color: #dc2626 !important;
+    background-color: #fffbfa;
+}
+
+/* Stepper remove state when qty is 1 */
+.vr-qty .qty-minus.is-remove {
+    color: #dc2626 !important;
+    transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.vr-qty .qty-minus.is-remove:hover {
+    background-color: rgba(220, 38, 38, 0.1);
+    transform: scale(1.05);
 }
 
 
