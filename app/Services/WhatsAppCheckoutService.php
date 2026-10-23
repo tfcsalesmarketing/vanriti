@@ -559,11 +559,11 @@ class WhatsAppCheckoutService
                 'payment_method' => 'razorpay',
             ]);
 
-            $paymentUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+            $paymentUrl = $this->resolveRazorpayPaymentUrl($session, $order, $gateway);
 
             $msg = "Please complete your payment of " . format_price($order->grand_total) . " for VANRITI order {$order->order_number}:\n\n"
                 . "👉 {$paymentUrl}\n\n"
-                . "This secure payment link supports UPI, Cards, NetBanking, and Wallets. Once paid, your order will be confirmed immediately. 🌿";
+                . "Click the link above to open Razorpay and pay directly via UPI (GPay, PhonePe, Paytm), Cards, or NetBanking. Once paid, your order will be confirmed immediately. 🌿";
 
             $this->apiService->sendTextMessage($session->phone, $msg);
 
@@ -578,6 +578,41 @@ class WhatsAppCheckoutService
 
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Resolve direct Razorpay payment link or fallback to secure web checkout URL.
+     */
+    protected function resolveRazorpayPaymentUrl(WhatsAppCheckoutSession $session, Order $order, RazorpayGateway $gateway): string
+    {
+        $fallbackUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+
+        $payment = $order->payments()->where('method', 'razorpay')->latest()->first();
+        $cachedLink = $payment?->gateway_response['payment_link_url'] ?? null;
+        if (! empty($cachedLink)) {
+            return $cachedLink;
+        }
+
+        $directUrl = $gateway->createPaymentLink(
+            $order,
+            $session->customer_name ?: 'Customer',
+            $session->phone,
+            $fallbackUrl
+        );
+
+        if ($directUrl) {
+            if ($payment) {
+                $payment->forceFill([
+                    'gateway_response' => array_merge((array) $payment->gateway_response, [
+                        'payment_link_url' => $directUrl,
+                    ]),
+                ])->save();
+            }
+
+            return $directUrl;
+        }
+
+        return $fallbackUrl;
     }
 
     /**
@@ -605,7 +640,8 @@ class WhatsAppCheckoutService
      */
     public function handlePaymentFailure(WhatsAppCheckoutSession $session, Order $order, ?string $reason = null): void
     {
-        $retryUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+        $gateway = new RazorpayGateway();
+        $retryUrl = $this->resolveRazorpayPaymentUrl($session, $order, $gateway);
 
         $msg = "We couldn't complete the payment for VANRITI order {$order->order_number}.\n"
             . "Your order has not been confirmed as paid.\n\n"
@@ -634,9 +670,10 @@ class WhatsAppCheckoutService
             return ['success' => true, 'action' => 'already_paid'];
         }
 
-        $paymentUrl = route('checkout.whatsapp.pay', ['token' => $session->session_token]);
+        $gateway = new RazorpayGateway();
+        $paymentUrl = $order ? $this->resolveRazorpayPaymentUrl($session, $order, $gateway) : route('checkout.whatsapp.pay', ['token' => $session->session_token]);
         $msg = "Your payment is currently pending for order " . ($order?->order_number ?? '') . ".\n\n"
-            . "Complete your payment here:\n👉 {$paymentUrl}\n\n"
+            . "Complete your payment directly with Razorpay here:\n👉 {$paymentUrl}\n\n"
             . "Or reply *COD* if you'd like to switch to Cash on Delivery.";
 
         $this->apiService->sendTextMessage($session->phone, $msg);

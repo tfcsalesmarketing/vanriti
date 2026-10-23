@@ -225,6 +225,17 @@
 
             var rzp = new Razorpay(options);
 
+            // Automatically open Razorpay modal so customer doesn't have to click
+            setTimeout(function () {
+                try {
+                    if (typeof rzp !== 'undefined' && rzp.open) {
+                        rzp.open();
+                    }
+                } catch (e) {
+                    console.error('Auto-launch Razorpay modal error:', e);
+                }
+            }, 300);
+
             if (payBtn) {
                 payBtn.addEventListener('click', function (e) {
                     e.preventDefault();

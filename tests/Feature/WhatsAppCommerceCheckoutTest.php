@@ -56,6 +56,11 @@ class WhatsAppCommerceCheckoutTest extends TestCase
                 'currency' => 'INR',
                 'receipt' => 'VAN-TEST',
             ], 200),
+            'api.razorpay.com/v1/payment_links' => Http::response([
+                'id' => 'plink_mock_123',
+                'short_url' => 'https://rzp.io/l/mock123',
+                'status' => 'created',
+            ], 200),
             'api.razorpay.com/v1/payments/*' => Http::response([
                 'id' => 'pay_rp_mock_123',
                 'order_id' => 'order_rp_mock_123',

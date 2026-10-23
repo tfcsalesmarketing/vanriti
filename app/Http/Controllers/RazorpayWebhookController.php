@@ -49,6 +49,7 @@ class RazorpayWebhookController extends Controller
         return match ($event) {
             'payment.captured' => $this->handleCaptured($entity),
             'payment.failed' => $this->handleFailed($entity),
+            'payment_link.paid' => response()->json(['status' => 'handled via payment.captured']),
             default => response()->json(['status' => 'ignored']),
         };
     }
@@ -62,7 +63,7 @@ class RazorpayWebhookController extends Controller
         $razorpayPaymentId = (string) ($entity['id'] ?? '');
         $amountPaisa = (int) ($entity['amount'] ?? 0);
 
-        $payment = $this->resolvePayment($razorpayOrderId);
+        $payment = $this->resolvePayment($razorpayOrderId, $entity);
 
         if (! $payment) {
             return response()->json(['status' => 'payment not found'], 404);
@@ -143,7 +144,7 @@ class RazorpayWebhookController extends Controller
     {
         $razorpayOrderId = (string) ($entity['order_id'] ?? '');
 
-        $payment = $this->resolvePayment($razorpayOrderId);
+        $payment = $this->resolvePayment($razorpayOrderId, $entity);
 
         if (! $payment) {
             return response()->json(['status' => 'payment not found'], 404);
@@ -209,17 +210,37 @@ class RazorpayWebhookController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    protected function resolvePayment(string $razorpayOrderId): ?Payment
+    protected function resolvePayment(string $razorpayOrderId, array $entity = []): ?Payment
     {
-        if ($razorpayOrderId === '') {
-            return null;
+        if ($razorpayOrderId !== '') {
+            $payment = Payment::query()
+                ->where('payment_reference', $razorpayOrderId)
+                ->where('method', 'razorpay')
+                ->latest()
+                ->first();
+
+            if ($payment) {
+                return $payment;
+            }
         }
 
-        return Payment::query()
-            ->where('payment_reference', $razorpayOrderId)
-            ->where('method', 'razorpay')
-            ->latest()
-            ->first();
+        $orderId = $entity['notes']['order_id'] ?? null;
+        if ($orderId) {
+            $order = Order::find($orderId);
+            if ($order) {
+                return $order->payments()->where('method', 'razorpay')->latest()->first();
+            }
+        }
+
+        $orderNumber = $entity['notes']['order_number'] ?? null;
+        if ($orderNumber) {
+            $order = Order::where('order_number', $orderNumber)->first();
+            if ($order) {
+                return $order->payments()->where('method', 'razorpay')->latest()->first();
+            }
+        }
+
+        return null;
     }
 
     protected function notifyCustomer(Order $order, string $method): void

@@ -23,7 +23,7 @@ class WhatsAppPaymentController extends Controller
     /**
      * Display the secure branded VANRITI payment page.
      */
-    public function show(string $token): View
+    public function show(Request $request, string $token): View
     {
         $session = WhatsAppCheckoutSession::where('session_token', $token)->firstOrFail();
 
@@ -40,6 +40,35 @@ class WhatsAppPaymentController extends Controller
 
         if (! $order) {
             abort(404, 'Associated order not found.');
+        }
+
+        // Check if customer was redirected back from direct Razorpay hosted payment link (rzp.io)
+        if ($request->filled('razorpay_payment_id') && $order->payment_status !== 'paid') {
+            $paymentId = (string) $request->input('razorpay_payment_id');
+            $gateway = new RazorpayGateway();
+            $paymentDetails = $gateway->fetchPayment($paymentId);
+
+            if ($paymentDetails && in_array($paymentDetails['status'] ?? '', ['captured', 'authorized'], true)) {
+                $payment = $order->payments()->where('method', 'razorpay')->latest()->first();
+                if (! $payment) {
+                    $payment = $this->paymentService->createPayment($order, 'razorpay');
+                }
+
+                $payment->forceFill([
+                    'gateway_response' => array_merge((array) $payment->gateway_response, [
+                        'webhook_payment_id' => $paymentId,
+                        'razorpay_payment_link_id' => $request->input('razorpay_payment_link_id'),
+                        'callback_query' => $request->all(),
+                    ]),
+                ])->save();
+
+                $this->paymentService->markPaid($payment);
+
+                $order = $order->refresh();
+                $order->update(['order_status' => 'confirmed']);
+
+                $this->checkoutService->handlePaymentSuccess($session, $payment, $order);
+            }
         }
 
         if ($order->payment_status === 'paid') {

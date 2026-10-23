@@ -52,6 +52,62 @@ class RazorpayGateway implements PaymentGateway
         ];
     }
 
+    /**
+     * Create a direct hosted Razorpay Payment Link (https://rzp.io/l/...)
+     * to open Razorpay's checkout portal directly for the customer.
+     */
+    public function createPaymentLink(Order $order, string $customerName, string $phone, ?string $callbackUrl = null): ?string
+    {
+        try {
+            $amountPaise = (int) round($order->amount_due * 100);
+
+            $cleanPhone = preg_replace('/[^\d+]/', '', $phone);
+            if (! str_starts_with($cleanPhone, '+')) {
+                $cleanPhone = '+' . $cleanPhone;
+            }
+
+            $response = Http::withBasicAuth($this->keyId, $this->keySecret)
+                ->asJson()
+                ->post('https://api.razorpay.com/v1/payment_links', [
+                    'amount' => $amountPaise,
+                    'currency' => 'INR',
+                    'accept_partial' => false,
+                    'reference_id' => $order->order_number . '_' . time(),
+                    'description' => 'Payment for VANRITI order ' . $order->order_number,
+                    'customer' => [
+                        'name' => $customerName,
+                        'contact' => $cleanPhone,
+                    ],
+                    'notify' => [
+                        'sms' => false,
+                        'email' => false,
+                    ],
+                    'reminder_enable' => false,
+                    'notes' => [
+                        'order_id' => (string) $order->id,
+                        'order_number' => $order->order_number,
+                    ],
+                    'callback_url' => $callbackUrl ?: route('home'),
+                    'callback_method' => 'get',
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['short_url'] ?? null;
+            }
+
+            Log::warning('Razorpay payment link creation response not successful', [
+                'status' => $response->status(),
+                'response' => $response->json(),
+            ]);
+
+            return null;
+        } catch (\Throwable $e) {
+            Log::warning('Razorpay payment link exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     public function verify(Payment $payment, array $payload): bool
     {
         $orderId = $payload['razorpay_order_id'] ?? null;
