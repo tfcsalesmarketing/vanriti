@@ -136,12 +136,19 @@ class SendAbandonedCheckoutReminders extends Command
                 continue;
             }
 
+            $itemDescriptions = [];
+            foreach ($cart->items as $ci) {
+                $pName = $ci->product?->name ?: 'Item';
+                if ($ci->variant) {
+                    $pName .= ' (' . $ci->variant->name . ')';
+                }
+                $itemDescriptions[] = "{$pName} (x{$ci->quantity})";
+            }
+            $productName = \Illuminate\Support\Str::limit(implode(', ', $itemDescriptions), 80);
+
             $firstItem = $cart->items->first();
             $product = $firstItem?->product;
-            $productName = $product?->name ?: 'your item';
-            if ($cart->items->count() > 1) {
-                $productName .= ' (+' . ($cart->items->count() - 1) . ' more)';
-            }
+
             $whatsappImage = $product?->getWhatsAppImage()?->image_path;
             $rawImage = $whatsappImage ?: $product?->getPrimaryImage()?->image_path;
             if ($product && (empty($rawImage) || str_contains(strtolower($rawImage), '.webp'))) {
@@ -154,6 +161,20 @@ class SendAbandonedCheckoutReminders extends Command
             $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');
             $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
             $recoveryUrl = url('/cart');
+
+            // Pre-initialize WhatsApp checkout session so customer can order directly from WhatsApp
+            try {
+                $checkoutService = app(\App\Services\WhatsAppCheckoutService::class);
+                $session = $checkoutService->createSessionFromAbandonedCart($phone, $cart, $user);
+
+                // Attempt direct interactive Order Review if within 24h window
+                if (! empty($session->customer_name) && ! empty($session->pincode) && ! empty($session->address_data['address_line1'])) {
+                    $session->transitionTo(\App\Models\WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
+                    $checkoutService->sendOrderReviewMessage($session);
+                }
+            } catch (\Throwable $e) {
+                // Ignore if outside 24h
+            }
 
             $result = $whatsapp->sendAbandonedCheckoutRecovery(
                 $phone,

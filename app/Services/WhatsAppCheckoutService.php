@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -267,6 +268,37 @@ class WhatsAppCheckoutService
                 return $this->handleIncomingCart($phone, $phone, [
                     ['product_retailer_id' => $res['variant']?->sku ?? $res['product']->sku, 'quantity' => 1],
                 ], $messageId);
+            }
+
+            // Check if customer has an abandoned cart on vanriti.com to complete directly on WhatsApp
+            $abandonedCart = $this->findAbandonedCartForPhone($phone);
+            if ($abandonedCart && $abandonedCart->items->isNotEmpty()) {
+                $session = $this->createSessionFromAbandonedCart($phone, $abandonedCart, $abandonedCart->owner);
+
+                if (! empty($session->customer_name) && ! empty($session->pincode) && ! empty($session->address_data['address_line1'])) {
+                    $session->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
+
+                    $welcomeMsg = "Welcome to VANRITI! 🌿\nWe found the items from your cart:";
+                    $this->apiService->sendTextMessage($phone, $welcomeMsg);
+
+                    $this->sendOrderReviewMessage($session);
+
+                    return ['success' => true, 'session' => $session, 'action' => 'abandoned_cart_restored'];
+                }
+
+                if (empty($session->customer_name)) {
+                    $this->apiService->sendTextMessage(
+                        $phone,
+                        "Welcome to VANRITI! 🌿\nWe saved the items from your cart.\nPlease enter your full name to complete your order directly here on WhatsApp."
+                    );
+                    return ['success' => true, 'session' => $session, 'action' => 'name_requested'];
+                }
+
+                $this->apiService->sendTextMessage(
+                    $phone,
+                    "Welcome to VANRITI! 🌿\nWe saved the items from your cart.\nPlease enter your 6-digit delivery PIN code to complete your order directly here on WhatsApp."
+                );
+                return ['success' => true, 'session' => $session, 'action' => 'pincode_requested'];
             }
 
             // General greeting or catalogue invite if no active checkout
@@ -872,6 +904,11 @@ class WhatsAppCheckoutService
 
             $order = $this->orderService->placeOrder($user, $cart, $orderData, clearCart: true);
 
+            $sourceCartId = $session->cart_data['source_cart_id'] ?? null;
+            if ($sourceCartId) {
+                CartItem::where('cart_id', $sourceCartId)->delete();
+            }
+
             $session->update([
                 'order_id' => $order->id,
                 'payment_method' => $paymentMethod,
@@ -975,5 +1012,126 @@ class WhatsAppCheckoutService
         }
 
         return ['found' => false, 'product' => null, 'variant' => null];
+    }
+
+    /**
+     * Find latest active abandoned cart for a given phone number.
+     */
+    public function findAbandonedCartForPhone(string $phone): ?Cart
+    {
+        $cleanDigits = preg_replace('/\D/', '', $phone);
+        $last10 = substr($cleanDigits, -10);
+
+        if (strlen($last10) < 10) {
+            return null;
+        }
+
+        $user = User::query()
+            ->where(function ($query) use ($last10, $phone) {
+                $query->where('phone', 'like', "%{$last10}")
+                    ->orWhere('phone', $phone);
+            })
+            ->latest('id')
+            ->first();
+
+        if (! $user) {
+            return null;
+        }
+
+        return Cart::query()
+            ->where('owner_type', User::class)
+            ->where('owner_id', $user->id)
+            ->whereHas('items')
+            ->with(['items.product', 'items.variant', 'owner'])
+            ->latest('updated_at')
+            ->first();
+    }
+
+    /**
+     * Pre-populate a WhatsAppCheckoutSession from an abandoned web cart.
+     */
+    public function createSessionFromAbandonedCart(string $phone, Cart $cart, ?User $user = null): WhatsAppCheckoutSession
+    {
+        $phone = $this->apiService->formatRecipientPhone($phone);
+        $cart->loadMissing('items.product', 'items.variant');
+
+        $resolvedItems = [];
+        $merchandiseSubtotal = 0.0;
+
+        foreach ($cart->items as $item) {
+            $product = $item->product;
+            if (! $product || $product->status !== 'active') {
+                continue;
+            }
+
+            $variant = $item->variant;
+            $unitPrice = (float) $item->unit_price;
+            $mrp = (float) ($item->mrp ?? $unitPrice);
+            $qty = max(1, (int) $item->quantity);
+            $lineTotal = round($unitPrice * $qty, 2);
+            $merchandiseSubtotal += $lineTotal;
+
+            $resolvedItems[] = [
+                'product_id' => $product->id,
+                'product_variant_id' => $variant?->id,
+                'retailer_id' => $variant?->sku ?? $product->sku,
+                'name' => $product->name . ($variant ? ' (' . $variant->name . ')' : ''),
+                'sku' => $variant?->sku ?? $product->sku,
+                'quantity' => $qty,
+                'unit_price' => $unitPrice,
+                'mrp' => $mrp,
+                'gst_rate' => (float) ($item->gst_rate ?? 0),
+                'line_total' => $lineTotal,
+            ];
+        }
+
+        $shippingCalc = $this->shippingService->calculate($merchandiseSubtotal);
+        $shippingCharge = $shippingCalc['charge'];
+        $grandTotal = round($merchandiseSubtotal + $shippingCharge, 2);
+
+        $cartData = [
+            'items' => $resolvedItems,
+            'subtotal' => $merchandiseSubtotal,
+            'shipping_charge' => $shippingCharge,
+            'grand_total' => $grandTotal,
+            'source_cart_id' => $cart->id,
+        ];
+
+        $session = WhatsAppCheckoutSession::createForCustomer($phone, $phone, $cartData);
+
+        $defaultAddress = null;
+        if ($user) {
+            $defaultAddress = $user->addresses()->where('is_default', true)->first()
+                ?: $user->addresses()->latest()->first();
+        }
+
+        $addressData = null;
+        $pincode = null;
+        $status = WhatsAppCheckoutSession::STATUS_COLLECTING_NAME;
+
+        if ($defaultAddress && ! empty($defaultAddress->address_line1) && ! empty($defaultAddress->pincode)) {
+            $addressData = [
+                'address_line1' => $defaultAddress->address_line1,
+                'city' => $defaultAddress->city ?: 'City',
+                'state' => $defaultAddress->state ?: 'State',
+                'pincode' => $defaultAddress->pincode,
+            ];
+            $pincode = $defaultAddress->pincode;
+            $status = WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION;
+        } elseif ($user?->name) {
+            $status = WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE;
+        }
+
+        $session->update([
+            'customer_name' => $user?->name,
+            'pincode' => $pincode,
+            'address_data' => $addressData,
+            'subtotal' => $merchandiseSubtotal,
+            'shipping_charge' => $shippingCharge,
+            'grand_total' => $grandTotal,
+            'status' => $status,
+        ]);
+
+        return $session;
     }
 }
