@@ -350,8 +350,13 @@ class OrderController extends Controller
             $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
         }
 
-        $rawImage = $firstItem?->image ?: $product?->getPrimaryImage()?->image_path;
-        $imageUrl = $rawImage ? image_url($rawImage) : null;
+        $whatsappImage = $product?->getWhatsAppImage()?->image_path;
+        $rawImage = $whatsappImage ?: ($firstItem?->image ?: $product?->getPrimaryImage()?->image_path);
+        if ($product && (empty($rawImage) || str_contains(strtolower($rawImage), '.webp'))) {
+            $imageUrl = route('media.whatsapp.product', $product);
+        } else {
+            $imageUrl = $rawImage ? image_url($rawImage) : null;
+        }
 
         $name = trim((string) ($order->user?->name ?: $order->billing_name)) ?: 'Customer';
         $total = (string) number_format((float) $order->grand_total, 2, '.', '');

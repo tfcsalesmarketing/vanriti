@@ -466,8 +466,16 @@ class WhatsAppOtpService
             $urlSuffix = 'cart';
         }
 
+        // Meta strictly requires image/jpeg or image/png for image headers (WebP is rejected by Meta)
+        $hasCompatibleFormat = ! empty($imageUrl) && (str_contains(strtolower($imageUrl), '.jpg') || str_contains(strtolower($imageUrl), '.jpeg') || str_contains(strtolower($imageUrl), '.png'));
         $isPublicHttps = ! empty($imageUrl) && str_starts_with($imageUrl, 'https://') && ! str_contains($imageUrl, 'localhost') && ! str_contains($imageUrl, '127.0.0.1');
-        $resolvedImageUrl = $isPublicHttps ? $imageUrl : 'https://vanriti.com/images/logo.webp';
+
+        if ($isPublicHttps && $hasCompatibleFormat) {
+            $resolvedImageUrl = $imageUrl;
+        } else {
+            // Default high-res JPEG brand fallback (guaranteed compliant for Meta)
+            $resolvedImageUrl = 'https://vanriti.com/images/logo.jpg';
+        }
         $productText = $productName !== '' ? $productName : $name;
 
         $postTemplate = function (string $lang, array $bodyParams, bool $withHeader, bool $withButton) use ($template, $phone, $urlSuffix, $resolvedImageUrl) {

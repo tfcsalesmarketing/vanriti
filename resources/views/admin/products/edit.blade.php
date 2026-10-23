@@ -21,6 +21,7 @@
                     <option value="gallery">Gallery</option>
                     <option value="main">Main</option>
                     <option value="thumbnail">Thumbnail</option>
+                    <option value="whatsapp">WhatsApp Recovery (JPG/PNG)</option>
                 </select>
             </div>
             <div class="col-auto">
@@ -38,7 +39,9 @@
                     <div class="col-auto text-center">
                         <img src="{{ image_url($img->image_path) }}" alt="{{ $img->alt_text }}" class="rounded border mb-1" style="width:80px;height:80px;object-fit:cover;">
                         <div class="small text-muted" style="font-size:0.7rem;">
-                            <span class="badge bg-{{ $img->type === 'main' ? 'primary' : ($img->type === 'thumbnail' ? 'info' : 'secondary') }}">{{ $img->type }}</span>
+                            <span class="badge bg-{{ $img->type === 'main' ? 'primary' : ($img->type === 'whatsapp' ? 'success' : ($img->type === 'thumbnail' ? 'info' : 'secondary')) }}">
+                                {{ $img->type === 'whatsapp' ? 'WhatsApp' : $img->type }}
+                            </span>
                         </div>
                         <div class="d-flex gap-1 justify-content-center mt-1">
                             <form method="POST" action="{{ route('admin.products.images.sort', $img->id) }}" class="d-inline">

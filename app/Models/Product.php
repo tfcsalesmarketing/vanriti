@@ -252,6 +252,12 @@ class Product extends Model
             ?? $this->images()->first();
     }
 
+    public function getWhatsAppImage(): ?ProductImage
+    {
+        return $this->images()->where('type', 'whatsapp')->first()
+            ?? $this->getPrimaryImage();
+    }
+
     /**
      * Absolute URL for the product video, or null when no video is configured.
      */

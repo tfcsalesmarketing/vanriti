@@ -845,3 +845,69 @@
     color: #15803D;
     gap: 0.4rem;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE ALIGNMENT & SCREEN RESPONSIVENESS (< 768px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+    #vrLoginModal .modal-dialog {
+        margin: 0.75rem auto !important;
+        width: calc(100% - 1.25rem) !important;
+        max-width: 440px !important;
+    }
+
+    .vr-login-dialog {
+        border-radius: 20px !important;
+    }
+
+    .vr-modal-body-split {
+        min-height: auto !important;
+    }
+
+    .vr-modal-form-col {
+        padding: 1.4rem 1.15rem 1.15rem !important;
+    }
+
+    .vr-modal-close-btn {
+        top: 10px !important;
+        right: 10px !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 1.1rem !important;
+    }
+
+    .vr-form-headline-wrap {
+        padding-right: 2rem !important;
+        margin-bottom: 0.85rem !important;
+    }
+
+    .vr-form-heading {
+        font-size: 1.25rem !important;
+    }
+
+    .vr-login-heading {
+        font-size: 0.82rem !important;
+    }
+
+    .vr-phone-prefix-pill {
+        padding: 0 0.55rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    .vr-phone-input-control {
+        font-size: 0.95rem !important;
+        padding: 0.65rem 0.75rem !important;
+    }
+
+    .vr-otp-input-control {
+        font-size: 1.35rem !important;
+        letter-spacing: 0.25em !important;
+        padding: 0.75rem 0.5rem !important;
+    }
+
+    .vr-login-submit-btn {
+        padding: 0.8rem 1rem !important;
+        font-size: 0.92rem !important;
+    }
+}
+

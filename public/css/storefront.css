@@ -3535,3 +3535,53 @@ img { max-width: 100%; height: auto; }
     }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE ALIGNMENT & SCREEN RESPONSIVENESS (Cart & Checkout)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+    .vr-selection-card {
+        padding: 0.85rem 0.95rem;
+        border-radius: 14px;
+    }
+
+    .vr-cat-card {
+        border-radius: 16px;
+    }
+
+    .vr-guest-card {
+        border-radius: 18px;
+    }
+
+    .vr-section-title {
+        font-size: 1.5rem !important;
+    }
+
+    .sticky-top {
+        position: static !important;
+    }
+
+    #addressModal .modal-dialog {
+        margin: 0.75rem auto;
+        width: calc(100% - 1.25rem);
+        max-width: 480px;
+    }
+
+    #addressModal .modal-content {
+        border-radius: 20px !important;
+    }
+
+    .vr-qty {
+        height: 34px;
+    }
+
+    .vr-qty button {
+        width: 32px;
+    }
+
+    .vr-qty input {
+        width: 34px;
+        font-size: 0.85rem;
+    }
+}
+
+

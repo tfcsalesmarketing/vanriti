@@ -269,8 +269,13 @@ class CartWishlistController extends Controller
             $productName .= ' (+' . ($cart->items->count() - 1) . ' more)';
         }
 
-        $rawImage = $product?->getPrimaryImage()?->image_path;
-        $imageUrl = $rawImage ? image_url($rawImage) : null;
+        $whatsappImage = $product?->getWhatsAppImage()?->image_path;
+        $rawImage = $whatsappImage ?: $product?->getPrimaryImage()?->image_path;
+        if ($product && (empty($rawImage) || str_contains(strtolower($rawImage), '.webp'))) {
+            $imageUrl = route('media.whatsapp.product', $product);
+        } else {
+            $imageUrl = $rawImage ? image_url($rawImage) : null;
+        }
 
         $name = trim((string) $user->name) ?: 'Customer';
         $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');

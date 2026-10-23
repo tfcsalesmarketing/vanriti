@@ -47,8 +47,8 @@
                 <div class="row g-4">
                     <div class="col-lg-8">
                         {{-- Delivery Address Section --}}
-                        <div class="vr-guest-card p-4 mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
                                 <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
                                     <i class="ri-map-pin-2-line text-success"></i> 1. Delivery Address
                                 </h5>
@@ -164,7 +164,7 @@
                         </div>
 
                         {{-- Billing Address Section --}}
-                        <div class="vr-guest-card p-4 mb-4">
+                        <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
                             <div class="form-check">
                                 <input type="checkbox" name="billing_same" value="1" id="billingSame" class="form-check-input"
                                        {{ old('billing_same', '1') ? 'checked' : '' }}>
@@ -227,7 +227,7 @@
                         </div>
 
                         {{-- Shipping Method Section --}}
-                        <div class="vr-guest-card p-4 mb-4">
+                        <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
                             <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
                                 <i class="ri-truck-line text-success"></i> 2. Shipping Options
                             </h5>
@@ -264,7 +264,7 @@
                         </div>
 
                         {{-- Payment Method Section --}}
-                        <div class="vr-guest-card p-4 mb-4">
+                        <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
                             <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
                                 <i class="ri-bank-card-line text-success"></i> 3. Payment Method
                             </h5>
@@ -292,7 +292,7 @@
                         </div>
 
                         {{-- Special Notes --}}
-                        <div class="vr-guest-card p-4 mb-4">
+                        <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
                             <label class="form-label small fw-semibold">Order Notes <span class="text-muted">(optional)</span></label>
                             <textarea name="notes" class="form-control" rows="2" maxlength="500"
                                       placeholder="Any special instructions for your delivery...">{{ old('notes') }}</textarea>
@@ -301,7 +301,7 @@
 
                     {{-- Sticky Order Summary Sidebar --}}
                     <div class="col-lg-4">
-                        <div class="vr-guest-card p-4 sticky-top" style="top: 100px;">
+                        <div class="vr-guest-card p-3 p-sm-4 sticky-top" style="top: 100px;">
                             <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
                                 <i class="ri-file-list-3-line text-success"></i> Order Summary
                             </h5>
@@ -412,7 +412,7 @@
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body p-3 p-sm-4">
                 <form id="addressModalForm">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     <div class="row g-3">

@@ -54,30 +54,31 @@
                 <div class="col-lg-8">
                     <div class="d-flex flex-column gap-3">
                         @foreach ($cartItems as $item)
-                            <div class="vr-cat-card p-3" data-unit-price="{{ $item->unit_price }}">
-                                <div class="d-flex gap-3 align-items-start">
+                            <div class="vr-cat-card p-2.5 p-sm-3" data-unit-price="{{ $item->unit_price }}">
+                                <div class="d-flex gap-2.5 gap-sm-3 align-items-start">
                                     <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0">
                                         <img src="{{ image_url($item->product->getPrimaryImage()?->image_path, 'images/placeholder.png') }}"
                                              alt="{{ $item->product->name }}"
-                                             style="width:90px;height:90px;object-fit:contain;padding:0.3rem;border-radius:14px;background:var(--vr-cream);">
+                                             class="vr-cart-img"
+                                             style="width:72px;height:72px;object-fit:contain;padding:0.25rem;border-radius:12px;background:var(--vr-cream);">
                                     </a>
 
                                     <div class="flex-grow-1 min-w-0">
                                         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                                            <div>
-                                                <a href="{{ route('product.show', $item->product->slug) }}" class="fw-semibold text-dark text-decoration-none d-block text-truncate" style="max-width:280px;">
+                                            <div class="min-w-0 pe-1">
+                                                <a href="{{ route('product.show', $item->product->slug) }}" class="fw-semibold text-dark text-decoration-none d-block text-truncate" title="{{ $item->product->name }}">
                                                     {{ $item->product->name }}
                                                 </a>
                                                 @if ($item->variant)
-                                                    <span class="small text-muted d-block">{{ $item->variant->name }}</span>
+                                                    <span class="small text-muted d-block text-truncate">{{ $item->variant->name }}</span>
                                                 @endif
                                             </div>
                                             <div class="text-end flex-shrink-0">
-                                                <div class="fw-bold fs-6">{{ format_price($item->unit_price) }}</div>
+                                                <div class="fw-bold fs-6 text-nowrap">{{ format_price($item->unit_price) }}</div>
                                             </div>
                                         </div>
 
-                                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top flex-wrap gap-2">
                                             <form action="{{ route('cart.update', $item) }}" method="POST" data-auto-qty="1">
                                                 @csrf
                                                 <div class="vr-qty">
@@ -87,11 +88,11 @@
                                                 </div>
                                             </form>
 
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span class="fw-bold text-dark vr-line-total">{{ format_price($item->unit_price * $item->quantity) }}</span>
+                                            <div class="d-flex align-items-center gap-2.5 ms-auto">
+                                                <span class="fw-bold text-dark vr-line-total text-nowrap">{{ format_price($item->unit_price * $item->quantity) }}</span>
                                                 <form action="{{ route('cart.remove', $item) }}" method="POST">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-link text-muted p-0" title="Remove" aria-label="Remove {{ $item->product->name }}">
+                                                    <button type="submit" class="btn btn-sm btn-link text-muted p-1" title="Remove" aria-label="Remove {{ $item->product->name }}">
                                                         <i class="ri-delete-bin-line fs-5 text-danger"></i>
                                                     </button>
                                                 </form>
@@ -103,13 +104,13 @@
                         @endforeach
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <a href="{{ route('shop.index') }}" class="vr-app-outline-btn py-2 px-3 text-decoration-none">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2.5 mt-4">
+                        <a href="{{ route('shop.index') }}" class="vr-app-outline-btn py-2 px-3 text-decoration-none text-center w-100 w-sm-auto">
                             <i class="ri-arrow-left-line me-1"></i> Continue Shopping
                         </a>
-                        <form action="{{ route('cart.clear') }}" method="POST" data-confirm="Clear all items from your cart?">
+                        <form action="{{ route('cart.clear') }}" method="POST" data-confirm="Clear all items from your cart?" class="w-100 w-sm-auto text-center">
                             @csrf
-                            <button type="submit" class="btn btn-sm text-danger p-0">
+                            <button type="submit" class="btn btn-sm text-danger p-1">
                                 <i class="ri-delete-bin-line me-1"></i> Clear Cart
                             </button>
                         </form>
@@ -118,7 +119,7 @@
 
                 {{-- Summary Sidebar --}}
                 <div class="col-lg-4">
-                    <div class="vr-guest-card p-4 sticky-top" style="top: 100px;">
+                    <div class="vr-guest-card p-3 p-sm-4 sticky-top" style="top: 100px;">
                         <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
                             <i class="ri-file-list-3-line text-success"></i> Order Summary
                         </h5>

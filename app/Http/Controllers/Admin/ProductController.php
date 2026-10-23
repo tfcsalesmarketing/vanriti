@@ -278,7 +278,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'image' => 'required|image|mimes:jpeg,png,webp|max:4096',
             'alt_text' => 'nullable|string|max:255',
-            'type' => 'nullable|in:main,gallery,thumbnail',
+            'type' => 'nullable|in:main,gallery,thumbnail,whatsapp',
         ]);
 
         $type = $validated['type'] ?? 'gallery';
@@ -289,6 +289,10 @@ class ProductController extends Controller
         if ($type === 'main') {
             ProductImage::where('product_id', $product->id)
                 ->where('type', 'main')
+                ->update(['type' => 'gallery']);
+        } elseif ($type === 'whatsapp') {
+            ProductImage::where('product_id', $product->id)
+                ->where('type', 'whatsapp')
                 ->update(['type' => 'gallery']);
         }
 

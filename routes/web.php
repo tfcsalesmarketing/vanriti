@@ -9,6 +9,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DadiController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\PageController;
@@ -147,3 +148,7 @@ Route::get('/about', fn () => view('storefront.page', ['page' => Page::where('sl
 Route::get('/privacy-policy', fn () => view('storefront.page', ['page' => Page::where('slug', 'privacy-policy')->where('status', 'published')->firstOrFail()]))->name('info.privacy');
 Route::get('/terms', fn () => view('storefront.page', ['page' => Page::where('slug', 'terms-and-conditions')->where('status', 'published')->firstOrFail()]))->name('info.terms');
 Route::get('/shipping', fn () => view('storefront.page', ['page' => Page::where('slug', 'shipping-and-delivery')->where('status', 'published')->firstOrFail()]))->name('info.shipping');
+
+// ---------- Dynamic WhatsApp JPEG Header Image ----------
+Route::get('/media/whatsapp-product/{product}.jpg', [MediaController::class, 'whatsappProductImage'])->name('media.whatsapp.product');
+
