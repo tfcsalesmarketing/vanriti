@@ -72,14 +72,25 @@ class WhatsAppWebhookController extends Controller
         $rawContent = $request->getContent();
         $signature = $request->header('x-hub-signature-256');
 
-        Log::info('WhatsApp webhook received', [
-            'has_signature' => ! empty($signature),
-            'content_length' => strlen($rawContent),
-            'body' => $request->all(),
-        ]);
+        $isSigValid = $this->apiService->verifyWebhookSignature($rawContent, $signature);
+
+        // Immediate audit log of every webhook hit
+        try {
+            WhatsAppWebhookLog::create([
+                'message_id' => 'req_' . uniqid('', true),
+                'from_phone' => (string) ($request->ip() ?: 'unknown'),
+                'event_type' => $signature ? ($isSigValid ? 'sig_valid' : 'sig_invalid') : 'no_sig',
+                'payload' => [
+                    'has_sig' => ! empty($signature),
+                    'content_len' => strlen($rawContent),
+                    'body_keys' => array_keys($request->all()),
+                ],
+                'processed' => $isSigValid,
+            ]);
+        } catch (\Throwable) {}
 
         // Signature check
-        if (! $this->apiService->verifyWebhookSignature($rawContent, $signature)) {
+        if (! $isSigValid) {
             Log::warning('WhatsApp webhook rejected: invalid X-Hub-Signature-256');
             return response()->json(['status' => 'invalid signature'], 400);
         }

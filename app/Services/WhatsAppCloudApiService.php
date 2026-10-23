@@ -39,7 +39,7 @@ class WhatsAppCloudApiService
      */
     public function verifyWebhookSignature(string $rawBody, ?string $signatureHeader): bool
     {
-        $appSecret = (string) (secret_setting('whatsapp_app_secret', '') ?: env('WHATSAPP_APP_SECRET', ''));
+        $appSecret = (string) (env('WHATSAPP_APP_SECRET') ?: secret_setting('whatsapp_app_secret', ''));
 
         // If no app secret configured yet, return true in local/testing or log warning
         if ($appSecret === '') {
@@ -52,7 +52,16 @@ class WhatsAppCloudApiService
 
         $expectedHash = 'sha256=' . hash_hmac('sha256', $rawBody, $appSecret);
 
-        return hash_equals($expectedHash, $signatureHeader);
+        $matches = hash_equals($expectedHash, $signatureHeader);
+
+        if (! $matches) {
+            Log::warning('WhatsApp webhook signature mismatch', [
+                'received' => substr((string) $signatureHeader, 0, 16) . '...',
+                'secret_len' => strlen($appSecret),
+            ]);
+        }
+
+        return $matches;
     }
 
     /**
