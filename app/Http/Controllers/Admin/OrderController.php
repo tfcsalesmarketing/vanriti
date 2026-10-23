@@ -342,6 +342,17 @@ class OrderController extends Controller
             return back()->with('error', 'No mobile number found for this customer.');
         }
 
+        $order->loadMissing('items.product.images');
+        $firstItem = $order->items->first();
+        $product = $firstItem?->product;
+        $productName = $firstItem?->product_name ?: ($product?->name ?: 'your item');
+        if ($order->items->count() > 1) {
+            $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
+        }
+
+        $rawImage = $firstItem?->image ?: $product?->getPrimaryImage()?->image_path;
+        $imageUrl = $rawImage ? image_url($rawImage) : null;
+
         $name = trim((string) ($order->user?->name ?: $order->billing_name)) ?: 'Customer';
         $total = (string) number_format((float) $order->grand_total, 2, '.', '');
         $recoveryUrl = route('account.order', $order);
@@ -351,7 +362,9 @@ class OrderController extends Controller
             $name,
             $order->order_number,
             $total,
-            $recoveryUrl
+            $recoveryUrl,
+            $productName,
+            $imageUrl
         );
 
         if (($result['result'] ?? '0') === '1') {

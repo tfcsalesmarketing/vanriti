@@ -261,6 +261,17 @@ class CartWishlistController extends Controller
             return back()->with('error', 'Customer has no phone number on their account.');
         }
 
+        $cart->loadMissing('items.product.images');
+        $firstItem = $cart->items->first();
+        $product = $firstItem?->product;
+        $productName = $product?->name ?: 'your item';
+        if ($cart->items->count() > 1) {
+            $productName .= ' (+' . ($cart->items->count() - 1) . ' more)';
+        }
+
+        $rawImage = $product?->getPrimaryImage()?->image_path;
+        $imageUrl = $rawImage ? image_url($rawImage) : null;
+
         $name = trim((string) $user->name) ?: 'Customer';
         $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');
         $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
@@ -271,7 +282,9 @@ class CartWishlistController extends Controller
             $name,
             $cartRef,
             $total,
-            $recoveryUrl
+            $recoveryUrl,
+            $productName,
+            $imageUrl
         );
 
         if (($result['result'] ?? '0') === '1') {

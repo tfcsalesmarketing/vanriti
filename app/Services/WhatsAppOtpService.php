@@ -435,8 +435,15 @@ class WhatsAppOtpService
      *
      * @return array{result: string, message: string}
      */
-    public function sendAbandonedCheckoutRecovery(string $phone, string $name, string $orderNumber, string $totalAmount, string $checkoutUrl): array
-    {
+    public function sendAbandonedCheckoutRecovery(
+        string $phone,
+        string $name,
+        string $orderNumber,
+        string $totalAmount,
+        string $checkoutUrl,
+        ?string $productName = null,
+        ?string $imageUrl = null
+    ): array {
         if (! $this->recoveryEnabled()) {
             return $this->failure('WhatsApp checkout recovery is not enabled or configured yet.');
         }
@@ -449,6 +456,7 @@ class WhatsAppOtpService
 
         $phone = $this->toE164($phone);
         $name = trim($name) !== '' ? trim($name) : 'Customer';
+        $productName = trim((string) $productName);
 
         $urlSuffix = ltrim((string) parse_url($checkoutUrl, PHP_URL_PATH), '/');
         if ($query = parse_url($checkoutUrl, PHP_URL_QUERY)) {
@@ -458,30 +466,51 @@ class WhatsAppOtpService
             $urlSuffix = 'cart';
         }
 
-        // Ordered candidate values for placeholders {{1}}, {{2}}, {{3}}
-        $candidateParams = [
-            $name,
-            $totalAmount,
-            $orderNumber,
-        ];
-
-        $postTemplate = function (string $lang, int $paramCount, bool $withButton) use ($template, $phone, $candidateParams, $urlSuffix) {
+        $postTemplate = function (string $lang, int $paramCount, bool $withHeader, bool $withButton) use ($template, $phone, $name, $productName, $totalAmount, $orderNumber, $urlSuffix, $imageUrl) {
             $components = [];
 
+            // 1. Header Media (Image)
+            if ($withHeader && ! empty($imageUrl) && ! str_contains($imageUrl, 'localhost') && ! str_contains($imageUrl, '127.0.0.1')) {
+                $components[] = [
+                    'type' => 'header',
+                    'parameters' => [
+                        [
+                            'type' => 'image',
+                            'image' => [
+                                'link' => $imageUrl,
+                            ],
+                        ],
+                    ],
+                ];
+            }
+
+            // 2. Body Parameters
             if ($paramCount > 0) {
                 $bodyParams = [];
-                for ($i = 0; $i < $paramCount; $i++) {
-                    $bodyParams[] = [
-                        'type' => 'text',
-                        'text' => $candidateParams[$i] ?? '',
+                if ($paramCount === 1) {
+                    $bodyParams = [
+                        ['type' => 'text', 'text' => $productName !== '' ? $productName : $name],
+                    ];
+                } elseif ($paramCount === 2) {
+                    $bodyParams = [
+                        ['type' => 'text', 'text' => $name],
+                        ['type' => 'text', 'text' => $productName !== '' ? $productName : $totalAmount],
+                    ];
+                } else {
+                    $bodyParams = [
+                        ['type' => 'text', 'text' => $name],
+                        ['type' => 'text', 'text' => $totalAmount],
+                        ['type' => 'text', 'text' => $orderNumber],
                     ];
                 }
+
                 $components[] = [
                     'type' => 'body',
                     'parameters' => $bodyParams,
                 ];
             }
 
+            // 3. Dynamic URL Button
             if ($withButton) {
                 $components[] = [
                     'type' => 'button',
@@ -514,11 +543,13 @@ class WhatsAppOtpService
         };
 
         $lastBody = null;
+        $hasImage = ! empty($imageUrl) && ! str_contains($imageUrl, 'localhost') && ! str_contains($imageUrl, '127.0.0.1');
 
         // Try languages: 'en' then 'en_US'
         foreach (['en', 'en_US'] as $lang) {
-            // First attempt: standard 3 params + URL button
-            [$resp, $body] = $postTemplate($lang, 3, true);
+            // First attempt: Header image (if available) + 1 body param (SKU name) + URL button
+            $initialParamCount = $productName !== '' ? 1 : 3;
+            [$resp, $body] = $postTemplate($lang, $initialParamCount, $hasImage, true);
             $lastBody = $body;
 
             if ($resp->successful() && empty($body['error'])) {
@@ -533,24 +564,25 @@ class WhatsAppOtpService
                 continue;
             }
 
-            // If parameter count mismatch (#132000), check Meta's exact requirement or adapt
-            if ($errCode === 132000) {
-                // If Meta details indicate the expected parameter count in body:
+            // If error #132000 (param count mismatch) or #100 (image header issue / button issue), adapt:
+            if ($errCode === 132000 || $errCode === 100) {
                 $expectedParams = null;
                 if (preg_match('/expected number of params \((\d+)\)/', $details, $matches)) {
                     $expectedParams = (int) $matches[1];
                 }
 
-                // If button was the issue or expected count was given:
-                $paramCountsToTry = $expectedParams !== null ? [$expectedParams] : [3, 2, 1, 0];
+                $headerStates = $hasImage ? [true, false] : [false];
+                $paramCountsToTry = $expectedParams !== null ? [$expectedParams] : [1, 2, 3, 0];
 
-                foreach ([false, true] as $btnState) {
-                    foreach ($paramCountsToTry as $count) {
-                        [$respRetry, $bodyRetry] = $postTemplate($lang, $count, $btnState);
-                        $lastBody = $bodyRetry;
+                foreach ($headerStates as $hdrState) {
+                    foreach ([true, false] as $btnState) {
+                        foreach ($paramCountsToTry as $count) {
+                            [$respRetry, $bodyRetry] = $postTemplate($lang, $count, $hdrState, $btnState);
+                            $lastBody = $bodyRetry;
 
-                        if ($respRetry->successful() && empty($bodyRetry['error'])) {
-                            return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
+                            if ($respRetry->successful() && empty($bodyRetry['error'])) {
+                                return ['result' => '1', 'message' => 'WhatsApp checkout recovery sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
+                            }
                         }
                     }
                 }

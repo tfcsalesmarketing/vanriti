@@ -54,6 +54,15 @@ class SendAbandonedCheckoutReminders extends Command
                 continue;
             }
 
+            $firstItem = $order->items->first();
+            $product = $firstItem?->product;
+            $productName = $firstItem?->product_name ?: ($product?->name ?: 'your item');
+            if ($order->items->count() > 1) {
+                $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
+            }
+            $rawImage = $firstItem?->image ?: $product?->getPrimaryImage()?->image_path;
+            $imageUrl = $rawImage ? image_url($rawImage) : null;
+
             $name = trim((string) ($order->user?->name ?: $order->billing_name));
             $name = $name !== '' ? $name : 'Customer';
             $total = (string) number_format((float) $order->grand_total, 2, '.', '');
@@ -64,7 +73,9 @@ class SendAbandonedCheckoutReminders extends Command
                 $name,
                 $order->order_number,
                 $total,
-                $recoveryUrl
+                $recoveryUrl,
+                $productName,
+                $imageUrl
             );
 
             if (($result['result'] ?? '0') === '1') {
@@ -93,7 +104,7 @@ class SendAbandonedCheckoutReminders extends Command
             ->whereNull('whatsapp_recovery_sent_at')
             ->where('updated_at', '<=', $minCutoff)
             ->where('updated_at', '>=', $maxCutoff)
-            ->with(['owner', 'items.product'])
+            ->with(['owner', 'items.product.images'])
             ->latest('updated_at')
             ->limit(50)
             ->get();
@@ -120,6 +131,15 @@ class SendAbandonedCheckoutReminders extends Command
                 continue;
             }
 
+            $firstItem = $cart->items->first();
+            $product = $firstItem?->product;
+            $productName = $product?->name ?: 'your item';
+            if ($cart->items->count() > 1) {
+                $productName .= ' (+' . ($cart->items->count() - 1) . ' more)';
+            }
+            $rawImage = $product?->getPrimaryImage()?->image_path;
+            $imageUrl = $rawImage ? image_url($rawImage) : null;
+
             $name = trim((string) $user->name) ?: 'Customer';
             $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');
             $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
@@ -130,7 +150,9 @@ class SendAbandonedCheckoutReminders extends Command
                 $name,
                 $cartRef,
                 $total,
-                $recoveryUrl
+                $recoveryUrl,
+                $productName,
+                $imageUrl
             );
 
             if (($result['result'] ?? '0') === '1') {
