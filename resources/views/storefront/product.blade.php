@@ -338,13 +338,17 @@
                 </h2>
                 <div id="collapse-highlights" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
                     <div class="accordion-body">
-                        <ul class="mb-0 ps-3">
-                            @foreach (preg_split('/\R/', (string) $product->highlights) as $line)
-                                @if (trim($line) !== '')
-                                    <li class="mb-1">{{ $line }}</li>
-                                @endif
-                            @endforeach
-                        </ul>
+                        @if (Str::contains($product->highlights, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']))
+                            {!! clean_html($product->highlights) !!}
+                        @else
+                            <ul class="mb-0 ps-3">
+                                @foreach (preg_split('/\R/', (string) $product->highlights) as $line)
+                                    @if (trim($line) !== '')
+                                        <li class="mb-1">{{ $line }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -356,7 +360,9 @@
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-ingredients">Ingredients</button>
                 </h2>
                 <div id="collapse-ingredients" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
-                    <div class="accordion-body">{{ $product->ingredients }}</div>
+                    <div class="accordion-body">
+                        {!! Str::contains($product->ingredients, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($product->ingredients) : nl2br(e($product->ingredients)) !!}
+                    </div>
                 </div>
             </div>
         @endif
@@ -367,7 +373,9 @@
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-usage">How to Use</button>
                 </h2>
                 <div id="collapse-usage" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
-                    <div class="accordion-body">{{ $product->how_to_use }}</div>
+                    <div class="accordion-body">
+                        {!! Str::contains($product->how_to_use, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($product->how_to_use) : nl2br(e($product->how_to_use)) !!}
+                    </div>
                 </div>
             </div>
         @endif
@@ -379,13 +387,30 @@
                 </h2>
                 <div id="collapse-benefits" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
                     <div class="accordion-body">
-                        <ul class="mb-0 ps-3">
-                            @foreach (preg_split('/\R/', (string) $product->benefits) as $line)
-                                @if (trim($line) !== '')
-                                    <li class="mb-1">{{ $line }}</li>
-                                @endif
-                            @endforeach
-                        </ul>
+                        @if (Str::contains($product->benefits, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']))
+                            {!! clean_html($product->benefits) !!}
+                        @else
+                            <ul class="mb-0 ps-3">
+                                @foreach (preg_split('/\R/', (string) $product->benefits) as $line)
+                                    @if (trim($line) !== '')
+                                        <li class="mb-1">{{ $line }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($product->directions)
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-directions">Directions</button>
+                </h2>
+                <div id="collapse-directions" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
+                    <div class="accordion-body">
+                        {!! Str::contains($product->directions, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($product->directions) : nl2br(e($product->directions)) !!}
                     </div>
                 </div>
             </div>
@@ -394,10 +419,14 @@
         @if ($product->warnings)
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-warnings">Warnings</button>
+                    <button class="accordion-button collapsed text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-warnings">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Warnings
+                    </button>
                 </h2>
                 <div id="collapse-warnings" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
-                    <div class="accordion-body">{{ $product->warnings }}</div>
+                    <div class="accordion-body">
+                        {!! Str::contains($product->warnings, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($product->warnings) : nl2br(e($product->warnings)) !!}
+                    </div>
                 </div>
             </div>
         @endif
@@ -408,7 +437,9 @@
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-precautions">Precautions</button>
                 </h2>
                 <div id="collapse-precautions" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
-                    <div class="accordion-body">{{ $product->precautions }}</div>
+                    <div class="accordion-body">
+                        {!! Str::contains($product->precautions, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($product->precautions) : nl2br(e($product->precautions)) !!}
+                    </div>
                 </div>
             </div>
         @endif
@@ -419,7 +450,9 @@
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-disclaimer">Disclaimer</button>
                 </h2>
                 <div id="collapse-disclaimer" class="accordion-collapse collapse" data-bs-parent="#vrProductAccordion">
-                    <div class="accordion-body"><em class="small text-muted">{{ $product->disclaimer }}</em></div>
+                    <div class="accordion-body">
+                        {!! Str::contains($product->disclaimer, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($product->disclaimer) : '<em class="small text-muted">' . nl2br(e($product->disclaimer)) . '</em>' !!}
+                    </div>
                 </div>
             </div>
         @endif

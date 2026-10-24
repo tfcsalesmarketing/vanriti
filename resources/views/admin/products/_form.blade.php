@@ -28,11 +28,14 @@
                     </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-semibold">Short Description</label>
-                        <textarea name="short_description" class="form-control form-control-sm" rows="2">{{ old('short_description', $product->short_description ?? '') }}</textarea>
+                        <textarea name="short_description" class="form-control form-control-sm" rows="2" placeholder="Brief 1-2 sentence overview for cards and WhatsApp shares...">{{ old('short_description', $product->short_description ?? '') }}</textarea>
                     </div>
                     <div class="col-md-12">
-                        <label class="form-label small fw-semibold">Description</label>
-                        <textarea name="description" class="form-control form-control-sm" rows="4">{{ old('description', $product->description ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Description</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.7rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text Editor</span>
+                        </label>
+                        <textarea name="description" class="form-control form-control-sm js-rich-editor" data-min-height="180px" rows="4">{{ old('description', $product->description ?? '') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -63,40 +66,69 @@
         </div>
 
         <div class="card mb-3">
-            <div class="card-header fw-semibold">Content</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                <span>Content &amp; Ayurvedic Specifications</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.7rem;">
+                    <i class="bi bi-magic me-1"></i>Formatted Text Editors Enabled
+                </span>
+            </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-12">
-                        <label class="form-label small fw-semibold">Highlights</label>
-                        <textarea name="highlights" class="form-control form-control-sm" rows="3">{{ old('highlights', $product->highlights ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Key Highlights</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="highlights" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('highlights', $product->highlights ?? '') }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Ingredients</label>
-                        <textarea name="ingredients" class="form-control form-control-sm" rows="3">{{ old('ingredients', $product->ingredients ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Ingredients</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="ingredients" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('ingredients', $product->ingredients ?? '') }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Benefits</label>
-                        <textarea name="benefits" class="form-control form-control-sm" rows="3">{{ old('benefits', $product->benefits ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Benefits</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="benefits" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('benefits', $product->benefits ?? '') }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">How to Use</label>
-                        <textarea name="how_to_use" class="form-control form-control-sm" rows="3">{{ old('how_to_use', $product->how_to_use ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>How to Use</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="how_to_use" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('how_to_use', $product->how_to_use ?? '') }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Directions</label>
-                        <textarea name="directions" class="form-control form-control-sm" rows="3">{{ old('directions', $product->directions ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Directions</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="directions" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('directions', $product->directions ?? '') }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Warnings</label>
-                        <textarea name="warnings" class="form-control form-control-sm" rows="3">{{ old('warnings', $product->warnings ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Warnings</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="warnings" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('warnings', $product->warnings ?? '') }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Precautions</label>
-                        <textarea name="precautions" class="form-control form-control-sm" rows="3">{{ old('precautions', $product->precautions ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Precautions</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="precautions" class="form-control form-control-sm js-rich-editor" data-min-height="120px" rows="3">{{ old('precautions', $product->precautions ?? '') }}</textarea>
                     </div>
                     <div class="col-md-12">
-                        <label class="form-label small fw-semibold">Disclaimer</label>
-                        <textarea name="disclaimer" class="form-control form-control-sm" rows="2">{{ old('disclaimer', $product->disclaimer ?? '') }}</textarea>
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Disclaimer</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size:0.68rem;"><i class="bi bi-pencil-square me-1 text-primary"></i>Rich Text</span>
+                        </label>
+                        <textarea name="disclaimer" class="form-control form-control-sm js-rich-editor" data-min-height="100px" rows="2">{{ old('disclaimer', $product->disclaimer ?? '') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -278,9 +310,69 @@
     <a href="{{ route('admin.products.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
 </div>
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+<style>
+.vr-quill-wrapper {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.vr-quill-wrapper:focus-within {
+    border-color: #059669;
+    box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, 0.15);
+}
+.vr-quill-wrapper .ql-toolbar.ql-snow {
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8fafc;
+    padding: 6px 8px;
+}
+.vr-quill-wrapper .ql-container.ql-snow {
+    border: none;
+    font-family: inherit;
+    font-size: 0.875rem;
+}
+.vr-quill-wrapper .ql-editor {
+    min-height: 120px;
+    padding: 10px 12px;
+    line-height: 1.5;
+}
+.vr-quill-wrapper .ql-editor.ql-blank::before {
+    font-style: normal;
+    color: #94a3b8;
+    left: 12px;
+}
+.vr-quill-wrapper .ql-toolbar .ql-formats {
+    margin-right: 8px;
+}
+.vr-quill-wrapper .ql-snow .ql-stroke {
+    stroke: #475569;
+}
+.vr-quill-wrapper .ql-snow .ql-fill {
+    fill: #475569;
+}
+.vr-quill-wrapper .ql-snow .ql-picker {
+    color: #475569;
+}
+.vr-quill-wrapper .ql-toolbar button:hover .ql-stroke,
+.vr-quill-wrapper .ql-toolbar button.ql-active .ql-stroke {
+    stroke: #059669;
+}
+.vr-quill-wrapper .ql-toolbar button:hover .ql-fill,
+.vr-quill-wrapper .ql-toolbar button.ql-active .ql-fill {
+    fill: #059669;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
+    // 1. Calculate discount
     const mrp = document.getElementById('formMrp');
     const sp = document.getElementById('formSellingPrice');
     const display = document.getElementById('formDiscountDisplay');
@@ -296,6 +388,61 @@ document.addEventListener('DOMContentLoaded', function () {
     if (mrp) mrp.addEventListener('input', calc);
     if (sp) sp.addEventListener('input', calc);
     calc();
+
+    // 2. Initialize Rich Text Editor on all .js-rich-editor textareas
+    if (typeof Quill !== 'undefined') {
+        document.querySelectorAll('textarea.js-rich-editor').forEach(function (textarea) {
+            // Hide textarea from view
+            textarea.style.display = 'none';
+
+            // Create wrapper element
+            const wrapper = document.createElement('div');
+            wrapper.className = 'vr-quill-wrapper mb-2';
+
+            const editorDiv = document.createElement('div');
+            editorDiv.className = 'vr-quill-editor';
+            const minHeight = textarea.dataset.minHeight || '120px';
+            editorDiv.style.minHeight = minHeight;
+
+            // Put wrapper in DOM where textarea was
+            textarea.parentNode.insertBefore(wrapper, textarea);
+            wrapper.appendChild(editorDiv);
+
+            // Populate initial content
+            const rawContent = textarea.value || '';
+            editorDiv.innerHTML = rawContent;
+
+            // Instantiate Quill
+            const quill = new Quill(editorDiv, {
+                theme: 'snow',
+                placeholder: 'Type or format ' + (textarea.getAttribute('name') || 'content') + '...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [3, 4, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            // Live synchronize changes back to textarea
+            const syncContent = function () {
+                const html = quill.root.innerHTML;
+                const textOnly = quill.getText().trim();
+                textarea.value = (html === '<p><br></p>' || textOnly === '') ? '' : html;
+            };
+
+            quill.on('text-change', syncContent);
+
+            // Also flush on form submission
+            const form = textarea.closest('form');
+            if (form) {
+                form.addEventListener('submit', syncContent);
+            }
+        });
+    }
 });
 </script>
 @endpush

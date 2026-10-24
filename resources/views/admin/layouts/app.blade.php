@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=1.5">
+    @stack('styles')
 </head>
 <body>
     <div class="admin-wrapper">
