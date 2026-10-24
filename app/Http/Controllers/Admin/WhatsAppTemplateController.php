@@ -142,9 +142,26 @@ class WhatsAppTemplateController extends Controller
     /**
      * Sync all registered templates from Meta Graph API.
      */
-    public function sync(): RedirectResponse
+    public function sync(Request $request): RedirectResponse|JsonResponse
     {
         $result = $this->syncFromMeta();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            if (! $result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'],
+                ], 422);
+            }
+
+            $templates = WhatsAppTemplate::approved()->orderBy('name')->get();
+            return response()->json([
+                'success' => true,
+                'count' => $result['count'],
+                'message' => "Successfully synced {$result['count']} templates from Meta WABA.",
+                'templates' => $templates,
+            ]);
+        }
 
         if (! $result['success']) {
             return back()->with('error', 'Failed to fetch templates from Meta: ' . $result['message']);

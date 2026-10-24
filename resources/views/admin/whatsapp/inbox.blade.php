@@ -531,7 +531,7 @@
 <div class="modal fade" id="sendTemplateModal" tabindex="-1" aria-labelledby="sendTemplateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
-            <div class="modal-header bg-emerald text-white p-3 px-4" style="background-color: #1f3b25;">
+            <div class="modal-header bg-emerald text-white p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: #1f3b25;">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
                     <div>
@@ -539,7 +539,12 @@
                         <small class="text-white-50" style="font-size: 0.75rem;">Bypasses 24-hour service window & initiates customer conversation</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5 py-1" id="btnSyncTemplatesLive" title="Sync registered templates directly from Meta WABA">
+                        <i class="bi bi-arrow-repeat me-1"></i><span>Sync Meta</span>
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
             <form id="waSendTemplateForm">
                 <div class="modal-body p-4 bg-light-subtle">
@@ -549,7 +554,7 @@
                                 <label class="form-label fw-bold small text-dark">Choose Meta Template</label>
                                 <select class="form-select rounded-3" id="tmplSelect" required>
                                     @if(isset($approvedTemplates) && $approvedTemplates->isNotEmpty())
-                                        <optgroup label="Synchronized Meta Templates">
+                                        <optgroup label="Synchronized Meta Templates" id="tmplOptGroupSynced">
                                             @foreach($approvedTemplates as $at)
                                                 <option value="{{ $at->name }}" data-category="{{ $at->category }}">{{ $at->name }} ({{ ucfirst($at->category) }})</option>
                                             @endforeach
@@ -557,8 +562,8 @@
                                     @endif
                                     <optgroup label="Standard Presets">
                                         <option value="order_confirmation">📦 Order Confirmation (3 variables)</option>
-                                        <option value="abandoned_cart_recovery">🛒 Abandoned Cart Recovery (2 variables)</option>
-                                        <option value="vanriti_welcome">🌿 Welcome Offer (1 variable)</option>
+                                        <option value="abandoned_cart_reminder">🛒 Abandoned Cart Reminder (3 variables)</option>
+                                        <option value="shipping_update">🚚 Shipping Dispatch Update (5 variables)</option>
                                         <option value="promotional_offer">🎉 Promotional Discount (3 variables)</option>
                                         <option value="custom">⚙️ Custom Approved Template Name</option>
                                     </optgroup>
@@ -575,8 +580,17 @@
                                 <input type="text" class="form-control rounded-3" id="tmplLangCode" value="en" required>
                             </div>
 
-                            <div id="tmplDynamicFields">
-                                <!-- Dynamically populated parameter fields -->
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                    <label class="form-label fw-bold small text-dark mb-0">Template Variables (Params)</label>
+                                    <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none fw-semibold text-success" id="btnAddTemplateParam">
+                                        <i class="bi bi-plus-circle me-1"></i>Add Variable
+                                    </button>
+                                </div>
+                                <div id="tmplDynamicFields">
+                                    <!-- Dynamically populated parameter fields -->
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">Number of variables must match what was approved on Meta for this template.</small>
                             </div>
 
                             <div class="mb-3" id="tmplHeaderImageGroup">
@@ -1270,23 +1284,42 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    function parseTemplateFields(bodyText) {
+        const tokenRegex = new RegExp('\\' + '{' + '\\' + '{' + '\\s*([a-zA-Z0-9_]+)\\s*' + '\\' + '}' + '\\' + '}', 'g');
+        const matches = bodyText ? [...bodyText.matchAll(tokenRegex)] : [];
+        const fields = [];
+        const seen = new Set();
+        matches.forEach((m, idx) => {
+            const tokenKey = m[1];
+            if (!seen.has(tokenKey)) {
+                seen.add(tokenKey);
+                const tokenBadge = '{' + '{' + tokenKey + '}' + '}';
+                let defVal = '';
+                const lower = tokenKey.toLowerCase();
+                if (tokenKey === '1' || lower.includes('name')) {
+                    defVal = customerName;
+                } else if (tokenKey === '2' || lower.includes('order')) {
+                    defVal = recentOrderNumber;
+                } else if (lower.includes('text') || lower.includes('item')) {
+                    defVal = 'Selected Items';
+                }
+                fields.push({
+                    id: "p_" + tokenKey,
+                    name: tokenKey,
+                    token: tokenBadge,
+                    label: tokenBadge,
+                    default: defVal
+                });
+            }
+        });
+        return fields;
+    }
+
     // Hydrate synchronized Meta templates from backend
     const approvedMetaTemplates = @json($approvedTemplates ?? []);
     if (Array.isArray(approvedMetaTemplates)) {
         approvedMetaTemplates.forEach(tpl => {
-            const tokenRegex = new RegExp('\\' + '{' + '\\' + '{' + '\\s*(\\d+)\\s*' + '\\' + '}' + '\\' + '}', 'g');
-            const matches = tpl.body_text ? [...tpl.body_text.matchAll(tokenRegex)] : [];
-            const indices = matches.map(m => parseInt(m[1], 10));
-            const maxIndex = indices.length > 0 ? Math.max(...indices) : 0;
-            const fields = [];
-            for (let i = 1; i <= maxIndex; i++) {
-                fields.push({
-                    id: "p" + i,
-                    label: "Parameter " + i,
-                    default: i === 1 ? customerName : (i === 2 ? recentOrderNumber : "")
-                });
-            }
-
+            const fields = parseTemplateFields(tpl.body_text || '');
             templateSchemas[tpl.name] = {
                 title: tpl.header_text || (tpl.name.replace(/_/g, ' ').toUpperCase()),
                 text: tpl.body_text || '',
@@ -1341,26 +1374,89 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (tmplDynamicFields) {
             if (schema && schema.fields && schema.fields.length > 0) {
-                tmplDynamicFields.innerHTML = schema.fields.map((f, idx) => `
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-dark">${escapeHtml(f.label)}</label>
-                        <input type="text" class="form-control rounded-3 tmpl-param-input" data-index="${idx+1}" value="${escapeHtml(f.default || '')}" placeholder="Value for ${escapeHtml(f.label)}" required>
-                    </div>
-                `).join('');
+                tmplDynamicFields.innerHTML = schema.fields.map((f, idx) => {
+                    const tokenStr = f.token || ('{' + '{' + (f.name || (idx + 1)) + '}' + '}');
+                    const fieldName = escapeHtml(f.name || String(idx + 1));
+                    return `
+                        <div class="mb-2 input-group input-group-sm tmpl-param-row">
+                            <span class="input-group-text bg-white fw-bold text-muted font-monospace tmpl-param-badge" style="min-width: 90px;">` + escapeHtml(tokenStr) + `</span>
+                            <input type="text" class="form-control tmpl-param-input" data-name="` + fieldName + `" data-index="` + (idx + 1) + `" value="` + escapeHtml(f.default || '') + `" placeholder="Value for ` + escapeHtml(tokenStr) + `" required>
+                            <button type="button" class="btn btn-outline-danger btn-remove-param" title="Remove this variable"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    `;
+                }).join('');
             } else {
                 tmplDynamicFields.innerHTML = `
-                    <div class="alert alert-light border small text-muted py-2 mb-3">
-                        <i class="bi bi-info-circle me-1 text-primary"></i>No dynamic variables required for this pre-approved template.
+                    <div class="alert alert-light border small text-muted py-2 mb-2" id="tmplNoParamsAlert">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>No dynamic variables required for this template.
                     </div>
                 `;
             }
 
-            tmplDynamicFields.querySelectorAll('.tmpl-param-input').forEach(inp => {
-                inp.addEventListener('input', updateTemplatePreview);
-            });
+            attachParamListeners();
         }
 
         updateTemplatePreview();
+    }
+
+    function renumberParamRows() {
+        if (!tmplDynamicFields) return;
+        const rows = tmplDynamicFields.querySelectorAll('.tmpl-param-row');
+        rows.forEach((row, idx) => {
+            const badge = row.querySelector('.tmpl-param-badge');
+            const input = row.querySelector('.tmpl-param-input');
+            const tokenStr = '{' + '{' + (input?.dataset.name || (idx + 1)) + '}' + '}';
+            if (badge) badge.textContent = tokenStr;
+            if (input) {
+                input.dataset.index = idx + 1;
+                input.placeholder = 'Value for ' + tokenStr;
+            }
+        });
+        if (rows.length === 0) {
+            tmplDynamicFields.innerHTML = `
+                <div class="alert alert-light border small text-muted py-2 mb-2" id="tmplNoParamsAlert">
+                    <i class="bi bi-info-circle me-1 text-primary"></i>No dynamic variables required for this template.
+                </div>
+            `;
+        }
+        updateTemplatePreview();
+    }
+
+    function attachParamListeners() {
+        if (!tmplDynamicFields) return;
+        tmplDynamicFields.querySelectorAll('.tmpl-param-input').forEach(inp => {
+            inp.removeEventListener('input', updateTemplatePreview);
+            inp.addEventListener('input', updateTemplatePreview);
+        });
+        tmplDynamicFields.querySelectorAll('.btn-remove-param').forEach(btn => {
+            btn.onclick = function() {
+                this.closest('.tmpl-param-row')?.remove();
+                renumberParamRows();
+            };
+        });
+    }
+
+    const btnAddTemplateParam = document.getElementById('btnAddTemplateParam');
+    if (btnAddTemplateParam) {
+        btnAddTemplateParam.addEventListener('click', function () {
+            if (!tmplDynamicFields) return;
+            const noAlert = document.getElementById('tmplNoParamsAlert');
+            if (noAlert) noAlert.remove();
+
+            const currentCount = tmplDynamicFields.querySelectorAll('.tmpl-param-row').length;
+            const newIndex = currentCount + 1;
+            const tokenStr = '{' + '{' + newIndex + '}' + '}';
+            const div = document.createElement('div');
+            div.className = 'mb-2 input-group input-group-sm tmpl-param-row';
+            div.innerHTML = `
+                <span class="input-group-text bg-white fw-bold text-muted font-monospace tmpl-param-badge" style="min-width: 90px;">` + escapeHtml(tokenStr) + `</span>
+                <input type="text" class="form-control tmpl-param-input" data-index="` + newIndex + `" value="" placeholder="Value for ` + escapeHtml(tokenStr) + `" required>
+                <button type="button" class="btn btn-outline-danger btn-remove-param" title="Remove this variable"><i class="bi bi-x-lg"></i></button>
+            `;
+            tmplDynamicFields.appendChild(div);
+            attachParamListeners();
+            updateTemplatePreview();
+        });
     }
 
     function updateTemplatePreview() {
@@ -1380,10 +1476,16 @@ document.addEventListener('DOMContentLoaded', function () {
         let body = schema.text || '';
         const inputs = tmplDynamicFields ? tmplDynamicFields.querySelectorAll('.tmpl-param-input') : [];
         inputs.forEach((inp, idx) => {
+            const pName = inp.dataset.name || '';
+            const val = inp.value || '';
+            if (pName) {
+                const namedDouble = '{' + '{' + pName + '}' + '}';
+                const namedSingle = '{' + pName + '}';
+                body = body.split(namedDouble).join(val || namedDouble).split(namedSingle).join(val || namedDouble);
+            }
             const tokenDouble = '{' + '{' + (idx + 1) + '}' + '}';
             const tokenSingle = '{' + (idx + 1) + '}';
-            const val = inp.value || tokenDouble;
-            body = body.split(tokenDouble).join(val).split(tokenSingle).join(val);
+            body = body.split(tokenDouble).join(val || tokenDouble).split(tokenSingle).join(val || tokenDouble);
         });
 
         if (previewBodyText) {
@@ -1435,6 +1537,65 @@ document.addEventListener('DOMContentLoaded', function () {
         tmplHeaderImageUrl.addEventListener('input', updateTemplatePreview);
     }
 
+    // Live Sync Templates from Meta Button Handler
+    const btnSyncLive = document.getElementById('btnSyncTemplatesLive');
+    if (btnSyncLive) {
+        btnSyncLive.addEventListener('click', async function () {
+            btnSyncLive.disabled = true;
+            btnSyncLive.innerHTML = '<span class="spinner-border spinner-border-sm text-white" role="status"></span> Syncing...';
+            try {
+                const response = await fetch('{{ route('admin.whatsapp.templates.sync') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const res = await response.json();
+                if (res.success && Array.isArray(res.templates)) {
+                    let optGroup = document.getElementById('tmplOptGroupSynced');
+                    if (!optGroup) {
+                        optGroup = document.createElement('optgroup');
+                        optGroup.id = 'tmplOptGroupSynced';
+                        optGroup.label = 'Synchronized Meta Templates';
+                        tmplSelect.insertBefore(optGroup, tmplSelect.firstChild);
+                    }
+                    optGroup.innerHTML = '';
+                    res.templates.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.name;
+                        opt.textContent = `${t.name} (${t.category})`;
+                        optGroup.appendChild(opt);
+
+                        const fields = parseTemplateFields(t.body_text || '');
+                        templateSchemas[t.name] = {
+                            title: t.header_text || (t.name.replace(/_/g, ' ').toUpperCase()),
+                            text: t.body_text || '',
+                            footer: t.footer_text || '',
+                            buttons: t.buttons || [],
+                            header_type: t.header_type || 'NONE',
+                            fields: fields,
+                            language: t.language || 'en'
+                        };
+                    });
+
+                    alert(`Successfully refreshed ${res.templates.length} templates directly from Meta!`);
+                    renderTemplateFields();
+                } else {
+                    alert('Meta Sync Note: ' + (res.message || 'Could not sync from Meta. Check your WABA ID in Settings.'));
+                }
+            } catch (err) {
+                console.error('Meta live sync error:', err);
+                alert('Network or server error while communicating with Meta.');
+            } finally {
+                btnSyncLive.disabled = false;
+                btnSyncLive.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i><span>Sync Meta</span>';
+            }
+        });
+    }
+
     const sendTemplateModalEl = document.getElementById('sendTemplateModal');
     if (sendTemplateModalEl) {
         sendTemplateModalEl.addEventListener('show.bs.modal', function () {
@@ -1453,7 +1614,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const params = [];
             if (tmplDynamicFields) {
                 tmplDynamicFields.querySelectorAll('.tmpl-param-input').forEach(inp => {
-                    params.push(inp.value.trim());
+                    const val = inp.value.trim();
+                    const pName = inp.dataset.name || '';
+                    if (pName && isNaN(pName)) {
+                        params.push({ name: pName, value: val });
+                    } else {
+                        params.push(val);
+                    }
                 });
             }
 

@@ -50,12 +50,20 @@ class WhatsAppTemplate extends Model
     }
 
     /**
-     * Count how many dynamic parameters {{1}}, {{2}} are present in body.
+     * Get list of dynamic parameter tokens (positional or named).
+     */
+    public function getVariablesAttribute(): array
+    {
+        preg_match_all('/\{\{([a-zA-Z0-9_]+)\}\}/', (string) $this->body_text, $matches);
+        return array_values(array_unique($matches[1] ?? []));
+    }
+
+    /**
+     * Count how many dynamic parameters are present in body.
      */
     public function getVariableCountAttribute(): int
     {
-        preg_match_all('/\{\{(\d+)\}\}/', $this->body_text, $matches);
-        return count($matches[1] ?? []);
+        return count($this->variables);
     }
 
     /**

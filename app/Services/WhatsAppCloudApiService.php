@@ -390,9 +390,15 @@ class WhatsAppCloudApiService
                 'response' => $data,
             ]);
 
+            $errorDetail = $data['error']['error_data']['details'] ?? null;
+            $msg = $data['error']['message'] ?? 'Failed to deliver WhatsApp message.';
+            if ($errorDetail) {
+                $msg .= ' (' . $errorDetail . ')';
+            }
+
             return [
                 'success' => false,
-                'message' => $data['error']['message'] ?? 'Failed to deliver WhatsApp message.',
+                'message' => $msg,
                 'error' => $data['error'] ?? null,
             ];
         } catch (\Throwable $e) {

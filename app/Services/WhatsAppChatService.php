@@ -285,65 +285,70 @@ class WhatsAppChatService
         $templateModel = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
 
         // 1. Header Component (Image)
-        $isImageHeader = ($templateModel && strtoupper($templateModel->header_type ?? '') === 'IMAGE');
-        $resolvedHeaderUrl = $headerImageUrl;
-        if ($isImageHeader && empty($resolvedHeaderUrl)) {
-            $resolvedHeaderUrl = asset('images/logo.png');
-        }
+        $isImageHeader = ($templateModel && strtoupper((string) $templateModel->header_type) === 'IMAGE')
+            || (! $templateModel && ! empty($headerImageUrl));
 
-        if (! empty($resolvedHeaderUrl)) {
+        if ($isImageHeader) {
+            $effectiveImageUrl = ! empty($headerImageUrl) ? $headerImageUrl : url('images/logo.png');
             $components[] = [
                 'type' => 'header',
                 'parameters' => [
                     [
                         'type' => 'image',
-                        'image' => ['link' => $resolvedHeaderUrl],
+                        'image' => ['link' => $effectiveImageUrl],
                     ],
                 ],
             ];
         }
 
-        // 2. Body Parameters
-        $expectedCount = null;
-        if ($templateModel && ! empty($templateModel->body_text)) {
-            preg_match_all('/\{\{(\d+)\}\}/', $templateModel->body_text, $matches);
-            $indices = ! empty($matches[1]) ? array_map('intval', $matches[1]) : [];
-            $expectedCount = ! empty($indices) ? max($indices) : 0;
-        }
+        // 2. Body Parameters (supporting both named and positional variables)
+        preg_match_all('/\{\{([a-zA-Z0-9_]+)\}\}/', (string) ($templateModel?->body_text ?? ''), $matches);
+        $templateTokens = $matches[1] ?? [];
 
-        if ($expectedCount !== null) {
-            if ($expectedCount > 0) {
-                $bodyParams = [];
-                for ($i = 0; $i < $expectedCount; $i++) {
-                    $val = isset($parameters[$i]) && trim((string) $parameters[$i]) !== ''
-                        ? (string) $parameters[$i]
-                        : ($i === 0 ? ($conversation->contact_name ?: 'Customer') : '—');
-                    $bodyParams[] = [
-                        'type' => 'text',
-                        'text' => $val,
-                    ];
+        if (! empty($parameters) && is_array($parameters)) {
+            $bodyParams = [];
+            $paramIndex = 0;
+
+            foreach ($parameters as $key => $val) {
+                $paramName = null;
+                $paramText = '';
+
+                if (is_array($val)) {
+                    $paramName = $val['name'] ?? $val['parameter_name'] ?? null;
+                    $paramText = trim((string) ($val['value'] ?? $val['text'] ?? ''));
+                } elseif (! is_numeric($key)) {
+                    $paramName = (string) $key;
+                    $paramText = trim((string) $val);
+                } else {
+                    $paramText = trim((string) $val);
+                    if (isset($templateTokens[$paramIndex]) && ! ctype_digit($templateTokens[$paramIndex])) {
+                        $paramName = $templateTokens[$paramIndex];
+                    }
                 }
+
+                if ($paramText !== '') {
+                    $paramObj = [
+                        'type' => 'text',
+                        'text' => $paramText,
+                    ];
+                    if (! empty($paramName) && ! ctype_digit($paramName)) {
+                        $paramObj['parameter_name'] = $paramName;
+                    }
+                    $bodyParams[] = $paramObj;
+                }
+                $paramIndex++;
+            }
+
+            if (! empty($bodyParams)) {
                 $components[] = [
                     'type' => 'body',
                     'parameters' => $bodyParams,
                 ];
             }
-        } elseif (! empty($parameters)) {
-            $bodyParams = [];
-            foreach ($parameters as $val) {
-                $bodyParams[] = [
-                    'type' => 'text',
-                    'text' => (string) $val,
-                ];
-            }
-            $components[] = [
-                'type' => 'body',
-                'parameters' => $bodyParams,
-            ];
         }
 
         // 3. Fallback language code from template if default
-        if ($templateModel && ! empty($templateModel->language) && $langCode === 'en') {
+        if ($templateModel && ! empty($templateModel->language) && ($langCode === 'en' || empty($langCode))) {
             $langCode = $templateModel->language;
         }
 
@@ -361,8 +366,16 @@ class WhatsAppChatService
         // Resolve authentic rendered template text
         if ($templateModel && ! empty($templateModel->body_text)) {
             $renderedBody = $templateModel->body_text;
-            foreach ($parameters as $idx => $val) {
-                $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $val, $renderedBody);
+            $idx = 0;
+            foreach ($parameters as $key => $val) {
+                $valText = is_array($val) ? ($val['value'] ?? $val['text'] ?? '') : (string) $val;
+                $valName = is_array($val) ? ($val['name'] ?? null) : (! is_numeric($key) ? $key : ($templateTokens[$idx] ?? null));
+
+                if (! empty($valName)) {
+                    $renderedBody = str_replace(['{{' . $valName . '}}', '{' . $valName . '}'], (string) $valText, $renderedBody);
+                }
+                $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $valText, $renderedBody);
+                $idx++;
             }
         } else {
             $presets = [
@@ -374,12 +387,14 @@ class WhatsAppChatService
             if (isset($presets[$templateName])) {
                 $renderedBody = $presets[$templateName];
                 foreach ($parameters as $idx => $val) {
-                    $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $val, $renderedBody);
+                    $valText = is_array($val) ? ($val['value'] ?? $val['text'] ?? '') : (string) $val;
+                    $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $valText, $renderedBody);
                 }
             } else {
                 $renderedBody = '📋 Template: ' . str_replace('_', ' ', $templateName);
                 if (! empty($parameters)) {
-                    $renderedBody .= ' (' . implode(', ', array_slice($parameters, 0, 3)) . ')';
+                    $cleanParams = array_map(fn($p) => is_array($p) ? ($p['value'] ?? '') : (string) $p, $parameters);
+                    $renderedBody .= ' (' . implode(', ', array_slice($cleanParams, 0, 3)) . ')';
                 }
             }
         }
