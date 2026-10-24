@@ -29,8 +29,9 @@ class OrderController extends Controller
         'assign_courier' => 'Assign Courier',
         'ready_to_ship' => 'Ready to Ship',
         'shipped' => 'Shipped',
-        'cancelled' => 'Cancelled',
         'delivered' => 'Delivered',
+        'hold' => 'On Hold / Unpaid',
+        'cancelled' => 'Cancelled',
     ];
 
     public function __construct(
@@ -54,17 +55,51 @@ class OrderController extends Controller
             $tabCounts[$key] = $countQuery->count();
         }
 
+        $couriers = \App\Models\Shipment::whereNotNull('courier')
+            ->distinct()
+            ->pluck('courier')
+            ->filter()
+            ->values();
+
         $orders = Order::query()
             ->with(['user', 'items', 'payments', 'shipments'])
             ->withCount('items')
             ->when($request->filled('q'), function ($query) use ($request) {
-                $q = $request->input('q');
-                $query->where(function ($query) use ($q) {
+                $q = trim((string) $request->input('q'));
+                $cleanPhone = preg_replace('/\D/', '', $q);
+
+                $query->where(function ($query) use ($q, $cleanPhone) {
                     $query->where('order_number', 'like', "%{$q}%")
+                        ->orWhere('shipping_name', 'like', "%{$q}%")
+                        ->orWhere('billing_name', 'like', "%{$q}%")
+                        ->orWhere('guest_email', 'like', "%{$q}%")
                         ->orWhereHas('user', function ($query) use ($q) {
                             $query->where('name', 'like', "%{$q}%")
                                 ->orWhere('email', 'like', "%{$q}%");
+                        })
+                        ->orWhereHas('shipments', function ($query) use ($q) {
+                            $query->where('awb_number', 'like', "%{$q}%")
+                                ->orWhere('tracking_number', 'like', "%{$q}%")
+                                ->orWhere('shipmojo_order_id', 'like', "%{$q}%");
                         });
+
+                    if ($cleanPhone !== '') {
+                        $query->orWhere('shipping_mobile', 'like', "%{$cleanPhone}%")
+                            ->orWhere('billing_mobile', 'like', "%{$cleanPhone}%")
+                            ->orWhere('guest_mobile', 'like', "%{$cleanPhone}%")
+                            ->orWhereHas('user', function ($query) use ($cleanPhone) {
+                                $query->where('phone', 'like', "%{$cleanPhone}%");
+                            });
+                    }
+                });
+            })
+            ->when($request->filled('payment_method'), function ($query) use ($request) {
+                $query->where('payment_method', $request->input('payment_method'));
+            })
+            ->when($request->filled('courier'), function ($query) use ($request) {
+                $courier = $request->input('courier');
+                $query->whereHas('shipments', function ($sq) use ($courier) {
+                    $sq->where('courier', 'like', "%{$courier}%");
                 });
             })
             ->when($request->filled('order_status'), function ($query) use ($request) {
@@ -72,6 +107,16 @@ class OrderController extends Controller
             })
             ->when($request->filled('payment_status'), function ($query) use ($request) {
                 $query->where('payment_status', $request->input('payment_status'));
+            })
+            ->when($request->filled('date_preset'), function ($query) use ($request) {
+                $preset = $request->input('date_preset');
+                match ($preset) {
+                    'today' => $query->whereDate('created_at', today()),
+                    'yesterday' => $query->whereDate('created_at', today()->subDay()),
+                    'last_7_days' => $query->where('created_at', '>=', now()->subDays(7)),
+                    'this_month' => $query->where('created_at', '>=', now()->startOfMonth()),
+                    default => null,
+                };
             })
             ->when($request->filled('date_from'), function ($query) use ($request) {
                 $query->whereDate('created_at', '>=', $request->input('date_from'));
@@ -94,34 +139,49 @@ class OrderController extends Controller
             'tabs' => $this->tabs,
             'activeTab' => $activeTab,
             'tabCounts' => $tabCounts,
+            'couriers' => $couriers,
         ]);
     }
 
     /**
-     * Scope the orders query to one pipeline tab. Uses order status (now kept in
-     * sync by ShipMojo webhooks) plus shipment state so existing rows without a
-     * synced order status still land on the right tab.
+     * Scope the orders query to one pipeline tab.
      */
     protected function applyTabScope(Builder $query, string $tab): Builder
     {
         switch ($tab) {
             case 'pending':
+                // Successfully placed orders waiting to be pushed to ShipMojo
                 $query->whereNotIn('order_status', ['cancelled', 'failed', 'delivered'])
+                    ->where(function (Builder $q) {
+                        $q->where('payment_status', 'paid')
+                            ->orWhere(function (Builder $sub) {
+                                $sub->where('payment_method', 'cod')
+                                    ->whereNotIn('payment_status', ['failed', 'cancelled']);
+                            });
+                    })
                     ->whereDoesntHave('shipments', function (Builder $q) {
                         $q->whereNotNull('shipmojo_pushed_at');
                     });
                 break;
 
-            case 'ready_to_ship':
-                $query->whereNotIn('order_status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'])
-                    ->whereHas('shipments', function (Builder $q) {
-                        $q->whereNotNull('shipmojo_pushed_at')
-                            ->whereNotNull('awb_number')
-                            ->whereNotIn('status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled']);
+            case 'hold':
+                // Failed, dropped, or unconfirmed online payments
+                $query->whereNotIn('order_status', ['cancelled', 'delivered'])
+                    ->where(function (Builder $q) {
+                        $q->whereIn('payment_status', ['failed', 'cancelled'])
+                            ->orWhere('order_status', 'failed')
+                            ->orWhere(function (Builder $sub) {
+                                $sub->where('payment_method', '!=', 'cod')
+                                    ->whereIn('payment_status', ['pending', 'processing']);
+                            });
+                    })
+                    ->whereDoesntHave('shipments', function (Builder $q) {
+                        $q->whereNotNull('shipmojo_pushed_at');
                     });
                 break;
 
             case 'assign_courier':
+                // Pushed to ShipMojo, awaiting courier assignment
                 $query->whereNotIn('order_status', ['cancelled', 'failed', 'delivered'])
                     ->whereHas('shipments', function (Builder $q) {
                         $q->whereNotNull('shipmojo_pushed_at')
@@ -132,11 +192,31 @@ class OrderController extends Controller
                     });
                 break;
 
+            case 'ready_to_ship':
+                // Courier assigned (has AWB), ready for pickup and label print
+                $query->whereNotIn('order_status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'])
+                    ->whereHas('shipments', function (Builder $q) {
+                        $q->whereNotNull('shipmojo_pushed_at')
+                            ->whereNotNull('awb_number')
+                            ->whereNotIn('status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled']);
+                    });
+                break;
+
             case 'shipped':
+                // In transit or out for delivery
                 $query->where(function (Builder $q) {
                     $q->whereIn('order_status', ['shipped', 'out_for_delivery'])
                         ->orWhereHas('shipments', function (Builder $sq) {
                             $sq->whereIn('status', ['shipped', 'out_for_delivery']);
+                        });
+                })->whereNotIn('order_status', ['cancelled', 'delivered']);
+                break;
+
+            case 'delivered':
+                $query->where(function (Builder $q) {
+                    $q->where('order_status', 'delivered')
+                        ->orWhereHas('shipments', function (Builder $sq) {
+                            $sq->whereIn('status', ['delivered']);
                         });
                 });
                 break;
@@ -146,15 +226,6 @@ class OrderController extends Controller
                     $q->whereIn('order_status', ['cancelled', 'failed'])
                         ->orWhereHas('shipments', function (Builder $sq) {
                             $sq->whereIn('status', ['returning', 'returned', 'failed', 'cancelled']);
-                        });
-                });
-                break;
-
-            case 'delivered':
-                $query->where(function (Builder $q) {
-                    $q->where('order_status', 'delivered')
-                        ->orWhereHas('shipments', function (Builder $sq) {
-                            $sq->whereIn('status', ['delivered']);
                         });
                 });
                 break;
@@ -201,7 +272,11 @@ class OrderController extends Controller
         $oldStatus = $order->order_status;
 
         try {
-            $this->orderService->updateOrderStatus($order, $newStatus, $data['description'] ?? null);
+            if ($newStatus === 'cancelled') {
+                $this->orderService->cancelOrder($order, $data['description'] ?? 'Cancelled by admin');
+            } else {
+                $this->orderService->updateOrderStatus($order, $newStatus, $data['description'] ?? null);
+            }
 
             $this->logger->orderStatusChanged(
                 auth('admin')->user(),

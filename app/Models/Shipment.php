@@ -13,6 +13,7 @@ class Shipment extends Model
         'courier',
         'tracking_number',
         'awb_number',
+        'tracking_url',
         'shipping_method',
         'status',
         'weight',

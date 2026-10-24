@@ -61,6 +61,7 @@ class Order extends Model
         'whatsapp_delivered_sent_at',
         'order_status',
         'cancellation_reason',
+        'tracking_url',
         'internal_notes',
         'cancelled_at',
     ];
@@ -234,6 +235,37 @@ class Order extends Model
         return URL::temporarySignedRoute('track.order', now()->addDays($expiresInDays), [
             'order' => $this->order_number,
             'mobile' => $mobile,
+        ]);
+    }
+
+    /**
+     * Best tracking link available: ShipMojo/courier tracking URL, or guest signed tracking URL.
+     */
+    public function trackingUrl(): string
+    {
+        if (! empty($this->tracking_url)) {
+            return $this->tracking_url;
+        }
+
+        $shipmentUrl = $this->shipments->first()?->tracking_url;
+        if (! empty($shipmentUrl)) {
+            return $shipmentUrl;
+        }
+
+        return $this->guestTrackingUrl();
+    }
+
+    /**
+     * Guest-friendly signed review URL for the order or a specific line item.
+     */
+    public function guestReviewUrl(?OrderItem $item = null, int $expiresInDays = 30): string
+    {
+        $mobile = $this->shipping_mobile ?: ($this->billing_mobile ?: ($this->guest_mobile ?: $this->user?->phone));
+
+        return URL::temporarySignedRoute('order.review', now()->addDays($expiresInDays), [
+            'order' => $this->order_number,
+            'mobile' => $mobile,
+            'item' => $item?->id,
         ]);
     }
 

@@ -325,12 +325,20 @@ class ShipMojoService
 
         if (($response['result'] ?? '0') === '1') {
             $data = $response['data'] ?? [];
+            $awb = $data['awb_number'] ?? null;
+            $trackingUrl = $data['tracking_url'] ?? $data['tracking_link'] ?? ($awb ? 'https://shipmojo.com/track/' . rawurlencode((string) $awb) : null);
+
             $shipment?->update([
-                'awb_number' => $data['awb_number'] ?? null,
+                'awb_number' => $awb,
                 'courier' => $data['courier_company'] ?? null,
                 'courier_service' => $data['courier_company_service'] ?? null,
+                'tracking_url' => $trackingUrl,
                 'status' => 'packed',
             ]);
+
+            if ($trackingUrl) {
+                $order->update(['tracking_url' => $trackingUrl]);
+            }
 
             if ($this->syncOrderStatus($order, 'packed')) {
                 $this->notifyOrderStatus($order, 'packed');
@@ -403,14 +411,19 @@ class ShipMojoService
     {
         $shipment = $order->shipments()->latest()->first();
 
-        if (! $shipment?->awb_number) {
-            throw new \RuntimeException('No AWB number found. Cannot cancel.');
+        if (! $shipment || ! $shipment->isPushedToShipMojo()) {
+            return ['result' => '1', 'message' => 'Shipment was not pushed to ShipMojo.'];
         }
 
-        $response = $this->post('/cancel-order', [
+        $params = [
             'order_id' => $shipment->shipmojo_order_id ?? $order->order_number,
-            'awb_number' => (int) $shipment->awb_number,
-        ]);
+        ];
+
+        if (! empty($shipment->awb_number)) {
+            $params['awb_number'] = (int) preg_replace('/\D/', '', (string) $shipment->awb_number);
+        }
+
+        $response = $this->post('/cancel-order', $params);
 
         if (($response['result'] ?? '0') === '1') {
             $shipment->update(['status' => 'failed']);
@@ -745,6 +758,13 @@ class ShipMojoService
             $updates['tracking_number'] = $tracking;
         }
 
+        $trackingUrl = $this->extractFirst($payload, ['tracking_url', 'tracking_link', 'track_url', 'tracking_page', 'track_link', 'public_url']);
+        if ($trackingUrl !== null && filter_var($trackingUrl, FILTER_VALIDATE_URL)) {
+            $updates['tracking_url'] = (string) $trackingUrl;
+        } elseif ($awb !== null && empty($shipment->tracking_url)) {
+            $updates['tracking_url'] = 'https://shipmojo.com/track/' . rawurlencode((string) $awb);
+        }
+
         $expected = $this->extractFirst($payload, ['expected_delivery_date', 'estimated_delivery', 'etd', 'expected_delivery']);
         if ($expected !== null) {
             $updates['estimated_delivery'] = $this->parseEventDate($expected);
@@ -763,6 +783,10 @@ class ShipMojoService
 
         if ($updates !== []) {
             $shipment->update($updates);
+
+            if (! empty($updates['tracking_url'])) {
+                $order->update(['tracking_url' => $updates['tracking_url']]);
+            }
         }
 
         // Persist any scan / history events in the payload.
@@ -1011,10 +1035,6 @@ class ShipMojoService
 
     protected function notifyOrderStatus(Order $order, string $status): void
     {
-        if (! $order->user) {
-            return;
-        }
-
         try {
             app(NotificationService::class)->orderStatusChanged($order, $status);
         } catch (\Throwable $e) {

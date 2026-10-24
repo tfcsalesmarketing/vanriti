@@ -357,6 +357,19 @@ class OrderService
         // the alert itself must never break the cancellation.
         $order->refresh();
 
+        // Auto-cancel in ShipMojo if already pushed
+        try {
+            $shipment = $order->shipments()->latest('id')->first();
+            if ($shipment && $shipment->isPushedToShipMojo() && ! in_array($shipment->status, ['shipped', 'out_for_delivery', 'delivered'], true)) {
+                app(\App\Services\ShipMojoService::class)->cancelOrder($order);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('ShipMojo: Automatic cancel failed on order cancellation.', [
+                'order' => $order->order_number,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         if ($order->payment_status === 'paid' && (float) $order->amount_paid > 0) {
             try {
                 app(NotificationService::class)->notifyAdmins(

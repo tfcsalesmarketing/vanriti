@@ -145,6 +145,8 @@ Route::post('/shipmojo/webhook', [ShipMojoWebhookController::class, 'handle'])
 Route::get('/track', [TrackController::class, 'index'])->name('track');
 Route::post('/track', [TrackController::class, 'lookup'])->name('track.lookup')->middleware('throttle:10,1');
 Route::get('/track/{order:order_number}', [TrackController::class, 'show'])->name('track.order')->middleware('signed');
+Route::get('/orders/{order:order_number}/review', [\App\Http\Controllers\OrderReviewController::class, 'show'])->name('order.review')->middleware('signed');
+Route::post('/orders/{order:order_number}/review', [\App\Http\Controllers\OrderReviewController::class, 'submit'])->name('order.review.submit')->middleware('signed');
 
 // ---------- Content ----------
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');

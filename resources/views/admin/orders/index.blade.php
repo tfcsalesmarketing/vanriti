@@ -9,12 +9,17 @@
             ['route' => route('admin.orders.shipmojo.bulk.push'), 'label' => 'Push to ShipMojo', 'btn' => 'dark', 'icon' => 'bi-upload', 'type' => 'primary', 'ok' => 'Push', 'confirm' => 'Push selected orders to ShipMojo?'],
             ['route' => route('admin.orders.bulk.cancel'), 'label' => 'Cancel Selected', 'btn' => 'outline-danger', 'icon' => 'bi-x-circle', 'type' => 'danger', 'ok' => 'Cancel Orders', 'confirm' => 'Cancel selected orders? Stock will be restored and paid orders will receive a refund.'],
         ],
+        'hold' => [
+            ['route' => route('admin.orders.bulk.cancel'), 'label' => 'Cancel Selected', 'btn' => 'outline-danger', 'icon' => 'bi-x-circle', 'type' => 'danger', 'ok' => 'Cancel Orders', 'confirm' => 'Cancel selected orders?'],
+        ],
         'assign_courier' => [
             ['route' => route('admin.orders.shipmojo.bulk.auto-assign'), 'label' => 'Auto-Assign Courier', 'btn' => 'dark', 'icon' => 'bi-check2-all', 'type' => 'primary', 'ok' => 'Assign', 'confirm' => 'Auto-assign courier for selected orders?'],
+            ['route' => route('admin.orders.bulk.cancel'), 'label' => 'Cancel Selected', 'btn' => 'outline-danger', 'icon' => 'bi-x-circle', 'type' => 'danger', 'ok' => 'Cancel Orders', 'confirm' => 'Cancel selected orders in system & ShipMojo?'],
         ],
         'ready_to_ship' => [
             ['route' => route('admin.orders.shipmojo.bulk.schedule-pickup'), 'label' => 'Schedule Pickup', 'btn' => 'dark', 'icon' => 'bi-truck', 'type' => 'primary', 'ok' => 'Schedule', 'confirm' => 'Schedule pickup for selected orders?'],
             ['route' => route('admin.orders.shipmojo.bulk.labels'), 'label' => 'Download Labels (ZIP)', 'btn' => 'dark', 'icon' => 'bi-printer', 'type' => 'primary', 'ok' => 'Download', 'confirm' => 'Download shipping labels for selected orders?'],
+            ['route' => route('admin.orders.bulk.cancel'), 'label' => 'Cancel Selected', 'btn' => 'outline-danger', 'icon' => 'bi-x-circle', 'type' => 'danger', 'ok' => 'Cancel Orders', 'confirm' => 'Cancel selected orders in system & ShipMojo?'],
         ],
     ];
     $tabBulkActions = $bulkActions[$activeTab] ?? [];
@@ -127,42 +132,71 @@
 </div>
 
 {{-- Streamlined Filter Bar --}}
-<div class="card filter-card mb-3">
-    <form method="GET" action="{{ route('admin.orders.index') }}" class="row g-2 align-items-center">
-        <input type="hidden" name="tab" value="{{ $activeTab }}">
-        <div class="col-12 col-md-3">
-            <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                <input type="text" name="q" class="form-control border-start-0" placeholder="Order #, email, phone, name..." value="{{ request('q') }}">
+{{-- Streamlined Filter Bar --}}
+<div class="card filter-card mb-3 shadow-xs border">
+    <div class="card-body p-2.5">
+        <form method="GET" action="{{ route('admin.orders.index') }}" class="row g-2 align-items-center" id="filterForm">
+            <input type="hidden" name="tab" value="{{ $activeTab }}">
+            <div class="col-12 col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" id="orderSearchInput" class="form-control border-start-0"
+                           placeholder="Order #, name, phone, AWB, email..."
+                           value="{{ request('q') }}" autocomplete="off">
+                    @if (request('q'))
+                        <a href="{{ route('admin.orders.index', array_merge(request()->except('q', 'page'), ['tab' => $activeTab])) }}"
+                           class="input-group-text bg-light text-muted border-start-0 text-decoration-none" title="Clear search">
+                            <i class="bi bi-x"></i>
+                        </a>
+                    @endif
+                </div>
             </div>
-        </div>
-        <div class="col-6 col-md-2">
-            <select name="order_status" class="form-select form-select-sm">
-                <option value="">All Order Status</option>
-                @foreach ($orderStatuses as $status)
-                    <option value="{{ $status }}" {{ request('order_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <select name="payment_status" class="form-select form-select-sm">
-                <option value="">All Payment Status</option>
-                @foreach ($paymentStatuses as $status)
-                    <option value="{{ $status }}" {{ request('payment_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <input type="date" name="date_from" class="form-control form-control-sm" title="From Date" value="{{ request('date_from') }}">
-        </div>
-        <div class="col-6 col-md-2">
-            <input type="date" name="date_to" class="form-control form-control-sm" title="To Date" value="{{ request('date_to') }}">
-        </div>
-        <div class="col-12 col-md-1 d-flex gap-1">
-            <button type="submit" class="btn btn-sm btn-dark flex-fill" title="Apply Filters"><i class="bi bi-funnel"></i></button>
-            <a href="{{ route('admin.orders.index', ['tab' => $activeTab]) }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
-        </div>
-    </form>
+            <div class="col-6 col-md-2">
+                <select name="payment_method" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Payment Methods</option>
+                    <option value="cod" {{ request('payment_method') === 'cod' ? 'selected' : '' }}>Cash on Delivery (COD)</option>
+                    <option value="razorpay" {{ request('payment_method') === 'razorpay' ? 'selected' : '' }}>Online / Prepaid (Razorpay)</option>
+                    <option value="manual" {{ request('payment_method') === 'manual' ? 'selected' : '' }}>Manual / Bank Transfer</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="courier" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Couriers</option>
+                    @foreach ($couriers ?? [] as $courierName)
+                        <option value="{{ $courierName }}" {{ request('courier') === $courierName ? 'selected' : '' }}>{{ $courierName }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-1.5" style="flex: 0 0 auto; width: 14%;">
+                <select name="payment_status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Payment Status</option>
+                    @foreach ($paymentStatuses as $status)
+                        <option value="{{ $status }}" {{ request('payment_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-1.5" style="flex: 0 0 auto; width: 13%;">
+                <select name="date_preset" id="datePresetSelect" class="form-select form-select-sm" onchange="handleDatePreset(this)">
+                    <option value="">All Dates</option>
+                    <option value="today" {{ request('date_preset') === 'today' ? 'selected' : '' }}>Today</option>
+                    <option value="yesterday" {{ request('date_preset') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                    <option value="last_7_days" {{ request('date_preset') === 'last_7_days' ? 'selected' : '' }}>Last 7 Days</option>
+                    <option value="this_month" {{ request('date_preset') === 'this_month' ? 'selected' : '' }}>This Month</option>
+                    <option value="custom" {{ request('date_preset') === 'custom' || request('date_from') || request('date_to') ? 'selected' : '' }}>Custom Range</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-1" id="dateFromCol" style="{{ request('date_preset') === 'custom' || request('date_from') ? '' : 'display:none;' }}">
+                <input type="date" name="date_from" class="form-control form-control-sm" title="From Date" value="{{ request('date_from') }}">
+            </div>
+            <div class="col-6 col-md-1" id="dateToCol" style="{{ request('date_preset') === 'custom' || request('date_to') ? '' : 'display:none;' }}">
+                <input type="date" name="date_to" class="form-control form-control-sm" title="To Date" value="{{ request('date_to') }}">
+            </div>
+            <div class="col-auto d-flex gap-1 ms-auto">
+                <button type="submit" class="btn btn-sm btn-dark" title="Apply Filters"><i class="bi bi-funnel"></i> Filter</button>
+                <a href="{{ route('admin.orders.index', ['tab' => $activeTab]) }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i> Reset</a>
+            </div>
+        </form>
+    </div>
 </div>
 
 @if ($tabBulkActions)
@@ -222,9 +256,9 @@
                         <th>Customer Details</th>
                         <th class="text-center">Items</th>
                         <th class="text-end">Total Amount</th>
-                        @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped'], true))
+                        @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped', 'delivered'], true))
                             <th>Courier Partner</th>
-                            <th>AWB Number</th>
+                            <th>AWB / Tracking</th>
                         @endif
                         <th>Payment</th>
                         <th>Fulfillment</th>
@@ -283,9 +317,22 @@
                             </td>
                             <td class="text-center small"><span class="badge bg-light text-dark border">{{ $order->items_count }}</span></td>
                             <td class="text-end fw-bold small text-dark">{{ format_price($order->grand_total) }}</td>
-                            @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped'], true))
+                            @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped', 'delivered'], true))
                                 <td class="small fw-semibold text-secondary">{{ $shipment?->courier ?: '—' }}</td>
-                                <td class="small font-monospace" style="font-size:0.78rem;">{{ $shipment?->awb_number ?: '—' }}</td>
+                                <td class="small font-monospace" style="font-size:0.78rem;">
+                                    @if ($shipment?->awb_number)
+                                        @if ($order->tracking_url)
+                                            <a href="{{ $order->tracking_url }}" target="_blank" class="text-decoration-none fw-bold text-primary d-inline-flex align-items-center gap-1" title="Track Shipment">
+                                                <span>{{ $shipment->awb_number }}</span>
+                                                <i class="bi bi-box-arrow-up-right" style="font-size: 0.7rem;"></i>
+                                            </a>
+                                        @else
+                                            {{ $shipment->awb_number }}
+                                        @endif
+                                    @else
+                                        <span class="text-muted">Awaiting Assignment</span>
+                                    @endif
+                                </td>
                             @endif
                             <td>
                                 <span class="badge badge-soft-{{ $paymentClasses[$order->payment_status] ?? 'secondary' }}">
@@ -319,6 +366,11 @@
                                     @if ($activeTab === 'ready_to_ship')
                                         <a href="{{ route('admin.orders.shipmojo.label', $order) }}" class="btn btn-sm btn-outline-dark p-1 px-2" title="Download Shipping Label">
                                             <i class="bi bi-printer"></i>
+                                        </a>
+                                    @endif
+                                    @if ($order->tracking_url)
+                                        <a href="{{ $order->tracking_url }}" target="_blank" class="btn btn-sm btn-outline-primary p-1 px-2" title="Track Live Order">
+                                            <i class="bi bi-geo-alt"></i>
                                         </a>
                                     @endif
                                     <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-sm btn-outline-secondary p-1 px-2" title="View Order Details">
@@ -358,8 +410,34 @@
 @endsection
 
 @push('scripts')
-@if ($tabBulkActions)
 <script nonce="{{ $cspNonce }}">
+window.handleDatePreset = function (select) {
+    var fromCol = document.getElementById('dateFromCol');
+    var toCol = document.getElementById('dateToCol');
+    if (select.value === 'custom') {
+        if (fromCol) fromCol.style.display = '';
+        if (toCol) toCol.style.display = '';
+    } else {
+        if (fromCol) fromCol.style.display = 'none';
+        if (toCol) toCol.style.display = 'none';
+        select.form.submit();
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+    var searchInput = document.getElementById('orderSearchInput');
+    if (searchInput) {
+        var timer = null;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                searchInput.form.submit();
+            }, 600);
+        });
+    }
+});
+
+@if ($tabBulkActions)
 window.bulkSubmit = function (btn) {
     var form = document.getElementById('bulk-form');
     window.vrConfirm(btn.dataset.confirm, {

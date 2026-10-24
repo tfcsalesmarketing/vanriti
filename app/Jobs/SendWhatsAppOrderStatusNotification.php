@@ -69,28 +69,47 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
             return;
         }
 
-        $this->order->loadMissing(['shipments', 'user']);
+        $this->order->loadMissing(['shipments', 'user', 'items.product']);
         $shipment = $this->order->shipments()->latest()->first();
 
         $courier = $shipment?->courier ?: 'ShipMojo Express';
         $trackingNumber = $shipment?->awb_number ?: ($shipment?->tracking_number ?: $this->order->order_number);
-        $orderUrl = route('account.order', $this->order);
+        $trackingUrl = $this->order->trackingUrl();
         $customerName = $this->resolveName();
+
+        // Identify highest-value item for targeted review link
+        $highestItem = $this->order->items->sortByDesc(fn ($item) => (float) $item->total_price)->first();
+        $productName = $highestItem?->product_name ?: ($highestItem?->product?->name ?: 'your item');
+        $reviewUrl = $this->order->guestReviewUrl($highestItem);
+
+        $actionUrl = match ($status) {
+            'shipped' => $trackingUrl,
+            'delivered' => $reviewUrl,
+            default => $trackingUrl,
+        };
 
         $conversation = WhatsAppConversation::findOrCreateForPhone($phone, $customerName);
 
         $templateName = match ($status) {
             'shipped' => (string) setting('whatsapp_dispatch_template_name', 'order_dispatched'),
             'out_for_delivery' => (string) setting('whatsapp_out_for_delivery_template_name', 'order_out_for_delivery'),
-            'delivered' => (string) setting('whatsapp_delivered_template_name', 'order_delivered'),
+            'delivered' => (string) setting('whatsapp_delivered_template_name', 'order_delivered_review'),
             default => 'order_dispatched',
         };
 
         $params = match ($status) {
             'shipped' => [$customerName, $this->order->order_number, $courier, $trackingNumber],
             'out_for_delivery' => [$customerName, $this->order->order_number, $courier],
-            'delivered' => [$customerName, $this->order->order_number],
+            'delivered' => [$customerName, $this->order->order_number, $productName],
         };
+
+        $buttonSuffix = ltrim((string) parse_url($actionUrl, PHP_URL_PATH), '/');
+        if ($query = parse_url($actionUrl, PHP_URL_QUERY)) {
+            $buttonSuffix .= '?' . $query;
+        }
+        if ($buttonSuffix === '') {
+            $buttonSuffix = $actionUrl;
+        }
 
         $components = [
             [
@@ -102,7 +121,7 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
                 'sub_type' => 'url',
                 'index' => '0',
                 'parameters' => [
-                    ['type' => 'text', 'text' => ltrim((string) parse_url($orderUrl, PHP_URL_PATH), '/')],
+                    ['type' => 'text', 'text' => $buttonSuffix],
                 ],
             ],
         ];
@@ -113,9 +132,9 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
         // 2. If template failed and customer's 24hr session window is currently active, fall back to rich text
         if (! ($result['success'] ?? false) && $conversation->isWindowOpen()) {
             $fallbackText = match ($status) {
-                'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}. Tracking / AWB: {$trackingNumber}. Track here: {$orderUrl}",
+                'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}. Tracking / AWB: {$trackingNumber}. Track here: {$trackingUrl}",
                 'out_for_delivery' => "🚚 Hi {$customerName}, your order #{$this->order->order_number} is out for delivery today with {$courier}! Please keep your phone handy.",
-                'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} has been delivered. We hope you love your Vanriti products! You can view your invoice here: {$orderUrl}",
+                'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} containing {$productName} has been delivered! We hope you love your Vanriti products. Please share your review here: {$reviewUrl}",
             };
 
             $result = $apiService->sendTextMessage($phone, $fallbackText);
