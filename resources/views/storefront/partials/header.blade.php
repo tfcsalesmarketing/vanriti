@@ -89,11 +89,6 @@
                     <li class="nav-item">
                         <a class="vr-nav-link" href="{{ route('contact.index') }}">Contact</a>
                     </li>
-                    @guest('web')
-                        <li class="nav-item">
-                            <a class="vr-nav-link {{ request()->routeIs('login') ? 'active' : '' }}" href="{{ route('login') }}">Login</a>
-                        </li>
-                    @endguest
                 </ul>
             </div>
 
