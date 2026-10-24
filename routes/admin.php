@@ -254,9 +254,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
         });
 
-        // ShipMojo utilities (requires manage-shipments: they expose live rates
-        // and warehouse inventory to whoever can read a shipment form)
-        Route::middleware('permission:manage-shipments')->group(function () {
+        // ShipMojo utilities (requires manage-shipments or manage-settings)
+        Route::middleware('permission:manage-shipments,manage-settings')->group(function () {
             Route::get('shipmojo/ping', [ShipMojoController::class, 'ping'])->name('shipmojo.ping');
             Route::get('shipmojo/warehouses', [ShipMojoController::class, 'warehouses'])->name('shipmojo.warehouses');
             Route::post('shipmojo/rates', [ShipMojoController::class, 'rates'])->name('shipmojo.rates');

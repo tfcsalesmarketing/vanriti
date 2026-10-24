@@ -14,11 +14,14 @@ class ShipMojoService
 {
     protected string $baseUrl = 'https://shipping-api.com/app/api/v1';
 
-    protected function headers(): array
+    protected function headers(?string $publicKey = null, ?string $privateKey = null): array
     {
+        $pub = ! empty($publicKey) ? $publicKey : (string) setting('shipmojo_public_key', '');
+        $priv = ! empty($privateKey) ? $privateKey : (string) secret_setting('shipmojo_private_key', '');
+
         return [
-            'public-key' => (string) setting('shipmojo_public_key', ''),
-            'private-key' => (string) secret_setting('shipmojo_private_key', ''),
+            'public-key' => $pub,
+            'private-key' => $priv,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
@@ -127,10 +130,10 @@ class ShipMojoService
         return 'Unknown ShipMojo error';
     }
 
-    protected function get(string $endpoint): array
+    protected function get(string $endpoint, ?string $publicKey = null, ?string $privateKey = null): array
     {
         try {
-            $response = Http::withHeaders($this->headers())
+            $response = Http::withHeaders($this->headers($publicKey, $privateKey))
                 ->timeout(20)
                 ->get($this->baseUrl.$endpoint);
 
@@ -140,10 +143,10 @@ class ShipMojoService
         }
     }
 
-    protected function post(string $endpoint, array $body): array
+    protected function post(string $endpoint, array $body, ?string $publicKey = null, ?string $privateKey = null): array
     {
         try {
-            $response = Http::withHeaders($this->headers())
+            $response = Http::withHeaders($this->headers($publicKey, $privateKey))
                 ->timeout(20)
                 ->post($this->baseUrl.$endpoint, $body);
 
@@ -160,10 +163,47 @@ class ShipMojoService
         return array_merge($body, ['http_status' => $status]);
     }
 
-    // ── Health Check ──────────────────────────────────────────────────────────
-    public function ping(): array
+    // ── Health Check / Test Connection ────────────────────────────────────────
+    public function ping(?string $publicKey = null, ?string $privateKey = null): array
     {
-        return $this->get('/info');
+        $pub = ! empty($publicKey) ? $publicKey : (string) setting('shipmojo_public_key', '');
+        $priv = ! empty($privateKey) ? $privateKey : (string) secret_setting('shipmojo_private_key', '');
+
+        if (empty($pub) || empty($priv)) {
+            return [
+                'result' => '0',
+                'message' => 'Please enter and save your ShipMojo Public Key and Private Key first.',
+            ];
+        }
+
+        // 1. First test /get-warehouses (official authenticated endpoint on ShipMojo API)
+        $whRes = $this->get('/get-warehouses', $pub, $priv);
+        if (($whRes['result'] ?? '0') === '1' || isset($whRes['data'])) {
+            return [
+                'result' => '1',
+                'message' => 'Connected to ShipMojo successfully!',
+                'data' => $whRes['data'] ?? [],
+            ];
+        }
+
+        // 2. Fallback to /info
+        $infoRes = $this->get('/info', $pub, $priv);
+        if (($infoRes['result'] ?? '0') === '1') {
+            return [
+                'result' => '1',
+                'message' => 'Connected to ShipMojo successfully!',
+            ];
+        }
+
+        $err = $this->errorMessage($whRes);
+        if ($err === 'Unknown ShipMojo error' || $err === 'Empty response') {
+            $err = $this->errorMessage($infoRes);
+        }
+
+        return [
+            'result' => '0',
+            'message' => $err ?: 'Authentication failed. Please verify your ShipMojo Public and Private keys.',
+        ];
     }
 
     // ── Warehouse ─────────────────────────────────────────────────────────────

@@ -467,29 +467,62 @@
 function testShipMojo(btn) {
     const orig = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing…';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing…';
 
-    fetch('{{ route('admin.shipmojo.ping') }}', {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    const pubInput = document.querySelector('input[name="shipmojo_public_key"]');
+    const privInput = document.querySelector('input[name="shipmojo_private_key"]');
+
+    let url = '{{ route('admin.shipmojo.ping') }}';
+    const params = new URLSearchParams();
+    if (pubInput && pubInput.value.trim()) {
+        params.append('public_key', pubInput.value.trim());
+    }
+    if (privInput && privInput.value.trim()) {
+        params.append('private_key', privInput.value.trim());
+    }
+    if (params.toString()) {
+        url += '?' + params.toString();
+    }
+
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
     })
     .then(r => r.json())
     .then(data => {
-        if (data.result === '1') {
+        if (data.result === '1' || data.success) {
             btn.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Connected!';
             btn.classList.replace('btn-outline-success', 'btn-success');
+            if (typeof showToast === 'function') {
+                showToast(data.message || 'Connected to ShipMojo successfully!', 'success');
+            }
         } else {
-            btn.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i>Failed: ' + (data.message || 'Error');
+            const msg = data.message || 'Connection failed';
+            btn.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i>Failed';
             btn.classList.replace('btn-outline-success', 'btn-outline-danger');
+            if (typeof vrAlert === 'function') {
+                vrAlert(msg, { title: 'ShipMojo Connection Failed', type: 'danger' });
+            } else {
+                alert('ShipMojo Connection Failed:\n\n' + msg);
+            }
         }
         setTimeout(() => {
             btn.innerHTML = orig;
             btn.disabled = false;
             btn.className = btn.className.replace('btn-outline-danger','btn-outline-success').replace('btn-success','btn-outline-success');
-        }, 3000);
+        }, 3500);
     })
-    .catch(() => {
+    .catch(err => {
         btn.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i>Network Error';
-        setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+        if (typeof showToast === 'function') {
+            showToast('Network error while testing ShipMojo connection: ' + err.message, 'error');
+        }
+        setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.disabled = false;
+        }, 3500);
     });
 }
 </script>

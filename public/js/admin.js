@@ -338,6 +338,7 @@
 
     window.vrConfirm = vrConfirm;
     window.vrAlert = vrAlert;
+    window.showToast = showToast;
 
     // ── Single Submit Handler (validation + page loader) ──
     function lockFormSubmit(form) {

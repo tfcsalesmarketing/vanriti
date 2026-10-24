@@ -411,10 +411,13 @@ class ShipMojoController extends Controller
     }
 
     // ── Ping / Test Connection ─────────────────────────────────────────────────
-    public function ping(): JsonResponse
+    public function ping(Request $request): JsonResponse
     {
         try {
-            $response = $this->shipmojo->ping();
+            $pub = $request->query('public_key') ?: $request->input('public_key');
+            $priv = $request->query('private_key') ?: $request->input('private_key');
+
+            $response = $this->shipmojo->ping($pub, $priv);
 
             return response()->json($response);
         } catch (\Throwable $e) {
