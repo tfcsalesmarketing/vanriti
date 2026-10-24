@@ -23,8 +23,12 @@ class ShipMojoPingTest extends TestCase
 
     private function actingAdminWithSettings(): Admin
     {
+        $role = \App\Models\Role::firstOrCreate(['slug' => 'settings-admin'], ['name' => 'Settings Admin']);
+        $permission = \App\Models\Permission::where('slug', 'manage-settings')->firstOrFail();
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
+
         $admin = Admin::factory()->create();
-        $admin->givePermissionTo('manage-settings');
+        $admin->roles()->attach($role);
         $this->actingAs($admin, 'admin');
 
         return $admin;
