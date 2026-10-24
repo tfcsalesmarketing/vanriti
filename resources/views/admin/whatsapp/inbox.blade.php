@@ -117,13 +117,65 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* Mobile Responsive Optimization (Native App Feel) */
+@media (max-width: 767.98px) {
+    .admin-content {
+        padding: 0 !important;
+    }
+    .whatsapp-inbox-wrapper {
+        height: calc(100vh - 58px) !important;
+        height: calc(100dvh - 58px) !important;
+        margin: 0 !important;
+    }
+    .wa-chat-card {
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        height: 100% !important;
+    }
+    .wa-chat-column {
+        height: 100% !important;
+    }
+    .wa-chat-stream {
+        padding: 0.65rem !important;
+        gap: 0.65rem !important;
+    }
+    .wa-bubble {
+        max-width: 88% !important;
+    }
+    .wa-chat-header {
+        padding: 0.5rem 0.65rem !important;
+    }
+    .wa-composer-wrapper {
+        padding: 0.45rem 0.65rem calc(0.5rem + env(safe-area-inset-bottom, 0px)) 0.65rem !important;
+    }
+    .wa-composer-wrapper .btn-icon {
+        width: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+    }
+    .wa-composer-wrapper textarea {
+        font-size: 0.88rem !important;
+        padding: 0.45rem 0.75rem !important;
+        min-height: 38px !important;
+    }
+    .wa-avatar {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.9rem !important;
+    }
+    .wa-contact-name {
+        max-width: 140px !important;
+    }
+}
 </style>
 @endpush
 
 @section('content')
 <div class="whatsapp-inbox-wrapper">
     {{-- Top Operational Toolbar --}}
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2 flex-shrink-0">
+    <div class="{{ $activeConversation ? 'd-none d-md-flex' : 'd-flex' }} flex-wrap align-items-center justify-content-between gap-3 mb-2 flex-shrink-0" id="waOperationalToolbar">
         <div class="d-flex align-items-center gap-3">
             <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
                 <i class="bi bi-whatsapp text-success fs-3"></i>
@@ -297,39 +349,39 @@
             @if ($activeConversation)
                 <div class="col-12 col-md-8 col-xl-6 d-flex flex-column wa-chat-column bg-white">
                     {{-- Chat Topbar --}}
-                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white z-1 flex-shrink-0">
-                        <div class="d-flex align-items-center gap-2 gap-md-3">
-                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle btn-icon d-md-none me-1" title="Back to conversations">
+                    <div class="p-2 p-md-3 border-bottom d-flex align-items-center justify-content-between bg-white z-1 flex-shrink-0 wa-chat-header">
+                        <div class="d-flex align-items-center gap-2 gap-md-3 min-w-0 flex-grow-1 flex-md-grow-0" style="min-width: 0;">
+                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle btn-icon d-md-none me-0.5 flex-shrink-0" style="width: 32px; height: 32px;" title="Back to conversations">
                                 <i class="bi bi-arrow-left"></i>
                             </a>
-                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 42px; height: 42px; font-size: 1.05rem;">
+                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 38px; height: 38px; font-size: 0.95rem;">
                                 {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
                             </div>
-                            <div>
-                                <h6 class="fw-bold mb-0 text-dark">{{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}</h6>
-                                <div class="d-flex align-items-center gap-2 mt-0.5">
-                                    <span class="text-muted small" style="font-size: 0.78rem;">
-                                        <i class="bi bi-telephone text-muted me-1"></i>+{{ $activeConversation->phone }}
+                            <div class="min-w-0 text-truncate">
+                                <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 150px;">{{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}</h6>
+                                <div class="d-flex align-items-center gap-1.5 mt-0.5 text-nowrap">
+                                    <span class="text-muted small" style="font-size: 0.72rem;">
+                                        <i class="bi bi-telephone text-muted me-0.5"></i>+{{ $activeConversation->phone }}
                                     </span>
                                     <span class="badge {{ $activeConversation->isWindowOpen() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }}"
-                                          style="font-size: 0.7rem;" id="activeWindowBadge">
-                                        <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-unlock-fill' : 'bi-lock-fill' }} me-1"></i>
+                                          style="font-size: 0.65rem; padding: 0.15rem 0.4rem;" id="activeWindowBadge">
+                                        <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-unlock-fill' : 'bi-lock-fill' }} me-0.5"></i>
                                         <span id="activeWindowLabel">{{ $activeConversation->windowRemainingFormatted() }}</span>
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center gap-1.5 gap-md-2">
+                        <div class="d-flex align-items-center gap-1 gap-md-2 flex-shrink-0">
                             {{-- Agent Assignment Dropdown --}}
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent">
+                                <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent">
                                     <i class="bi bi-person text-secondary"></i>
-                                    <span id="assignedAgentLabel" class="small fw-semibold text-dark">
+                                    <span id="assignedAgentLabel" class="small fw-semibold text-dark d-none d-sm-inline">
                                         {{ $activeConversation->assignedAgent?->name ?? 'Unassigned' }}
                                     </span>
-                                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.65rem;"></i>
+                                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.6rem;"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem; min-width: 180px;">
                                     <li class="dropdown-header text-uppercase fw-bold text-muted py-1" style="font-size: 0.68rem;">Assign To Agent</li>
@@ -358,7 +410,7 @@
 
                             {{-- Conversation Lifecycle Status --}}
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Lifecycle Status">
+                                <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Lifecycle Status">
                                     @php
                                         $statusConfig = match($activeConversation->status) {
                                             'resolved' => ['color' => 'secondary', 'icon' => 'bi-check2-all', 'label' => 'Resolved'],
@@ -369,8 +421,8 @@
                                     <span class="badge bg-{{ $statusConfig['color'] }}-subtle text-{{ $statusConfig['color'] }} p-1 rounded-circle">
                                         <i class="bi {{ $statusConfig['icon'] }}" style="font-size: 0.65rem;"></i>
                                     </span>
-                                    <span id="convoStatusLabel" class="small fw-semibold text-dark">{{ $statusConfig['label'] }}</span>
-                                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.65rem;"></i>
+                                    <span id="convoStatusLabel" class="small fw-semibold text-dark d-none d-sm-inline">{{ $statusConfig['label'] }}</span>
+                                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.6rem;"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem;">
                                     <li>
@@ -391,11 +443,12 @@
                                 </ul>
                             </div>
 
-                            <button type="button" class="btn btn-light-sm btn-icon rounded-circle" id="btnRefreshChat" title="Refresh messages">
+                            <button type="button" class="btn btn-light-sm btn-icon rounded-circle" id="btnRefreshChat" title="Refresh messages" style="width: 32px; height: 32px;">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>
-                            <button class="btn btn-light-sm d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas">
-                                <i class="bi bi-person-badge me-1"></i>Profile
+                            <button class="btn btn-light-sm d-xl-none px-2 py-1 d-flex align-items-center" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Context">
+                                <i class="bi bi-person-badge"></i>
+                                <span class="d-none d-sm-inline ms-1 small">Profile</span>
                             </button>
                         </div>
                     </div>
@@ -442,41 +495,41 @@
                     </div>
 
                     {{-- Bottom Chat Composer --}}
-                    <div class="p-3 border-top bg-white transition-all flex-shrink-0" id="waComposerWrapper">
+                    <div class="p-2 p-md-3 border-top bg-white transition-all flex-shrink-0 wa-composer-wrapper" id="waComposerWrapper">
                         {{-- Mode Selector: Public WhatsApp Reply vs Private Staff Note --}}
-                        <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5 mb-md-2 px-1">
                             <div class="btn-group btn-group-sm rounded-pill p-0.5 bg-light" role="group">
-                                <button type="button" class="btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode active bg-white text-dark shadow-xs" id="btnModeReply">
+                                <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-mode active bg-white text-dark shadow-xs" id="btnModeReply" style="font-size: 0.72rem;">
                                     <i class="bi bi-whatsapp me-1 text-success"></i> Customer Reply
                                 </button>
-                                <button type="button" class="btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode text-muted" id="btnModeNote">
+                                <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-mode text-muted" id="btnModeNote" style="font-size: 0.72rem;">
                                     <i class="bi bi-lock-fill me-1 text-warning"></i> Internal Note
                                 </button>
                             </div>
-                            <span class="small text-muted" style="font-size: 0.72rem;" id="modeHintText">
+                            <span class="small text-muted d-none d-sm-inline" style="font-size: 0.72rem;" id="modeHintText">
                                 <i class="bi bi-info-circle me-1"></i>Sends message directly to customer's WhatsApp
                             </span>
                         </div>
-                        <form id="waSendForm" class="d-flex align-items-end gap-2">
+                        <form id="waSendForm" class="d-flex align-items-end gap-1.5 gap-md-2">
                             @csrf
                             {{-- Hidden file input --}}
                             <input type="file" id="waFileInput" class="d-none" accept="image/*,application/pdf,.doc,.docx,audio/*,video/*">
 
-                            <button type="button" class="btn btn-light rounded-circle btn-icon p-2.5 flex-shrink-0" id="btnAttachFile" title="Attach image or document">
+                            <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0" id="btnAttachFile" title="Attach image or document">
                                 <i class="bi bi-paperclip fs-5 text-muted"></i>
                             </button>
 
                             <div class="dropdown">
-                                <button type="button" class="btn btn-light rounded-circle btn-icon p-2.5 flex-shrink-0 text-primary" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)">
+                                <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 text-primary" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)">
                                     <i class="bi bi-chat-square-quote-fill fs-5"></i>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-4 p-2 wa-quick-reply-dropdown" style="max-height: 280px; overflow-y: auto; width: 320px; z-index: 1060;" id="waQuickReplyMenu">
+                                <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-4 p-2 wa-quick-reply-dropdown" style="max-height: 280px; overflow-y: auto; width: 300px; z-index: 1060;" id="waQuickReplyMenu">
                                     <li class="dropdown-header small text-uppercase fw-bold text-muted px-2 py-1">Quick Reply Snippets</li>
                                     <li class="text-center py-2 text-muted small"><span class="spinner-border spinner-border-sm"></span> Loading snippets...</li>
                                 </ul>
                             </div>
 
-                            <button type="button" class="btn btn-light rounded-circle btn-icon p-2.5 flex-shrink-0 text-warning" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Meta Template (Bypasses 24h Window)">
+                            <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 text-warning" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Meta Template (Bypasses 24h Window)">
                                 <i class="bi bi-lightning-charge-fill fs-5"></i>
                             </button>
 
@@ -484,12 +537,12 @@
                                 {{-- Inline Slash Suggestions --}}
                                 <div id="waSlashSuggestions" class="position-absolute bottom-100 start-0 mb-2 w-100 bg-white rounded-3 shadow-lg border p-1 d-none" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
                                 </div>
-                                <textarea id="waMessageInput" rows="1" class="form-control rounded-4 pe-4 py-2.5"
-                                          placeholder="Type a message or type / for quick replies..."
-                                          style="resize: none; max-height: 120px; overflow-y: auto;"></textarea>
+                                <textarea id="waMessageInput" rows="1" class="form-control rounded-4 pe-3 py-2"
+                                          placeholder="Type a message or / for snippets..."
+                                          style="resize: none; max-height: 120px; min-height: 38px; overflow-y: auto; font-size: 0.9rem;"></textarea>
                             </div>
 
-                            <button type="submit" class="btn btn-success rounded-circle btn-icon p-2.5 flex-shrink-0 shadow-sm" id="btnSendMessage" title="Send message">
+                            <button type="submit" class="btn btn-success rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm" id="btnSendMessage" title="Send message">
                                 <i class="bi bi-send-fill text-white fs-6"></i>
                             </button>
                         </form>
@@ -855,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function () {
             messageInput.placeholder = 'Type a message or type / for quick replies...';
             btnAttachFile.classList.remove('d-none');
             const btnSend = document.getElementById('btnSendMessage');
-            btnSend.className = 'btn btn-success rounded-circle btn-icon p-2.5 flex-shrink-0 shadow-sm';
+            btnSend.className = 'btn btn-success rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm';
             btnSend.innerHTML = '<i class="bi bi-send-fill text-white fs-6"></i>';
         });
 
@@ -868,17 +921,24 @@ document.addEventListener('DOMContentLoaded', function () {
             messageInput.placeholder = 'Type a private team note...';
             btnAttachFile.classList.add('d-none');
             const btnSend = document.getElementById('btnSendMessage');
-            btnSend.className = 'btn btn-warning rounded-circle btn-icon p-2.5 flex-shrink-0 shadow-sm';
+            btnSend.className = 'btn btn-warning rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm';
             btnSend.innerHTML = '<i class="bi bi-sticky-fill text-dark fs-6"></i>';
         });
     }
 
-    function scrollToBottom() {
+    function scrollToBottom(smooth = false) {
         if (stream) {
-            stream.scrollTop = stream.scrollHeight;
+            if (smooth) {
+                stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+            } else {
+                stream.scrollTop = stream.scrollHeight;
+            }
         }
     }
     scrollToBottom();
+    requestAnimationFrame(() => scrollToBottom());
+    setTimeout(() => scrollToBottom(), 120);
+    setTimeout(() => scrollToBottom(), 350);
 
     // Auto-expand textarea
     messageInput.addEventListener('input', function () {

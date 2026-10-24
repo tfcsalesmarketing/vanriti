@@ -92,7 +92,7 @@ class WhatsAppInboxController extends Controller
 
             $messages = $activeConversation->messages()
                 ->with('sender')
-                ->latest()
+                ->reorder('id', 'desc')
                 ->take(60)
                 ->get()
                 ->reverse()
@@ -230,7 +230,7 @@ class WhatsAppInboxController extends Controller
         $newMessages = $conversation->messages()
             ->with('sender')
             ->where('id', '>', $afterId)
-            ->orderBy('id', 'asc')
+            ->reorder('id', 'asc')
             ->get();
 
         if ($newMessages->isNotEmpty()) {
