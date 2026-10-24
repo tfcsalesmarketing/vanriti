@@ -1,8 +1,17 @@
 @php
     $admin = auth('admin')->user();
+    $_waUnreadCount = \App\Models\WhatsAppConversation::sum('unread_count');
+
+    $catActive = request()->routeIs('admin.products.*', 'admin.categories.*', 'admin.main-categories.*', 'admin.inventory.*', 'admin.dadi.product-profiles.*');
+    $ordersActive = request()->routeIs('admin.orders.*', 'admin.shipments.*', 'admin.returns.*', 'admin.refunds.*');
+    $waActive = request()->routeIs('admin.whatsapp.*');
+    $custActive = request()->routeIs('admin.customers.*', 'admin.carts.*', 'admin.wishlists.*', 'admin.coupons.*', 'admin.reviews.*', 'admin.newsletters.*', 'admin.contact-messages.*');
+    $contentActive = request()->routeIs('admin.media.*', 'admin.banners.*', 'admin.blogs.*', 'admin.pages.*', 'admin.faqs.*');
+    $sysActive = request()->routeIs('admin.admins.*', 'admin.roles.*', 'admin.activities.*', 'admin.settings.*');
 @endphp
 
 <ul class="nav flex-column">
+    {{-- Dashboard --}}
     @if ($admin->hasPermission('view-dashboard'))
     <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
@@ -12,8 +21,8 @@
     </li>
     @endif
 
+    {{-- Analytics Center --}}
     @if ($admin->hasPermission('view-reports'))
-    <li class="nav-heading">Analytics</li>
     <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.analytics') ? 'active' : '' }}"
            href="{{ route('admin.analytics') }}">
@@ -22,260 +31,354 @@
     </li>
     @endif
 
+    {{-- Catalogue & Inventory Dropdown --}}
     @if ($admin->hasPermission(['manage-products', 'manage-categories', 'manage-inventory', 'review-dadi-product-profiles']))
-    <li class="nav-heading">Catalogue</li>
-    @endif
-    @if ($admin->hasPermission('manage-products'))
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
-           href="{{ route('admin.products.index') }}">
-            <i class="bi bi-box-seam"></i><span>Products</span>
+        <a class="nav-link sidebar-group-toggle {{ $catActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseCatalogue"
+           role="button"
+           aria-expanded="{{ $catActive ? 'true' : 'false' }}"
+           aria-controls="collapseCatalogue">
+            <i class="bi bi-box-seam"></i>
+            <span>Catalogue &amp; Stock</span>
+            <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-categories'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}"
-           href="{{ route('admin.categories.index') }}">
-            <i class="bi bi-diagram-3"></i><span>Categories</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.main-categories.*') ? 'active' : '' }}"
-           href="{{ route('admin.main-categories.index') }}">
-            <i class="bi bi-folder"></i><span>Main Categories</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-inventory'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}"
-           href="{{ route('admin.inventory.index') }}">
-            <i class="bi bi-box2"></i><span>Inventory</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('review-dadi-product-profiles'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.dadi.product-profiles.*') ? 'active' : '' }}"
-           href="{{ route('admin.dadi.product-profiles.index') }}">
-            <i class="bi bi-robot"></i><span>Dadi Product Profiles</span>
-        </a>
+        <div class="collapse {{ $catActive ? 'show' : '' }}" id="collapseCatalogue">
+            <ul class="sidebar-submenu">
+                @if ($admin->hasPermission('manage-products'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
+                       href="{{ route('admin.products.index') }}">
+                        <i class="bi bi-box-seam"></i><span>Products</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-categories'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}"
+                       href="{{ route('admin.categories.index') }}">
+                        <i class="bi bi-diagram-3"></i><span>Categories</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.main-categories.*') ? 'active' : '' }}"
+                       href="{{ route('admin.main-categories.index') }}">
+                        <i class="bi bi-folder"></i><span>Main Categories</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-inventory'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}"
+                       href="{{ route('admin.inventory.index') }}">
+                        <i class="bi bi-box2"></i><span>Inventory</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('review-dadi-product-profiles'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.dadi.product-profiles.*') ? 'active' : '' }}"
+                       href="{{ route('admin.dadi.product-profiles.index') }}">
+                        <i class="bi bi-robot"></i><span>Dadi AI Profiles</span>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </div>
     </li>
     @endif
 
+    {{-- Orders & Logistics Dropdown --}}
     @if ($admin->hasPermission(['manage-orders', 'manage-refunds', 'manage-returns', 'manage-shipments']))
-    <li class="nav-heading">Orders</li>
-    @endif
-    @if ($admin->hasPermission('manage-orders'))
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
-           href="{{ route('admin.orders.index') }}">
-            <i class="bi bi-cart-check"></i><span>Orders</span>
+        <a class="nav-link sidebar-group-toggle {{ $ordersActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseOrders"
+           role="button"
+           aria-expanded="{{ $ordersActive ? 'true' : 'false' }}"
+           aria-controls="collapseOrders">
+            <i class="bi bi-cart-check"></i>
+            <span>Orders &amp; Shipping</span>
+            <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-refunds'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}"
-           href="{{ route('admin.refunds.index') }}">
-            <i class="bi bi-arrow-counterclockwise"></i><span>Refunds</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-returns'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.returns.*') ? 'active' : '' }}"
-           href="{{ route('admin.returns.index') }}">
-            <i class="bi bi-return"></i><span>Returns</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-shipments'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.shipments.*') ? 'active' : '' }}"
-           href="{{ route('admin.shipments.index') }}">
-            <i class="bi bi-truck"></i><span>Shipments</span>
-        </a>
+        <div class="collapse {{ $ordersActive ? 'show' : '' }}" id="collapseOrders">
+            <ul class="sidebar-submenu">
+                @if ($admin->hasPermission('manage-orders'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
+                       href="{{ route('admin.orders.index') }}">
+                        <i class="bi bi-receipt"></i><span>All Orders</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-shipments'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.shipments.*') ? 'active' : '' }}"
+                       href="{{ route('admin.shipments.index') }}">
+                        <i class="bi bi-truck"></i><span>Shipments (ShipMojo)</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-returns'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.returns.*') ? 'active' : '' }}"
+                       href="{{ route('admin.returns.index') }}">
+                        <i class="bi bi-arrow-return-left"></i><span>Returns</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-refunds'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}"
+                       href="{{ route('admin.refunds.index') }}">
+                        <i class="bi bi-arrow-counterclockwise"></i><span>Refunds</span>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </div>
     </li>
     @endif
 
-    <li class="nav-heading">WhatsApp CRM</li>
+    {{-- WhatsApp CRM & Suite Dropdown --}}
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.whatsapp.inbox*') ? 'active' : '' }}"
-           href="{{ route('admin.whatsapp.inbox') }}">
+        <a class="nav-link sidebar-group-toggle {{ $waActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseWhatsApp"
+           role="button"
+           aria-expanded="{{ $waActive ? 'true' : 'false' }}"
+           aria-controls="collapseWhatsApp">
             <i class="bi bi-whatsapp" style="color: #25D366;"></i>
-            <span>Live Inbox</span>
-            @php
-                $_waUnreadCount = \App\Models\WhatsAppConversation::sum('unread_count');
-            @endphp
+            <span>WhatsApp CRM</span>
             @if ($_waUnreadCount > 0)
-                <span class="badge rounded-pill bg-success ms-auto" style="font-size: 0.72rem;">{{ $_waUnreadCount }}</span>
+                <span class="badge rounded-pill bg-success ms-auto me-1" style="font-size: 0.68rem; padding: 0.25em 0.55em;">{{ $_waUnreadCount }}</span>
             @endif
+            <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.whatsapp.campaigns*') ? 'active' : '' }}"
-           href="{{ route('admin.whatsapp.campaigns.index') }}">
-            <i class="bi bi-megaphone"></i>
-            <span>Broadcast Campaigns</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.whatsapp.profile*') ? 'active' : '' }}"
-           href="{{ route('admin.whatsapp.profile') }}">
-            <i class="bi bi-person-badge"></i>
-            <span>Business Profile & Health</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.whatsapp.bot*') ? 'active' : '' }}"
-           href="{{ route('admin.whatsapp.bot.index') }}">
-            <i class="bi bi-robot"></i>
-            <span>Chatbot & Quick Replies</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.whatsapp.templates*') ? 'active' : '' }}"
-           href="{{ route('admin.whatsapp.templates.index') }}">
-            <i class="bi bi-file-earmark-check"></i>
-            <span>Meta Templates</span>
-        </a>
+        <div class="collapse {{ $waActive ? 'show' : '' }}" id="collapseWhatsApp">
+            <ul class="sidebar-submenu">
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.whatsapp.inbox*') ? 'active' : '' }}"
+                       href="{{ route('admin.whatsapp.inbox') }}">
+                        <i class="bi bi-chat-dots-fill" style="color: #25D366;"></i>
+                        <span>Live Chat Inbox</span>
+                        @if ($_waUnreadCount > 0)
+                            <span class="badge rounded-pill bg-success ms-auto" style="font-size: 0.65rem;">{{ $_waUnreadCount }}</span>
+                        @endif
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.whatsapp.campaigns*') ? 'active' : '' }}"
+                       href="{{ route('admin.whatsapp.campaigns.index') }}">
+                        <i class="bi bi-megaphone"></i>
+                        <span>Broadcasts</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.whatsapp.bot*') ? 'active' : '' }}"
+                       href="{{ route('admin.whatsapp.bot.index') }}">
+                        <i class="bi bi-robot"></i>
+                        <span>Chatbot &amp; Rules</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.whatsapp.templates*') ? 'active' : '' }}"
+                       href="{{ route('admin.whatsapp.templates.index') }}">
+                        <i class="bi bi-file-earmark-check"></i>
+                        <span>Meta Templates</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.whatsapp.profile*') ? 'active' : '' }}"
+                       href="{{ route('admin.whatsapp.profile') }}">
+                        <i class="bi bi-person-badge"></i>
+                        <span>Profile &amp; Health</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
     </li>
 
+    {{-- Customers & Growth Dropdown --}}
     @if ($admin->hasPermission(['manage-customers', 'manage-coupons', 'manage-reviews', 'manage-newsletters']))
-    <li class="nav-heading">Customers</li>
-    @endif
-    @if ($admin->hasPermission('manage-customers'))
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}"
-           href="{{ route('admin.customers.index') }}">
-            <i class="bi bi-people"></i><span>Customers</span>
+        <a class="nav-link sidebar-group-toggle {{ $custActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseCustomers"
+           role="button"
+           aria-expanded="{{ $custActive ? 'true' : 'false' }}"
+           aria-controls="collapseCustomers">
+            <i class="bi bi-people"></i>
+            <span>Customers &amp; Growth</span>
+            <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.carts.*') ? 'active' : '' }}"
-           href="{{ route('admin.carts.index') }}">
-            <i class="bi bi-cart"></i><span>Cart Items</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.wishlists.*') ? 'active' : '' }}"
-           href="{{ route('admin.wishlists.index') }}">
-            <i class="bi bi-heart"></i><span>Wishlist Items</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-coupons'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}"
-           href="{{ route('admin.coupons.index') }}">
-            <i class="bi bi-ticket-perforated"></i><span>Coupons</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-reviews'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"
-           href="{{ route('admin.reviews.index') }}">
-            <i class="bi bi-star"></i><span>Reviews</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-newsletters'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.newsletters.*') ? 'active' : '' }}"
-           href="{{ route('admin.newsletters.index') }}">
-            <i class="bi bi-envelope-heart"></i><span>Newsletter</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-newsletters'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.contact-messages.*') ? 'active' : '' }}"
-           href="{{ route('admin.contact-messages.index') }}">
-            <i class="bi bi-inbox"></i><span>Contact Inquiries</span>
-        </a>
+        <div class="collapse {{ $custActive ? 'show' : '' }}" id="collapseCustomers">
+            <ul class="sidebar-submenu">
+                @if ($admin->hasPermission('manage-customers'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}"
+                       href="{{ route('admin.customers.index') }}">
+                        <i class="bi bi-person-lines-fill"></i><span>Customer Directory</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.carts.*') ? 'active' : '' }}"
+                       href="{{ route('admin.carts.index') }}">
+                        <i class="bi bi-cart-x"></i><span>Abandoned Carts</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.wishlists.*') ? 'active' : '' }}"
+                       href="{{ route('admin.wishlists.index') }}">
+                        <i class="bi bi-heart"></i><span>Wishlist Items</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-coupons'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}"
+                       href="{{ route('admin.coupons.index') }}">
+                        <i class="bi bi-ticket-perforated"></i><span>Discount Coupons</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-reviews'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"
+                       href="{{ route('admin.reviews.index') }}">
+                        <i class="bi bi-star"></i><span>Product Reviews</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-newsletters'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.newsletters.*') ? 'active' : '' }}"
+                       href="{{ route('admin.newsletters.index') }}">
+                        <i class="bi bi-envelope-heart"></i><span>Newsletter Leads</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.contact-messages.*') ? 'active' : '' }}"
+                       href="{{ route('admin.contact-messages.index') }}">
+                        <i class="bi bi-inbox"></i><span>Contact Inquiries</span>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </div>
     </li>
     @endif
 
+    {{-- Content & Storefront Dropdown --}}
     @if ($admin->hasPermission(['manage-media', 'manage-banners', 'manage-blogs', 'manage-pages', 'manage-faqs']))
-    <li class="nav-heading">Content</li>
-    @endif
-    @if ($admin->hasPermission('manage-media'))
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.media.*') ? 'active' : '' }}"
-           href="{{ route('admin.media.index') }}">
-            <i class="bi bi-folder2-open"></i><span>Media Library</span>
+        <a class="nav-link sidebar-group-toggle {{ $contentActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseContent"
+           role="button"
+           aria-expanded="{{ $contentActive ? 'true' : 'false' }}"
+           aria-controls="collapseContent">
+            <i class="bi bi-window-stack"></i>
+            <span>Storefront &amp; CMS</span>
+            <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-banners'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}"
-           href="{{ route('admin.banners.index') }}">
-            <i class="bi bi-images"></i><span>Banners</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-blogs'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}"
-           href="{{ route('admin.blogs.index') }}">
-            <i class="bi bi-journal-text"></i><span>Blogs</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-pages'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}"
-           href="{{ route('admin.pages.index') }}">
-            <i class="bi bi-file-text"></i><span>Pages</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-faqs'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}"
-           href="{{ route('admin.faqs.index') }}">
-            <i class="bi bi-question-circle"></i><span>FAQs</span>
-        </a>
+        <div class="collapse {{ $contentActive ? 'show' : '' }}" id="collapseContent">
+            <ul class="sidebar-submenu">
+                @if ($admin->hasPermission('manage-media'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.media.*') ? 'active' : '' }}"
+                       href="{{ route('admin.media.index') }}">
+                        <i class="bi bi-folder2-open"></i><span>Media Library</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-banners'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}"
+                       href="{{ route('admin.banners.index') }}">
+                        <i class="bi bi-images"></i><span>Banners &amp; Sliders</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-blogs'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}"
+                       href="{{ route('admin.blogs.index') }}">
+                        <i class="bi bi-journal-text"></i><span>Blog Articles</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-pages'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}"
+                       href="{{ route('admin.pages.index') }}">
+                        <i class="bi bi-file-text"></i><span>Custom Pages</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-faqs'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}"
+                       href="{{ route('admin.faqs.index') }}">
+                        <i class="bi bi-question-circle"></i><span>FAQs</span>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </div>
     </li>
     @endif
 
+    {{-- System & Settings Dropdown --}}
     @if ($admin->hasPermission(['manage-admins', 'manage-roles', 'manage-activities', 'manage-settings']))
-    <li class="nav-heading">System</li>
-    @endif
-    @if ($admin->hasPermission('manage-admins'))
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}"
-           href="{{ route('admin.admins.index') }}">
-            <i class="bi bi-person-gear"></i><span>Admins</span>
+        <a class="nav-link sidebar-group-toggle {{ $sysActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseSystem"
+           role="button"
+           aria-expanded="{{ $sysActive ? 'true' : 'false' }}"
+           aria-controls="collapseSystem">
+            <i class="bi bi-gear"></i>
+            <span>System &amp; Settings</span>
+            <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-roles'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"
-           href="{{ route('admin.roles.index') }}">
-            <i class="bi bi-shield-lock"></i><span>Roles & Permissions</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-activities'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.activities.*') ? 'active' : '' }}"
-           href="{{ route('admin.activities.index') }}">
-            <i class="bi bi-clock-history"></i><span>Activity Log</span>
-        </a>
-    </li>
-    @endif
-    @if ($admin->hasPermission('manage-settings'))
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"
-           href="{{ route('admin.settings.index') }}">
-            <i class="bi bi-gear"></i><span>Settings</span>
-        </a>
+        <div class="collapse {{ $sysActive ? 'show' : '' }}" id="collapseSystem">
+            <ul class="sidebar-submenu">
+                @if ($admin->hasPermission('manage-settings'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"
+                       href="{{ route('admin.settings.index') }}">
+                        <i class="bi bi-sliders"></i><span>Store Settings</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-admins'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}"
+                       href="{{ route('admin.admins.index') }}">
+                        <i class="bi bi-person-gear"></i><span>Admin Accounts</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-roles'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"
+                       href="{{ route('admin.roles.index') }}">
+                        <i class="bi bi-shield-lock"></i><span>Roles &amp; Permissions</span>
+                    </a>
+                </li>
+                @endif
+                @if ($admin->hasPermission('manage-activities'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.activities.*') ? 'active' : '' }}"
+                       href="{{ route('admin.activities.index') }}">
+                        <i class="bi bi-clock-history"></i><span>Activity Audit Log</span>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </div>
     </li>
     @endif
 </ul>
