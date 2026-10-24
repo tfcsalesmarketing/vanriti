@@ -256,8 +256,8 @@ class WhatsAppChatService
             'window_expires_at' => now()->addHours(24),
         ]);
 
-        // Auto-respond via WhatsApp Chatbot if a matching rule exists
-        if ($body) {
+        // Auto-respond via WhatsApp Chatbot ONLY if explicitly enabled by admin in settings
+        if ($body && setting('whatsapp_bot_auto_reply_enabled', false)) {
             try {
                 app(\App\Services\WhatsAppBotService::class)->handleInbound($conversation, $body);
             } catch (\Throwable $e) {

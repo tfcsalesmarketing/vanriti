@@ -134,8 +134,14 @@ class WhatsAppCampaignController extends Controller
 
         // If user selected immediate broadcast
         if ($request->boolean('dispatch_now')) {
-            ProcessWhatsAppCampaignJob::dispatch($campaign);
-            $msg = "WhatsApp Campaign \"{$campaign->name}\" launched! Background broadcast is now processing.";
+            try {
+                dispatch_sync(new ProcessWhatsAppCampaignJob($campaign));
+                $campaign->refresh();
+                $msg = "WhatsApp Campaign \"{$campaign->name}\" launched! Broadcast finished: {$campaign->sent_count} sent, {$campaign->failed_count} failed.";
+            } catch (\Throwable $e) {
+                ProcessWhatsAppCampaignJob::dispatch($campaign);
+                $msg = "WhatsApp Campaign \"{$campaign->name}\" launched! Background broadcast is now processing.";
+            }
         } else {
             $msg = "WhatsApp Campaign \"{$campaign->name}\" created with {$campaign->total_recipients} recipients.";
         }
@@ -240,13 +246,16 @@ class WhatsAppCampaignController extends Controller
                 }
             }
 
+            $headerImg = $request->input('header_image_url');
+            $testMetaId = !empty($res['message_id']) ? ($res['message_id'] . '_test_' . time()) : null;
+
             \App\Models\WhatsAppMessage::create([
                 'whatsapp_conversation_id' => $conversation->id,
                 'direction' => 'outbound',
                 'message_type' => 'template',
                 'body' => $renderedBody,
-                'media_url' => $headerImageUrl,
-                'meta_message_id' => $res['message_id'] ?? null,
+                'media_url' => $headerImg,
+                'meta_message_id' => $testMetaId,
                 'status' => 'sent',
                 'metadata' => [
                     'is_test' => true,
@@ -280,9 +289,14 @@ class WhatsAppCampaignController extends Controller
             return back()->with('error', 'Campaign has already completed.');
         }
 
-        ProcessWhatsAppCampaignJob::dispatch($campaign);
-
-        return back()->with('success', "Campaign broadcast job queued for processing.");
+        try {
+            dispatch_sync(new ProcessWhatsAppCampaignJob($campaign));
+            $campaign->refresh();
+            return back()->with('success', "Campaign broadcast executed! Sent: {$campaign->sent_count}, Failed: {$campaign->failed_count}.");
+        } catch (\Throwable $e) {
+            ProcessWhatsAppCampaignJob::dispatch($campaign);
+            return back()->with('success', "Campaign broadcast job queued for processing.");
+        }
     }
 
     /**

@@ -101,13 +101,15 @@ class ProcessWhatsAppCampaignJob implements ShouldQueue
                             }
                         }
 
+                        $uniqueMetaId = ! empty($res['message_id']) ? ($res['message_id'] . '_' . $recipient->id) : null;
+
                         \App\Models\WhatsAppMessage::create([
                             'whatsapp_conversation_id' => $conversation->id,
                             'direction' => 'outbound',
                             'message_type' => 'template',
                             'body' => $renderedBody,
                             'media_url' => $campaign->header_image_url,
-                            'meta_message_id' => $res['message_id'] ?? null,
+                            'meta_message_id' => $uniqueMetaId,
                             'status' => 'sent',
                             'metadata' => [
                                 'campaign_id' => $campaign->id,

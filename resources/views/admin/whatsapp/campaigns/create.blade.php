@@ -2,6 +2,30 @@
 
 @section('title', 'Create WhatsApp Campaign')
 
+@push('styles')
+<style>
+.cohort-card {
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+.cohort-card:hover {
+    border-color: #25D366 !important;
+    background-color: #f7faf8;
+}
+.cohort-card.active {
+    border-color: #25D366 !important;
+    background-color: #e8f5ec;
+}
+.wa-bubble-outbound {
+    background-color: #dcf8c6;
+    border-radius: 12px;
+    border-bottom-right-radius: 3px;
+    color: #0f381e;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid px-0" style="max-width: 1100px;">
     {{-- Header --}}
@@ -31,7 +55,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-dark">Campaign Name</label>
-                        <input type="text" name="name" class="form-control rounded-3" value="{{ old('name') }}" placeholder="e.g. Diwali Mega Sale 2026" required>
+                        <input type="text" name="name" class="form-control rounded-3" value="{{ old('name') }}" placeholder="e.g. Festive Special Offer 2026" required>
                     </div>
 
                     <div class="mb-0">
@@ -160,12 +184,12 @@
                         <label class="form-check-label fw-semibold small text-dark" for="dispatchNow">
                             Launch immediately upon saving
                         </label>
-                        <div class="text-muted" style="font-size: 0.72rem;">Broadcast will begin sending through background queue with Meta rate-limiting.</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Broadcast will execute with automated rate-limiting and conversation recording.</div>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between pt-3 border-top">
                         <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-light rounded-pill px-4">Cancel</a>
-                        <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm">
+                        <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm" id="btnSubmitCampaign">
                             <i class="bi bi-send-check me-1"></i>Save & Launch Campaign
                         </button>
                     </div>
@@ -178,40 +202,42 @@
                     {{-- Live WhatsApp Phone Bubble Preview --}}
                     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="fw-bold text-dark small">WhatsApp Message Preview</span>
-                            <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-0.5" style="font-size: 0.68rem;">Verified Format</span>
+                            <span class="text-uppercase fw-bold text-muted small" style="font-size: 0.72rem;">Live WhatsApp Preview</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Meta Verified</span>
                         </div>
 
-                        <div class="p-3 rounded-4 border shadow-xs d-flex flex-column" style="min-height: 280px; background-color: #f7f9f8; background-image: radial-gradient(#e0e7e4 1px, transparent 1px); background-size: 15px 15px;">
-                            <div id="previewHeaderImgWrapper" class="rounded-3 overflow-hidden mb-2 d-none" style="max-height: 140px;">
-                                <img src="" class="w-100 h-100 object-fit-cover" alt="header">
+                        {{-- Phone Shell Simulated Card --}}
+                        <div class="p-3 rounded-4 border shadow-xs" style="background-color: #efeae2; background-image: radial-gradient(#d5cebe 1px, transparent 1px); background-size: 16px 16px; min-height: 280px;">
+                            {{-- Header Media (if any) --}}
+                            <div id="previewHeaderImgWrapper" class="mb-2 rounded-3 overflow-hidden d-none" style="max-height: 140px;">
+                                <img src="" alt="header" class="w-100 h-100 object-fit-cover">
                             </div>
 
-                            <div class="wa-bubble wa-bubble-outbound p-3 w-100 shadow-sm" style="max-width: 100%;">
+                            {{-- Outbound Bubble --}}
+                            <div class="wa-bubble-outbound p-3 shadow-xs">
                                 <div class="fw-bold small text-success mb-1" id="previewTitle">VANRITI</div>
-                                <div class="small text-dark" id="previewBodyText">Loading preview...</div>
-                                <div class="text-end text-muted mt-2" style="font-size: 0.65rem;">Now • <i class="bi bi-check2 text-muted"></i></div>
-                            </div>
-
-                            <div class="mt-auto pt-3 text-center text-muted" style="font-size: 0.72rem;">
-                                <i class="bi bi-shield-check text-success me-1"></i>Approved Meta Cloud Template
+                                <div class="small text-dark text-break" id="previewBodyText" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.45;">Loading template preview...</div>
+                                <div class="d-flex align-items-center justify-content-end gap-1 mt-2 text-muted" style="font-size: 0.65rem;">
+                                    <span>Now</span>
+                                    <i class="bi bi-check2 text-muted"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Test Send to Phone Card --}}
+                    {{-- Send Instant Test Message --}}
                     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <i class="bi bi-phone text-success fs-5"></i>
-                            <span class="fw-bold text-dark small">Send Test to My Phone</span>
-                        </div>
-                        <p class="text-muted small mb-3">Verify how this broadcast looks on your mobile WhatsApp before launching to customers.</p>
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                            <i class="bi bi-phone text-primary"></i>
+                            <span>Send Live Test to Mobile</span>
+                        </h6>
+                        <p class="text-muted small mb-3">Verify how this exact template with your customized parameters renders on your WhatsApp phone before broadcasting.</p>
 
-                        <div class="input-group mb-2">
-                            <span class="input-group-text bg-light text-muted small">+91</span>
-                            <input type="tel" id="testMobile" class="form-control" placeholder="10-digit mobile number" maxlength="10">
-                            <button type="button" class="btn btn-outline-success fw-semibold" id="btnSendTest">
-                                Send Test
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-white border-end-0 text-muted">+91</span>
+                            <input type="text" id="testMobile" class="form-control border-start-0 ps-0" placeholder="e.g. 9876543210" maxlength="15">
+                            <button type="button" class="btn btn-outline-success px-3 fw-semibold" id="btnSendTest">
+                                <i class="bi bi-send-fill me-1"></i>Send Test
                             </button>
                         </div>
                         <div id="testSendFeedback" class="small mt-1"></div>
@@ -221,29 +247,10 @@
         </div>
     </form>
 </div>
+@endsection
 
-<style>
-.cohort-card {
-    background-color: #ffffff;
-    cursor: pointer;
-}
-.cohort-card:hover {
-    border-color: #25D366 !important;
-    background-color: #f7faf8;
-}
-.cohort-card.active {
-    border-color: #25D366 !important;
-    background-color: #e8f5ec;
-}
-.wa-bubble-outbound {
-    background-color: #dcf8c6;
-    border-radius: 12px;
-    border-bottom-right-radius: 3px;
-    color: #0f381e;
-}
-</style>
-
-<script>
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
     // Cohort radio highlights
     document.querySelectorAll('.cohort-card input[type="radio"]').forEach(radio => {
@@ -261,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const dynamicFields = document.getElementById('campDynamicFields');
     const headerImgInput = document.getElementById('campHeaderImg');
     const previewHeaderWrapper = document.getElementById('previewHeaderImgWrapper');
-    const previewHeaderImgTag = previewHeaderWrapper.querySelector('img');
+    const previewHeaderImgTag = previewHeaderWrapper ? previewHeaderWrapper.querySelector('img') : null;
     const previewTitle = document.getElementById('previewTitle');
     const previewBodyText = document.getElementById('previewBodyText');
     const btnSendTest = document.getElementById('btnSendTest');
@@ -275,15 +282,15 @@ document.addEventListener('DOMContentLoaded', function () {
             title: "Special VIP Offer 🎉",
             text: "Hello {name}, celebrate with us! Enjoy {1} on your next order using coupon code: {2} at checkout.",
             fields: [
-                { name: "parameters[]", label: "Offer Title {{1}}", default: "Flat 15% OFF" },
-                { name: "parameters[]", label: "Coupon Code {{2}}", default: "FESTIVE15" },
+                { name: "parameters[]", label: "Offer Title (Param 1)", default: "Flat 15% OFF" },
+                { name: "parameters[]", label: "Coupon Code (Param 2)", default: "FESTIVE15" },
             ]
         },
         abandoned_cart_recovery: {
             title: "Items left in your cart! 🌿",
             text: "Hello {name}, you left items in your VANRITI cart! Complete your order now with 10% OFF at {1}",
             fields: [
-                { name: "parameters[]", label: "Checkout Link {{1}}", default: "{{ url('/cart') }}" },
+                { name: "parameters[]", label: "Checkout Link (Param 1)", default: "{{ url('/cart') }}" },
             ]
         },
         vanriti_welcome: {
@@ -295,8 +302,8 @@ document.addEventListener('DOMContentLoaded', function () {
             title: "Order Confirmed 🌿",
             text: "Hello {name}, thank you for your order! Your order #{1} is confirmed and will be delivered by {2}.",
             fields: [
-                { name: "parameters[]", label: "Order Number {{1}}", default: "VAN-TEST" },
-                { name: "parameters[]", label: "Delivery Date {{2}}", default: "in 3-5 business days" },
+                { name: "parameters[]", label: "Order Number (Param 1)", default: "VAN-1001" },
+                { name: "parameters[]", label: "Delivery Date (Param 2)", default: "in 3-5 business days" },
             ]
         },
         custom: {
@@ -312,11 +319,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const approvedMetaTemplates = @json($approvedTemplates ?? []);
     if (Array.isArray(approvedMetaTemplates)) {
         approvedMetaTemplates.forEach(tpl => {
-            const matches = tpl.body_text ? (tpl.body_text.match(/\{\{\s*\d+\s*\}\}/g) || []) : [];
+            const tokenRegex = new RegExp('\\' + '{' + '\\' + '{' + '\\s*\\d+\\s*' + '\\' + '}' + '\\' + '}', 'g');
+            const matches = tpl.body_text ? (tpl.body_text.match(tokenRegex) || []) : [];
             const uniqueTokens = [...new Set(matches)];
             const fields = uniqueTokens.map((t, idx) => ({
                 name: "parameters[]",
-                label: `Parameter ${t}`,
+                label: `Parameter ${idx + 1}`,
                 default: idx === 0 ? "Customer" : ""
             }));
 
@@ -330,6 +338,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderFields() {
+        if (!tmplSelect) return;
         const key = tmplSelect.value;
         const schema = templateSchemas[key] || templateSchemas.promotional_offer;
 
@@ -339,103 +348,119 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (key === 'custom') {
-            customTmplGroup.classList.remove('d-none');
-            customTmplName.name = "template_name";
+            if (customTmplGroup) customTmplGroup.classList.remove('d-none');
+            if (customTmplName) customTmplName.name = "template_name";
             tmplSelect.name = "";
         } else {
-            customTmplGroup.classList.add('d-none');
+            if (customTmplGroup) customTmplGroup.classList.add('d-none');
             tmplSelect.name = "template_name";
         }
 
-        dynamicFields.innerHTML = schema.fields.map((f, idx) => `
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-dark">${f.label}</label>
-                <input type="text" name="${f.name}" class="form-control rounded-3 param-input" value="${f.default}" required>
-            </div>
-        `).join('');
+        if (dynamicFields) {
+            dynamicFields.innerHTML = schema.fields.map((f, idx) => `
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-dark">${f.label}</label>
+                    <input type="text" name="${f.name}" class="form-control rounded-3 param-input" value="${f.default}" required>
+                </div>
+            `).join('');
 
-        dynamicFields.querySelectorAll('.param-input').forEach(inp => {
-            inp.addEventListener('input', updatePreview);
-        });
+            dynamicFields.querySelectorAll('.param-input').forEach(inp => {
+                inp.addEventListener('input', updatePreview);
+            });
+        }
 
         updatePreview();
     }
 
     function updatePreview() {
+        if (!tmplSelect) return;
         const key = tmplSelect.value;
         const schema = templateSchemas[key] || templateSchemas.promotional_offer;
 
-        previewTitle.textContent = schema.title;
+        if (previewTitle) previewTitle.textContent = schema.title;
 
         let body = schema.text.replace('{name}', 'Customer');
-        const inputs = dynamicFields.querySelectorAll('.param-input');
+        const inputs = dynamicFields ? dynamicFields.querySelectorAll('.param-input') : [];
         inputs.forEach((inp, idx) => {
-            const token = '{' + (idx + 1) + '}';
-            const val = inp.value || token;
-            body = body.split(token).join(val);
+            const token1 = '{' + (idx + 1) + '}';
+            const token2 = '{{' + (idx + 1) + '}}';
+            const val = inp.value || token1;
+            body = body.split(token1).join(val).split(token2).join(val);
         });
 
-        previewBodyText.textContent = body;
+        if (previewBodyText) previewBodyText.textContent = body;
 
-        const url = headerImgInput.value.trim();
-        if (url) {
-            previewHeaderImgTag.src = url;
-            previewHeaderWrapper.classList.remove('d-none');
-        } else {
-            previewHeaderWrapper.classList.add('d-none');
+        if (headerImgInput && previewHeaderWrapper && previewHeaderImgTag) {
+            const url = headerImgInput.value.trim();
+            if (url) {
+                previewHeaderImgTag.src = url;
+                previewHeaderWrapper.classList.remove('d-none');
+            } else {
+                previewHeaderWrapper.classList.add('d-none');
+            }
         }
     }
 
-    tmplSelect.addEventListener('change', renderFields);
-    headerImgInput.addEventListener('input', updatePreview);
+    if (tmplSelect) {
+        tmplSelect.addEventListener('change', renderFields);
+    }
+    if (headerImgInput) {
+        headerImgInput.addEventListener('input', updatePreview);
+    }
     renderFields();
 
     // Test send handling
-    btnSendTest.addEventListener('click', async function () {
-        const phone = testMobile.value.trim();
-        if (phone.length < 10) {
-            testFeedback.innerHTML = '<span class="text-danger">Please enter a valid 10-digit mobile number.</span>';
-            return;
-        }
-
-        const templateName = tmplSelect.value === 'custom' ? customTmplName.value.trim() : tmplSelect.value;
-        const params = [];
-        dynamicFields.querySelectorAll('.param-input').forEach(inp => params.push(inp.value.trim()));
-        const headerUrl = headerImgInput.value.trim() || null;
-
-        btnSendTest.disabled = true;
-        btnSendTest.textContent = 'Sending...';
-        testFeedback.innerHTML = '<span class="text-muted">Sending test template to ' + phone + '...</span>';
-
-        try {
-            const res = await fetch(testUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    test_phone: phone,
-                    template_name: templateName,
-                    parameters: params,
-                    header_image_url: headerUrl,
-                }),
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                testFeedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>' + data.message + '</span>';
-            } else {
-                testFeedback.innerHTML = '<span class="text-danger">' + (data.message || 'Test send failed') + '</span>';
+    if (btnSendTest && testMobile && testFeedback) {
+        btnSendTest.addEventListener('click', async function () {
+            const phone = testMobile.value.trim();
+            if (phone.length < 10) {
+                testFeedback.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Please enter a valid 10-digit mobile number.</span>';
+                return;
             }
-        } catch (e) {
-            testFeedback.innerHTML = '<span class="text-danger">Network error while sending test message.</span>';
-        } finally {
-            btnSendTest.disabled = false;
-            btnSendTest.textContent = 'Send Test';
-        }
-    });
+
+            const templateName = tmplSelect.value === 'custom' ? (customTmplName ? customTmplName.value.trim() : '') : tmplSelect.value;
+            const params = [];
+            if (dynamicFields) {
+                dynamicFields.querySelectorAll('.param-input').forEach(inp => params.push(inp.value.trim()));
+            }
+            const headerUrl = headerImgInput ? (headerImgInput.value.trim() || null) : null;
+            const langCode = document.querySelector('input[name="template_lang"]')?.value || 'en';
+
+            btnSendTest.disabled = true;
+            btnSendTest.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+            testFeedback.innerHTML = '<span class="text-muted">Sending test template to +91 ' + phone + '...</span>';
+
+            try {
+                const res = await fetch(testUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        test_phone: phone,
+                        template_name: templateName,
+                        template_lang: langCode,
+                        parameters: params,
+                        header_image_url: headerUrl,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    testFeedback.innerHTML = '<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>' + data.message + '</span>';
+                } else {
+                    testFeedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>' + (data.message || 'Test send failed') + '</span>';
+                }
+            } catch (e) {
+                testFeedback.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Network error while sending test message.</span>';
+            } finally {
+                btnSendTest.disabled = false;
+                btnSendTest.innerHTML = '<i class="bi bi-send-fill me-1"></i>Send Test';
+            }
+        });
+    }
 });
 </script>
-@endsection
+@endpush

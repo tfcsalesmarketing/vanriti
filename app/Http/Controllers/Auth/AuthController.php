@@ -199,7 +199,7 @@ class AuthController extends Controller
         // variable is the customer's first name). Fire-and-forget — a welcome
         // delivery failure must never block the new account from being created.
         try {
-            if ($whatsapp->isEnabled() && ! empty(trim((string) $user->phone))) {
+            if ($whatsapp->isEnabled() && setting('whatsapp_auto_welcome_enabled', false) && ! empty(trim((string) $user->phone))) {
                 $firstName = explode(' ', trim((string) $user->name))[0] ?? '';
                 $whatsapp->sendWelcome($user->phone, $firstName);
             }

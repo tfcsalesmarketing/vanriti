@@ -32,6 +32,7 @@ class WhatsAppBotTest extends TestCase
         // Configure WhatsApp credentials
         Setting::updateOrCreate(['key' => 'whatsapp_phone_number_id'], ['value' => '10987654321', 'group' => 'whatsapp', 'type' => 'text']);
         Setting::updateOrCreate(['key' => 'whatsapp_webhook_verify_token'], ['value' => 'vanriti_verify_token_123', 'group' => 'whatsapp', 'type' => 'text']);
+        Setting::updateOrCreate(['key' => 'whatsapp_bot_auto_reply_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean']);
         Setting::updateOrCreate(['key' => 'whatsapp_access_token'], [
             'value' => Crypt::encryptString('mock_wa_access_token'),
             'group' => 'whatsapp',

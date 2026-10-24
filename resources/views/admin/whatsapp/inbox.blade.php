@@ -144,6 +144,18 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 d-none d-lg-inline-flex align-items-center gap-1.5 text-decoration-none">
+                <i class="bi bi-broadcast text-primary"></i>
+                <span class="small fw-semibold">Broadcasts</span>
+            </a>
+            <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 d-none d-lg-inline-flex align-items-center gap-1.5 text-decoration-none">
+                <i class="bi bi-file-earmark-code text-secondary"></i>
+                <span class="small fw-semibold">Templates</span>
+            </a>
+            <a href="{{ route('admin.whatsapp.bot.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 d-none d-xl-inline-flex align-items-center gap-1.5 text-decoration-none">
+                <i class="bi bi-robot text-success"></i>
+                <span class="small fw-semibold">Auto-Reply Rules</span>
+            </a>
             @if ($isConfigured)
                 <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 rounded-pill d-inline-flex align-items-center gap-1.5">
                     <i class="bi bi-shield-check"></i>

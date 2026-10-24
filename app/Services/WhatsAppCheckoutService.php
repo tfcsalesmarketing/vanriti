@@ -232,15 +232,23 @@ class WhatsAppCheckoutService
                 ], $messageId);
             }
 
-            // General greeting or catalogue invite if no active checkout
-            if (in_array($action, ['HI', 'HELLO', 'HEY', 'ORDER', 'CATALOGUE', 'CATALOG', 'SHOP'], true)) {
+            // Away Auto-Responder (if explicitly enabled in settings)
+            if (setting('whatsapp_away_message_enabled', false)) {
+                $awayText = (string) setting('whatsapp_away_message_text', '');
+                if ($awayText !== '') {
+                    $this->apiService->sendTextMessage($phone, $awayText);
+                    return ['success' => true, 'action' => 'away_message_sent'];
+                }
+            }
+
+            // Catalogue on explicit keyword (if bot auto-replies are enabled in settings)
+            if (setting('whatsapp_bot_auto_reply_enabled', false) && in_array($action, ['CATALOGUE', 'CATALOG', 'SHOP'], true)) {
                 $this->apiService->sendCatalogueMessage($phone);
                 return ['success' => true, 'action' => 'catalogue_sent'];
             }
 
-            $fallback = "Welcome to VANRITI! 🌿\nWe specialize in pure Ayurvedic and natural skincare.\n\nType *SHOP* or open our catalogue to explore our products.";
-            $this->apiService->sendTextMessage($phone, $fallback);
-            return ['success' => true, 'action' => 'greeting_sent'];
+            // Default: Do NOT auto-reply. Let message sit cleanly in admin inbox for human staff.
+            return ['success' => true, 'action' => 'inbox_queued'];
         }
 
         // Global Cancel check
