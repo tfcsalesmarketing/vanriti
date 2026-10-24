@@ -81,6 +81,9 @@ class WhatsAppInboxTest extends TestCase
         $response->assertSee('Kavita Roy');
         $response->assertSee('Hello VANRITI!');
         $response->assertSee('active windows (24h)');
+        $response->assertSee('Send Approved Meta Template');
+        $response->assertSee('previewFooterText');
+        $response->assertSee('previewButtons');
     }
 
     public function test_webhook_inbound_message_records_conversation_and_refreshes_window(): void

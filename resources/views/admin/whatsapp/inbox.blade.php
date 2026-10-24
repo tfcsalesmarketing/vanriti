@@ -596,8 +596,10 @@
                                 <div class="wa-bubble wa-bubble-outbound p-3 w-100 shadow-sm" style="max-width: 100%;">
                                     <div class="fw-bold small text-success mb-1" id="previewTitle">VANRITI</div>
                                     <div class="small text-dark" id="previewBodyText">Loading template preview...</div>
+                                    <div class="text-muted small mt-2 d-none" id="previewFooterText" style="font-size: 0.72rem;"></div>
                                     <div class="text-end text-muted mt-2" style="font-size: 0.65rem;">Now • <i class="bi bi-check2 text-muted"></i></div>
                                 </div>
+                                <div id="previewButtons" class="mt-2 d-flex flex-column gap-1.5 w-100"></div>
                                 <div class="mt-auto pt-3 text-center text-muted" style="font-size: 0.72rem;">
                                     <i class="bi bi-shield-check text-success me-1"></i>Pre-approved Meta Template
                                 </div>
@@ -1224,49 +1226,88 @@ document.addEventListener('DOMContentLoaded', function () {
             title: "VANRITI — Order Confirmed 🌿",
             text: "Hello {1}, thank you for your order! Your order #{2} is confirmed and will be delivered by {3}. Track your order here:",
             fields: [
-                { id: "p1", label: "Customer Name {{1}}", default: customerName },
-                { id: "p2", label: "Order Number {{2}}", default: recentOrderNumber },
-                { id: "p3", label: "Delivery Date {{3}}", default: "in 3-5 business days" },
-            ]
+                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
+                { id: "p2", label: "Order Number (Param 2)", default: recentOrderNumber },
+                { id: "p3", label: "Delivery Date (Param 3)", default: "in 3-5 business days" },
+            ],
+            language: "en"
         },
         abandoned_cart_recovery: {
             title: "Items left in your cart! 🌿",
             text: "Hello {1}, you left items in your VANRITI cart! Complete your order now with 10% OFF at {2}",
             fields: [
-                { id: "p1", label: "Customer Name {{1}}", default: customerName },
-                { id: "p2", label: "Checkout Link {{2}}", default: "{{ url('/cart') }}" },
-            ]
+                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
+                { id: "p2", label: "Checkout Link (Param 2)", default: "{{ url('/cart') }}" },
+            ],
+            language: "en"
         },
         vanriti_welcome: {
             title: "Welcome to VANRITI 🌿",
             text: "Hello {1}, welcome to VANRITI! Discover the pure essence of Ayurveda and natural holistic skincare with special offers on your first purchase.",
             fields: [
-                { id: "p1", label: "Customer Name {{1}}", default: customerName },
-            ]
+                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
+            ],
+            language: "en"
         },
         promotional_offer: {
             title: "Special VIP Offer 🎉",
             text: "Hello {1}, celebrate with us! Enjoy {2} on your next order using coupon code: {3} at checkout.",
             fields: [
-                { id: "p1", label: "Customer Name {{1}}", default: customerName },
-                { id: "p2", label: "Offer Title {{2}}", default: "Flat 15% OFF" },
-                { id: "p3", label: "Coupon Code {{3}}", default: "FESTIVE15" },
-            ]
+                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
+                { id: "p2", label: "Offer Title (Param 2)", default: "Flat 15% OFF" },
+                { id: "p3", label: "Coupon Code (Param 3)", default: "FESTIVE15" },
+            ],
+            language: "en"
         },
         custom: {
             title: "Custom Meta Template",
             text: "Template variables: {1}, {2}",
             fields: [
-                { id: "p1", label: "Parameter {{1}}", default: customerName },
-                { id: "p2", label: "Parameter {{2}}", default: "" },
-            ]
+                { id: "p1", label: "Parameter 1", default: customerName },
+                { id: "p2", label: "Parameter 2", default: "" },
+            ],
+            language: "en"
         }
     };
+
+    // Hydrate synchronized Meta templates from backend
+    const approvedMetaTemplates = @json($approvedTemplates ?? []);
+    if (Array.isArray(approvedMetaTemplates)) {
+        approvedMetaTemplates.forEach(tpl => {
+            const tokenRegex = new RegExp('\\' + '{' + '\\' + '{' + '\\s*(\\d+)\\s*' + '\\' + '}' + '\\' + '}', 'g');
+            const matches = tpl.body_text ? [...tpl.body_text.matchAll(tokenRegex)] : [];
+            const indices = matches.map(m => parseInt(m[1], 10));
+            const maxIndex = indices.length > 0 ? Math.max(...indices) : 0;
+            const fields = [];
+            for (let i = 1; i <= maxIndex; i++) {
+                fields.push({
+                    id: "p" + i,
+                    label: "Parameter " + i,
+                    default: i === 1 ? customerName : (i === 2 ? recentOrderNumber : "")
+                });
+            }
+
+            templateSchemas[tpl.name] = {
+                title: tpl.header_text || (tpl.name.replace(/_/g, ' ').toUpperCase()),
+                text: tpl.body_text || '',
+                footer: tpl.footer_text || '',
+                buttons: tpl.buttons || [],
+                header_type: tpl.header_type || 'NONE',
+                fields: fields,
+                language: tpl.language || 'en'
+            };
+        });
+    }
 
     function renderTemplateFields() {
         if (!tmplSelect) return;
         const key = tmplSelect.value;
         const schema = templateSchemas[key] || templateSchemas.order_confirmation;
+
+        if (schema && schema.language) {
+            const langInput = document.getElementById('tmplLangCode');
+            if (langInput) langInput.value = schema.language;
+        }
 
         if (customTmplGroup) {
             if (key === 'custom') {
@@ -1279,12 +1320,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (tmplDynamicFields) {
-            tmplDynamicFields.innerHTML = schema.fields.map((f, idx) => `
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-dark">${f.label}</label>
-                    <input type="text" class="form-control rounded-3 tmpl-param-input" data-index="${idx+1}" value="${f.default}" required>
-                </div>
-            `).join('');
+            if (schema && schema.fields && schema.fields.length > 0) {
+                tmplDynamicFields.innerHTML = schema.fields.map((f, idx) => `
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">${escapeHtml(f.label)}</label>
+                        <input type="text" class="form-control rounded-3 tmpl-param-input" data-index="${idx+1}" value="${escapeHtml(f.default || '')}" placeholder="Value for ${escapeHtml(f.label)}" required>
+                    </div>
+                `).join('');
+            } else {
+                tmplDynamicFields.innerHTML = `
+                    <div class="alert alert-light border small text-muted py-2 mb-3">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>No dynamic variables required for this pre-approved template.
+                    </div>
+                `;
+            }
 
             tmplDynamicFields.querySelectorAll('.tmpl-param-input').forEach(inp => {
                 inp.addEventListener('input', updateTemplatePreview);
@@ -1298,18 +1347,49 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tmplSelect) return;
         const key = tmplSelect.value;
         const schema = templateSchemas[key] || templateSchemas.order_confirmation;
+        if (!schema) return;
 
-        if (previewTitle) previewTitle.textContent = schema.title;
+        if (previewTitle) {
+            if (key === 'custom' && customTmplInput && customTmplInput.value.trim()) {
+                previewTitle.textContent = customTmplInput.value.trim().toUpperCase();
+            } else {
+                previewTitle.textContent = schema.title || 'VANRITI';
+            }
+        }
 
-        let body = schema.text;
+        let body = schema.text || '';
         const inputs = tmplDynamicFields ? tmplDynamicFields.querySelectorAll('.tmpl-param-input') : [];
         inputs.forEach((inp, idx) => {
-            const token = '{' + (idx + 1) + '}';
-            const val = inp.value || token;
-            body = body.split(token).join(val);
+            const tokenDouble = '{' + '{' + (idx + 1) + '}' + '}';
+            const tokenSingle = '{' + (idx + 1) + '}';
+            const val = inp.value || tokenDouble;
+            body = body.split(tokenDouble).join(val).split(tokenSingle).join(val);
         });
 
-        if (previewBodyText) previewBodyText.innerHTML = escapeHtml(body);
+        if (previewBodyText) {
+            previewBodyText.innerHTML = escapeHtml(body).replace(/\n/g, '<br>');
+        }
+
+        const previewFooter = document.getElementById('previewFooterText');
+        if (previewFooter) {
+            if (schema.footer) {
+                previewFooter.textContent = schema.footer;
+                previewFooter.classList.remove('d-none');
+            } else {
+                previewFooter.classList.add('d-none');
+            }
+        }
+
+        const previewButtonsContainer = document.getElementById('previewButtons');
+        if (previewButtonsContainer) {
+            previewButtonsContainer.innerHTML = '';
+            if (Array.isArray(schema.buttons) && schema.buttons.length > 0) {
+                previewButtonsContainer.innerHTML = schema.buttons.map(b => {
+                    const text = typeof b === 'object' ? (b.text || b.url || 'Action') : b;
+                    return `<div class="wa-btn-preview text-center py-1.5 px-3 rounded-3 bg-white border shadow-2xs fw-semibold text-primary" style="font-size: 0.78rem;"><i class="bi bi-box-arrow-up-right me-1"></i>${escapeHtml(text)}</div>`;
+                }).join('');
+            }
+        }
 
         if (tmplHeaderImageUrl && previewHeaderImg && previewHeaderImgTag) {
             const url = tmplHeaderImageUrl.value.trim();
@@ -1327,8 +1407,19 @@ document.addEventListener('DOMContentLoaded', function () {
         renderTemplateFields();
     }
 
+    if (customTmplInput) {
+        customTmplInput.addEventListener('input', updateTemplatePreview);
+    }
+
     if (tmplHeaderImageUrl) {
         tmplHeaderImageUrl.addEventListener('input', updateTemplatePreview);
+    }
+
+    const sendTemplateModalEl = document.getElementById('sendTemplateModal');
+    if (sendTemplateModalEl) {
+        sendTemplateModalEl.addEventListener('show.bs.modal', function () {
+            renderTemplateFields();
+        });
     }
 
     if (templateForm) {

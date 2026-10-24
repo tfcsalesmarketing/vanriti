@@ -32,7 +32,7 @@
     @endif
 
     {{-- Catalogue & Inventory Dropdown --}}
-    @if ($admin->hasPermission(['manage-products', 'manage-categories', 'manage-inventory', 'review-dadi-product-profiles']))
+    @if ($admin->hasPermission(['view-products', 'manage-products', 'view-categories', 'manage-categories', 'view-inventory', 'manage-inventory', 'review-dadi-product-profiles']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $catActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -46,7 +46,7 @@
         </a>
         <div class="collapse {{ $catActive ? 'show' : '' }}" id="collapseCatalogue">
             <ul class="sidebar-submenu">
-                @if ($admin->hasPermission('manage-products'))
+                @if ($admin->hasPermission(['view-products', 'manage-products']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
                        href="{{ route('admin.products.index') }}">
@@ -54,7 +54,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-categories'))
+                @if ($admin->hasPermission(['view-categories', 'manage-categories']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}"
                        href="{{ route('admin.categories.index') }}">
@@ -68,7 +68,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-inventory'))
+                @if ($admin->hasPermission(['view-inventory', 'manage-inventory']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}"
                        href="{{ route('admin.inventory.index') }}">
@@ -90,7 +90,7 @@
     @endif
 
     {{-- Orders & Logistics Dropdown --}}
-    @if ($admin->hasPermission(['manage-orders', 'manage-refunds', 'manage-returns', 'manage-shipments']))
+    @if ($admin->hasPermission(['view-orders', 'manage-orders', 'view-shipments', 'manage-shipments', 'view-returns', 'manage-returns', 'view-refunds', 'manage-refunds']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $ordersActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -104,7 +104,7 @@
         </a>
         <div class="collapse {{ $ordersActive ? 'show' : '' }}" id="collapseOrders">
             <ul class="sidebar-submenu">
-                @if ($admin->hasPermission('manage-orders'))
+                @if ($admin->hasPermission(['view-orders', 'manage-orders']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
                        href="{{ route('admin.orders.index') }}">
@@ -112,7 +112,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-shipments'))
+                @if ($admin->hasPermission(['view-shipments', 'manage-shipments']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.shipments.*') ? 'active' : '' }}"
                        href="{{ route('admin.shipments.index') }}">
@@ -120,7 +120,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-returns'))
+                @if ($admin->hasPermission(['view-returns', 'manage-returns']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.returns.*') ? 'active' : '' }}"
                        href="{{ route('admin.returns.index') }}">
@@ -128,7 +128,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-refunds'))
+                @if ($admin->hasPermission(['view-refunds', 'manage-refunds']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}"
                        href="{{ route('admin.refunds.index') }}">
@@ -142,6 +142,7 @@
     @endif
 
     {{-- WhatsApp CRM & Suite Dropdown --}}
+    @if ($admin->hasPermission(['view-whatsapp-inbox', 'manage-whatsapp-inbox', 'view-whatsapp-campaigns', 'manage-whatsapp-campaigns', 'manage-whatsapp-bot', 'manage-whatsapp-templates', 'manage-whatsapp-profile']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $waActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -158,6 +159,7 @@
         </a>
         <div class="collapse {{ $waActive ? 'show' : '' }}" id="collapseWhatsApp">
             <ul class="sidebar-submenu">
+                @if ($admin->hasPermission(['view-whatsapp-inbox', 'manage-whatsapp-inbox']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.whatsapp.inbox*') ? 'active' : '' }}"
                        href="{{ route('admin.whatsapp.inbox') }}">
@@ -168,6 +170,8 @@
                         @endif
                     </a>
                 </li>
+                @endif
+                @if ($admin->hasPermission(['view-whatsapp-campaigns', 'manage-whatsapp-campaigns']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.whatsapp.campaigns*') ? 'active' : '' }}"
                        href="{{ route('admin.whatsapp.campaigns.index') }}">
@@ -175,6 +179,8 @@
                         <span>Broadcasts</span>
                     </a>
                 </li>
+                @endif
+                @if ($admin->hasPermission('manage-whatsapp-bot'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.whatsapp.bot*') ? 'active' : '' }}"
                        href="{{ route('admin.whatsapp.bot.index') }}">
@@ -182,6 +188,8 @@
                         <span>Chatbot &amp; Rules</span>
                     </a>
                 </li>
+                @endif
+                @if ($admin->hasPermission('manage-whatsapp-templates'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.whatsapp.templates*') ? 'active' : '' }}"
                        href="{{ route('admin.whatsapp.templates.index') }}">
@@ -189,6 +197,8 @@
                         <span>Meta Templates</span>
                     </a>
                 </li>
+                @endif
+                @if ($admin->hasPermission('manage-whatsapp-profile'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.whatsapp.profile*') ? 'active' : '' }}"
                        href="{{ route('admin.whatsapp.profile') }}">
@@ -196,12 +206,14 @@
                         <span>Profile &amp; Health</span>
                     </a>
                 </li>
+                @endif
             </ul>
         </div>
     </li>
+    @endif
 
     {{-- Customers & Growth Dropdown --}}
-    @if ($admin->hasPermission(['manage-customers', 'manage-coupons', 'manage-reviews', 'manage-newsletters']))
+    @if ($admin->hasPermission(['view-customers', 'manage-customers', 'view-coupons', 'manage-coupons', 'view-reviews', 'manage-reviews', 'manage-newsletters']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $custActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -215,7 +227,7 @@
         </a>
         <div class="collapse {{ $custActive ? 'show' : '' }}" id="collapseCustomers">
             <ul class="sidebar-submenu">
-                @if ($admin->hasPermission('manage-customers'))
+                @if ($admin->hasPermission(['view-customers', 'manage-customers']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}"
                        href="{{ route('admin.customers.index') }}">
@@ -235,7 +247,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-coupons'))
+                @if ($admin->hasPermission(['view-coupons', 'manage-coupons']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}"
                        href="{{ route('admin.coupons.index') }}">
@@ -243,7 +255,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-reviews'))
+                @if ($admin->hasPermission(['view-reviews', 'manage-reviews']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"
                        href="{{ route('admin.reviews.index') }}">
@@ -271,7 +283,7 @@
     @endif
 
     {{-- Content & Storefront Dropdown --}}
-    @if ($admin->hasPermission(['manage-media', 'manage-banners', 'manage-blogs', 'manage-pages', 'manage-faqs']))
+    @if ($admin->hasPermission(['view-media', 'manage-media', 'view-banners', 'manage-banners', 'view-blogs', 'manage-blogs', 'view-pages', 'manage-pages', 'view-faqs', 'manage-faqs']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $contentActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -285,7 +297,7 @@
         </a>
         <div class="collapse {{ $contentActive ? 'show' : '' }}" id="collapseContent">
             <ul class="sidebar-submenu">
-                @if ($admin->hasPermission('manage-media'))
+                @if ($admin->hasPermission(['view-media', 'manage-media']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.media.*') ? 'active' : '' }}"
                        href="{{ route('admin.media.index') }}">
@@ -293,7 +305,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-banners'))
+                @if ($admin->hasPermission(['view-banners', 'manage-banners']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}"
                        href="{{ route('admin.banners.index') }}">
@@ -301,7 +313,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-blogs'))
+                @if ($admin->hasPermission(['view-blogs', 'manage-blogs']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}"
                        href="{{ route('admin.blogs.index') }}">
@@ -309,7 +321,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-pages'))
+                @if ($admin->hasPermission(['view-pages', 'manage-pages']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}"
                        href="{{ route('admin.pages.index') }}">
@@ -317,7 +329,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-faqs'))
+                @if ($admin->hasPermission(['view-faqs', 'manage-faqs']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}"
                        href="{{ route('admin.faqs.index') }}">
@@ -331,7 +343,7 @@
     @endif
 
     {{-- System & Settings Dropdown --}}
-    @if ($admin->hasPermission(['manage-admins', 'manage-roles', 'manage-activities', 'manage-settings']))
+    @if ($admin->hasPermission(['manage-admins', 'manage-roles', 'view-activities', 'manage-activities', 'manage-settings']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $sysActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -340,7 +352,7 @@
            aria-expanded="{{ $sysActive ? 'true' : 'false' }}"
            aria-controls="collapseSystem">
             <i class="bi bi-gear"></i>
-            <span>System &amp; Settings</span>
+            <span>System Controls</span>
             <i class="bi bi-chevron-right chevron-icon"></i>
         </a>
         <div class="collapse {{ $sysActive ? 'show' : '' }}" id="collapseSystem">
@@ -369,7 +381,7 @@
                     </a>
                 </li>
                 @endif
-                @if ($admin->hasPermission('manage-activities'))
+                @if ($admin->hasPermission(['view-activities', 'manage-activities']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.activities.*') ? 'active' : '' }}"
                        href="{{ route('admin.activities.index') }}">

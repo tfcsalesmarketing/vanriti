@@ -18,7 +18,7 @@ class AdminUserController extends Controller
 
     public function create()
     {
-        $roles = Role::orderBy('name')->get();
+        $roles = Role::whereIn('id', $this->assignableRoleIds())->orderBy('name')->get();
 
         return view('admin.admins.create', compact('roles'));
     }
@@ -137,6 +137,11 @@ class AdminUserController extends Controller
      */
     private function assignableRoleIds(): array
     {
+        $currentAdmin = auth('admin')->user();
+        if ($currentAdmin?->is_super_admin) {
+            return Role::where('slug', '!=', 'super-admin')->pluck('id')->all();
+        }
+
         return Role::where('is_system', false)->pluck('id')->all();
     }
 }
