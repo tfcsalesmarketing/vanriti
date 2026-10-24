@@ -8,10 +8,10 @@
 @endphp
 
 <div class="d-flex flex-column h-100">
-    {{-- Header --}}
-    <div class="px-3 py-2.5 border-bottom bg-white d-flex align-items-center justify-content-between flex-shrink-0">
-        <span class="fw-bold text-dark small d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
-            <i class="bi bi-person-badge text-success"></i> Customer Details
+    {{-- Authentic 56px WhatsApp Contact Info Header --}}
+    <div class="px-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0" style="height: 56px; background-color: #f0f2f5; border-bottom: 1px solid #d1d7db !important;">
+        <span class="fw-bold text-dark small d-flex align-items-center gap-2" style="font-size: 0.92rem;">
+            <i class="bi bi-person-lines-fill text-success"></i> Contact Info
         </span>
         @if ($user)
             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 0.65rem;">Registered</span>
@@ -20,7 +20,7 @@
         @endif
     </div>
 
-    <div class="p-3 overflow-y-auto flex-grow-1">
+    <div class="p-3 overflow-y-auto flex-grow-1" style="background-color: #ffffff;">
         {{-- Profile Card --}}
         <div class="text-center pb-2.5 border-bottom mb-2.5">
             <div class="position-relative d-inline-block mb-1.5">

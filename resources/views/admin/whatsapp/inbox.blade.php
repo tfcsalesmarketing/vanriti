@@ -4,55 +4,156 @@
 
 @push('styles')
 <style>
-.whatsapp-inbox-wrapper {
-    height: calc(100vh - 82px);
+/* Full Bleed WhatsApp Web Experience */
+.admin-content {
+    padding: 0 !important;
+}
+.whatsapp-app-container {
+    height: calc(100vh - 65px);
     display: flex;
     flex-direction: column;
+    background: #f0f2f5;
     overflow: hidden;
+    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-.wa-operational-toolbar {
-    min-height: 38px;
+@media (max-width: 767.98px) {
+    .whatsapp-app-container {
+        height: calc(100vh - 58px);
+        height: calc(100dvh - 58px);
+    }
 }
-.wa-chat-card {
-    flex: 1 1 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+
+/* 1. Top Executive Operational Bar */
+.wa-top-bar {
+    height: 48px;
     background: #ffffff;
-    border: 1px solid #d1d7db !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+    border-bottom: 1px solid #e9edef;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
 }
-.wa-chat-card > .row {
+.wa-top-bar .brand-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111b21;
+    letter-spacing: -0.01em;
+}
+.wa-top-bar .brand-badge i {
+    color: #25D366;
+    font-size: 1.3rem;
+}
+
+/* 2. Main Workspace Layout */
+.wa-workspace {
     flex: 1 1 0;
     min-height: 0;
+    display: flex;
+    width: 100%;
     height: 100%;
+    background: #ffffff;
     overflow: hidden;
+    position: relative;
 }
+
+/* Left Sidebar: Conversations Directory */
 .wa-sidebar-column {
+    width: 380px;
+    min-width: 320px;
+    max-width: 420px;
     height: 100%;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     background: #ffffff;
-    border-right: 1px solid #e9edef;
+    border-right: 1px solid #d1d7db;
+    overflow: hidden;
+    flex-shrink: 0;
 }
-.wa-chat-column {
-    height: 100%;
-    min-height: 0;
+@media (max-width: 991.98px) {
+    .wa-sidebar-column {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+.wa-sidebar-header {
+    height: 56px;
+    background: #f0f2f5;
+    border-bottom: 1px solid #e9edef;
+    padding: 0 16px;
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #ffffff;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
 }
-.wa-context-column {
-    height: 100%;
-    min-height: 0;
-    overflow-y: auto;
-    background-color: #ffffff;
-    border-left: 1px solid #e9edef;
+.wa-search-section {
+    padding: 8px 12px;
+    background: #ffffff;
+    border-bottom: 1px solid #f0f2f5;
+    flex-shrink: 0;
+}
+.wa-search-pill {
+    background: #f0f2f5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 36px;
+}
+.wa-search-pill input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    outline: none;
+    font-size: 14px;
+    color: #111b21;
+    margin-left: 8px;
+}
+.wa-search-pill input::placeholder {
+    color: #8696a0;
+}
+.wa-filter-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid #e9edef;
+    background: #ffffff;
+    flex-shrink: 0;
+    -ms-overflow-style: none;
+}
+.wa-filter-tabs::-webkit-scrollbar {
+    display: none;
+}
+.wa-filter-chip {
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    color: #54656f;
+    background: #f0f2f5;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+.wa-filter-chip.active {
+    background: #e7fce3;
+    color: #008069;
+    font-weight: 600;
+}
+.wa-filter-chip:hover:not(.active) {
+    background: #e9edef;
+    color: #111b21;
 }
 .wa-convo-list {
     flex: 1 1 0;
@@ -60,46 +161,60 @@
     overflow-y: auto;
     background: #ffffff;
 }
-.wa-convo-list::-webkit-scrollbar,
-.wa-chat-stream::-webkit-scrollbar,
-.wa-context-column::-webkit-scrollbar {
-    width: 5px;
-}
-.wa-convo-list::-webkit-scrollbar-thumb,
-.wa-chat-stream::-webkit-scrollbar-thumb,
-.wa-context-column::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.14);
-    border-radius: 9999px;
-}
-.wa-filter-pills {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    white-space: nowrap;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    padding: 2px 0;
-}
-.wa-filter-pills::-webkit-scrollbar {
-    display: none;
-}
-.wa-filter-pills a {
-    flex-shrink: 0;
-    white-space: nowrap;
-}
 .wa-convo-item {
-    cursor: pointer;
-    background: #ffffff;
-    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
     border-bottom: 1px solid #f0f2f5;
-    transition: background-color 0.12s ease;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    position: relative;
 }
 .wa-convo-item:hover {
     background: #f5f6f6;
 }
 .wa-convo-item.active {
-    background: #f0f2f5 !important;
-    border-left: 4px solid #25D366 !important;
+    background: #f0f2f5;
+}
+.wa-convo-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #25D366;
+}
+.wa-avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+/* Middle: Chat Window */
+.wa-chat-column {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    overflow: hidden;
+}
+.wa-chat-header {
+    height: 56px;
+    background: #f0f2f5;
+    border-bottom: 1px solid #d1d7db;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 5;
 }
 .wa-chat-stream {
     flex: 1 1 0;
@@ -107,16 +222,19 @@
     overflow-y: auto;
     background-color: #efeae2;
     background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.035' fill-rule='evenodd'%3E%3Cpath d='M11 14.01V7a1 1 0 0 1 2 0v7.01A5.001 5.001 0 0 1 17 19v1a1 1 0 0 1-2 0v-1a3 3 0 0 0-3-3h-1.5A3.5 3.5 0 0 1 7 12.5V11a1 1 0 0 1 2 0v1.5a1.5 1.5 0 0 0 1.5 1.5H11zM65 41a5 5 0 1 1-10 0 5 5 0 0 1 10 0zm-2 0a3 3 0 1 0-6 0 3 3 0 0 0 6 0zM22 66a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm-1 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0zm53-24a1 1 0 0 1 1 1v1.5a3.5 3.5 0 0 1-3.5 3.5H71a3 3 0 0 0-3 3v1a1 1 0 0 1-2 0v-1a5.001 5.001 0 0 1 4-4.99V43a1 1 0 0 1 1-1h2.5a1.5 1.5 0 0 0 1.5-1.5V39a1 1 0 0 1 1-1zm-48-9a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm-2 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0z'/%3E%3C/g%3E%3C/svg%3E");
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     scroll-behavior: smooth;
-    padding: 12px 18px;
 }
 .wa-date-divider {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    padding: 4px 14px;
+    padding: 5px 14px;
     border-radius: 9999px;
-    font-size: 0.72rem;
+    font-size: 0.73rem;
     font-weight: 600;
     color: #54656f;
     box-shadow: 0 1px 1px rgba(11,20,26,0.12);
@@ -124,13 +242,8 @@
     align-items: center;
     letter-spacing: 0.01em;
 }
-.wa-avatar {
-    width: 42px;
-    height: 42px;
-    font-size: 1rem;
-}
 .wa-bubble {
-    max-width: 72%;
+    max-width: 68%;
     position: relative;
     box-shadow: 0 1px 0.5px rgba(11,20,26,0.13);
     word-break: break-word;
@@ -147,52 +260,38 @@
     border-radius: 8px 8px 0px 8px;
     color: #111b21;
 }
+
+/* WhatsApp Web Bottom Composer */
 .wa-composer-wrapper {
-    background-color: #f0f2f5 !important;
-    border-top: 1px solid #d1d7db !important;
-    padding: 6px 14px 10px 14px !important;
+    background: #f0f2f5;
+    border-top: 1px solid #d1d7db;
+    padding: 8px 16px 10px 16px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 5;
     transition: background-color 0.2s ease;
 }
 .wa-composer-wrapper.internal-note-mode {
-    background-color: #fffbeb !important;
+    background: #fffbeb !important;
     border-top-color: #fde68a !important;
-}
-.wa-input-container {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    width: 100% !important;
-}
-.wa-input-container textarea {
-    background-color: #ffffff !important;
-    border: none !important;
-    border-radius: 8px !important;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.06) !important;
-    padding: 9px 14px !important;
-    font-size: 0.92rem !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    resize: none !important;
-    color: #111b21 !important;
-}
-.wa-input-container textarea:focus {
-    outline: none !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 .wa-mode-toggle {
     display: inline-flex;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0,0,0,0.06);
     border-radius: 9999px;
     padding: 2px;
 }
 .wa-mode-toggle .btn-mode {
     border-radius: 9999px;
-    padding: 2px 10px;
-    font-size: 0.7rem;
+    padding: 3px 12px;
+    font-size: 0.72rem;
     font-weight: 600;
     border: none;
     color: #54656f;
     background: transparent;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
 }
 .wa-mode-toggle .btn-mode.active {
     background: #ffffff;
@@ -203,17 +302,127 @@
     background: #f59e0b;
     color: #ffffff;
 }
-.btn-xs {
-    padding: 0.2rem 0.65rem;
-    font-size: 0.72rem;
+.wa-input-container {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: 100% !important;
 }
-.btn-icon {
-    width: 36px;
-    height: 36px;
+.wa-input-capsule {
+    background: #ffffff;
+    border: 1px solid #d1d7db;
+    border-radius: 22px;
+    padding: 8px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    position: relative;
+    width: 100%;
+}
+.wa-input-capsule:focus-within {
+    border-color: #00a884;
+    box-shadow: 0 1px 3px rgba(0, 168, 132, 0.15);
+}
+.wa-input-capsule textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    border: none !important;
+    outline: none !important;
+    resize: none !important;
+    background: transparent !important;
+    font-size: 15px !important;
+    color: #111b21 !important;
+    line-height: 1.45 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: 120px !important;
+}
+.wa-input-capsule textarea::placeholder {
+    color: #8696a0;
+}
+.wa-action-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #54656f;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
 }
+.wa-action-icon-btn:hover {
+    background: #e9edef;
+    color: #111b21;
+}
+.wa-send-circle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #25D366;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-bottom: 1px;
+    box-shadow: 0 2px 4px rgba(37, 211, 102, 0.3);
+    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.wa-send-circle-btn:hover {
+    background: #20bd5a;
+    transform: scale(1.04);
+    box-shadow: 0 3px 8px rgba(37, 211, 102, 0.4);
+}
+.wa-send-circle-btn:active {
+    transform: scale(0.96);
+}
+
+/* Right Sidebar: Customer Context Drawer */
+.wa-context-column {
+    width: 320px;
+    min-width: 300px;
+    max-width: 350px;
+    height: 100%;
+    min-height: 0;
+    background: #ffffff;
+    border-left: 1px solid #d1d7db;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+.wa-context-header {
+    height: 56px;
+    background: #f0f2f5;
+    border-bottom: 1px solid #d1d7db;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+/* Custom Scrollbars */
+.wa-convo-list::-webkit-scrollbar,
+.wa-chat-stream::-webkit-scrollbar,
+.wa-context-column::-webkit-scrollbar {
+    width: 5px;
+}
+.wa-convo-list::-webkit-scrollbar-thumb,
+.wa-chat-stream::-webkit-scrollbar-thumb,
+.wa-context-column::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.14);
+    border-radius: 9999px;
+}
+
 .rotate-spin {
     animation: waSpin 0.75s linear infinite;
 }
@@ -221,98 +430,55 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
-
-/* Mobile Responsive Optimization (Native App Feel) */
-@media (max-width: 767.98px) {
-    .admin-content {
-        padding: 0 !important;
-    }
-    .whatsapp-inbox-wrapper {
-        height: calc(100vh - 58px) !important;
-        height: calc(100dvh - 58px) !important;
-        margin: 0 !important;
-    }
-    .wa-chat-card {
-        border-radius: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        height: 100% !important;
-    }
-    .wa-chat-column {
-        height: 100% !important;
-    }
-    .wa-chat-stream {
-        padding: 0.65rem !important;
-        gap: 0.65rem !important;
-    }
-    .wa-bubble {
-        max-width: 88% !important;
-    }
-    .wa-chat-header {
-        padding: 0.5rem 0.65rem !important;
-    }
-    .wa-composer-wrapper {
-        padding: 0.45rem 0.65rem calc(0.5rem + env(safe-area-inset-bottom, 0px)) 0.65rem !important;
-    }
-    .wa-composer-wrapper .btn-icon {
-        width: 34px !important;
-        height: 34px !important;
-        padding: 0 !important;
-    }
-    .wa-input-container textarea {
-        font-size: 0.88rem !important;
-        padding: 0.45rem 0.75rem !important;
-        min-height: 38px !important;
-    }
-    .wa-avatar {
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 0.9rem !important;
-    }
-    .wa-contact-name {
-        max-width: 140px !important;
-    }
-}
 </style>
 @endpush
 
 @section('content')
-<div class="whatsapp-inbox-wrapper">
-    {{-- Top Operational Toolbar: Compact Single-Row Executive Design --}}
-    <div class="{{ $activeConversation ? 'd-none d-md-flex' : 'd-flex' }} flex-wrap align-items-center justify-content-between gap-2 mb-2 flex-shrink-0 wa-operational-toolbar" id="waOperationalToolbar">
-        <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.95rem;">
-                <i class="bi bi-whatsapp text-success fs-5"></i>
+<div class="whatsapp-app-container">
+
+    {{-- 1. Top Executive Operational Header (Single sleek row) --}}
+    <header class="wa-top-bar" id="waOperationalToolbar">
+        <div class="d-flex align-items-center gap-2.5">
+            <div class="brand-badge">
+                <i class="bi bi-whatsapp"></i>
                 <span>WhatsApp Inbox</span>
-            </span>
-            <span id="waTotalUnreadBadge" class="badge rounded-pill bg-danger text-white px-2 py-0.5 {{ $totalUnread > 0 ? '' : 'd-none' }}" style="font-size: 0.68rem;">
+            </div>
+
+            {{-- Unread Badge --}}
+            <span id="waTotalUnreadBadge" class="badge rounded-pill bg-danger text-white px-2 py-0.5 {{ $totalUnread > 0 ? '' : 'd-none' }}" style="font-size: 0.7rem;">
                 <span id="waTotalUnreadCount">{{ $totalUnread }}</span> unread
             </span>
-            <span id="waActiveWindowsBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size: 0.68rem;">
+
+            {{-- 24h Windows Badge --}}
+            <span id="waActiveWindowsBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-0.5" style="font-size: 0.7rem;">
                 <i class="bi bi-clock-history me-1"></i><span id="waActiveWindowsCount">{{ $activeWindowsCount }}</span> active windows (24h)
             </span>
-            <span id="waRealtimeSyncBadge" class="badge bg-white text-muted border px-2 py-0.5 rounded-pill d-none d-md-inline-flex align-items-center gap-1 shadow-2xs" style="font-size: 0.68rem;" title="Real-time Auto-Sync Active">
-                <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 5px; height: 5px;"></span>
+
+            {{-- Live Sync Indicator --}}
+            <span id="waRealtimeSyncBadge" class="badge bg-white text-muted border px-2 py-0.5 rounded-pill d-none d-md-inline-flex align-items-center gap-1.5 shadow-2xs" style="font-size: 0.68rem;" title="Real-time Webhook Auto-Sync Active">
+                <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 6px; height: 6px;"></span>
                 <span>Live Sync</span>
             </span>
         </div>
 
-        <div class="d-flex align-items-center gap-1.5">
+        <div class="d-flex align-items-center gap-2">
+            {{-- Navigation Shortcuts --}}
             <div class="d-none d-lg-inline-flex gap-1 p-0.5 bg-light rounded-pill border">
-                <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-xs rounded-pill px-2.5 py-0.5 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
+                <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-xs rounded-pill px-2.5 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
                     <i class="bi bi-broadcast text-primary"></i>
                     <span>Broadcasts</span>
                 </a>
-                <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-xs rounded-pill px-2.5 py-0.5 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
+                <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-xs rounded-pill px-2.5 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
                     <i class="bi bi-file-earmark-code text-secondary"></i>
                     <span>Templates</span>
                 </a>
-                <a href="{{ route('admin.whatsapp.bot.index') }}" class="btn btn-xs rounded-pill px-2.5 py-0.5 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
+                <a href="{{ route('admin.whatsapp.bot.index') }}" class="btn btn-xs rounded-pill px-2.5 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
                     <i class="bi bi-robot text-success"></i>
                     <span>Auto-Reply Rules</span>
                 </a>
             </div>
 
+            {{-- Meta Connection Status --}}
             @if ($isConfigured)
                 <span class="badge bg-success-subtle text-success border border-success px-2.5 py-1 rounded-pill d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
                     <i class="bi bi-shield-check"></i>
@@ -324,396 +490,415 @@
                 </a>
             @endif
         </div>
-    </div>
+    </header>
 
-    {{-- Main 3-Column Chat Grid --}}
-    <div class="card border-0 wa-chat-card">
-        <div class="row g-0 h-100">
+    {{-- 2. Main 3-Column WhatsApp Web Grid --}}
+    <div class="wa-workspace">
 
-            {{-- 1. Left Column: Conversation Directory --}}
-            <div class="col-12 col-md-4 col-xl-3 d-flex flex-column wa-sidebar-column {{ $activeConversation ? 'd-none d-md-flex' : '' }}" id="waSidebarColumn">
-                {{-- Search & Filters --}}
-                <div class="p-2.5 border-bottom bg-white flex-shrink-0">
-                    <form method="GET" action="{{ route('admin.whatsapp.inbox') }}" class="mb-2" id="waSearchForm">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light border-0 ps-3 text-muted rounded-start-pill"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" id="waSearchInput" value="{{ $search }}" class="form-control bg-light border-0 py-1.5 ps-1 shadow-none"
-                                   placeholder="Search or start new chat..." style="font-size: 0.82rem;">
-                            @if ($search)
-                                <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter]) }}" class="input-group-text bg-light border-0 text-muted pe-3 rounded-end-pill text-decoration-none hover-dark">&times;</a>
-                            @else
-                                <span class="input-group-text bg-light border-0 pe-3 rounded-end-pill"></span>
+        {{-- Column 1: Conversations Directory --}}
+        <aside class="wa-sidebar-column {{ $activeConversation ? 'd-none d-md-flex' : '' }}" id="waSidebarColumn">
+            {{-- Sidebar Top Action Bar --}}
+            <div class="wa-sidebar-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs"
+                         style="background-color: #008069; width: 36px; height: 36px; font-size: 0.95rem;">
+                        {{ strtoupper(substr(auth('admin')->user()->name ?? 'V', 0, 1)) }}
+                    </div>
+                    <span class="fw-semibold text-dark small">{{ auth('admin')->user()->name ?? 'Agent' }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-sm btn-light border-0 rounded-circle wa-action-icon-btn" title="View Meta Templates">
+                        <i class="bi bi-chat-left-dots"></i>
+                    </a>
+                </div>
+            </div>
+
+            {{-- Search Bar --}}
+            <div class="wa-search-section">
+                <form method="GET" action="{{ route('admin.whatsapp.inbox') }}" id="waSearchForm">
+                    <div class="wa-search-pill">
+                        <i class="bi bi-search text-muted" style="font-size: 0.9rem;"></i>
+                        <input type="text" name="search" id="waSearchInput" value="{{ $search }}"
+                               placeholder="Search or start new chat...">
+                        @if ($search)
+                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter]) }}" class="text-muted text-decoration-none hover-dark ms-1">&times;</a>
+                        @endif
+                    </div>
+                </form>
+            </div>
+
+            {{-- WhatsApp Filter Chips --}}
+            <nav class="wa-filter-tabs wa-filter-pills">
+                <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'all']) }}"
+                   class="wa-filter-chip {{ $filter === 'all' ? 'active' : '' }}">
+                    All
+                </a>
+                <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'mine']) }}"
+                   class="wa-filter-chip {{ $filter === 'mine' ? 'active' : '' }}">
+                    Mine
+                </a>
+                <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'unassigned']) }}"
+                   class="wa-filter-chip {{ $filter === 'unassigned' ? 'active' : '' }}">
+                    Unassigned
+                </a>
+                <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'unread']) }}"
+                   class="wa-filter-chip {{ $filter === 'unread' ? 'active' : '' }}">
+                    Unread @if($totalUnread > 0)<span class="badge rounded-pill bg-success text-white ms-1" style="font-size: 0.65rem;">{{ $totalUnread }}</span>@endif
+                </a>
+                <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'window_open']) }}"
+                   class="wa-filter-chip {{ $filter === 'window_open' ? 'active' : '' }}">
+                    Open (24h)
+                </a>
+                <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'resolved']) }}"
+                   class="wa-filter-chip {{ $filter === 'resolved' ? 'active' : '' }}">
+                    Resolved
+                </a>
+            </nav>
+
+            {{-- Conversations List --}}
+            <div class="wa-convo-list" id="waConvoList">
+                @forelse ($conversations as $convo)
+                    @php
+                        $isActive = $activeConversation && $activeConversation->id === $convo->id;
+                        $hasWindow = $convo->isWindowOpen();
+                    @endphp
+                    <a href="{{ route('admin.whatsapp.inbox', ['conversation_id' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
+                       class="wa-convo-item {{ $isActive ? 'active' : '' }}"
+                       id="convo-item-{{ $convo->id }}"
+                       data-convo-id="{{ $convo->id }}">
+                        <div class="position-relative flex-shrink-0">
+                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs"
+                                 style="background-color: {{ '#' . substr(md5($convo->phone), 0, 6) }};">
+                                {{ strtoupper(substr($convo->contact_name ?: $convo->phone, 0, 1)) }}
+                            </div>
+                            <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1 wa-convo-window-dot {{ $hasWindow ? '' : 'd-none' }}"
+                                  title="24h Service Window Active"></span>
+                        </div>
+
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-semibold text-dark text-truncate d-block wa-convo-name" style="max-width: 170px; font-size: 0.95rem;">
+                                    {{ $convo->contact_name ?: '+' . $convo->phone }}
+                                </span>
+                                <span class="text-muted wa-convo-time" style="font-size: 0.72rem;">
+                                    {{ $convo->last_message_at ? $convo->last_message_at->shortRelativeDiffForHumans() : '' }}
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="text-muted text-truncate wa-convo-preview" style="font-size: 0.82rem; max-width: 190px;">
+                                    {{ $convo->last_message_preview ?: 'No messages yet' }}
+                                </span>
+
+                                <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                    @if ($convo->status === 'resolved')
+                                        <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.62rem;">Resolved</span>
+                                    @endif
+                                    <span class="badge rounded-pill bg-success text-white px-1.5 py-0.5 wa-convo-unread-pill {{ $convo->unread_count > 0 ? '' : 'd-none' }}" style="font-size: 0.68rem;">
+                                        {{ $convo->unread_count }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <div class="p-5 text-center text-muted" id="waEmptyConvoNotice">
+                        <i class="bi bi-chat-square-dots fs-1 d-block mb-2 text-muted opacity-50"></i>
+                        <div class="fw-semibold small">No conversations found</div>
+                        <p class="small text-muted mb-0">When customers message your WhatsApp number, they will appear here instantly.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            {{-- Pagination Links --}}
+            @if ($conversations->hasPages())
+                <div class="p-2 border-top bg-light-subtle d-flex justify-content-center flex-shrink-0">
+                    {{ $conversations->links('pagination::simple-bootstrap-5') }}
+                </div>
+            @endif
+        </aside>
+
+        {{-- Column 2: Active Chat Stream & Composer --}}
+        @if ($activeConversation)
+            <main class="wa-chat-column" id="waChatMiddleColumn">
+                {{-- WhatsApp Chat Header --}}
+                <div class="wa-chat-header">
+                    <div class="d-flex align-items-center gap-2.5 min-w-0">
+                        <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle wa-action-icon-btn d-md-none me-1" title="Back to conversations">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                        <div class="position-relative flex-shrink-0">
+                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs"
+                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 40px; height: 40px; font-size: 0.95rem;">
+                                {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
+                            </div>
+                            @if ($activeConversation->isWindowOpen())
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1" title="24h Service Window Active"></span>
                             @endif
                         </div>
-                    </form>
+                        <div class="min-w-0 text-truncate">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 220px; font-size: 0.98rem;">
+                                    {{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}
+                                </h6>
+                                @if ($customerContext['user'] ?? false)
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0 px-1" style="font-size: 0.6rem;" title="Registered Customer">
+                                        <i class="bi bi-patch-check-fill"></i>
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-0.5 text-nowrap">
+                                <button type="button" class="btn btn-link btn-xs p-0 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" title="Click to copy phone number" onclick="navigator.clipboard.writeText('+{{ $activeConversation->phone }}'); this.querySelector('.copy-icon').className='bi bi-check text-success copy-icon'; setTimeout(() => this.querySelector('.copy-icon').className='bi bi-copy text-muted copy-icon', 1500);">
+                                    <span style="font-size: 0.75rem;">+{{ $activeConversation->phone }}</span>
+                                    <i class="bi bi-copy text-muted copy-icon" style="font-size: 0.65rem;"></i>
+                                </button>
+                                <span class="badge {{ $activeConversation->isWindowOpen() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }} rounded-pill"
+                                      style="font-size: 0.65rem; padding: 0.15rem 0.5rem;" id="activeWindowBadge">
+                                    <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-clock-fill' : 'bi-lock-fill' }} me-0.5"></i>
+                                    <span id="activeWindowLabel">{{ $activeConversation->windowRemainingFormatted() }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 
-                    {{-- Filter Tabs (Smooth horizontal row without scrollbar) --}}
-                    <div class="wa-filter-pills">
-                        <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'all']) }}"
-                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'all' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            All
-                        </a>
-                        <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'mine']) }}"
-                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'mine' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            Mine
-                        </a>
-                        <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'unassigned']) }}"
-                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'unassigned' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            Unassigned
-                        </a>
-                        <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'unread']) }}"
-                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'unread' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            Unread @if($totalUnread > 0)<span class="badge rounded-pill bg-success text-white ms-1" style="font-size: 0.65rem;">{{ $totalUnread }}</span>@endif
-                        </a>
-                        <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'window_open']) }}"
-                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'window_open' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            Open (24h)
-                        </a>
-                        <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'resolved']) }}"
-                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'resolved' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            Resolved
-                        </a>
+                    {{-- Header Action Buttons --}}
+                    <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+                        {{-- Agent Assignment Dropdown --}}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-white border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent" style="font-size: 0.78rem;">
+                                <i class="bi bi-person text-secondary"></i>
+                                <span id="assignedAgentLabel" class="fw-semibold text-dark d-none d-sm-inline">
+                                    {{ $activeConversation->assignedAgent?->name ?? 'Unassigned' }}
+                                </span>
+                                <i class="bi bi-chevron-down text-muted" style="font-size: 0.55rem;"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem; min-width: 180px;">
+                                <li class="dropdown-header text-uppercase fw-bold text-muted py-1" style="font-size: 0.68rem;">Assign To Agent</li>
+                                <li>
+                                    <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn fw-medium text-primary" data-admin-id="{{ auth('admin')->id() }}">
+                                        <i class="bi bi-person-check me-1.5"></i> Assign to Me
+                                    </button>
+                                </li>
+                                @foreach ($admins as $adm)
+                                    @if ($adm->id !== auth('admin')->id())
+                                        <li>
+                                            <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn" data-admin-id="{{ $adm->id }}">
+                                                <i class="bi bi-person me-1.5"></i> {{ $adm->name }}
+                                            </button>
+                                        </li>
+                                    @endif
+                                @endforeach
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn text-danger" data-admin-id="">
+                                        <i class="bi bi-person-x me-1.5"></i> Unassign
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {{-- Conversation Lifecycle Status --}}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-white border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Status" style="font-size: 0.78rem;">
+                                @php
+                                    $statusConfig = match($activeConversation->status) {
+                                        'resolved' => ['color' => 'secondary', 'icon' => 'bi-check2-all', 'label' => 'Resolved'],
+                                        'snoozed' => ['color' => 'warning', 'icon' => 'bi-alarm', 'label' => 'Snoozed'],
+                                        default => ['color' => 'success', 'icon' => 'bi-circle-fill', 'label' => 'Open']
+                                    };
+                                @endphp
+                                <span class="badge bg-{{ $statusConfig['color'] }}-subtle text-{{ $statusConfig['color'] }} p-1 rounded-circle">
+                                    <i class="bi {{ $statusConfig['icon'] }}" style="font-size: 0.6rem;"></i>
+                                </span>
+                                <span id="convoStatusLabel" class="fw-semibold text-dark d-none d-sm-inline">{{ $statusConfig['label'] }}</span>
+                                <i class="bi bi-chevron-down text-muted" style="font-size: 0.55rem;"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem;">
+                                <li>
+                                    <button type="button" class="dropdown-item rounded-2 py-1.5 change-status-btn text-success fw-medium" data-status="active">
+                                        <i class="bi bi-check2 me-1.5"></i> Mark Open / Active
+                                    </button>
+                                </li>
+                                <li>
+                                    <button type="button" class="dropdown-item rounded-2 py-1.5 change-status-btn text-secondary" data-status="resolved">
+                                        <i class="bi bi-check-all me-1.5"></i> Mark as Resolved
+                                    </button>
+                                </li>
+                                <li>
+                                    <button type="button" class="dropdown-item rounded-2 py-1.5 change-status-btn text-warning" data-status="snoozed">
+                                        <i class="bi bi-alarm me-1.5"></i> Snooze Chat
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {{-- Refresh Messages Button --}}
+                        <button type="button" class="btn btn-sm btn-white border wa-action-icon-btn rounded-circle shadow-2xs hover-dark" id="btnRefreshChat" title="Refresh messages" style="width: 34px; height: 34px;">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+
+                        {{-- Toggle Customer Info Drawer (Desktop & Mobile) --}}
+                        <button class="btn btn-sm btn-white border wa-action-icon-btn rounded-circle shadow-2xs hover-dark d-none d-xl-inline-flex" type="button" id="btnToggleContextDesktop" title="Toggle Customer Info Drawer" style="width: 34px; height: 34px;">
+                            <i class="bi bi-layout-sidebar-reverse"></i>
+                        </button>
+                        <button class="btn btn-sm btn-white border wa-action-icon-btn rounded-circle shadow-2xs d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Profile" style="width: 34px; height: 34px;">
+                            <i class="bi bi-person-badge"></i>
+                        </button>
                     </div>
                 </div>
 
-                {{-- Conversations List --}}
-                <div class="flex-grow-1 overflow-y-auto wa-convo-list" id="waConvoList">
-                    @forelse ($conversations as $convo)
+                {{-- Window Closed Notice (Meta Policy) --}}
+                <div id="waWindowExpiredNotice" class="alert alert-warning border-0 rounded-0 mb-0 py-2 px-3 small d-flex align-items-center justify-content-between flex-shrink-0 {{ $activeConversation->isWindowOpen() ? 'd-none' : '' }}" style="background-color: #fffbeb; border-bottom: 1px solid #fde68a !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                        <span class="text-dark" style="font-size: 0.8rem;"><strong>24-Hour window expired.</strong> Free-form text may fail. Send an approved Meta Template to resume conversation.</span>
+                    </div>
+                    <button type="button" class="btn btn-warning btn-xs rounded-pill px-3 py-1 shadow-2xs fw-semibold" data-bs-toggle="modal" data-bs-target="#sendTemplateModal">
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Send Template
+                    </button>
+                </div>
+
+                {{-- Scrollable Messages Stream --}}
+                <div class="wa-chat-stream" id="waChatStream">
+                    @php $lastDate = null; @endphp
+                    @forelse ($messages as $msg)
                         @php
-                            $isActive = $activeConversation && $activeConversation->id === $convo->id;
-                            $hasWindow = $convo->isWindowOpen();
+                            $msgDate = $msg->created_at->format('Y-m-d');
+                            $displayDate = $msg->created_at->isToday() ? 'Today' : ($msg->created_at->isYesterday() ? 'Yesterday' : $msg->created_at->format('d M Y'));
                         @endphp
-                        <a href="{{ route('admin.whatsapp.inbox', ['conversation_id' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
-                           class="wa-convo-item d-block text-decoration-none {{ $isActive ? 'active' : '' }}"
-                           id="convo-item-{{ $convo->id }}"
-                           data-convo-id="{{ $convo->id }}">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <div class="position-relative flex-shrink-0">
-                                    <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs"
-                                         style="background-color: {{ '#' . substr(md5($convo->phone), 0, 6) }};">
-                                        {{ strtoupper(substr($convo->contact_name ?: $convo->phone, 0, 1)) }}
-                                    </div>
-                                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1 wa-convo-window-dot {{ $hasWindow ? '' : 'd-none' }}"
-                                          title="24h Service Window Active"></span>
-                                </div>
-
-                                <div class="flex-grow-1 min-w-0">
-                                    <div class="d-flex align-items-center justify-content-between mb-0.5">
-                                        <span class="fw-semibold text-dark text-truncate d-block wa-convo-name" style="max-width: 130px; font-size: 0.88rem;">
-                                            {{ $convo->contact_name ?: '+' . $convo->phone }}
-                                        </span>
-                                        <span class="text-muted wa-convo-time" style="font-size: 0.68rem;">
-                                            {{ $convo->last_message_at ? $convo->last_message_at->shortRelativeDiffForHumans() : '' }}
-                                        </span>
-                                    </div>
-
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-muted text-truncate wa-convo-preview" style="font-size: 0.78rem; max-width: 140px;">
-                                            {{ $convo->last_message_preview ?: 'No messages yet' }}
-                                        </span>
-
-                                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                                            @if ($convo->status === 'resolved')
-                                                <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.6rem;">Resolved</span>
-                                            @endif
-                                            <span class="badge rounded-pill bg-success text-white px-1.5 py-0.5 wa-convo-unread-pill {{ $convo->unread_count > 0 ? '' : 'd-none' }}" style="font-size: 0.65rem;">
-                                                {{ $convo->unread_count }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+                        @if ($lastDate !== $msgDate)
+                            <div class="d-flex justify-content-center my-2 sticky-top" style="z-index: 2;">
+                                <span class="wa-date-divider">
+                                    {{ $displayDate }}
+                                </span>
                             </div>
-                        </a>
+                            @php $lastDate = $msgDate; @endphp
+                        @endif
+                        @include('admin.whatsapp.partials.message-bubble', ['msg' => $msg])
                     @empty
-                        <div class="p-5 text-center text-muted" id="waEmptyConvoNotice">
-                            <i class="bi bi-chat-square-dots fs-1 d-block mb-2 text-muted opacity-50"></i>
-                            <div class="fw-semibold small">No conversations found</div>
-                            <p class="small text-muted mb-0">When customers message your WhatsApp number, they will appear here instantly.</p>
+                        <div class="my-auto text-center text-muted p-5" id="waEmptyMessageNotice">
+                            <i class="bi bi-chat-heart fs-1 text-success opacity-75 d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark">Start WhatsApp Conversation</h6>
+                            <p class="small text-muted mb-0">Type a message below or send an approved Meta Template to initiate a dialogue with {{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}.</p>
                         </div>
                     @endforelse
                 </div>
 
-                {{-- Pagination Links --}}
-                @if ($conversations->hasPages())
-                    <div class="p-2 border-top bg-light-subtle d-flex justify-content-center flex-shrink-0">
-                        {{ $conversations->links('pagination::simple-bootstrap-5') }}
-                    </div>
-                @endif
-            </div>
-
-            {{-- 2. Middle Column: Active Chat Stream & Composer --}}
-            @if ($activeConversation)
-                <div class="col-12 col-md-8 col-xl-6 d-flex flex-column wa-chat-column" id="waChatMiddleColumn">
-                    {{-- Chat Topbar (Authentic WhatsApp Web Header) --}}
-                    <div class="px-3 py-2 border-bottom d-flex align-items-center justify-content-between z-2 flex-shrink-0 wa-chat-header" style="background-color: #f0f2f5;">
-                        <div class="d-flex align-items-center gap-2.5 min-w-0" style="min-width: 0;">
-                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle btn-icon d-md-none me-1 flex-shrink-0" style="width: 32px; height: 32px;" title="Back to conversations">
-                                <i class="bi bi-arrow-left"></i>
-                            </a>
-                            <div class="position-relative flex-shrink-0">
-                                <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs"
-                                     style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }};">
-                                    {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
-                                </div>
-                                @if ($activeConversation->isWindowOpen())
-                                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1" title="24h Service Window Active"></span>
-                                @endif
-                            </div>
-                            <div class="min-w-0 text-truncate">
-                                <div class="d-flex align-items-center gap-1.5">
-                                    <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 180px; font-size: 0.95rem;">
-                                        {{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}
-                                    </h6>
-                                    @if ($customerContext['user'] ?? false)
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0 px-1" style="font-size: 0.6rem;" title="Registered Customer">
-                                            <i class="bi bi-patch-check-fill"></i>
-                                        </span>
-                                    @endif
-                                </div>
-                                <div class="d-flex align-items-center gap-2 mt-0.5 text-nowrap">
-                                    <button type="button" class="btn btn-link btn-xs p-0 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" title="Click to copy phone number" onclick="navigator.clipboard.writeText('+{{ $activeConversation->phone }}'); this.querySelector('.copy-icon').className='bi bi-check text-success copy-icon'; setTimeout(() => this.querySelector('.copy-icon').className='bi bi-copy text-muted copy-icon', 1500);">
-                                        <span style="font-size: 0.72rem;">+{{ $activeConversation->phone }}</span>
-                                        <i class="bi bi-copy text-muted copy-icon" style="font-size: 0.62rem;"></i>
-                                    </button>
-                                    <span class="badge {{ $activeConversation->isWindowOpen() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }} rounded-pill"
-                                          style="font-size: 0.62rem; padding: 0.12rem 0.45rem;" id="activeWindowBadge">
-                                        <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-clock-fill' : 'bi-lock-fill' }} me-0.5"></i>
-                                        <span id="activeWindowLabel">{{ $activeConversation->windowRemainingFormatted() }}</span>
-                                    </span>
-                                </div>
-                            </div>
+                {{-- Media Attachment Live Preview Capsule --}}
+                <div id="waAttachmentPreview" class="d-none px-3 py-2 bg-white border-top d-flex align-items-center justify-content-between flex-shrink-0" style="border-top: 1px solid #d1d7db !important;">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                        <div id="waAttachmentThumb" class="rounded-3 overflow-hidden bg-light flex-shrink-0 border" style="width: 44px; height: 44px; display: none;">
+                            <img src="" class="w-100 h-100 object-fit-cover" alt="preview">
                         </div>
-
-                        <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-                            {{-- Agent Assignment Dropdown --}}
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-white border rounded-pill px-2 py-1 d-flex align-items-center gap-1 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent" style="font-size: 0.75rem;">
-                                    <i class="bi bi-person text-secondary"></i>
-                                    <span id="assignedAgentLabel" class="fw-semibold text-dark d-none d-sm-inline">
-                                        {{ $activeConversation->assignedAgent?->name ?? 'Unassigned' }}
-                                    </span>
-                                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.55rem;"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem; min-width: 180px;">
-                                    <li class="dropdown-header text-uppercase fw-bold text-muted py-1" style="font-size: 0.68rem;">Assign To Agent</li>
-                                    <li>
-                                        <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn fw-medium text-primary" data-admin-id="{{ auth('admin')->id() }}">
-                                            <i class="bi bi-person-check me-1.5"></i> Assign to Me
-                                        </button>
-                                    </li>
-                                    @foreach ($admins as $adm)
-                                        @if ($adm->id !== auth('admin')->id())
-                                            <li>
-                                                <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn" data-admin-id="{{ $adm->id }}">
-                                                    <i class="bi bi-person me-1.5"></i> {{ $adm->name }}
-                                                </button>
-                                            </li>
-                                        @endif
-                                    @endforeach
-                                    <li><hr class="dropdown-divider my-1"></li>
-                                    <li>
-                                        <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn text-danger" data-admin-id="">
-                                            <i class="bi bi-person-x me-1.5"></i> Unassign
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            {{-- Conversation Lifecycle Status --}}
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-white border rounded-pill px-2 py-1 d-flex align-items-center gap-1 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Status" style="font-size: 0.75rem;">
-                                    @php
-                                        $statusConfig = match($activeConversation->status) {
-                                            'resolved' => ['color' => 'secondary', 'icon' => 'bi-check2-all', 'label' => 'Resolved'],
-                                            'snoozed' => ['color' => 'warning', 'icon' => 'bi-alarm', 'label' => 'Snoozed'],
-                                            default => ['color' => 'success', 'icon' => 'bi-circle-fill', 'label' => 'Open']
-                                        };
-                                    @endphp
-                                    <span class="badge bg-{{ $statusConfig['color'] }}-subtle text-{{ $statusConfig['color'] }} p-1 rounded-circle">
-                                        <i class="bi {{ $statusConfig['icon'] }}" style="font-size: 0.6rem;"></i>
-                                    </span>
-                                    <span id="convoStatusLabel" class="fw-semibold text-dark d-none d-sm-inline">{{ $statusConfig['label'] }}</span>
-                                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.55rem;"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem;">
-                                    <li>
-                                        <button type="button" class="dropdown-item rounded-2 py-1.5 change-status-btn text-success fw-medium" data-status="active">
-                                            <i class="bi bi-check2 me-1.5"></i> Mark Open / Active
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item rounded-2 py-1.5 change-status-btn text-secondary" data-status="resolved">
-                                            <i class="bi bi-check-all me-1.5"></i> Mark as Resolved
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item rounded-2 py-1.5 change-status-btn text-warning" data-status="snoozed">
-                                            <i class="bi bi-alarm me-1.5"></i> Snooze Chat
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <button type="button" class="btn btn-sm btn-white border btn-icon rounded-circle shadow-2xs hover-dark" id="btnRefreshChat" title="Refresh messages" style="width: 32px; height: 32px;">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </button>
-
-                            {{-- Desktop Toggle Context / Mobile Offcanvas Drawer Trigger --}}
-                            <button class="btn btn-sm btn-white border btn-icon rounded-circle shadow-2xs hover-dark d-none d-xl-inline-flex" type="button" id="btnToggleContextDesktop" title="Toggle Customer Info">
-                                <i class="bi bi-layout-sidebar-reverse"></i>
-                            </button>
-                            <button class="btn btn-sm btn-white border btn-icon rounded-circle shadow-2xs d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Profile">
-                                <i class="bi bi-person-badge"></i>
-                            </button>
+                        <i class="bi bi-file-earmark-arrow-up fs-2 text-primary flex-shrink-0" id="waAttachmentGenericIcon"></i>
+                        <div class="min-w-0">
+                            <div class="fw-semibold small text-truncate text-dark" id="waAttachmentName" style="max-width: 260px;">file.pdf</div>
+                            <small class="text-muted" id="waAttachmentSize" style="font-size: 0.72rem;">0 KB</small>
                         </div>
                     </div>
-
-                    {{-- Window Closed Notice (Meta Policy) --}}
-                    <div id="waWindowExpiredNotice" class="alert alert-warning border-0 rounded-0 mb-0 py-2 px-3 small d-flex align-items-center justify-content-between flex-shrink-0 {{ $activeConversation->isWindowOpen() ? 'd-none' : '' }}" style="background-color: #fffbeb; border-bottom: 1px solid #fde68a !important;">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
-                            <span class="text-dark" style="font-size: 0.78rem;"><strong>24-Hour window expired.</strong> Free-form text may fail. Send an approved Meta Template to resume.</span>
-                        </div>
-                        <button type="button" class="btn btn-warning btn-xs rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" data-bs-toggle="modal" data-bs-target="#sendTemplateModal">
-                            <i class="bi bi-lightning-charge-fill me-1"></i>Send Template
-                        </button>
-                    </div>
-
-                    {{-- Scrollable Messages Stream --}}
-                    <div class="flex-grow-1 overflow-y-auto wa-chat-stream d-flex flex-column gap-2" id="waChatStream">
-                        @php $lastDate = null; @endphp
-                        @forelse ($messages as $msg)
-                            @php
-                                $msgDate = $msg->created_at->format('Y-m-d');
-                                $displayDate = $msg->created_at->isToday() ? 'Today' : ($msg->created_at->isYesterday() ? 'Yesterday' : $msg->created_at->format('d M Y'));
-                            @endphp
-                            @if ($lastDate !== $msgDate)
-                                <div class="d-flex justify-content-center my-2 sticky-top" style="z-index: 2;">
-                                    <span class="wa-date-divider">
-                                        {{ $displayDate }}
-                                    </span>
-                                </div>
-                                @php $lastDate = $msgDate; @endphp
-                            @endif
-                            @include('admin.whatsapp.partials.message-bubble', ['msg' => $msg])
-                        @empty
-                            <div class="my-auto text-center text-muted p-5" id="waEmptyMessageNotice">
-                                <div class="rounded-circle bg-white shadow-sm p-3 d-inline-flex align-items-center justify-content-center mb-2" style="width: 56px; height: 56px;">
-                                    <i class="bi bi-chat-heart text-success fs-3"></i>
-                                </div>
-                                <div class="fw-semibold text-dark">No messages yet with this customer</div>
-                                <p class="small text-muted mb-0">Type below to start the conversation.</p>
-                            </div>
-                        @endforelse
-                    </div>
-
-                    {{-- Attachment Preview Chip (hidden by default) --}}
-                    <div id="waAttachmentPreview" class="p-2 border-top bg-light-subtle d-none d-flex align-items-center justify-content-between flex-shrink-0">
-                        <div class="d-flex align-items-center gap-2">
-                            <div id="waAttachmentThumb" class="rounded overflow-hidden" style="width: 36px; height: 36px; display: none;">
-                                <img src="" alt="preview" class="w-100 h-100 object-fit-cover">
-                            </div>
-                            <i class="bi bi-paperclip fs-5 text-muted" id="waAttachmentGenericIcon"></i>
-                            <div>
-                                <div class="fw-semibold small text-truncate" id="waAttachmentName" style="max-width: 250px;">filename.pdf</div>
-                                <div class="text-muted" style="font-size: 0.7rem;" id="waAttachmentSize">1.2 MB</div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-light rounded-circle text-danger p-1" id="waRemoveAttachment">
-                            <i class="bi bi-x fs-5"></i>
-                        </button>
-                    </div>
-
-                    {{-- Bottom Chat Composer: Authentic Full-Width WhatsApp Web Composer --}}
-                    <div class="border-top flex-shrink-0 wa-composer-wrapper" id="waComposerWrapper">
-                        {{-- Mode Selector: Public WhatsApp Reply vs Private Staff Note --}}
-                        <div class="d-flex align-items-center justify-content-between mb-1.5 px-0.5">
-                            <div class="wa-mode-toggle" role="group">
-                                <button type="button" class="btn-mode active" id="btnModeReply">
-                                    <i class="bi bi-whatsapp me-1 text-success"></i> Customer Reply
-                                </button>
-                                <button type="button" class="btn-mode" id="btnModeNote">
-                                    <i class="bi bi-lock-fill me-1 text-warning"></i> Internal Note
-                                </button>
-                            </div>
-                            <span class="small text-muted d-none d-sm-inline" style="font-size: 0.7rem;" id="modeHintText">
-                                <i class="bi bi-info-circle me-1"></i>Sends message directly to customer's WhatsApp
-                            </span>
-                        </div>
-
-                        {{-- Main WhatsApp Typing Row (Single row, full width input) --}}
-                        <form id="waSendForm" class="d-flex align-items-end gap-1.5 w-100">
-                            @csrf
-                            <input type="file" id="waFileInput" class="d-none" accept="image/*,application/pdf,.doc,.docx,audio/*,video/*">
-
-                            {{-- Left Action Icons --}}
-                            <div class="d-flex align-items-center gap-0.5 flex-shrink-0 mb-0.5">
-                                {{-- Attach File Icon (Paperclip) --}}
-                                <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 border-0 hover-dark" id="btnAttachFile" title="Attach file, photo or document" style="width: 36px; height: 36px; background: transparent; color: #54656f;">
-                                    <i class="bi bi-paperclip fs-5"></i>
-                                </button>
-
-                                {{-- Quick Reply Snippets Icon --}}
-                                <div class="dropdown">
-                                    <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 border-0 text-primary hover-dark" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)" style="width: 36px; height: 36px; background: transparent;">
-                                        <i class="bi bi-chat-square-quote-fill fs-5"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-4 p-2 wa-quick-reply-dropdown" style="max-height: 280px; overflow-y: auto; width: 320px; z-index: 1060;" id="waQuickReplyMenu">
-                                        <li class="dropdown-header small text-uppercase fw-bold text-muted px-2 py-1">⚡ Quick Reply Snippets</li>
-                                        <li class="text-center py-2 text-muted small"><span class="spinner-border spinner-border-sm"></span> Loading snippets...</li>
-                                    </ul>
-                                </div>
-
-                                {{-- Send Approved Meta Template Icon --}}
-                                <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 border-0 text-warning hover-dark" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Meta Template (Bypasses 24h Window)" style="width: 36px; height: 36px; background: transparent;">
-                                    <i class="bi bi-lightning-charge-fill fs-5"></i>
-                                </button>
-                            </div>
-
-                            {{-- Expanded Full-Width Typing Box --}}
-                            <div class="position-relative wa-input-container">
-                                {{-- Inline Slash Suggestions --}}
-                                <div id="waSlashSuggestions" class="position-absolute bottom-100 start-0 mb-2 w-100 bg-white rounded-3 shadow-lg border p-1 d-none" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
-                                </div>
-                                <textarea id="waMessageInput" rows="1" class="form-control"
-                                          placeholder="Type a message or type / for quick replies... (Enter to send, Shift+Enter for newline)"
-                                          style="max-height: 120px; min-height: 40px;"></textarea>
-                            </div>
-
-                            {{-- WhatsApp Green Circular Send Button --}}
-                            <button type="submit" class="btn rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm mb-0.5 d-flex align-items-center justify-content-center" id="btnSendMessage" title="Send message (Enter)" style="width: 40px; height: 40px; background-color: #25D366; border-color: #25D366;">
-                                <i class="bi bi-send-fill text-white fs-6"></i>
-                            </button>
-                        </form>
-                    </div>
+                    <button type="button" class="btn btn-sm btn-light rounded-circle text-danger p-1" id="waRemoveAttachment">
+                        <i class="bi bi-x fs-5"></i>
+                    </button>
                 </div>
 
-                {{-- 3. Right Column: Customer Context Drawer --}}
-                <div class="col-12 col-xl-3 border-start d-none d-xl-flex flex-column wa-context-column" id="waContextColumn">
+                {{-- Authentic WhatsApp Web Bottom Composer Bar --}}
+                <div class="wa-composer-wrapper" id="waComposerWrapper">
+                    {{-- Mode Selector Capsule: WhatsApp Public Reply vs Private Internal Note --}}
+                    <div class="d-flex align-items-center justify-content-between px-1">
+                        <div class="wa-mode-toggle" role="group">
+                            <button type="button" class="btn-mode active" id="btnModeReply">
+                                <i class="bi bi-whatsapp me-1 text-success"></i> Customer Reply
+                            </button>
+                            <button type="button" class="btn-mode" id="btnModeNote">
+                                <i class="bi bi-lock-fill me-1 text-warning"></i> Internal Note
+                            </button>
+                        </div>
+                        <span class="small text-muted d-none d-sm-inline" style="font-size: 0.72rem;" id="modeHintText">
+                            <i class="bi bi-info-circle me-1"></i>Sends message directly to customer's WhatsApp
+                        </span>
+                    </div>
+
+                    {{-- Main Typing Row (Full width input container + authentic WhatsApp action icons) --}}
+                    <form id="waSendForm" class="d-flex align-items-end gap-2 w-100">
+                        @csrf
+                        <input type="file" id="waFileInput" class="d-none" accept="image/*,application/pdf,.doc,.docx,audio/*,video/*">
+
+                        {{-- Action Icons Left --}}
+                        <div class="d-flex align-items-center gap-1 flex-shrink-0 mb-0.5">
+                            {{-- Paperclip Attachment Icon --}}
+                            <button type="button" class="wa-action-icon-btn" id="btnAttachFile" title="Attach photo, video or document">
+                                <i class="bi bi-paperclip"></i>
+                            </button>
+
+                            {{-- Quick Reply Snippets Menu --}}
+                            <div class="dropdown">
+                                <button type="button" class="wa-action-icon-btn text-primary" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)">
+                                    <i class="bi bi-lightning-charge-fill"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-4 p-2 wa-quick-reply-dropdown" style="max-height: 280px; overflow-y: auto; width: 320px; z-index: 1060;" id="waQuickReplyMenu">
+                                    <li class="dropdown-header small text-uppercase fw-bold text-muted px-2 py-1">⚡ Quick Reply Snippets</li>
+                                    <li class="text-center py-2 text-muted small"><span class="spinner-border spinner-border-sm"></span> Loading snippets...</li>
+                                </ul>
+                            </div>
+
+                            {{-- Send Approved Meta Template Icon --}}
+                            <button type="button" class="wa-action-icon-btn text-warning" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Approved Meta Template (Bypasses 24h Window)">
+                                <i class="bi bi-shield-check"></i>
+                            </button>
+                        </div>
+
+                        {{-- Wide Full-Width Typing Capsule --}}
+                        <div class="wa-input-container position-relative">
+                            {{-- Slash Autocomplete Suggestions --}}
+                            <div id="waSlashSuggestions" class="position-absolute bottom-100 start-0 mb-2 w-100 bg-white rounded-3 shadow-lg border p-1 d-none" style="max-height: 200px; overflow-y: auto; z-index: 1050;"></div>
+
+                            <div class="wa-input-capsule">
+                                <textarea id="waMessageInput" rows="1"
+                                          placeholder="Type a message or type / for quick replies... (Enter to send, Shift+Enter for newline)"></textarea>
+                            </div>
+                        </div>
+
+                        {{-- WhatsApp Green Circular Send Button --}}
+                        <button type="submit" class="wa-send-circle-btn" id="btnSendMessage" title="Send message (Enter)">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </main>
+
+            {{-- Column 3: Customer Context Drawer --}}
+            <aside class="wa-context-column d-none d-xl-flex" id="waContextColumn">
+                @include('admin.whatsapp.partials.customer-context', ['customerContext' => $customerContext, 'activeConversation' => $activeConversation])
+            </aside>
+
+            {{-- Offcanvas Drawer for mobile & tablet screens --}}
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="customerContextOffcanvas" aria-labelledby="customerContextOffcanvasLabel">
+                <div class="offcanvas-header border-bottom">
+                    <h5 class="offcanvas-title fw-bold" id="customerContextOffcanvasLabel">Customer Context</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body p-0">
                     @include('admin.whatsapp.partials.customer-context', ['customerContext' => $customerContext, 'activeConversation' => $activeConversation])
                 </div>
+            </div>
 
-                {{-- Offcanvas Drawer for mobile/tablet --}}
-                <div class="offcanvas offcanvas-end" tabindex="-1" id="customerContextOffcanvas" aria-labelledby="customerContextOffcanvasLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h5 class="offcanvas-title fw-bold" id="customerContextOffcanvasLabel">Customer Context</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                    </div>
-                    <div class="offcanvas-body p-0">
-                        @include('admin.whatsapp.partials.customer-context', ['customerContext' => $customerContext, 'activeConversation' => $activeConversation])
-                    </div>
+        @else
+            {{-- WhatsApp Web Authentic Empty Desktop Splash Screen --}}
+            <main class="col d-flex flex-column align-items-center justify-content-center p-5 text-center bg-white" style="background-color: #f0f2f5 !important; border-left: 1px solid #d1d7db;">
+                <div class="wa-empty-illustration mb-4 p-4 rounded-circle bg-white text-emerald d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px;">
+                    <i class="bi bi-whatsapp fs-1" style="color: #25D366;"></i>
                 </div>
+                <h4 class="fw-bold text-dark mb-2">WhatsApp for Web</h4>
+                <p class="text-muted small mb-4" style="max-width: 440px; line-height: 1.6; font-size: 0.88rem;">
+                    Send and receive messages directly with your customers in real time. Select a conversation from the left directory to start chatting.
+                </p>
+                <div class="d-inline-flex align-items-center gap-1.5 text-muted px-3 py-1 rounded-pill bg-white border shadow-2xs" style="font-size: 0.75rem;">
+                    <i class="bi bi-lock-fill text-muted"></i>
+                    <span>End-to-end encrypted with Meta Cloud API</span>
+                </div>
+            </main>
+        @endif
 
-            @else
-                <div class="col-12 col-md-8 col-xl-9 d-flex flex-column align-items-center justify-content-center p-5 text-center bg-white" style="min-height: 500px;">
-                    <div class="wa-empty-illustration mb-3 p-4 rounded-circle bg-emerald-subtle text-emerald" style="width: 88px; height: 88px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);">
-                        <i class="bi bi-whatsapp fs-1 text-success"></i>
-                    </div>
-                    <h5 class="fw-bold text-dark">No Conversation Selected</h5>
-                    <p class="text-muted small" style="max-width: 380px; line-height: 1.5;">Select a conversation from the left to read messages, send replies, or share attachments directly with customers.</p>
-                </div>
-            @endif
-        </div>
     </div>
 </div>
 
@@ -1077,23 +1262,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Toggle Desktop Customer Context Panel
     const btnToggleContextDesktop = document.getElementById('btnToggleContextDesktop');
     const waContextColumn = document.getElementById('waContextColumn');
-    const waChatMiddleColumn = document.getElementById('waChatMiddleColumn');
-    if (btnToggleContextDesktop && waContextColumn && waChatMiddleColumn) {
+    if (btnToggleContextDesktop && waContextColumn) {
         btnToggleContextDesktop.addEventListener('click', () => {
-            if (waContextColumn.classList.contains('d-xl-none')) {
-                waContextColumn.classList.remove('d-xl-none');
-                waContextColumn.classList.add('d-xl-flex');
-                waChatMiddleColumn.classList.remove('col-xl-9');
-                waChatMiddleColumn.classList.add('col-xl-6');
-                btnToggleContextDesktop.classList.remove('btn-primary', 'text-white');
-                btnToggleContextDesktop.classList.add('btn-white', 'text-dark');
+            if (waContextColumn.classList.contains('d-none')) {
+                waContextColumn.classList.remove('d-none');
+                btnToggleContextDesktop.classList.remove('text-primary');
             } else {
-                waContextColumn.classList.remove('d-xl-flex');
-                waContextColumn.classList.add('d-xl-none');
-                waChatMiddleColumn.classList.remove('col-xl-6');
-                waChatMiddleColumn.classList.add('col-xl-9');
-                btnToggleContextDesktop.classList.remove('btn-white', 'text-dark');
-                btnToggleContextDesktop.classList.add('btn-primary', 'text-white');
+                waContextColumn.classList.add('d-none');
+                btnToggleContextDesktop.classList.add('text-primary');
             }
         });
     }
