@@ -71,27 +71,27 @@
 <div class="card filter-card mb-3 shadow-sm border-0" style="border-radius: 12px;">
     <div class="card-body p-3">
         {{-- Segment Filter Tabs --}}
-        <div class="d-flex flex-wrap gap-1.5 mb-3 pb-2 border-bottom">
+        <div class="d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
             @php $currentSegment = request('segment', 'all'); @endphp
             <a href="{{ route('admin.customers.index', array_merge(request()->except('segment', 'page'), ['segment' => 'all'])) }}"
-               class="btn btn-sm {{ $currentSegment === 'all' ? 'btn-dark' : 'btn-outline-secondary' }} rounded-pill px-3 py-1">
+               class="btn btn-sm rounded-pill px-3 py-1.5 {{ $currentSegment === 'all' ? 'btn-dark' : 'btn-light border text-muted' }}">
                 All Customers
             </a>
             <a href="{{ route('admin.customers.index', array_merge(request()->except('segment', 'page'), ['segment' => 'vip'])) }}"
-               class="btn btn-sm {{ $currentSegment === 'vip' ? 'btn-primary' : 'btn-outline-primary' }} rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1">
-                <i class="bi bi-stars"></i><span>VIP Champions</span>
+               class="btn btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $currentSegment === 'vip' ? 'btn-primary' : 'btn-light border text-muted' }}">
+                <i class="bi bi-stars text-warning"></i><span>VIP Champions</span>
             </a>
             <a href="{{ route('admin.customers.index', array_merge(request()->except('segment', 'page'), ['segment' => 'repeat'])) }}"
-               class="btn btn-sm {{ $currentSegment === 'repeat' ? 'btn-info text-white' : 'btn-outline-info' }} rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1">
-                <i class="bi bi-arrow-repeat"></i><span>Repeat Buyers</span>
+               class="btn btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $currentSegment === 'repeat' ? 'btn-info text-white' : 'btn-light border text-muted' }}">
+                <i class="bi bi-arrow-repeat text-info"></i><span>Repeat Buyers</span>
             </a>
             <a href="{{ route('admin.customers.index', array_merge(request()->except('segment', 'page'), ['segment' => 'first_time'])) }}"
-               class="btn btn-sm {{ $currentSegment === 'first_time' ? 'btn-success' : 'btn-outline-success' }} rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1">
-                <i class="bi bi-bag-check"></i><span>First-Time Buyers</span>
+               class="btn btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $currentSegment === 'first_time' ? 'btn-success text-white' : 'btn-light border text-muted' }}">
+                <i class="bi bi-bag-check text-success"></i><span>First-Time Buyers</span>
             </a>
             <a href="{{ route('admin.customers.index', array_merge(request()->except('segment', 'page'), ['segment' => 'prospect'])) }}"
-               class="btn btn-sm {{ $currentSegment === 'prospect' ? 'btn-secondary' : 'btn-outline-secondary' }} rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1">
-                <i class="bi bi-person"></i><span>Prospects &amp; Leads</span>
+               class="btn btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $currentSegment === 'prospect' ? 'btn-secondary text-white' : 'btn-light border text-muted' }}">
+                <i class="bi bi-person text-secondary"></i><span>Prospects &amp; Leads</span>
             </a>
         </div>
 

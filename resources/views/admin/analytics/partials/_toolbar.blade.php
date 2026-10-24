@@ -56,13 +56,16 @@
     <div class="alert alert-danger py-2 small">{{ $errors->first() }}</div>
 @endif
 
-<ul class="nav nav-tabs mb-3">
-    @foreach ($sections as $key => $label)
-        <li class="nav-item">
-            <a class="nav-link {{ $currentSection === $key ? 'active' : '' }}"
-               href="{{ route('admin.analytics', array_merge($baseQuery, ['section' => $key])) }}">
-                {{ $label }}
-            </a>
-        </li>
-    @endforeach
-</ul>
+<div class="mb-3">
+    <ul class="nav segmented-nav-pills shadow-xs bg-white border p-1.5 flex-nowrap overflow-auto" style="border-radius: 9999px;">
+        @foreach ($sections as $key => $label)
+            <li class="nav-item">
+                <a class="nav-link px-3.5 py-2 {{ $currentSection === $key ? 'active' : '' }}"
+                   href="{{ route('admin.analytics', array_merge($baseQuery, ['section' => $key])) }}"
+                   style="white-space: nowrap;">
+                    {{ $label }}
+                </a>
+            </li>
+        @endforeach
+    </ul>
+</div>

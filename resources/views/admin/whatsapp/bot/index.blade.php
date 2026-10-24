@@ -120,20 +120,22 @@
     @endif
 
     <!-- Navigation Tabs -->
-    <ul class="nav nav-pills mb-4 gap-2">
-        <li class="nav-item">
-            <a class="nav-link rounded-pill px-4 py-2 fw-semibold {{ $tab === 'rules' ? 'active bg-dark text-white' : 'bg-white text-muted shadow-sm' }}" 
-               href="{{ route('admin.whatsapp.bot.index', ['tab' => 'rules']) }}">
-                <i class="bi bi-cpu me-1.5"></i> Keyword Auto-Responders ({{ count($rules) }})
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link rounded-pill px-4 py-2 fw-semibold {{ $tab === 'quick_replies' ? 'active bg-dark text-white' : 'bg-white text-muted shadow-sm' }}" 
-               href="{{ route('admin.whatsapp.bot.index', ['tab' => 'quick_replies']) }}">
-                <i class="bi bi-lightning-charge me-1.5"></i> Canned Quick Replies ({{ $totalReplies }})
-            </a>
-        </li>
-    </ul>
+    <div class="mb-4">
+        <ul class="nav segmented-nav-pills shadow-xs bg-white border p-1.5" style="border-radius: 9999px;">
+            <li class="nav-item">
+                <a class="nav-link px-4 py-2 {{ $tab === 'rules' ? 'active' : '' }}" 
+                   href="{{ route('admin.whatsapp.bot.index', ['tab' => 'rules']) }}">
+                    <i class="bi bi-cpu me-1.5 text-success"></i> Keyword Auto-Responders ({{ count($rules) }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link px-4 py-2 {{ $tab === 'quick_replies' ? 'active' : '' }}" 
+                   href="{{ route('admin.whatsapp.bot.index', ['tab' => 'quick_replies']) }}">
+                    <i class="bi bi-lightning-charge me-1.5 text-warning"></i> Canned Quick Replies ({{ $totalReplies }})
+                </a>
+            </li>
+        </ul>
+    </div>
 
     @if ($tab === 'rules')
         <!-- TAB 1: Chatbot Auto-Responder Rules -->

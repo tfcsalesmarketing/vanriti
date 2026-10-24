@@ -521,34 +521,277 @@ body {
     padding: 0.4rem 0.75rem;
 }
 
-/* ── Navigation Tabs ── */
+/* ── Modern Spacing & Fractional Utilities (Bootstrap 5 Enhancements) ── */
+.gap-0\.5 { gap: 0.25rem !important; }
+.gap-1 { gap: 0.35rem !important; }
+.gap-1\.5 { gap: 0.55rem !important; }
+.gap-2 { gap: 0.75rem !important; }
+.gap-2\.5 { gap: 0.9rem !important; }
+.gap-3 { gap: 1.15rem !important; }
+.gap-3\.5 { gap: 1.35rem !important; }
+.gap-4 { gap: 1.5rem !important; }
+
+.p-0\.5 { padding: 0.25rem !important; }
+.p-1\.5 { padding: 0.55rem !important; }
+.py-0\.5 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+.py-1\.5 { padding-top: 0.45rem !important; padding-bottom: 0.45rem !important; }
+.px-1\.5 { padding-left: 0.55rem !important; padding-right: 0.55rem !important; }
+.py-2\.5 { padding-top: 0.85rem !important; padding-bottom: 0.85rem !important; }
+.px-2\.5 { padding-left: 0.85rem !important; padding-right: 0.85rem !important; }
+.px-3\.5 { padding-left: 1.15rem !important; padding-right: 1.15rem !important; }
+.py-3\.5 { padding-top: 1.15rem !important; padding-bottom: 1.15rem !important; }
+
+.m-1\.5 { margin: 0.55rem !important; }
+.mt-0\.5 { margin-top: 0.25rem !important; }
+.mb-0\.5 { margin-bottom: 0.25rem !important; }
+.mt-1\.5 { margin-top: 0.55rem !important; }
+.mb-1\.5 { margin-bottom: 0.55rem !important; }
+.ms-1\.5 { margin-left: 0.55rem !important; }
+.me-1\.5 { margin-right: 0.55rem !important; }
+.ms-2\.5 { margin-left: 0.85rem !important; }
+.me-2\.5 { margin-right: 0.85rem !important; }
+
+/* ── Modern Navigation Tabs (Line / Elevated Style) ── */
 .nav-tabs {
-    border-bottom: 1px solid var(--vanriti-border);
-    gap: 0.4rem;
+    border-bottom: 2px solid var(--vanriti-border);
+    gap: 0.5rem;
+    padding-bottom: 0;
+    margin-bottom: 1.25rem;
+    flex-wrap: nowrap;
+}
+.nav-tabs .nav-item {
+    margin-bottom: -2px;
 }
 .nav-tabs .nav-link {
-    border: 0;
-    border-bottom: 2px solid transparent;
-    color: #556758;
+    border: 1px solid transparent;
+    border-bottom: 3px solid transparent;
+    color: #4A5C4E;
     font-size: 0.86rem;
-    font-weight: 500;
-    padding: 0.65rem 1rem;
-    border-radius: 0;
+    font-weight: 600;
+    padding: 0.65rem 1.15rem;
+    border-radius: 0.65rem 0.65rem 0 0;
     background: transparent;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-decoration: none;
+    white-space: nowrap;
 }
 .nav-tabs .nav-link:hover {
     color: var(--vanriti-green);
-    border-color: #D2DED5;
+    background: #EEF4F0;
+    border-bottom-color: #B2C6B7;
 }
 .nav-tabs .nav-link.active {
-    color: var(--vanriti-green);
+    color: var(--vanriti-green) !important;
     font-weight: 700;
-    border-bottom: 2px solid var(--vanriti-green);
-    background: transparent;
+    background: #FFFFFF;
+    border: 1px solid var(--vanriti-border);
+    border-bottom: 3px solid var(--vanriti-green) !important;
+    box-shadow: 0 -2px 6px rgba(20, 36, 22, 0.03);
 }
 .nav-tabs .nav-link .badge {
+    margin-left: 0.45rem;
+    font-size: 0.72rem;
+    padding: 0.25em 0.6em;
+    font-weight: 700;
+    border-radius: 9999px;
+    transition: all 0.18s ease;
+}
+.nav-tabs .nav-link.active .badge {
+    background: var(--vanriti-green) !important;
+    color: #FFFFFF !important;
+}
+
+/* ── Modern Segmented Control & Floating Pill Tabs ── */
+.nav-pills, .segmented-nav-pills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    padding: 0;
+    margin-bottom: 1.25rem;
+    list-style: none;
+    align-items: center;
+}
+.segmented-nav-pills {
+    background: #F1F6F2;
+    border: 1px solid #DFEAE2;
+    border-radius: 9999px;
+    padding: 4px;
+    gap: 4px;
+    box-shadow: var(--vr-shadow-xs);
+}
+.segmented-nav-pills .nav-item {
+    margin: 0;
+}
+.segmented-nav-pills .nav-link {
+    border-radius: 9999px;
+    padding: 0.45rem 1.05rem;
+    color: #4C5F50;
+    font-size: 0.84rem;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-decoration: none;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+.segmented-nav-pills .nav-link:hover {
+    color: var(--vanriti-green);
+    background: rgba(255, 255, 255, 0.65);
+}
+.segmented-nav-pills .nav-link.active {
+    color: var(--vanriti-green) !important;
+    background: #FFFFFF !important;
+    font-weight: 700;
+    border-color: rgba(30, 54, 32, 0.08) !important;
+    box-shadow: 0 2px 8px rgba(20, 36, 22, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+.segmented-nav-pills .nav-link .badge {
+    font-size: 0.7rem;
+    padding: 0.2em 0.55em;
+    font-weight: 700;
+    border-radius: 9999px;
+}
+.segmented-nav-pills .nav-link.active .badge {
+    background: var(--vanriti-green-lighter) !important;
+    color: var(--vanriti-green) !important;
+    border: 1px solid rgba(30, 54, 32, 0.15) !important;
+}
+
+/* Standalone .nav-pills */
+.nav-pills .nav-link {
+    border-radius: 9999px;
+    padding: 0.45rem 1.15rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4C5F50;
+    background: #FFFFFF;
+    border: 1px solid var(--vanriti-border);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--vr-shadow-xs);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.nav-pills .nav-link:hover {
+    color: var(--vanriti-green);
+    background: #F1F6F2;
+    border-color: #B9CCC0;
+    transform: translateY(-1px);
+    box-shadow: var(--vr-shadow-sm);
+}
+.nav-pills .nav-link.active {
+    background: var(--vanriti-green) !important;
+    border-color: var(--vanriti-green) !important;
+    color: #FFFFFF !important;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(30, 54, 32, 0.22) !important;
+}
+.nav-pills .nav-link.active i {
+    color: #FFFFFF !important;
+}
+
+/* ── Filter Buttons & Pill Elements ── */
+.btn.rounded-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 0.42rem 1.05rem;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-sm.rounded-pill {
+    padding: 0.32rem 0.85rem;
+    font-size: 0.8rem;
+}
+.d-flex:has(> .btn.rounded-pill),
+.filter-pills-bar {
+    gap: 0.55rem !important;
+}
+.btn.rounded-pill:hover {
+    transform: translateY(-1px);
+}
+.btn.rounded-pill:active {
+    transform: translateY(0);
+}
+.btn.rounded-pill.btn-dark {
+    background: var(--vanriti-green) !important;
+    border-color: var(--vanriti-green) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 3px 10px rgba(30, 54, 32, 0.22) !important;
+}
+.btn.rounded-pill.btn-light {
+    background: #FFFFFF;
+    border: 1px solid var(--vanriti-border);
+    color: #4A5C4E;
+    box-shadow: var(--vr-shadow-xs);
+}
+.btn.rounded-pill.btn-light:hover {
+    background: #F1F6F2;
+    border-color: #B9CCC0;
+    color: var(--vanriti-green);
+}
+.btn.rounded-pill.btn-outline-secondary {
+    background: #FFFFFF;
+    border: 1px solid #D8E3DC;
+    color: #4C5F50;
+    box-shadow: var(--vr-shadow-xs);
+}
+.btn.rounded-pill.btn-outline-secondary:hover {
+    background: #F1F6F2;
+    border-color: #B2C6B7;
+    color: var(--vanriti-green);
+}
+
+/* ── Table Action Spacing & Layout ── */
+.table td .btn + .btn,
+.table td .btn + a.btn,
+.table td a.btn + .btn,
+.table td a.btn + a.btn,
+.table td .btn + form,
+.table td form + .btn,
+.table td form + form {
     margin-left: 0.4rem;
+}
+.table td.text-end {
+    white-space: nowrap;
+}
+
+/* ── Sleek Custom Scrollbars ── */
+.overflow-auto::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar,
+.nav-tabs::-webkit-scrollbar,
+.nav-pills::-webkit-scrollbar,
+.settings-nav-pills::-webkit-scrollbar,
+.segmented-nav-pills::-webkit-scrollbar {
+    height: 5px;
+    width: 5px;
+}
+.overflow-auto::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track,
+.nav-tabs::-webkit-scrollbar-track {
+    background: transparent;
+}
+.overflow-auto::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb,
+.nav-tabs::-webkit-scrollbar-thumb,
+.nav-pills::-webkit-scrollbar-thumb,
+.settings-nav-pills::-webkit-scrollbar-thumb,
+.segmented-nav-pills::-webkit-scrollbar-thumb {
+    background: #D4DFD7;
+    border-radius: 9999px;
+}
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #AEC2B4;
 }
 
 /* ── Floating Bulk Action Bar ── */
@@ -1692,38 +1935,57 @@ pre.nl2p { white-space: pre-wrap; word-break: break-word; }
     margin-bottom: 1.25rem;
 }
 
-/* ── Settings Tabbed Layout ── */
+/* ── Settings Tabbed Layout (Segmented Pill Shell) ── */
 .settings-nav-pills {
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--vanriti-border);
-    padding-bottom: 0.75rem;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 0.55rem;
+    padding: 5px;
+    background: #F1F6F2;
+    border: 1px solid #DFEAE2;
+    border-radius: 9999px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--vr-shadow-xs);
+}
+.settings-nav-pills .nav-item {
+    margin: 0;
 }
 .settings-nav-pills .nav-link {
-    background: #FFFFFF;
-    border: 1px solid var(--vanriti-border);
-    color: var(--vanriti-text);
-    border-radius: 0.65rem;
-    padding: 0.55rem 1.1rem;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #4A5D4E;
+    border-radius: 9999px;
+    padding: 0.55rem 1.25rem;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.86rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.16s ease;
+    gap: 0.55rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+.settings-nav-pills .nav-link i {
+    font-size: 1.05rem;
+    color: #728776;
+    transition: color 0.15s ease, transform 0.15s ease;
 }
 .settings-nav-pills .nav-link:hover {
-    background: #F1F6F2;
+    background: rgba(255, 255, 255, 0.65);
     color: var(--vanriti-green);
-    border-color: #D2DED5;
+}
+.settings-nav-pills .nav-link:hover i {
+    color: var(--vanriti-green);
+    transform: scale(1.1);
 }
 .settings-nav-pills .nav-link.active {
-    background: var(--vanriti-green);
-    color: #FFFFFF;
-    border-color: var(--vanriti-green);
-    box-shadow: 0 2px 6px rgba(30, 54, 32, 0.2);
+    background: #FFFFFF !important;
+    color: var(--vanriti-green) !important;
+    border-color: rgba(30, 54, 32, 0.08) !important;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(20, 36, 22, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 .settings-nav-pills .nav-link.active i {
-    color: #FFFFFF;
+    color: var(--vanriti-green) !important;
 }
 
 .settings-section-divider {

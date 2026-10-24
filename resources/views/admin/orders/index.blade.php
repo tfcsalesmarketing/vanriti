@@ -105,19 +105,19 @@
 </div>
 
 {{-- Modern Segmented Status Tabs --}}
-<div class="card mb-3 border-0 bg-transparent">
-    <ul class="nav nav-tabs flex-nowrap overflow-auto pb-1" style="border-bottom: 2px solid var(--vanriti-border);">
+<div class="mb-3">
+    <ul class="nav segmented-nav-pills flex-nowrap overflow-auto p-1.5 shadow-xs bg-white border" style="border-radius: 9999px;">
         @foreach ($tabs as $key => $label)
             @php
                 $isActive = $activeTab === $key;
                 $count = $tabCounts[$key] ?? 0;
             @endphp
             <li class="nav-item">
-                <a class="nav-link {{ $isActive ? 'active fw-bold' : '' }}"
+                <a class="nav-link {{ $isActive ? 'active' : '' }}"
                    href="{{ route('admin.orders.index', array_merge(request()->except('tab', 'page'), ['tab' => $key])) }}"
                    style="white-space: nowrap;">
-                    {{ $label }}
-                    <span class="badge {{ $isActive ? 'bg-success text-white' : 'bg-light text-muted border' }} ms-1.5" style="font-size:0.72rem;">
+                    <span>{{ $label }}</span>
+                    <span class="badge ms-1.5">
                         {{ $count }}
                     </span>
                 </a>

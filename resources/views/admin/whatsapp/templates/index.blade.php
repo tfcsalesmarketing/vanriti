@@ -179,22 +179,22 @@
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <!-- Filter Pills -->
-            <div class="d-flex flex-wrap gap-1.5 align-items-center">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
                 <a href="{{ route('admin.whatsapp.templates.index', ['status' => 'all', 'category' => $categoryFilter, 'search' => $search]) }}"
-                   class="btn btn-sm rounded-pill {{ $statusFilter === 'all' ? 'btn-dark' : 'btn-light text-muted' }}">
+                   class="btn btn-sm rounded-pill px-3 py-1.5 {{ $statusFilter === 'all' ? 'btn-dark' : 'btn-light border text-muted' }}">
                     All Status ({{ $totalCount }})
                 </a>
                 <a href="{{ route('admin.whatsapp.templates.index', ['status' => 'approved', 'category' => $categoryFilter, 'search' => $search]) }}"
-                   class="btn btn-sm rounded-pill {{ $statusFilter === 'approved' ? 'btn-success text-white' : 'btn-light text-muted' }}">
-                    <i class="bi bi-check2-circle me-1"></i> Approved ({{ $approvedCount }})
+                   class="btn btn-sm rounded-pill px-3 py-1.5 {{ $statusFilter === 'approved' ? 'btn-success text-white' : 'btn-light border text-muted' }}">
+                    <i class="bi bi-check2-circle me-1 text-success"></i> Approved ({{ $approvedCount }})
                 </a>
                 <a href="{{ route('admin.whatsapp.templates.index', ['status' => 'pending', 'category' => $categoryFilter, 'search' => $search]) }}"
-                   class="btn btn-sm rounded-pill {{ $statusFilter === 'pending' ? 'btn-warning text-dark' : 'btn-light text-muted' }}">
-                    <i class="bi bi-hourglass me-1"></i> Pending ({{ $pendingCount }})
+                   class="btn btn-sm rounded-pill px-3 py-1.5 {{ $statusFilter === 'pending' ? 'btn-warning text-dark' : 'btn-light border text-muted' }}">
+                    <i class="bi bi-hourglass me-1 text-warning"></i> Pending ({{ $pendingCount }})
                 </a>
                 <a href="{{ route('admin.whatsapp.templates.index', ['status' => 'rejected', 'category' => $categoryFilter, 'search' => $search]) }}"
-                   class="btn btn-sm rounded-pill {{ $statusFilter === 'rejected' ? 'btn-danger text-white' : 'btn-light text-muted' }}">
-                    <i class="bi bi-x-circle me-1"></i> Rejected ({{ $rejectedCount }})
+                   class="btn btn-sm rounded-pill px-3 py-1.5 {{ $statusFilter === 'rejected' ? 'btn-danger text-white' : 'btn-light border text-muted' }}">
+                    <i class="bi bi-x-circle me-1 text-danger"></i> Rejected ({{ $rejectedCount }})
                 </a>
             </div>
 
