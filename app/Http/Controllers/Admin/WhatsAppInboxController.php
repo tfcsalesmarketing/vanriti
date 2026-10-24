@@ -237,6 +237,13 @@ class WhatsAppInboxController extends Controller
             $conversation->markAsRead();
         }
 
+        // Fetch recent outbound message statuses so checkmarks update live
+        $recentStatuses = $conversation->messages()
+            ->where('direction', 'outbound')
+            ->latest('id')
+            ->take(25)
+            ->get(['id', 'status', 'error_message']);
+
         return response()->json([
             'messages' => $newMessages->map(function ($msg) {
                 return [
@@ -254,9 +261,66 @@ class WhatsAppInboxController extends Controller
                     'created_at_date' => $msg->created_at->format('d M, Y'),
                 ];
             }),
+            'statuses' => $recentStatuses,
             'window_open' => $conversation->isWindowOpen(),
             'window_label' => $conversation->windowRemainingFormatted(),
-            'unread_count' => $conversation->fresh()->unread_count,
+            'unread_count' => (int) $conversation->fresh()->unread_count,
+        ]);
+    }
+
+    /**
+     * Poll recent conversation list summaries for real-time sidebar directory sync.
+     */
+    public function pollConversations(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->input('search', ''));
+        $filter = (string) $request->input('filter', 'all');
+
+        $query = WhatsAppConversation::with(['latestMessage'])
+            ->orderByRaw('unread_count DESC')
+            ->orderBy('last_message_at', 'desc');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('phone', 'like', "%{$search}%")
+                    ->orWhere('contact_name', 'like', "%{$search}%")
+                    ->orWhere('last_message_preview', 'like', "%{$search}%");
+            });
+        }
+
+        if ($filter === 'unread') {
+            $query->where('unread_count', '>', 0);
+        } elseif ($filter === 'window_open') {
+            $query->where('window_expires_at', '>', now());
+        } elseif ($filter === 'checkout_active') {
+            $query->whereHas('activeCheckoutSession');
+        } elseif ($filter === 'mine') {
+            $query->where('assigned_to', auth('admin')->id());
+        } elseif ($filter === 'unassigned') {
+            $query->whereNull('assigned_to');
+        } elseif ($filter === 'resolved') {
+            $query->where('status', 'resolved');
+        }
+
+        $conversations = $query->take(30)->get();
+
+        return response()->json([
+            'conversations' => $conversations->map(function ($convo) {
+                return [
+                    'id' => $convo->id,
+                    'phone' => $convo->phone,
+                    'contact_name' => $convo->contact_name ?: ('+' . $convo->phone),
+                    'avatar_letter' => strtoupper(substr($convo->contact_name ?: $convo->phone, 0, 1)),
+                    'avatar_color' => '#' . substr(md5($convo->phone), 0, 6),
+                    'last_message_preview' => $convo->last_message_preview ?: 'No messages yet',
+                    'last_message_time' => $convo->last_message_at ? $convo->last_message_at->diffForHumans(null, true, true) : '',
+                    'unread_count' => (int) $convo->unread_count,
+                    'is_window_open' => $convo->isWindowOpen(),
+                    'status' => $convo->status,
+                ];
+            }),
+            'total_unread' => (int) WhatsAppConversation::sum('unread_count'),
+            'active_windows_count' => (int) WhatsAppConversation::where('window_expires_at', '>', now())->count(),
         ]);
     }
 

@@ -197,6 +197,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('inbox/{conversation}/send-media', [WhatsAppInboxController::class, 'sendMedia'])->name('inbox.send-media');
             Route::post('inbox/{conversation}/send-template', [WhatsAppInboxController::class, 'sendTemplate'])->name('inbox.send-template');
             Route::get('inbox/{conversation}/poll', [WhatsAppInboxController::class, 'poll'])->name('inbox.poll');
+            Route::get('inbox-poll-conversations', [WhatsAppInboxController::class, 'pollConversations'])->name('inbox.poll-conversations');
             Route::post('inbox/{conversation}/read', [WhatsAppInboxController::class, 'markRead'])->name('inbox.read');
             Route::post('inbox/{conversation}/assign', [WhatsAppInboxController::class, 'assign'])->name('inbox.assign');
             Route::post('inbox/{conversation}/status', [WhatsAppInboxController::class, 'updateStatus'])->name('inbox.status');

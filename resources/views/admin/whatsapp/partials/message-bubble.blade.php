@@ -19,7 +19,7 @@
     </div>
 </div>
 @else
-<div class="d-flex {{ $isOut ? 'justify-content-end' : 'justify-content-start' }} mb-2" id="msg-{{ $msg->id }}">
+<div class="d-flex {{ $isOut ? 'justify-content-end' : 'justify-content-start' }} mb-2" id="msg-{{ $msg->id }}" data-message-id="{{ $msg->id }}">
     <div class="wa-bubble {{ $isOut ? 'wa-bubble-outbound' : 'wa-bubble-inbound' }} p-2.5 px-3">
         
         {{-- Image Message --}}
@@ -78,6 +78,7 @@
         @endif
 
         {{-- Footer: Timestamp & Delivery Status --}}
+        <div class="d-flex align-items-center {{ $isOut ? 'justify-content-end' : 'justify-content-start' }} gap-1 mt-1 text-muted" style="font-size: 0.68rem;">
             @if ($isOut && $msg->sender)
                 <span class="fw-medium text-dark-emphasis me-1">{{ $msg->sender->name }} •</span>
             @elseif ($isOut && !empty($msg->metadata['is_bot']))
@@ -88,15 +89,17 @@
             <span>{{ $msg->created_at->format('h:i A') }}</span>
 
             @if ($isOut)
-                @if ($msg->status === 'read')
-                    <i class="bi bi-check2-all text-primary fw-bold" title="Read by customer"></i>
-                @elseif ($msg->status === 'delivered')
-                    <i class="bi bi-check2-all text-muted" title="Delivered to phone"></i>
-                @elseif ($msg->status === 'failed')
-                    <i class="bi bi-exclamation-circle-fill text-danger" title="{{ $msg->error_message ?: 'Failed to send' }}"></i>
-                @else
-                    <i class="bi bi-check2 text-muted" title="Sent to Meta server"></i>
-                @endif
+                <span class="message-status-tick">
+                    @if ($msg->status === 'read')
+                        <i class="bi bi-check2-all text-primary fw-bold" title="Read by customer"></i>
+                    @elseif ($msg->status === 'delivered')
+                        <i class="bi bi-check2-all text-muted" title="Delivered to phone"></i>
+                    @elseif ($msg->status === 'failed')
+                        <i class="bi bi-exclamation-circle-fill text-danger" title="{{ $msg->error_message ?: 'Failed to send' }}"></i>
+                    @else
+                        <i class="bi bi-check2 text-muted" title="Sent to Meta server"></i>
+                    @endif
+                </span>
             @endif
         </div>
     </div>
