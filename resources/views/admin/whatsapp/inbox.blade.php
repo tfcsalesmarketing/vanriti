@@ -2,23 +2,143 @@
 
 @section('title', 'WhatsApp Inbox & Live Chat')
 
+@push('styles')
+<style>
+.whatsapp-inbox-wrapper {
+    height: calc(100vh - 110px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.wa-chat-card {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #ffffff;
+}
+.wa-chat-card > .row {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+.wa-sidebar-column {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.wa-chat-column {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.wa-context-column {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+}
+.wa-convo-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+.wa-chat-stream {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    background-color: #f6f8f7;
+    background-image: radial-gradient(#e2e8e5 1px, transparent 1px);
+    background-size: 20px 20px;
+    scroll-behavior: smooth;
+}
+.wa-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 0.95rem;
+}
+.wa-convo-item {
+    cursor: pointer;
+    background: #ffffff;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+.wa-convo-item:hover {
+    background: #f8faf9;
+}
+.wa-convo-item.active {
+    background: #e8f5ec;
+    border-left: 3px solid #25D366 !important;
+}
+.wa-bubble {
+    max-width: 78%;
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    word-break: break-word;
+}
+.wa-bubble-inbound {
+    background-color: #ffffff;
+    border-bottom-left-radius: 3px;
+    color: #1e293b;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+.wa-bubble-outbound {
+    background-color: #dcf8c6;
+    border-bottom-right-radius: 3px;
+    color: #0f381e;
+}
+.btn-xs {
+    padding: 0.2rem 0.65rem;
+    font-size: 0.72rem;
+}
+.btn-icon {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wa-filter-pills::-webkit-scrollbar {
+    height: 4px;
+}
+.wa-filter-pills::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+.rotate-spin {
+    animation: waSpin 0.75s linear infinite;
+}
+@keyframes waSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+@endpush
+
 @section('content')
 <div class="whatsapp-inbox-wrapper">
     {{-- Top Operational Toolbar --}}
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2 flex-shrink-0">
         <div class="d-flex align-items-center gap-3">
             <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
                 <i class="bi bi-whatsapp text-success fs-3"></i>
                 <span>WhatsApp Inbox</span>
             </h4>
             <div class="d-flex align-items-center gap-2">
-                @if ($totalUnread > 0)
-                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
-                        <i class="bi bi-chat-dots-fill me-1"></i>{{ $totalUnread }} unread
-                    </span>
-                @endif
-                <span class="badge rounded-pill bg-emerald-subtle text-emerald border border-emerald-subtle px-2.5 py-1">
-                    <i class="bi bi-clock-history me-1"></i>{{ $activeWindowsCount }} active windows (24h)
+                <span id="waTotalUnreadBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 {{ $totalUnread > 0 ? '' : 'd-none' }}">
+                    <i class="bi bi-chat-dots-fill me-1"></i><span id="waTotalUnreadCount">{{ $totalUnread }}</span> unread
+                </span>
+                <span id="waActiveWindowsBadge" class="badge rounded-pill bg-emerald-subtle text-emerald border border-emerald-subtle px-2.5 py-1">
+                    <i class="bi bi-clock-history me-1"></i><span id="waActiveWindowsCount">{{ $activeWindowsCount }}</span> active windows (24h)
+                </span>
+                <span id="waRealtimeSyncBadge" class="badge bg-light text-muted border px-2 py-1 rounded-pill small d-none d-md-inline-flex align-items-center gap-1" title="Real-time Auto-Sync Active">
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 6px; height: 6px;"></span>
+                    Live
                 </span>
             </div>
         </div>
@@ -26,7 +146,7 @@
         <div class="d-flex align-items-center gap-2">
             @if ($isConfigured)
                 <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 rounded-pill d-inline-flex align-items-center gap-1.5">
-                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
+                    <i class="bi bi-shield-check"></i>
                     Meta Cloud API Connected
                 </span>
             @else
@@ -42,13 +162,13 @@
         <div class="row g-0 h-100">
 
             {{-- 1. Left Column: Conversation Directory --}}
-            <div class="col-12 col-md-4 col-xl-3 border-end d-flex flex-column wa-sidebar-column">
+            <div class="col-12 col-md-4 col-xl-3 border-end d-flex flex-column wa-sidebar-column {{ $activeConversation ? 'd-none d-md-flex' : '' }}" id="waSidebarColumn">
                 {{-- Search & Filters --}}
-                <div class="p-3 border-bottom bg-light-subtle">
-                    <form method="GET" action="{{ route('admin.whatsapp.inbox') }}" class="mb-2.5">
+                <div class="p-3 border-bottom bg-light-subtle flex-shrink-0">
+                    <form method="GET" action="{{ route('admin.whatsapp.inbox') }}" class="mb-2.5" id="waSearchForm">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" value="{{ $search }}" class="form-control bg-white border-start-0 ps-0"
+                            <input type="text" name="search" id="waSearchInput" value="{{ $search }}" class="form-control bg-white border-start-0 ps-0"
                                    placeholder="Search name, phone, message...">
                             @if ($search)
                                 <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter]) }}" class="input-group-text bg-white text-muted text-decoration-none">&times;</a>
@@ -94,36 +214,35 @@
                         @endphp
                         <a href="{{ route('admin.whatsapp.inbox', ['conversation_id' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
                            class="wa-convo-item d-block p-3 border-bottom text-decoration-none transition-all {{ $isActive ? 'active' : '' }}"
-                           id="convo-item-{{ $convo->id }}">
+                           id="convo-item-{{ $convo->id }}"
+                           data-convo-id="{{ $convo->id }}">
                             <div class="d-flex align-items-start gap-2.5">
                                 <div class="position-relative flex-shrink-0">
                                     <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
                                          style="background-color: {{ '#' . substr(md5($convo->phone), 0, 6) }};">
                                         {{ strtoupper(substr($convo->contact_name ?: $convo->phone, 0, 1)) }}
                                     </div>
-                                    @if ($hasWindow)
-                                        <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1"
-                                              title="24h Service Window Active"></span>
-                                    @endif
+                                    <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1 wa-convo-window-dot {{ $hasWindow ? '' : 'd-none' }}"
+                                          title="24h Service Window Active"></span>
                                 </div>
 
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="d-flex align-items-center justify-content-between mb-0.5">
-                                        <span class="fw-semibold text-dark text-truncate d-block small" style="max-width: 140px;">
+                                        <span class="fw-semibold text-dark text-truncate d-block small wa-convo-name" style="max-width: 140px;">
                                             {{ $convo->contact_name ?: '+' . $convo->phone }}
                                         </span>
-                                        <span class="text-muted" style="font-size: 0.7rem;">
+                                        <span class="text-muted wa-convo-time" style="font-size: 0.7rem;">
                                             {{ $convo->last_message_at ? $convo->last_message_at->shortRelativeDiffForHumans() : '' }}
                                         </span>
                                     </div>
 
-                                    <div class="text-muted small text-truncate mb-1" style="font-size: 0.78rem;">
+                                    <div class="text-muted small text-truncate mb-1 wa-convo-preview" style="font-size: 0.78rem;">
                                         {{ $convo->last_message_preview ?: 'No messages yet' }}
                                     </div>
 
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div class="d-flex align-items-center gap-1">
-                                            <span class="badge {{ $hasWindow ? 'bg-success-subtle text-success' : 'bg-light text-muted' }}" style="font-size: 0.65rem;">
+                                            <span class="badge wa-convo-window-badge {{ $hasWindow ? 'bg-success-subtle text-success' : 'bg-light text-muted' }}" style="font-size: 0.65rem;">
                                                 {{ $convo->windowRemainingFormatted() }}
                                             </span>
                                             @if ($convo->assigned_to)
@@ -138,17 +257,15 @@
                                             @endif
                                         </div>
 
-                                        @if ($convo->unread_count > 0)
-                                            <span class="badge rounded-pill bg-success text-white px-2 py-0.5" style="font-size: 0.7rem;">
-                                                {{ $convo->unread_count }}
-                                            </span>
-                                        @endif
+                                        <span class="badge rounded-pill bg-success text-white px-2 py-0.5 wa-convo-unread-pill {{ $convo->unread_count > 0 ? '' : 'd-none' }}" style="font-size: 0.7rem;">
+                                            {{ $convo->unread_count }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </a>
                     @empty
-                        <div class="p-5 text-center text-muted">
+                        <div class="p-5 text-center text-muted" id="waEmptyConvoNotice">
                             <i class="bi bi-chat-square-dots fs-1 d-block mb-2 text-muted opacity-50"></i>
                             <div class="fw-semibold small">No conversations found</div>
                             <p class="small text-muted mb-0">When customers message your WhatsApp number, they will appear here instantly.</p>
@@ -158,7 +275,7 @@
 
                 {{-- Pagination Links --}}
                 @if ($conversations->hasPages())
-                    <div class="p-2 border-top bg-light-subtle d-flex justify-content-center">
+                    <div class="p-2 border-top bg-light-subtle d-flex justify-content-center flex-shrink-0">
                         {{ $conversations->links('pagination::simple-bootstrap-5') }}
                     </div>
                 @endif
@@ -168,10 +285,13 @@
             @if ($activeConversation)
                 <div class="col-12 col-md-8 col-xl-6 d-flex flex-column wa-chat-column bg-white">
                     {{-- Chat Topbar --}}
-                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white z-1">
-                        <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white z-1 flex-shrink-0">
+                        <div class="d-flex align-items-center gap-2 gap-md-3">
+                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle btn-icon d-md-none me-1" title="Back to conversations">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
                             <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 44px; height: 44px; font-size: 1.1rem;">
+                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 42px; height: 42px; font-size: 1.05rem;">
                                 {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
                             </div>
                             <div>
@@ -189,7 +309,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-1.5 gap-md-2">
                             {{-- Agent Assignment Dropdown --}}
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent">
@@ -269,7 +389,7 @@
                     </div>
 
                     {{-- Window Closed Notice (Meta Policy) --}}
-                    <div id="waWindowExpiredNotice" class="alert alert-warning border-0 rounded-0 mb-0 py-2 px-3 small d-flex align-items-center justify-content-between {{ $activeConversation->isWindowOpen() ? 'd-none' : '' }}">
+                    <div id="waWindowExpiredNotice" class="alert alert-warning border-0 rounded-0 mb-0 py-2 px-3 small d-flex align-items-center justify-content-between flex-shrink-0 {{ $activeConversation->isWindowOpen() ? 'd-none' : '' }}">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
                             <span><strong>24-Hour window expired.</strong> Free-form text may fail. Send an approved Meta Template to resume.</span>
@@ -284,7 +404,7 @@
                         @forelse ($messages as $msg)
                             @include('admin.whatsapp.partials.message-bubble', ['msg' => $msg])
                         @empty
-                            <div class="my-auto text-center text-muted p-5">
+                            <div class="my-auto text-center text-muted p-5" id="waEmptyMessageNotice">
                                 <i class="bi bi-chat-heart fs-1 d-block mb-2 text-muted opacity-50"></i>
                                 <div class="fw-semibold">No messages yet with this customer</div>
                                 <p class="small text-muted">Type below to start the conversation.</p>
@@ -293,7 +413,7 @@
                     </div>
 
                     {{-- Attachment Preview Chip (hidden by default) --}}
-                    <div id="waAttachmentPreview" class="p-2 border-top bg-light-subtle d-none d-flex align-items-center justify-content-between">
+                    <div id="waAttachmentPreview" class="p-2 border-top bg-light-subtle d-none d-flex align-items-center justify-content-between flex-shrink-0">
                         <div class="d-flex align-items-center gap-2">
                             <div id="waAttachmentThumb" class="rounded overflow-hidden" style="width: 36px; height: 36px; display: none;">
                                 <img src="" alt="preview" class="w-100 h-100 object-fit-cover">
@@ -310,7 +430,7 @@
                     </div>
 
                     {{-- Bottom Chat Composer --}}
-                    <div class="p-3 border-top bg-white transition-all" id="waComposerWrapper">
+                    <div class="p-3 border-top bg-white transition-all flex-shrink-0" id="waComposerWrapper">
                         {{-- Mode Selector: Public WhatsApp Reply vs Private Staff Note --}}
                         <div class="d-flex align-items-center justify-content-between mb-2 px-1">
                             <div class="btn-group btn-group-sm rounded-pill p-0.5 bg-light" role="group">
@@ -395,7 +515,7 @@
 </div>
 
 @if ($activeConversation)
-<!-- Send Meta Template Modal (Phase 3) -->
+<!-- Send Meta Template Modal -->
 <div class="modal fade" id="sendTemplateModal" tabindex="-1" aria-labelledby="sendTemplateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
@@ -416,11 +536,20 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold small text-dark">Choose Meta Template</label>
                                 <select class="form-select rounded-3" id="tmplSelect" required>
-                                    <option value="order_confirmation">📦 Order Confirmation (3 variables)</option>
-                                    <option value="abandoned_cart_recovery">🛒 Abandoned Cart Recovery (2 variables)</option>
-                                    <option value="vanriti_welcome">🌿 Welcome Offer (1 variable)</option>
-                                    <option value="promotional_offer">🎉 Promotional Discount (3 variables)</option>
-                                    <option value="custom">⚙️ Custom Approved Template Name</option>
+                                    @if(isset($approvedTemplates) && $approvedTemplates->isNotEmpty())
+                                        <optgroup label="Synchronized Meta Templates">
+                                            @foreach($approvedTemplates as $at)
+                                                <option value="{{ $at->name }}" data-category="{{ $at->category }}">{{ $at->name }} ({{ ucfirst($at->category) }})</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
+                                    <optgroup label="Standard Presets">
+                                        <option value="order_confirmation">📦 Order Confirmation (3 variables)</option>
+                                        <option value="abandoned_cart_recovery">🛒 Abandoned Cart Recovery (2 variables)</option>
+                                        <option value="vanriti_welcome">🌿 Welcome Offer (1 variable)</option>
+                                        <option value="promotional_offer">🎉 Promotional Discount (3 variables)</option>
+                                        <option value="custom">⚙️ Custom Approved Template Name</option>
+                                    </optgroup>
                                 </select>
                             </div>
 
@@ -475,73 +604,184 @@
     </div>
 </div>
 @endif
+@endsection
 
-<style>
-.whatsapp-inbox-wrapper {
-    height: calc(100vh - 120px);
-    display: flex;
-    flex-direction: column;
-}
-.wa-chat-card {
-    flex: 1;
-    min-height: 0;
-}
-.wa-sidebar-column, .wa-chat-column, .wa-context-column {
-    height: 100%;
-}
-.wa-avatar {
-    width: 38px;
-    height: 38px;
-    font-size: 0.95rem;
-}
-.wa-convo-item {
-    cursor: pointer;
-    background: #ffffff;
-}
-.wa-convo-item:hover {
-    background: #f8faf9;
-}
-.wa-convo-item.active {
-    background: #e8f5ec;
-    border-left: 3px solid #25D366 !important;
-}
-.wa-chat-stream {
-    background-color: #f6f8f7;
-    background-image: radial-gradient(#e2e8e5 1px, transparent 1px);
-    background-size: 20px 20px;
-}
-.wa-bubble {
-    max-width: 75%;
-    border-radius: 14px;
-    position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-}
-.wa-bubble-inbound {
-    background-color: #ffffff;
-    border-bottom-left-radius: 3px;
-    color: #1e293b;
-}
-.wa-bubble-outbound {
-    background-color: #dcf8c6;
-    border-bottom-right-radius: 3px;
-    color: #0f381e;
-}
-.btn-xs {
-    padding: 0.2rem 0.65rem;
-    font-size: 0.72rem;
-}
-.btn-icon {
-    width: 38px;
-    height: 38px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-</style>
-
-@if ($activeConversation)
-<script>
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = '{{ csrf_token() }}';
+    const pollConversationsUrl = '{{ route('admin.whatsapp.inbox.poll-conversations') }}';
+    const currentSearch = '{{ addslashes($search) }}';
+    const currentFilter = '{{ addslashes($filter) }}';
+    const activeConvoId = {{ $activeConversation ? $activeConversation->id : 'null' }};
+    const waConvoList = document.getElementById('waConvoList');
+    const waTotalUnreadBadge = document.getElementById('waTotalUnreadBadge');
+    const waTotalUnreadCount = document.getElementById('waTotalUnreadCount');
+    const waActiveWindowsCount = document.getElementById('waActiveWindowsCount');
+
+    let prevTotalUnread = {{ $totalUnread }};
+    let isDirectoryPolling = false;
+
+    // Subtle Web Audio Chime when incoming message arrives
+    function playNotificationChime() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.08, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        } catch (e) {
+            // Audio context policy ignored
+        }
+    }
+
+    // Helper: Escape HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // -------------------------------------------------------------
+    // Real-Time Global Directory Polling (Sidebar & Badges Sync)
+    // -------------------------------------------------------------
+    async function pollDirectory() {
+        if (isDirectoryPolling) return;
+        isDirectoryPolling = true;
+
+        try {
+            const url = `${pollConversationsUrl}?search=${encodeURIComponent(currentSearch)}&filter=${encodeURIComponent(currentFilter)}`;
+            const res = await fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+
+            const data = await res.json();
+
+            // 1. Update toolbar counters
+            if (waTotalUnreadBadge && waTotalUnreadCount) {
+                waTotalUnreadCount.textContent = data.total_unread;
+                if (data.total_unread > 0) {
+                    waTotalUnreadBadge.classList.remove('d-none');
+                } else {
+                    waTotalUnreadBadge.classList.add('d-none');
+                }
+            }
+
+            if (waActiveWindowsCount) {
+                waActiveWindowsCount.textContent = data.active_windows_count;
+            }
+
+            // Play sound if unread increased
+            if (data.total_unread > prevTotalUnread) {
+                playNotificationChime();
+            }
+            prevTotalUnread = data.total_unread;
+
+            // 2. Sync sidebar conversations list
+            if (waConvoList && Array.isArray(data.conversations)) {
+                const emptyNotice = document.getElementById('waEmptyConvoNotice');
+                if (data.conversations.length > 0 && emptyNotice) {
+                    emptyNotice.remove();
+                }
+
+                data.conversations.forEach((convo, index) => {
+                    let item = document.getElementById(`convo-item-${convo.id}`);
+                    const isActive = activeConvoId === convo.id;
+
+                    if (item) {
+                        // Update existing item
+                        const previewEl = item.querySelector('.wa-convo-preview');
+                        if (previewEl) previewEl.textContent = convo.last_message_preview;
+
+                        const timeEl = item.querySelector('.wa-convo-time');
+                        if (timeEl) timeEl.textContent = convo.last_message_time;
+
+                        const dotEl = item.querySelector('.wa-convo-window-dot');
+                        if (dotEl) {
+                            if (convo.is_window_open) dotEl.classList.remove('d-none');
+                            else dotEl.classList.add('d-none');
+                        }
+
+                        const unreadEl = item.querySelector('.wa-convo-unread-pill');
+                        if (unreadEl) {
+                            unreadEl.textContent = convo.unread_count;
+                            if (convo.unread_count > 0) unreadEl.classList.remove('d-none');
+                            else unreadEl.classList.add('d-none');
+                        }
+
+                        // Reorder to top if index is 0 and it's not already top
+                        if (index === 0 && waConvoList.firstElementChild !== item) {
+                            waConvoList.prepend(item);
+                        }
+                    } else {
+                        // Dynamically append new conversation thread
+                        const convoLink = `{{ route('admin.whatsapp.inbox') }}?conversation_id=${convo.id}&filter=${encodeURIComponent(currentFilter)}&search=${encodeURIComponent(currentSearch)}`;
+                        const newItem = document.createElement('a');
+                        newItem.href = convoLink;
+                        newItem.className = `wa-convo-item d-block p-3 border-bottom text-decoration-none transition-all ${isActive ? 'active' : ''}`;
+                        newItem.id = `convo-item-${convo.id}`;
+                        newItem.setAttribute('data-convo-id', convo.id);
+
+                        newItem.innerHTML = `
+                            <div class="d-flex align-items-start gap-2.5">
+                                <div class="position-relative flex-shrink-0">
+                                    <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                         style="background-color: ${convo.avatar_color};">
+                                        ${convo.avatar_letter}
+                                    </div>
+                                    <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1 wa-convo-window-dot ${convo.is_window_open ? '' : 'd-none'}"
+                                          title="24h Service Window Active"></span>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center justify-content-between mb-0.5">
+                                        <span class="fw-semibold text-dark text-truncate d-block small wa-convo-name" style="max-width: 140px;">
+                                            ${escapeHtml(convo.contact_name)}
+                                        </span>
+                                        <span class="text-muted wa-convo-time" style="font-size: 0.7rem;">
+                                            ${convo.last_message_time}
+                                        </span>
+                                    </div>
+                                    <div class="text-muted small text-truncate mb-1 wa-convo-preview" style="font-size: 0.78rem;">
+                                        ${escapeHtml(convo.last_message_preview)}
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <span class="badge wa-convo-window-badge ${convo.is_window_open ? 'bg-success-subtle text-success' : 'bg-light text-muted'}" style="font-size: 0.65rem;">
+                                                ${convo.is_window_open ? 'Open' : 'Window Closed'}
+                                            </span>
+                                        </div>
+                                        <span class="badge rounded-pill bg-success text-white px-2 py-0.5 wa-convo-unread-pill ${convo.unread_count > 0 ? '' : 'd-none'}" style="font-size: 0.7rem;">
+                                            ${convo.unread_count}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        waConvoList.prepend(newItem);
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Directory polling error:', e);
+        } finally {
+            isDirectoryPolling = false;
+        }
+    }
+
+    // Start sidebar polling every 5.5 seconds
+    const dirPollInterval = setInterval(pollDirectory, 5500);
+
+    @if ($activeConversation)
+    // -------------------------------------------------------------
+    // Active Conversation Real-Time Message Poller & Composer Engine
+    // -------------------------------------------------------------
     const stream = document.getElementById('waChatStream');
     const sendForm = document.getElementById('waSendForm');
     const messageInput = document.getElementById('waMessageInput');
@@ -549,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('waFileInput');
     const attachmentPreview = document.getElementById('waAttachmentPreview');
     const attachmentThumb = document.getElementById('waAttachmentThumb');
-    const attachmentThumbImg = attachmentThumb.querySelector('img');
+    const attachmentThumbImg = attachmentThumb ? attachmentThumb.querySelector('img') : null;
     const attachmentGenericIcon = document.getElementById('waAttachmentGenericIcon');
     const attachmentName = document.getElementById('waAttachmentName');
     const attachmentSize = document.getElementById('waAttachmentSize');
@@ -566,12 +806,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const assignUrl = '{{ route('admin.whatsapp.inbox.assign', $activeConversation->id) }}';
     const statusUrl = '{{ route('admin.whatsapp.inbox.status', $activeConversation->id) }}';
     const noteUrl = '{{ route('admin.whatsapp.inbox.note', $activeConversation->id) }}';
-    const csrfToken = '{{ csrf_token() }}';
 
     let lastMessageId = {{ $messages->last()?->id ?? 0 }};
     let isPolling = false;
     let selectedFile = null;
-    let currentComposerMode = 'reply'; // 'reply' or 'note'
+    let currentComposerMode = 'reply';
 
     const btnModeReply = document.getElementById('btnModeReply');
     const btnModeNote = document.getElementById('btnModeNote');
@@ -606,7 +845,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Scroll to bottom
     function scrollToBottom() {
         if (stream) {
             stream.scrollTop = stream.scrollHeight;
@@ -620,7 +858,7 @@ document.addEventListener('DOMContentLoaded', function () {
         this.style.height = (this.scrollHeight) + 'px';
     });
 
-    // Enter to send (Shift+Enter for new line)
+    // Enter to send (Shift+Enter for newline)
     messageInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -628,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Attachment handling
+    // Attachment handlers
     btnAttachFile.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', function () {
@@ -641,7 +879,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (selectedFile.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    attachmentThumbImg.src = e.target.result;
+                    if (attachmentThumbImg) attachmentThumbImg.src = e.target.result;
                     attachmentThumb.style.display = 'block';
                     attachmentGenericIcon.style.display = 'none';
                 };
@@ -659,14 +897,12 @@ document.addEventListener('DOMContentLoaded', function () {
         attachmentPreview.classList.add('d-none');
     });
 
-    // Form submission
+    // Send Form
     sendForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         const text = messageInput.value.trim();
 
-        if (!text && !selectedFile) {
-            return;
-        }
+        if (!text && !selectedFile) return;
 
         const btnSend = document.getElementById('btnSendMessage');
         btnSend.disabled = true;
@@ -674,14 +910,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             if (currentComposerMode === 'note') {
-                // Internal staff note
                 const response = await fetch(noteUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify({ note: text }),
                 });
                 const res = await response.json();
@@ -698,12 +929,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('Error: ' + (res.message || 'Failed to save note'));
                 }
             } else if (selectedFile) {
-                // Media upload
                 const formData = new FormData();
                 formData.append('file', selectedFile);
-                if (text) {
-                    formData.append('caption', text);
-                }
+                if (text) formData.append('caption', text);
                 formData.append('_token', csrfToken);
 
                 const response = await fetch(sendMediaUrl, {
@@ -722,14 +950,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('Error: ' + (res.message || 'Failed to send file'));
                 }
             } else {
-                // Plain text
                 const response = await fetch(sendUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify({ message: text }),
                 });
                 const res = await response.json();
@@ -764,11 +987,7 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const res = await fetch(assignUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify({ admin_id: adminId }),
                 });
                 const data = await res.json();
@@ -782,18 +1001,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Lifecycle status update
+    // Status changes
     document.querySelectorAll('.change-status-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const newStatus = this.getAttribute('data-status');
             try {
                 const res = await fetch(statusUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify({ status: newStatus }),
                 });
                 const data = await res.json();
@@ -807,18 +1022,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Append outgoing message bubble locally
     function appendMessage(msg) {
         lastMessageId = Math.max(lastMessageId, msg.id);
+
+        const emptyMsgNotice = document.getElementById('waEmptyMessageNotice');
+        if (emptyMsgNotice) emptyMsgNotice.remove();
 
         const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const div = document.createElement('div');
         div.className = 'd-flex justify-content-end mb-2';
+        div.setAttribute('id', `msg-${msg.id}`);
+        div.setAttribute('data-message-id', msg.id);
 
         let content = '';
         if (msg.message_type === 'image') {
             const url = msg.media_url ? '{{ asset('storage') }}/' + msg.media_url : '#';
-            content = `<div class="mb-1"><img src="${url}" class="rounded-3 img-fluid" style="max-height: 220px;" alt="Sent Photo"></div>`;
+            content = `<div class="mb-1"><img src="${url}" class="rounded-3 img-fluid" style="max-height: 220px;" alt="Photo"></div>`;
             if (msg.body) content += `<div>${escapeHtml(msg.body)}</div>`;
         } else if (msg.message_type === 'document') {
             content = `<div class="p-2 rounded bg-light-subtle d-flex align-items-center gap-2 mb-1">
@@ -835,7 +1054,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 ${content}
                 <div class="d-flex align-items-center justify-content-end gap-1 mt-1 text-muted" style="font-size: 0.68rem;">
                     <span>${time}</span>
-                    <i class="bi bi-check2 text-muted" title="Sent"></i>
+                    <span class="message-status-tick">
+                        <i class="bi bi-check2 text-muted" title="Sent"></i>
+                    </span>
                 </div>
             </div>
         `;
@@ -844,12 +1065,6 @@ document.addEventListener('DOMContentLoaded', function () {
         scrollToBottom();
     }
 
-    // Escape HTML helper
-    function escapeHtml(str) {
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    // Update window label
     function updateWindowState(isOpen, label) {
         if (activeWindowLabel) activeWindowLabel.textContent = label;
         if (activeWindowBadge) {
@@ -861,24 +1076,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Polling function
+    // Active Chat Message Polling
     async function pollMessages() {
         if (isPolling) return;
         isPolling = true;
 
         try {
             const res = await fetch(`${pollUrl}?after_id=${lastMessageId}`, {
+                credentials: 'same-origin',
                 headers: { 'Accept': 'application/json' },
             });
+            if (!res.ok) return;
             const data = await res.json();
 
+            // 1. Append newly received or sent messages
             if (data.messages && data.messages.length > 0) {
+                const emptyMsgNotice = document.getElementById('waEmptyMessageNotice');
+                if (emptyMsgNotice) emptyMsgNotice.remove();
+
                 data.messages.forEach(msg => {
                     lastMessageId = Math.max(lastMessageId, msg.id);
+
+                    // Check if already in stream
+                    if (document.getElementById(`msg-${msg.id}`)) return;
 
                     const isOut = msg.direction === 'outbound';
                     const wrapper = document.createElement('div');
                     wrapper.className = `d-flex ${isOut ? 'justify-content-end' : 'justify-content-start'} mb-2`;
+                    wrapper.setAttribute('id', `msg-${msg.id}`);
+                    wrapper.setAttribute('data-message-id', msg.id);
 
                     let bodyHtml = '';
                     if (msg.message_type === 'image' && msg.media_url) {
@@ -895,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         bodyHtml = `<div>${escapeHtml(msg.body || '')}</div>`;
                     }
 
-                    const tick = msg.status === 'read' ? '<i class="bi bi-check2-all text-primary" title="Read"></i>' :
+                    const tick = msg.status === 'read' ? '<i class="bi bi-check2-all text-primary fw-bold" title="Read"></i>' :
                                  (msg.status === 'delivered' ? '<i class="bi bi-check2-all text-muted" title="Delivered"></i>' :
                                  (msg.status === 'failed' ? '<i class="bi bi-exclamation-circle text-danger" title="Failed"></i>' :
                                  '<i class="bi bi-check2 text-muted" title="Sent"></i>'));
@@ -905,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${bodyHtml}
                             <div class="d-flex align-items-center ${isOut ? 'justify-content-end' : 'justify-content-start'} gap-1 mt-1 text-muted" style="font-size: 0.68rem;">
                                 <span>${msg.created_at_time}</span>
-                                ${isOut ? tick : ''}
+                                ${isOut ? `<span class="message-status-tick">${tick}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -916,28 +1142,50 @@ document.addEventListener('DOMContentLoaded', function () {
                 scrollToBottom();
             }
 
+            // 2. Real-time Delivery Status Sync (sent -> delivered -> read)
+            if (data.statuses && Array.isArray(data.statuses)) {
+                data.statuses.forEach(item => {
+                    const bubble = document.querySelector(`[data-message-id="${item.id}"]`);
+                    if (bubble) {
+                        const tickSpan = bubble.querySelector('.message-status-tick');
+                        if (tickSpan) {
+                            if (item.status === 'read') {
+                                tickSpan.innerHTML = '<i class="bi bi-check2-all text-primary fw-bold" title="Read by customer"></i>';
+                            } else if (item.status === 'delivered') {
+                                tickSpan.innerHTML = '<i class="bi bi-check2-all text-muted" title="Delivered to phone"></i>';
+                            } else if (item.status === 'failed') {
+                                tickSpan.innerHTML = '<i class="bi bi-exclamation-circle-fill text-danger" title="Failed to deliver"></i>';
+                            }
+                        }
+                    }
+                });
+            }
+
             if (data.window_label) {
                 updateWindowState(data.window_open, data.window_label);
             }
         } catch (e) {
-            console.warn('WhatsApp chat polling error:', e);
+            console.warn('Active chat polling error:', e);
         } finally {
             isPolling = false;
         }
     }
 
-    // Poll every 4 seconds
-    const pollInterval = setInterval(pollMessages, 4000);
+    // Active message stream poll every 3.5 seconds
+    const chatPollInterval = setInterval(pollMessages, 3500);
 
-    // Refresh button
     if (btnRefresh) {
         btnRefresh.addEventListener('click', function () {
             this.classList.add('rotate-spin');
-            pollMessages().then(() => this.classList.remove('rotate-spin'));
+            Promise.all([pollMessages(), pollDirectory()]).finally(() => {
+                setTimeout(() => this.classList.remove('rotate-spin'), 600);
+            });
         });
     }
 
-    // Phase 3: Template Modal & Live Preview Engine
+    // -------------------------------------------------------------
+    // Meta Template Modal & Interactive Preview
+    // -------------------------------------------------------------
     const tmplSelect = document.getElementById('tmplSelect');
     const customTmplGroup = document.getElementById('customTmplNameGroup');
     const customTmplInput = document.getElementById('customTmplName');
@@ -1086,11 +1334,7 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(sendTemplateUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify({
                         template_name: templateName,
                         lang_code: langCode,
@@ -1162,8 +1406,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         waQuickReplyMenu.querySelectorAll('.qr-select-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const shortcut = btn.getAttribute('data-shortcut');
-                insertQuickReply(shortcut);
+                insertQuickReply(btn.getAttribute('data-shortcut'));
             });
         });
     }
@@ -1214,7 +1457,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Hide slash suggestions on Escape
         messageInput.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && waSlashSuggestions) {
                 waSlashSuggestions.classList.add('d-none');
@@ -1223,10 +1465,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     loadQuickReplies();
+    @endif
 
-    // Cleanup on page leave
-    window.addEventListener('beforeunload', () => clearInterval(pollInterval));
+    // Cleanup intervals on window unload
+    window.addEventListener('beforeunload', () => {
+        clearInterval(dirPollInterval);
+        @if ($activeConversation)
+            clearInterval(chatPollInterval);
+        @endif
+    });
 });
 </script>
-@endif
-@endsection
+@endpush

@@ -355,4 +355,50 @@ class WhatsAppInboxTest extends TestCase
             'sender_admin_id' => $admin->id,
         ]);
     }
+
+    public function test_admin_can_poll_conversations_directory(): void
+    {
+        $admin = $this->superAdmin();
+
+        $c1 = WhatsAppConversation::create([
+            'phone' => '919876543210',
+            'contact_name' => 'Kavita',
+            'unread_count' => 2,
+            'last_message_preview' => 'Hello team',
+            'last_message_at' => now(),
+        ]);
+
+        $c2 = WhatsAppConversation::create([
+            'phone' => '919876543211',
+            'contact_name' => 'Vikram',
+            'unread_count' => 0,
+            'last_message_preview' => 'Thanks for help',
+            'last_message_at' => now()->subMinutes(10),
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->getJson(route('admin.whatsapp.inbox.poll-conversations'));
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'conversations' => [
+                '*' => [
+                    'id',
+                    'phone',
+                    'contact_name',
+                    'avatar_letter',
+                    'avatar_color',
+                    'last_message_preview',
+                    'last_message_time',
+                    'unread_count',
+                    'is_window_open',
+                    'status',
+                ],
+            ],
+            'total_unread',
+            'active_windows_count',
+        ]);
+        $this->assertEquals(2, $response->json('total_unread'));
+    }
 }
+
