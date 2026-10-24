@@ -13,7 +13,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=1.6">
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=1.7">
+    <script nonce="{{ $cspNonce }}">
+        try {
+            if (localStorage.getItem('admin_sidebar_collapsed') === 'true') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch (e) {}
+    </script>
     @stack('styles')
 </head>
 <body>
@@ -22,7 +29,7 @@
             @php
                 $_adminLogo = brand_logo_path();
             @endphp
-            <div class="sidebar-brand">
+            <div class="sidebar-brand d-flex align-items-center justify-content-between">
                 <a href="{{ route('admin.dashboard') }}" class="d-inline-flex align-items-center text-decoration-none">
                     @if ($_adminLogo)
                         <img src="{{ image_url($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
@@ -30,6 +37,9 @@
                         <span class="brand-text">{{ strtoupper(store_name()) }}</span>
                     @endif
                 </a>
+                <button class="btn btn-sm btn-link text-muted p-1 d-none d-lg-inline-flex align-items-center justify-content-center sidebar-close-btn" id="sidebarDesktopClose" type="button" title="Collapse Sidebar" style="border-radius: 8px; width: 32px; height: 32px; text-decoration: none;">
+                    <i class="bi bi-layout-sidebar-inset" style="font-size: 1.15rem;"></i>
+                </button>
             </div>
             <nav class="sidebar-nav">
                 @include('admin.partials.sidebar-nav')
@@ -38,8 +48,8 @@
 
         <div class="admin-main">
             <header class="admin-topbar">
-                <button class="btn btn-link d-lg-none text-dark p-0 me-2" id="sidebarToggle" type="button" aria-label="Toggle Navigation">
-                    <i class="bi bi-list fs-3"></i>
+                <button class="btn btn-link text-dark p-1 me-2 admin-sidebar-toggle-btn d-inline-flex align-items-center justify-content-center" id="sidebarToggle" type="button" aria-label="Toggle Navigation" title="Toggle Sidebar">
+                    <i class="bi bi-list fs-4"></i>
                 </button>
                 <div class="topbar-title me-auto">
                     <h5>@yield('title', 'Dashboard')</h5>

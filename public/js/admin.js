@@ -3,17 +3,86 @@
 
     document.querySelectorAll('form').forEach(function (f) { if (!f.closest('.dropdown-menu')) f.setAttribute('novalidate', ''); });
 
-    // ── Sidebar ──
+    // ── Sidebar (Collapsible Desktop + Offcanvas Mobile) ──
     var sidebar = document.getElementById('adminSidebar');
     var backdrop = document.getElementById('sidebarBackdrop');
     var toggle = document.getElementById('sidebarToggle');
+    var desktopClose = document.getElementById('sidebarDesktopClose');
 
-    if (sidebar && backdrop) {
-        var showSidebar = function () { sidebar.classList.add('show'); backdrop.classList.add('show'); };
-        var hideSidebar = function () { sidebar.classList.remove('show'); backdrop.classList.remove('show'); };
-        if (toggle) toggle.addEventListener('click', function () { sidebar.classList.contains('show') ? hideSidebar() : showSidebar(); });
-        backdrop.addEventListener('click', hideSidebar);
+    var isDesktop = function () {
+        return window.innerWidth >= 992;
+    };
+
+    // Restore desktop collapsed state
+    try {
+        if (localStorage.getItem('admin_sidebar_collapsed') === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+    } catch (e) {}
+
+    var toggleDesktopSidebar = function () {
+        var isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+        document.documentElement.classList.toggle('sidebar-collapsed', isCollapsed);
+        try {
+            localStorage.setItem('admin_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        } catch (e) {}
+    };
+
+    var showMobileSidebar = function () {
+        if (sidebar) sidebar.classList.add('show');
+        if (backdrop) backdrop.classList.add('show');
+    };
+
+    var hideMobileSidebar = function () {
+        if (sidebar) sidebar.classList.remove('show');
+        if (backdrop) backdrop.classList.remove('show');
+    };
+
+    if (toggle) {
+        toggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (isDesktop()) {
+                toggleDesktopSidebar();
+            } else {
+                if (sidebar && sidebar.classList.contains('show')) {
+                    hideMobileSidebar();
+                } else {
+                    showMobileSidebar();
+                }
+            }
+        });
     }
+
+    if (desktopClose) {
+        desktopClose.addEventListener('click', function (e) {
+            e.preventDefault();
+            toggleDesktopSidebar();
+        });
+    }
+
+    if (backdrop) {
+        backdrop.addEventListener('click', hideMobileSidebar);
+    }
+
+    // Keyboard shortcut: Ctrl + B or Ctrl + \ to toggle sidebar
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B' || e.key === '\\')) {
+            var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag !== 'input' && activeTag !== 'textarea') {
+                e.preventDefault();
+                if (isDesktop()) {
+                    toggleDesktopSidebar();
+                } else {
+                    if (sidebar && sidebar.classList.contains('show')) {
+                        hideMobileSidebar();
+                    } else {
+                        showMobileSidebar();
+                    }
+                }
+            }
+        }
+    });
 
     // ── Toast auto-dismiss ──
     document.querySelectorAll('.vr-toast.show').forEach(function (toast) {

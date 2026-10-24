@@ -214,6 +214,48 @@ body {
     flex-direction: column;
     min-height: 100vh;
     min-width: 0;
+    transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Desktop Collapsed Sidebar States */
+@media (min-width: 992px) {
+    html.sidebar-collapsed .admin-sidebar,
+    body.sidebar-collapsed .admin-sidebar {
+        transform: translateX(-100%);
+    }
+    html.sidebar-collapsed .admin-main,
+    body.sidebar-collapsed .admin-main {
+        margin-left: 0;
+    }
+}
+
+.admin-sidebar-toggle-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    color: var(--vanriti-text) !important;
+    text-decoration: none !important;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+.admin-sidebar-toggle-btn:hover {
+    background-color: #EEF4F0;
+    color: var(--vanriti-green) !important;
+}
+.sidebar-close-btn {
+    border: none;
+    background: transparent;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    cursor: pointer;
+}
+.sidebar-close-btn:hover {
+    background-color: #EEF4F0 !important;
+    color: var(--vanriti-green) !important;
 }
 
 .admin-topbar {
