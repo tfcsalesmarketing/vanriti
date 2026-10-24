@@ -535,93 +535,112 @@
 @section('content')
 <div class="whatsapp-app-container">
 
-    {{-- 1. Top Executive Operational Header (Single sleek row) --}}
-    <header class="wa-top-bar" id="waOperationalToolbar">
-        <div class="d-flex align-items-center gap-2.5">
-            <div class="brand-badge">
+    {{-- 1. Top Executive Operational Bar (Cards matching reference image) --}}
+    <header class="wa-kpi-bar" id="waOperationalToolbar">
+        {{-- Card 1: WhatsApp Inbox (Active) --}}
+        <div class="wa-kpi-card active" title="Active WhatsApp Inbox Workspace">
+            <div class="wa-kpi-icon">
                 <i class="bi bi-whatsapp"></i>
-                <span>WhatsApp Inbox</span>
             </div>
-
-            {{-- Unread Badge --}}
-            <span id="waTotalUnreadBadge" class="badge rounded-pill bg-danger text-white px-2 py-0.5 {{ $totalUnread > 0 ? '' : 'd-none' }}" style="font-size: 0.7rem;">
-                <span id="waTotalUnreadCount">{{ $totalUnread }}</span> unread
-            </span>
-
-            {{-- 24h Windows Badge --}}
-            <span id="waActiveWindowsBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-0.5" style="font-size: 0.7rem;">
-                <i class="bi bi-clock-history me-1"></i><span id="waActiveWindowsCount">{{ $activeWindowsCount }}</span> active windows (24h)
-            </span>
-
-            {{-- Live Sync Indicator --}}
-            <span id="waRealtimeSyncBadge" class="badge bg-white text-muted border px-2 py-0.5 rounded-pill d-none d-md-inline-flex align-items-center gap-1.5 shadow-2xs" style="font-size: 0.68rem;" title="Real-time Webhook Auto-Sync Active">
-                <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 6px; height: 6px;"></span>
-                <span>Live Sync</span>
-            </span>
+            <div>
+                <div class="wa-kpi-title">
+                    <span>WhatsApp Inbox</span>
+                    <span id="waTotalUnreadBadge" class="badge rounded-pill bg-success text-white px-1.5 py-0.5" style="font-size: 0.68rem;">
+                        <span id="waTotalUnreadCount">{{ $conversations->total() ?: count($conversations) }}</span>
+                    </span>
+                </div>
+                <div class="wa-kpi-subtitle" id="waActiveWindowsBadge">
+                    <span id="waActiveWindowsCount">{{ $activeWindowsCount }}</span> active windows (24h)
+                </div>
+            </div>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            {{-- Navigation Shortcuts --}}
-            <div class="d-none d-lg-inline-flex gap-1 p-0.5 bg-light rounded-pill border">
-                <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-xs rounded-pill px-2.5 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
-                    <i class="bi bi-broadcast text-primary"></i>
-                    <span>Broadcasts</span>
-                </a>
-                <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-xs rounded-pill px-2.5 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
-                    <i class="bi bi-file-earmark-code text-secondary"></i>
-                    <span>Templates</span>
-                </a>
-                <a href="{{ route('admin.whatsapp.bot.index') }}" class="btn btn-xs rounded-pill px-2.5 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" style="font-size: 0.72rem;">
-                    <i class="bi bi-robot text-success"></i>
-                    <span>Auto-Reply Rules</span>
-                </a>
+        {{-- Card 2: Live Sync --}}
+        <div class="wa-kpi-card" id="waRealtimeSyncBadge" title="Real-time Webhook Auto-Sync Active">
+            <div class="wa-kpi-icon">
+                <i class="bi bi-arrow-repeat text-dark"></i>
             </div>
-
-            {{-- Meta Connection Status --}}
-            @if ($isConfigured)
-                <span class="badge bg-success-subtle text-success border border-success px-2.5 py-1 rounded-pill d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
-                    <i class="bi bi-shield-check"></i>
-                    Meta Cloud API Connected
-                </span>
-            @else
-                <a href="{{ route('admin.settings.index') }}#whatsapp" class="badge bg-warning-subtle text-warning border border-warning px-2.5 py-1 rounded-pill text-decoration-none" style="font-size: 0.72rem;">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>API Setup Required
-                </a>
-            @endif
+            <div>
+                <div class="wa-kpi-title">Live Sync</div>
+                <div class="wa-kpi-subtitle text-muted">Connected</div>
+            </div>
         </div>
+
+        {{-- Card 3: Meta Cloud API --}}
+        <div class="wa-kpi-card" title="Meta Graph Cloud API v21.0">
+            <div class="wa-kpi-icon">
+                <i class="bi bi-cloud text-dark"></i>
+            </div>
+            <div>
+                <div class="wa-kpi-title">Meta Cloud API</div>
+                <div class="wa-kpi-subtitle">
+                    @if ($isConfigured)
+                        <span class="text-success fw-semibold">● Connected</span>
+                    @else
+                        <a href="{{ route('admin.settings.index') }}#whatsapp" class="text-warning text-decoration-none">● Setup Required</a>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Card 4: Broadcasts --}}
+        <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="wa-kpi-card" title="WhatsApp Marketing Broadcasts">
+            <div class="wa-kpi-icon">
+                <i class="bi bi-megaphone text-dark"></i>
+            </div>
+            <div>
+                <div class="wa-kpi-title">Broadcasts</div>
+                <div class="wa-kpi-subtitle">Send campaigns</div>
+            </div>
+        </a>
+
+        {{-- Card 5: Templates --}}
+        <a href="{{ route('admin.whatsapp.templates.index') }}" class="wa-kpi-card" title="Meta Approved Message Templates">
+            <div class="wa-kpi-icon">
+                <i class="bi bi-file-earmark-text text-dark"></i>
+            </div>
+            <div>
+                <div class="wa-kpi-title">Templates</div>
+                <div class="wa-kpi-subtitle">Manage templates</div>
+            </div>
+        </a>
+
+        {{-- Card 6: Auto-Reply Rules --}}
+        <a href="{{ route('admin.whatsapp.bot.index') }}" class="wa-kpi-card" title="AI Bot and Automated Reply Rules">
+            <div class="wa-kpi-icon">
+                <i class="bi bi-gear text-dark"></i>
+            </div>
+            <div>
+                <div class="wa-kpi-title">Auto-Reply Rules</div>
+                <div class="wa-kpi-subtitle">Configure rules</div>
+            </div>
+        </a>
+
+        {{-- Action Button: + New Broadcast --}}
+        <a href="{{ route('admin.whatsapp.campaigns.create') }}" class="wa-btn-new-broadcast ms-auto" title="Create New Broadcast Campaign">
+            <i class="bi bi-plus-lg"></i>
+            <span>New Broadcast</span>
+        </a>
     </header>
 
-    {{-- 2. Main 3-Column WhatsApp Web Grid --}}
+    {{-- 2. Main 3-Column Floating Cards Grid --}}
     <div class="wa-workspace">
 
-        {{-- Column 1: Conversations Directory --}}
-        <aside class="wa-sidebar-column {{ $activeConversation ? 'd-none d-md-flex' : '' }}" id="waSidebarColumn">
-            {{-- Sidebar Top Action Bar --}}
-            <div class="wa-sidebar-header">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs"
-                         style="background-color: #008069; width: 36px; height: 36px; font-size: 0.95rem;">
-                        {{ strtoupper(substr(auth('admin')->user()->name ?? 'V', 0, 1)) }}
-                    </div>
-                    <span class="fw-semibold text-dark small">{{ auth('admin')->user()->name ?? 'Agent' }}</span>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-sm btn-light border-0 rounded-circle wa-action-icon-btn" title="View Meta Templates">
-                        <i class="bi bi-chat-left-dots"></i>
-                    </a>
-                </div>
-            </div>
-
-            {{-- Search Bar --}}
+        {{-- Column 1: Conversations Directory Card --}}
+        <aside class="wa-sidebar-card {{ $activeConversation ? 'd-none d-md-flex' : '' }}" id="waSidebarColumn">
+            {{-- Search Bar with sliders filter icon --}}
             <div class="wa-search-section">
                 <form method="GET" action="{{ route('admin.whatsapp.inbox') }}" id="waSearchForm">
                     <div class="wa-search-pill">
-                        <i class="bi bi-search text-muted" style="font-size: 0.9rem;"></i>
+                        <i class="bi bi-search text-muted" style="font-size: 0.88rem;"></i>
                         <input type="text" name="search" id="waSearchInput" value="{{ $search }}"
                                placeholder="Search or start new chat...">
                         @if ($search)
                             <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter]) }}" class="text-muted text-decoration-none hover-dark ms-1">&times;</a>
                         @endif
+                        <button type="button" class="btn btn-link p-0 text-muted ms-auto" title="Filter options">
+                            <i class="bi bi-sliders" style="font-size: 0.95rem;"></i>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -630,7 +649,7 @@
             <nav class="wa-filter-tabs wa-filter-pills">
                 <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'all']) }}"
                    class="wa-filter-chip {{ $filter === 'all' ? 'active' : '' }}">
-                    All
+                    All ({{ $conversations->total() ?: count($conversations) }})
                 </a>
                 <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'mine']) }}"
                    class="wa-filter-chip {{ $filter === 'mine' ? 'active' : '' }}">
@@ -660,13 +679,15 @@
                     @php
                         $isActive = $activeConversation && $activeConversation->id === $convo->id;
                         $hasWindow = $convo->isWindowOpen();
+                        $preview = $convo->last_message_preview ?: 'No messages yet';
+                        $isNote = str_starts_with($preview, '🔒') || str_contains(strtolower($preview), 'note:');
                     @endphp
                     <a href="{{ route('admin.whatsapp.inbox', ['conversation_id' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
                        class="wa-convo-item {{ $isActive ? 'active' : '' }}"
                        id="convo-item-{{ $convo->id }}"
                        data-convo-id="{{ $convo->id }}">
                         <div class="position-relative flex-shrink-0">
-                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs"
+                            <div class="wa-avatar shadow-2xs"
                                  style="background-color: {{ '#' . substr(md5($convo->phone), 0, 6) }};">
                                 {{ strtoupper(substr($convo->contact_name ?: $convo->phone, 0, 1)) }}
                             </div>
@@ -676,7 +697,7 @@
 
                         <div class="flex-grow-1 min-w-0">
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="fw-semibold text-dark text-truncate d-block wa-convo-name" style="max-width: 170px; font-size: 0.95rem;">
+                                <span class="fw-bold text-dark text-truncate d-block wa-convo-name" style="max-width: 170px; font-size: 0.92rem;">
                                     {{ $convo->contact_name ?: '+' . $convo->phone }}
                                 </span>
                                 <span class="text-muted wa-convo-time" style="font-size: 0.72rem;">
@@ -685,13 +706,21 @@
                             </div>
 
                             <div class="d-flex align-items-center justify-content-between">
-                                <span class="text-muted text-truncate wa-convo-preview" style="font-size: 0.82rem; max-width: 190px;">
-                                    {{ $convo->last_message_preview ?: 'No messages yet' }}
+                                <span class="text-muted text-truncate wa-convo-preview" style="font-size: 0.8rem; max-width: 170px;">
+                                    @if($isNote)
+                                        <span class="text-warning-emphasis fw-medium"><i class="bi bi-lock-fill text-warning me-0.5"></i>Note: {{ preg_replace('/^🔒\s*(Internal Staff Note:?\s*)?/i', '', $preview) }}</span>
+                                    @else
+                                        {{ $preview }}
+                                    @endif
                                 </span>
 
                                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
                                     @if ($convo->status === 'resolved')
-                                        <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.62rem;">Resolved</span>
+                                        <span class="wa-status-pill wa-status-resolved">Resolved</span>
+                                    @elseif(!$convo->assigned_agent_id)
+                                        <span class="wa-status-pill wa-status-unassigned">Unassigned</span>
+                                    @else
+                                        <span class="wa-status-pill wa-status-open">Open</span>
                                     @endif
                                     <span class="badge rounded-pill bg-success text-white px-1.5 py-0.5 wa-convo-unread-pill {{ $convo->unread_count > 0 ? '' : 'd-none' }}" style="font-size: 0.68rem;">
                                         {{ $convo->unread_count }}
@@ -717,18 +746,18 @@
             @endif
         </aside>
 
-        {{-- Column 2: Active Chat Stream & Composer --}}
+        {{-- Column 2: Active Chat Card --}}
         @if ($activeConversation)
-            <main class="wa-chat-column" id="waChatMiddleColumn">
+            <main class="wa-chat-card" id="waChatMiddleColumn">
                 {{-- WhatsApp Chat Header --}}
                 <div class="wa-chat-header">
                     <div class="d-flex align-items-center gap-2.5 min-w-0">
-                        <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle wa-action-icon-btn d-md-none me-1" title="Back to conversations">
+                        <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle wa-circle-btn d-md-none me-1" title="Back to conversations">
                             <i class="bi bi-arrow-left"></i>
                         </a>
                         <div class="position-relative flex-shrink-0">
-                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs"
-                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 40px; height: 40px; font-size: 0.95rem;">
+                            <div class="wa-avatar shadow-2xs"
+                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 38px; height: 38px; font-size: 0.95rem;">
                                 {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
                             </div>
                             @if ($activeConversation->isWindowOpen())
@@ -737,7 +766,7 @@
                         </div>
                         <div class="min-w-0 text-truncate">
                             <div class="d-flex align-items-center gap-1.5">
-                                <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 220px; font-size: 0.98rem;">
+                                <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 200px; font-size: 0.95rem;">
                                     {{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}
                                 </h6>
                                 @if ($customerContext['user'] ?? false)
@@ -752,8 +781,8 @@
                                     <i class="bi bi-copy text-muted copy-icon" style="font-size: 0.65rem;"></i>
                                 </button>
                                 <span class="badge {{ $activeConversation->isWindowOpen() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }} rounded-pill"
-                                      style="font-size: 0.65rem; padding: 0.15rem 0.5rem;" id="activeWindowBadge">
-                                    <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-clock-fill' : 'bi-lock-fill' }} me-0.5"></i>
+                                      style="font-size: 0.68rem; padding: 0.18rem 0.55rem; font-weight: 600;" id="activeWindowBadge">
+                                    <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-clock-fill' : 'bi-lock-fill' }} me-1"></i>
                                     <span id="activeWindowLabel">{{ $activeConversation->windowRemainingFormatted() }}</span>
                                 </span>
                             </div>
@@ -764,12 +793,12 @@
                     <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
                         {{-- Agent Assignment Dropdown --}}
                         <div class="dropdown">
-                            <button class="btn btn-sm btn-white border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent" style="font-size: 0.78rem;">
+                            <button class="wa-dropdown-capsule" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent">
                                 <i class="bi bi-person text-secondary"></i>
-                                <span id="assignedAgentLabel" class="fw-semibold text-dark d-none d-sm-inline">
+                                <span id="assignedAgentLabel" class="d-none d-sm-inline">
                                     {{ $activeConversation->assignedAgent?->name ?? 'Unassigned' }}
                                 </span>
-                                <i class="bi bi-chevron-down text-muted" style="font-size: 0.55rem;"></i>
+                                <i class="bi bi-chevron-down text-muted" style="font-size: 0.6rem;"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem; min-width: 180px;">
                                 <li class="dropdown-header text-uppercase fw-bold text-muted py-1" style="font-size: 0.68rem;">Assign To Agent</li>
@@ -781,7 +810,7 @@
                                 @foreach ($admins as $adm)
                                     @if ($adm->id !== auth('admin')->id())
                                         <li>
-                                            <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn" data-admin-id="{{ $adm->id }}">
+                                             <button type="button" class="dropdown-item rounded-2 py-1.5 assign-agent-btn" data-admin-id="{{ $adm->id }}">
                                                 <i class="bi bi-person me-1.5"></i> {{ $adm->name }}
                                             </button>
                                         </li>
@@ -798,7 +827,7 @@
 
                         {{-- Conversation Lifecycle Status --}}
                         <div class="dropdown">
-                            <button class="btn btn-sm btn-white border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Status" style="font-size: 0.78rem;">
+                            <button class="wa-dropdown-capsule" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Status">
                                 @php
                                     $statusConfig = match($activeConversation->status) {
                                         'resolved' => ['color' => 'secondary', 'icon' => 'bi-check2-all', 'label' => 'Resolved'],
@@ -806,11 +835,9 @@
                                         default => ['color' => 'success', 'icon' => 'bi-circle-fill', 'label' => 'Open']
                                     };
                                 @endphp
-                                <span class="badge bg-{{ $statusConfig['color'] }}-subtle text-{{ $statusConfig['color'] }} p-1 rounded-circle">
-                                    <i class="bi {{ $statusConfig['icon'] }}" style="font-size: 0.6rem;"></i>
-                                </span>
-                                <span id="convoStatusLabel" class="fw-semibold text-dark d-none d-sm-inline">{{ $statusConfig['label'] }}</span>
-                                <i class="bi bi-chevron-down text-muted" style="font-size: 0.55rem;"></i>
+                                <i class="bi {{ $statusConfig['icon'] }} text-{{ $statusConfig['color'] }}"></i>
+                                <span id="convoStatusLabel" class="d-none d-sm-inline">{{ $statusConfig['label'] }}</span>
+                                <i class="bi bi-chevron-down text-muted" style="font-size: 0.6rem;"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 p-1" style="font-size: 0.8rem;">
                                 <li>
@@ -831,16 +858,21 @@
                             </ul>
                         </div>
 
+                        {{-- Search button --}}
+                        <button type="button" class="wa-circle-btn" title="Search in chat">
+                            <i class="bi bi-search"></i>
+                        </button>
+
                         {{-- Refresh Messages Button --}}
-                        <button type="button" class="btn btn-sm btn-white border wa-action-icon-btn rounded-circle shadow-2xs hover-dark" id="btnRefreshChat" title="Refresh messages" style="width: 34px; height: 34px;">
+                        <button type="button" class="wa-circle-btn" id="btnRefreshChat" title="Refresh messages">
                             <i class="bi bi-arrow-clockwise"></i>
                         </button>
 
                         {{-- Toggle Customer Info Drawer (Desktop & Mobile) --}}
-                        <button class="btn btn-sm btn-white border wa-action-icon-btn rounded-circle shadow-2xs hover-dark d-none d-xl-inline-flex" type="button" id="btnToggleContextDesktop" title="Toggle Customer Info Drawer" style="width: 34px; height: 34px;">
+                        <button class="wa-circle-btn d-none d-xl-inline-flex" type="button" id="btnToggleContextDesktop" title="Toggle Customer Info Drawer">
                             <i class="bi bi-layout-sidebar-reverse"></i>
                         </button>
-                        <button class="btn btn-sm btn-white border wa-action-icon-btn rounded-circle shadow-2xs d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Profile" style="width: 34px; height: 34px;">
+                        <button class="wa-circle-btn d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Profile">
                             <i class="bi bi-person-badge"></i>
                         </button>
                     </div>
@@ -900,7 +932,7 @@
                     </button>
                 </div>
 
-                {{-- Authentic WhatsApp Web Bottom Composer Bar --}}
+                {{-- Clean WhatsApp Composer Bar --}}
                 <div class="wa-composer-wrapper" id="waComposerWrapper">
                     {{-- Mode Selector Capsule: WhatsApp Public Reply vs Private Internal Note --}}
                     <div class="d-flex align-items-center justify-content-between px-1">
@@ -917,22 +949,27 @@
                         </span>
                     </div>
 
-                    {{-- Main Typing Row (Full width input container + authentic WhatsApp action icons) --}}
-                    <form id="waSendForm" class="d-flex align-items-end gap-2 w-100">
+                    {{-- Main Typing Row (4 action icons + expansive typing capsule + send button) --}}
+                    <form id="waSendForm" class="d-flex align-items-center gap-2 w-100 mb-0">
                         @csrf
                         <input type="file" id="waFileInput" class="d-none" accept="image/*,application/pdf,.doc,.docx,audio/*,video/*">
 
-                        {{-- Action Icons Left --}}
-                        <div class="d-flex align-items-center gap-1 flex-shrink-0 mb-0.5">
+                        {{-- Action Icons Left (Emoji, Paperclip, Quick replies, Templates) --}}
+                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                            {{-- Emoji Icon --}}
+                            <button type="button" class="wa-composer-icon" title="Emoji">
+                                <i class="bi bi-emoji-smile"></i>
+                            </button>
+
                             {{-- Paperclip Attachment Icon --}}
-                            <button type="button" class="wa-action-icon-btn" id="btnAttachFile" title="Attach photo, video or document">
+                            <button type="button" class="wa-composer-icon" id="btnAttachFile" title="Attach photo, video or document">
                                 <i class="bi bi-paperclip"></i>
                             </button>
 
                             {{-- Quick Reply Snippets Menu --}}
                             <div class="dropdown">
-                                <button type="button" class="wa-action-icon-btn text-primary" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)">
-                                    <i class="bi bi-lightning-charge-fill"></i>
+                                <button type="button" class="wa-composer-icon" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)">
+                                    <i class="bi bi-lightning-charge"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-4 p-2 wa-quick-reply-dropdown" style="max-height: 280px; overflow-y: auto; width: 320px; z-index: 1060;" id="waQuickReplyMenu">
                                     <li class="dropdown-header small text-uppercase fw-bold text-muted px-2 py-1">⚡ Quick Reply Snippets</li>
@@ -941,8 +978,8 @@
                             </div>
 
                             {{-- Send Approved Meta Template Icon --}}
-                            <button type="button" class="wa-action-icon-btn text-warning" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Approved Meta Template (Bypasses 24h Window)">
-                                <i class="bi bi-shield-check"></i>
+                            <button type="button" class="wa-composer-icon" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Approved Meta Template (Bypasses 24h Window)">
+                                <i class="bi bi-file-earmark-text"></i>
                             </button>
                         </div>
 
@@ -953,7 +990,10 @@
 
                             <div class="wa-input-capsule">
                                 <textarea id="waMessageInput" rows="1"
-                                          placeholder="Type a message or type / for quick replies... (Enter to send, Shift+Enter for newline)"></textarea>
+                                          placeholder="Type a message..."></textarea>
+                                <div class="text-muted ms-2 flex-shrink-0">
+                                    <i class="bi bi-chevron-expand" style="font-size: 0.8rem;"></i>
+                                </div>
                             </div>
                         </div>
 
@@ -966,7 +1006,7 @@
             </main>
 
             {{-- Column 3: Customer Context Drawer --}}
-            <aside class="wa-context-column d-none d-xl-flex" id="waContextColumn">
+            <aside class="wa-context-card d-none d-xl-flex" id="waContextColumn">
                 @include('admin.whatsapp.partials.customer-context', ['customerContext' => $customerContext, 'activeConversation' => $activeConversation])
             </aside>
 
@@ -983,15 +1023,15 @@
 
         @else
             {{-- WhatsApp Web Authentic Empty Desktop Splash Screen --}}
-            <main class="col d-flex flex-column align-items-center justify-content-center p-5 text-center bg-white" style="background-color: #f0f2f5 !important; border-left: 1px solid #d1d7db;">
-                <div class="wa-empty-illustration mb-4 p-4 rounded-circle bg-white text-emerald d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px;">
+            <main class="col d-flex flex-column align-items-center justify-content-center p-5 text-center bg-white rounded-4 border" style="background-color: #ffffff !important; border: 1px solid #eef2f5 !important;">
+                <div class="wa-empty-illustration mb-4 p-4 rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px;">
                     <i class="bi bi-whatsapp fs-1" style="color: #25D366;"></i>
                 </div>
                 <h4 class="fw-bold text-dark mb-2">WhatsApp for Web</h4>
                 <p class="text-muted small mb-4" style="max-width: 440px; line-height: 1.6; font-size: 0.88rem;">
                     Send and receive messages directly with your customers in real time. Select a conversation from the left directory to start chatting.
                 </p>
-                <div class="d-inline-flex align-items-center gap-1.5 text-muted px-3 py-1 rounded-pill bg-white border shadow-2xs" style="font-size: 0.75rem;">
+                <div class="d-inline-flex align-items-center gap-1.5 text-muted px-3 py-1 rounded-pill bg-light border shadow-2xs" style="font-size: 0.75rem;">
                     <i class="bi bi-lock-fill text-muted"></i>
                     <span>End-to-end encrypted with Meta Cloud API</span>
                 </div>
