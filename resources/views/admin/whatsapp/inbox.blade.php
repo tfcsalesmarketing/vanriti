@@ -5,7 +5,7 @@
 @push('styles')
 <style>
 .whatsapp-inbox-wrapper {
-    height: calc(100vh - 110px);
+    height: calc(100vh - 104px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -17,6 +17,8 @@
     flex-direction: column;
     overflow: hidden;
     background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
 }
 .wa-chat-card > .row {
     flex: 1 1 0;
@@ -30,6 +32,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: #ffffff;
 }
 .wa-chat-column {
     height: 100%;
@@ -42,55 +45,92 @@
     height: 100%;
     min-height: 0;
     overflow-y: auto;
+    background-color: #f8fafc;
 }
 .wa-convo-list {
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
+    padding: 6px 0;
+}
+.wa-convo-list::-webkit-scrollbar,
+.wa-chat-stream::-webkit-scrollbar,
+.wa-context-column::-webkit-scrollbar {
+    width: 5px;
+}
+.wa-convo-list::-webkit-scrollbar-thumb,
+.wa-chat-stream::-webkit-scrollbar-thumb,
+.wa-context-column::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.12);
+    border-radius: 9999px;
+}
+.wa-convo-list::-webkit-scrollbar-thumb:hover,
+.wa-chat-stream::-webkit-scrollbar-thumb:hover,
+.wa-context-column::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0,0,0,0.22);
 }
 .wa-chat-stream {
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
-    background-color: #f6f8f7;
-    background-image: radial-gradient(#e2e8e5 1px, transparent 1px);
-    background-size: 20px 20px;
+    background-color: #efeae2;
+    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.035' fill-rule='evenodd'%3E%3Cpath d='M11 14.01V7a1 1 0 0 1 2 0v7.01A5.001 5.001 0 0 1 17 19v1a1 1 0 0 1-2 0v-1a3 3 0 0 0-3-3h-1.5A3.5 3.5 0 0 1 7 12.5V11a1 1 0 0 1 2 0v1.5a1.5 1.5 0 0 0 1.5 1.5H11zM65 41a5 5 0 1 1-10 0 5 5 0 0 1 10 0zm-2 0a3 3 0 1 0-6 0 3 3 0 0 0 6 0zM22 66a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm-1 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0zm53-24a1 1 0 0 1 1 1v1.5a3.5 3.5 0 0 1-3.5 3.5H71a3 3 0 0 0-3 3v1a1 1 0 0 1-2 0v-1a5.001 5.001 0 0 1 4-4.99V43a1 1 0 0 1 1-1h2.5a1.5 1.5 0 0 0 1.5-1.5V39a1 1 0 0 1 1-1zm-48-9a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm-2 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0z'/%3E%3C/g%3E%3C/svg%3E");
     scroll-behavior: smooth;
 }
+.wa-date-divider {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 3px 12px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #54656f;
+    box-shadow: 0 1px 2px rgba(11,20,26,0.12);
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: 0.01em;
+}
 .wa-avatar {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     font-size: 0.95rem;
 }
 .wa-convo-item {
     cursor: pointer;
     background: #ffffff;
-    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+    margin: 3px 8px;
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid transparent;
+    transition: all 0.16s ease-in-out;
 }
 .wa-convo-item:hover {
-    background: #f8faf9;
+    background: #f8fafc;
+    transform: translateY(-0.5px);
 }
 .wa-convo-item.active {
-    background: #e8f5ec;
-    border-left: 3px solid #25D366 !important;
+    background: #ecfdf5 !important;
+    border-left: 3.5px solid #10b981 !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
 }
 .wa-bubble {
-    max-width: 78%;
-    border-radius: 14px;
+    max-width: 76%;
     position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 1px rgba(11,20,26,0.12);
     word-break: break-word;
 }
 .wa-bubble-inbound {
     background-color: #ffffff;
-    border-bottom-left-radius: 3px;
-    color: #1e293b;
-    border: 1px solid rgba(0,0,0,0.04);
+    border-radius: 16px 16px 16px 3px;
+    color: #111b21;
+    border: 1px solid rgba(0,0,0,0.03);
 }
 .wa-bubble-outbound {
-    background-color: #dcf8c6;
-    border-bottom-right-radius: 3px;
-    color: #0f381e;
+    background-color: #d9fdd3;
+    border-radius: 16px 16px 3px 16px;
+    color: #111b21;
+    border: 1px solid rgba(0,0,0,0.02);
 }
 .btn-xs {
     padding: 0.2rem 0.65rem;
@@ -104,7 +144,7 @@
     justify-content: center;
 }
 .wa-filter-pills::-webkit-scrollbar {
-    height: 4px;
+    height: 3px;
 }
 .wa-filter-pills::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
@@ -116,6 +156,33 @@
 @keyframes waSpin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.wa-composer-wrapper {
+    border-top: 1px solid #e2e8f0;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+.wa-composer-wrapper textarea {
+    background-color: #f0f2f5;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+.wa-composer-wrapper textarea:focus {
+    background-color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+.wa-composer-wrapper.internal-note-mode {
+    background-color: #fffdf5 !important;
+    border-top-color: #fde68a !important;
+}
+.wa-composer-wrapper.internal-note-mode textarea {
+    background-color: #ffffff;
+    border-color: #fde68a;
+}
+.wa-composer-wrapper.internal-note-mode textarea:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
 }
 
 /* Mobile Responsive Optimization (Native App Feel) */
@@ -175,46 +242,55 @@
 @section('content')
 <div class="whatsapp-inbox-wrapper">
     {{-- Top Operational Toolbar --}}
-    <div class="{{ $activeConversation ? 'd-none d-md-flex' : 'd-flex' }} flex-wrap align-items-center justify-content-between gap-3 mb-2 flex-shrink-0" id="waOperationalToolbar">
+    <div class="{{ $activeConversation ? 'd-none d-md-flex' : 'd-flex' }} flex-wrap align-items-center justify-content-between gap-3 mb-2.5 flex-shrink-0" id="waOperationalToolbar">
         <div class="d-flex align-items-center gap-3">
-            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-whatsapp text-success fs-3"></i>
-                <span>WhatsApp Inbox</span>
-            </h4>
             <div class="d-flex align-items-center gap-2">
-                <span id="waTotalUnreadBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 {{ $totalUnread > 0 ? '' : 'd-none' }}">
+                <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center shadow-2xs" style="width: 38px; height: 38px;">
+                    <i class="bi bi-whatsapp fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.02em;">WhatsApp Inbox</h5>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Customer messaging & live support desk</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 ms-2">
+                <span id="waTotalUnreadBadge" class="badge rounded-pill bg-danger text-white px-2.5 py-1 shadow-2xs {{ $totalUnread > 0 ? '' : 'd-none' }}">
                     <i class="bi bi-chat-dots-fill me-1"></i><span id="waTotalUnreadCount">{{ $totalUnread }}</span> unread
                 </span>
-                <span id="waActiveWindowsBadge" class="badge rounded-pill bg-emerald-subtle text-emerald border border-emerald-subtle px-2.5 py-1">
+                <span id="waActiveWindowsBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
                     <i class="bi bi-clock-history me-1"></i><span id="waActiveWindowsCount">{{ $activeWindowsCount }}</span> active windows (24h)
                 </span>
-                <span id="waRealtimeSyncBadge" class="badge bg-light text-muted border px-2 py-1 rounded-pill small d-none d-md-inline-flex align-items-center gap-1" title="Real-time Auto-Sync Active">
+                <span id="waRealtimeSyncBadge" class="badge bg-white text-muted border px-2.5 py-1 rounded-pill small d-none d-md-inline-flex align-items-center gap-1.5 shadow-2xs" title="Real-time Auto-Sync Active">
                     <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 6px; height: 6px;"></span>
-                    Live
+                    <span class="fw-semibold text-dark" style="font-size: 0.72rem;">Live Sync</span>
                 </span>
             </div>
         </div>
 
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 d-none d-lg-inline-flex align-items-center gap-1.5 text-decoration-none">
-                <i class="bi bi-broadcast text-primary"></i>
-                <span class="small fw-semibold">Broadcasts</span>
-            </a>
-            <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 d-none d-lg-inline-flex align-items-center gap-1.5 text-decoration-none">
-                <i class="bi bi-file-earmark-code text-secondary"></i>
-                <span class="small fw-semibold">Templates</span>
-            </a>
-            <a href="{{ route('admin.whatsapp.bot.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 d-none d-xl-inline-flex align-items-center gap-1.5 text-decoration-none">
-                <i class="bi bi-robot text-success"></i>
-                <span class="small fw-semibold">Auto-Reply Rules</span>
-            </a>
+            <div class="segmented-nav-pills d-none d-lg-inline-flex p-1 bg-light rounded-pill border">
+                <a href="{{ route('admin.whatsapp.campaigns.index') }}" class="btn btn-xs rounded-pill px-3 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1.5 hover-dark">
+                    <i class="bi bi-broadcast text-primary"></i>
+                    <span class="fw-semibold">Broadcasts</span>
+                </a>
+                <a href="{{ route('admin.whatsapp.templates.index') }}" class="btn btn-xs rounded-pill px-3 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1.5 hover-dark">
+                    <i class="bi bi-file-earmark-code text-secondary"></i>
+                    <span class="fw-semibold">Templates</span>
+                </a>
+                <a href="{{ route('admin.whatsapp.bot.index') }}" class="btn btn-xs rounded-pill px-3 py-1 text-muted text-decoration-none d-inline-flex align-items-center gap-1.5 hover-dark">
+                    <i class="bi bi-robot text-success"></i>
+                    <span class="fw-semibold">Auto-Reply Rules</span>
+                </a>
+            </div>
+
             @if ($isConfigured)
-                <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 rounded-pill d-inline-flex align-items-center gap-1.5">
+                <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 rounded-pill d-inline-flex align-items-center gap-1.5 shadow-2xs">
                     <i class="bi bi-shield-check"></i>
                     Meta Cloud API Connected
                 </span>
             @else
-                <a href="{{ route('admin.settings.index') }}#whatsapp" class="badge bg-warning-subtle text-warning border border-warning px-3 py-1.5 rounded-pill text-decoration-none">
+                <a href="{{ route('admin.settings.index') }}#whatsapp" class="badge bg-warning-subtle text-warning border border-warning px-3 py-1.5 rounded-pill text-decoration-none shadow-2xs">
                     <i class="bi bi-exclamation-triangle-fill me-1"></i>API Setup Required
                 </a>
             @endif
@@ -222,20 +298,22 @@
     </div>
 
     {{-- Main 3-Column Chat Grid --}}
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden wa-chat-card">
+    <div class="card border-0 rounded-4 overflow-hidden wa-chat-card">
         <div class="row g-0 h-100">
 
             {{-- 1. Left Column: Conversation Directory --}}
             <div class="col-12 col-md-4 col-xl-3 border-end d-flex flex-column wa-sidebar-column {{ $activeConversation ? 'd-none d-md-flex' : '' }}" id="waSidebarColumn">
                 {{-- Search & Filters --}}
-                <div class="p-3 border-bottom bg-light-subtle flex-shrink-0">
+                <div class="p-3 border-bottom bg-white flex-shrink-0">
                     <form method="GET" action="{{ route('admin.whatsapp.inbox') }}" class="mb-2.5" id="waSearchForm">
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" id="waSearchInput" value="{{ $search }}" class="form-control bg-white border-start-0 ps-0"
-                                   placeholder="Search name, phone, message...">
+                            <span class="input-group-text bg-light border-0 ps-3 text-muted rounded-start-pill"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" id="waSearchInput" value="{{ $search }}" class="form-control bg-light border-0 py-2 ps-1 shadow-none"
+                                   placeholder="Search name, phone, message..." style="font-size: 0.82rem;">
                             @if ($search)
-                                <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter]) }}" class="input-group-text bg-white text-muted text-decoration-none">&times;</a>
+                                <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter]) }}" class="input-group-text bg-light border-0 text-muted pe-3 rounded-end-pill text-decoration-none hover-dark">&times;</a>
+                            @else
+                                <span class="input-group-text bg-light border-0 pe-3 rounded-end-pill"></span>
                             @endif
                         </div>
                     </form>
@@ -243,27 +321,27 @@
                     {{-- Filter Tabs --}}
                     <div class="d-flex gap-1 overflow-x-auto pb-1 wa-filter-pills">
                         <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'all']) }}"
-                           class="btn btn-xs rounded-pill {{ $filter === 'all' ? 'btn-dark' : 'btn-light text-muted' }}">
+                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'all' ? 'btn-dark' : 'btn-light text-muted' }}">
                             All
                         </a>
                         <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'mine']) }}"
-                           class="btn btn-xs rounded-pill {{ $filter === 'mine' ? 'btn-dark' : 'btn-light text-muted' }}">
+                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'mine' ? 'btn-dark' : 'btn-light text-muted' }}">
                             Mine
                         </a>
                         <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'unassigned']) }}"
-                           class="btn btn-xs rounded-pill {{ $filter === 'unassigned' ? 'btn-dark' : 'btn-light text-muted' }}">
+                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'unassigned' ? 'btn-dark' : 'btn-light text-muted' }}">
                             Unassigned
                         </a>
                         <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'unread']) }}"
-                           class="btn btn-xs rounded-pill {{ $filter === 'unread' ? 'btn-dark' : 'btn-light text-muted' }}">
-                            Unread @if($totalUnread > 0)({{ $totalUnread }})@endif
+                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'unread' ? 'btn-dark' : 'btn-light text-muted' }}">
+                            Unread @if($totalUnread > 0)<span class="badge rounded-pill bg-success text-white ms-1" style="font-size: 0.65rem;">{{ $totalUnread }}</span>@endif
                         </a>
                         <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'window_open']) }}"
-                           class="btn btn-xs rounded-pill {{ $filter === 'window_open' ? 'btn-dark' : 'btn-light text-muted' }}">
+                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'window_open' ? 'btn-dark' : 'btn-light text-muted' }}">
                             Open (24h)
                         </a>
                         <a href="{{ route('admin.whatsapp.inbox', ['search' => $search, 'filter' => 'resolved']) }}"
-                           class="btn btn-xs rounded-pill {{ $filter === 'resolved' ? 'btn-dark' : 'btn-light text-muted' }}">
+                           class="btn btn-xs rounded-pill px-2.5 py-1 {{ $filter === 'resolved' ? 'btn-dark' : 'btn-light text-muted' }}">
                             Resolved
                         </a>
                     </div>
@@ -277,22 +355,22 @@
                             $hasWindow = $convo->isWindowOpen();
                         @endphp
                         <a href="{{ route('admin.whatsapp.inbox', ['conversation_id' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
-                           class="wa-convo-item d-block p-3 border-bottom text-decoration-none transition-all {{ $isActive ? 'active' : '' }}"
+                           class="wa-convo-item d-block text-decoration-none {{ $isActive ? 'active' : '' }}"
                            id="convo-item-{{ $convo->id }}"
                            data-convo-id="{{ $convo->id }}">
                             <div class="d-flex align-items-start gap-2.5">
                                 <div class="position-relative flex-shrink-0">
-                                    <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                         style="background-color: {{ '#' . substr(md5($convo->phone), 0, 6) }};">
+                                    <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs"
+                                         style="background-color: {{ '#' . substr(md5($convo->phone), 0, 6) }}; width: 42px; height: 42px; font-size: 1rem;">
                                         {{ strtoupper(substr($convo->contact_name ?: $convo->phone, 0, 1)) }}
                                     </div>
-                                    <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1 wa-convo-window-dot {{ $hasWindow ? '' : 'd-none' }}"
+                                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1 wa-convo-window-dot {{ $hasWindow ? '' : 'd-none' }}"
                                           title="24h Service Window Active"></span>
                                 </div>
 
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="d-flex align-items-center justify-content-between mb-0.5">
-                                        <span class="fw-semibold text-dark text-truncate d-block small wa-convo-name" style="max-width: 140px;">
+                                        <span class="fw-semibold text-dark text-truncate d-block wa-convo-name" style="max-width: 135px; font-size: 0.86rem;">
                                             {{ $convo->contact_name ?: '+' . $convo->phone }}
                                         </span>
                                         <span class="text-muted wa-convo-time" style="font-size: 0.7rem;">
@@ -300,28 +378,28 @@
                                         </span>
                                     </div>
 
-                                    <div class="text-muted small text-truncate mb-1 wa-convo-preview" style="font-size: 0.78rem;">
+                                    <div class="text-muted text-truncate mb-1 wa-convo-preview" style="font-size: 0.78rem; line-height: 1.35;">
                                         {{ $convo->last_message_preview ?: 'No messages yet' }}
                                     </div>
 
                                     <div class="d-flex align-items-center justify-content-between">
-                                        <div class="d-flex align-items-center gap-1">
-                                            <span class="badge wa-convo-window-badge {{ $hasWindow ? 'bg-success-subtle text-success' : 'bg-light text-muted' }}" style="font-size: 0.65rem;">
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <span class="badge wa-convo-window-badge {{ $hasWindow ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }} rounded-pill" style="font-size: 0.62rem; padding: 0.15rem 0.4rem;">
                                                 {{ $convo->windowRemainingFormatted() }}
                                             </span>
                                             @if ($convo->assigned_to)
-                                                <span class="badge bg-light text-primary border" style="font-size: 0.62rem;" title="Assigned Agent">
+                                                <span class="badge bg-light text-primary border rounded-pill" style="font-size: 0.62rem; padding: 0.15rem 0.4rem;" title="Assigned Agent">
                                                     <i class="bi bi-person"></i> {{ \Illuminate\Support\Str::limit($convo->assignedAgent?->name ?? 'Agent', 10) }}
                                                 </span>
                                             @endif
                                             @if ($convo->status === 'resolved')
-                                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.62rem;">
+                                                <span class="badge bg-secondary-subtle text-secondary rounded-pill" style="font-size: 0.62rem; padding: 0.15rem 0.4rem;">
                                                     Resolved
                                                 </span>
                                             @endif
                                         </div>
 
-                                        <span class="badge rounded-pill bg-success text-white px-2 py-0.5 wa-convo-unread-pill {{ $convo->unread_count > 0 ? '' : 'd-none' }}" style="font-size: 0.7rem;">
+                                        <span class="badge rounded-pill bg-success text-white px-2 py-0.5 wa-convo-unread-pill shadow-2xs {{ $convo->unread_count > 0 ? '' : 'd-none' }}" style="font-size: 0.68rem;">
                                             {{ $convo->unread_count }}
                                         </span>
                                     </div>
@@ -349,34 +427,49 @@
             @if ($activeConversation)
                 <div class="col-12 col-md-8 col-xl-6 d-flex flex-column wa-chat-column bg-white">
                     {{-- Chat Topbar --}}
-                    <div class="p-2 p-md-3 border-bottom d-flex align-items-center justify-content-between bg-white z-1 flex-shrink-0 wa-chat-header">
-                        <div class="d-flex align-items-center gap-2 gap-md-3 min-w-0 flex-grow-1 flex-md-grow-0" style="min-width: 0;">
-                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle btn-icon d-md-none me-0.5 flex-shrink-0" style="width: 32px; height: 32px;" title="Back to conversations">
+                    <div class="px-3 py-2.5 border-bottom d-flex align-items-center justify-content-between bg-white z-2 flex-shrink-0 wa-chat-header shadow-2xs">
+                        <div class="d-flex align-items-center gap-2 gap-md-2.5 min-w-0 flex-grow-1 flex-md-grow-0" style="min-width: 0;">
+                            <a href="{{ route('admin.whatsapp.inbox', ['filter' => $filter, 'search' => $search]) }}" class="btn btn-sm btn-light border rounded-circle btn-icon d-md-none me-1 flex-shrink-0" style="width: 34px; height: 34px;" title="Back to conversations">
                                 <i class="bi bi-arrow-left"></i>
                             </a>
-                            <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                                 style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 38px; height: 38px; font-size: 0.95rem;">
-                                {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
+                            <div class="position-relative flex-shrink-0">
+                                <div class="wa-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs"
+                                     style="background-color: {{ '#' . substr(md5($activeConversation->phone), 0, 6) }}; width: 42px; height: 42px; font-size: 1rem;">
+                                    {{ strtoupper(substr($activeConversation->contact_name ?: $activeConversation->phone, 0, 1)) }}
+                                </div>
+                                @if ($activeConversation->isWindowOpen())
+                                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1" title="24h Service Window Active"></span>
+                                @endif
                             </div>
                             <div class="min-w-0 text-truncate">
-                                <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 150px;">{{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}</h6>
-                                <div class="d-flex align-items-center gap-1.5 mt-0.5 text-nowrap">
-                                    <span class="text-muted small" style="font-size: 0.72rem;">
-                                        <i class="bi bi-telephone text-muted me-0.5"></i>+{{ $activeConversation->phone }}
-                                    </span>
-                                    <span class="badge {{ $activeConversation->isWindowOpen() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }}"
-                                          style="font-size: 0.65rem; padding: 0.15rem 0.4rem;" id="activeWindowBadge">
-                                        <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-unlock-fill' : 'bi-lock-fill' }} me-0.5"></i>
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <h6 class="fw-bold mb-0 text-dark text-truncate wa-contact-name" style="max-width: 170px;">
+                                        {{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }}
+                                    </h6>
+                                    @if ($customerContext['user'] ?? false)
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0 px-1.5" style="font-size: 0.62rem;" title="Registered Customer">
+                                            <i class="bi bi-patch-check-fill"></i>
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="d-flex align-items-center gap-2 mt-0.5 text-nowrap">
+                                    <button type="button" class="btn btn-link btn-xs p-0 text-muted text-decoration-none d-inline-flex align-items-center gap-1 hover-dark" title="Click to copy phone number" onclick="navigator.clipboard.writeText('+{{ $activeConversation->phone }}'); this.querySelector('.copy-icon').className='bi bi-check text-success copy-icon'; setTimeout(() => this.querySelector('.copy-icon').className='bi bi-copy text-muted copy-icon', 1500);">
+                                        <span style="font-size: 0.75rem;">+{{ $activeConversation->phone }}</span>
+                                        <i class="bi bi-copy text-muted copy-icon" style="font-size: 0.65rem;"></i>
+                                    </button>
+                                    <span class="badge {{ $activeConversation->isWindowOpen() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-muted border' }} rounded-pill"
+                                          style="font-size: 0.65rem; padding: 0.15rem 0.5rem;" id="activeWindowBadge">
+                                        <i class="bi {{ $activeConversation->isWindowOpen() ? 'bi-clock-fill' : 'bi-lock-fill' }} me-0.5"></i>
                                         <span id="activeWindowLabel">{{ $activeConversation->windowRemainingFormatted() }}</span>
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center gap-1 gap-md-2 flex-shrink-0">
+                        <div class="d-flex align-items-center gap-1.5 gap-md-2 flex-shrink-0">
                             {{-- Agent Assignment Dropdown --}}
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent">
+                                <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1.5 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnAssignDropdown" title="Assign to team agent">
                                     <i class="bi bi-person text-secondary"></i>
                                     <span id="assignedAgentLabel" class="small fw-semibold text-dark d-none d-sm-inline">
                                         {{ $activeConversation->assignedAgent?->name ?? 'Unassigned' }}
@@ -410,7 +503,7 @@
 
                             {{-- Conversation Lifecycle Status --}}
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Lifecycle Status">
+                                <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 d-flex align-items-center gap-1.5 shadow-2xs hover-bg-light" type="button" data-bs-toggle="dropdown" id="btnStatusDropdown" title="Conversation Lifecycle Status">
                                     @php
                                         $statusConfig = match($activeConversation->status) {
                                             'resolved' => ['color' => 'secondary', 'icon' => 'bi-check2-all', 'label' => 'Resolved'],
@@ -443,36 +536,51 @@
                                 </ul>
                             </div>
 
-                            <button type="button" class="btn btn-light-sm btn-icon rounded-circle" id="btnRefreshChat" title="Refresh messages" style="width: 32px; height: 32px;">
+                            <button type="button" class="btn btn-sm btn-light border btn-icon rounded-circle shadow-2xs hover-dark" id="btnRefreshChat" title="Refresh messages" style="width: 34px; height: 34px;">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>
-                            <button class="btn btn-light-sm d-xl-none px-2 py-1 d-flex align-items-center" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Context">
-                                <i class="bi bi-person-badge"></i>
-                                <span class="d-none d-sm-inline ms-1 small">Profile</span>
+                            <button class="btn btn-sm btn-light border d-xl-none px-2.5 py-1 d-flex align-items-center rounded-pill shadow-2xs" type="button" data-bs-toggle="offcanvas" data-bs-target="#customerContextOffcanvas" title="Customer Context">
+                                <i class="bi bi-person-badge me-1"></i>
+                                <span class="d-none d-sm-inline small fw-semibold">Profile</span>
                             </button>
                         </div>
                     </div>
 
                     {{-- Window Closed Notice (Meta Policy) --}}
-                    <div id="waWindowExpiredNotice" class="alert alert-warning border-0 rounded-0 mb-0 py-2 px-3 small d-flex align-items-center justify-content-between flex-shrink-0 {{ $activeConversation->isWindowOpen() ? 'd-none' : '' }}">
+                    <div id="waWindowExpiredNotice" class="alert alert-warning border-0 rounded-0 mb-0 py-2.5 px-3 small d-flex align-items-center justify-content-between flex-shrink-0 {{ $activeConversation->isWindowOpen() ? 'd-none' : '' }}" style="background-color: #fffbeb; border-bottom: 1px solid #fde68a !important;">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
-                            <span><strong>24-Hour window expired.</strong> Free-form text may fail. Send an approved Meta Template to resume.</span>
+                            <span class="text-dark" style="font-size: 0.8rem;"><strong>24-Hour window expired.</strong> Free-form text may fail. Send an approved Meta Template to resume.</span>
                         </div>
-                        <button type="button" class="btn btn-warning btn-xs rounded-pill px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#sendTemplateModal">
+                        <button type="button" class="btn btn-warning btn-xs rounded-pill px-3 py-1 shadow-2xs fw-semibold" data-bs-toggle="modal" data-bs-target="#sendTemplateModal">
                             <i class="bi bi-lightning-charge-fill me-1"></i>Send Template
                         </button>
                     </div>
 
                     {{-- Scrollable Messages Stream --}}
-                    <div class="flex-grow-1 p-3 overflow-y-auto wa-chat-stream d-flex flex-column gap-3" id="waChatStream">
+                    <div class="flex-grow-1 p-3 overflow-y-auto wa-chat-stream d-flex flex-column gap-2" id="waChatStream">
+                        @php $lastDate = null; @endphp
                         @forelse ($messages as $msg)
+                            @php
+                                $msgDate = $msg->created_at->format('Y-m-d');
+                                $displayDate = $msg->created_at->isToday() ? 'Today' : ($msg->created_at->isYesterday() ? 'Yesterday' : $msg->created_at->format('d M Y'));
+                            @endphp
+                            @if ($lastDate !== $msgDate)
+                                <div class="d-flex justify-content-center my-2 sticky-top" style="z-index: 2;">
+                                    <span class="wa-date-divider">
+                                        {{ $displayDate }}
+                                    </span>
+                                </div>
+                                @php $lastDate = $msgDate; @endphp
+                            @endif
                             @include('admin.whatsapp.partials.message-bubble', ['msg' => $msg])
                         @empty
                             <div class="my-auto text-center text-muted p-5" id="waEmptyMessageNotice">
-                                <i class="bi bi-chat-heart fs-1 d-block mb-2 text-muted opacity-50"></i>
-                                <div class="fw-semibold">No messages yet with this customer</div>
-                                <p class="small text-muted">Type below to start the conversation.</p>
+                                <div class="rounded-circle bg-white shadow-sm p-3 d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-chat-heart text-success fs-2"></i>
+                                </div>
+                                <div class="fw-semibold text-dark">No messages yet with this customer</div>
+                                <p class="small text-muted mb-0">Type below to start the conversation.</p>
                             </div>
                         @endforelse
                     </div>
@@ -495,14 +603,14 @@
                     </div>
 
                     {{-- Bottom Chat Composer --}}
-                    <div class="p-2 p-md-3 border-top bg-white transition-all flex-shrink-0 wa-composer-wrapper" id="waComposerWrapper">
+                    <div class="p-2.5 p-md-3 border-top bg-white transition-all flex-shrink-0 wa-composer-wrapper" id="waComposerWrapper">
                         {{-- Mode Selector: Public WhatsApp Reply vs Private Staff Note --}}
-                        <div class="d-flex align-items-center justify-content-between mb-1.5 mb-md-2 px-1">
-                            <div class="btn-group btn-group-sm rounded-pill p-0.5 bg-light" role="group">
-                                <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-mode active bg-white text-dark shadow-xs" id="btnModeReply" style="font-size: 0.72rem;">
+                        <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                            <div class="btn-group btn-group-sm rounded-pill p-0.5 bg-light border shadow-2xs" role="group">
+                                <button type="button" class="btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode active bg-white text-dark shadow-xs" id="btnModeReply" style="font-size: 0.72rem;">
                                     <i class="bi bi-whatsapp me-1 text-success"></i> Customer Reply
                                 </button>
-                                <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-mode text-muted" id="btnModeNote" style="font-size: 0.72rem;">
+                                <button type="button" class="btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode text-muted" id="btnModeNote" style="font-size: 0.72rem;">
                                     <i class="bi bi-lock-fill me-1 text-warning"></i> Internal Note
                                 </button>
                             </div>
@@ -515,21 +623,21 @@
                             {{-- Hidden file input --}}
                             <input type="file" id="waFileInput" class="d-none" accept="image/*,application/pdf,.doc,.docx,audio/*,video/*">
 
-                            <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0" id="btnAttachFile" title="Attach image or document">
+                            <button type="button" class="btn btn-light border rounded-circle btn-icon p-0 flex-shrink-0 hover-dark" id="btnAttachFile" title="Attach image or document" style="width: 38px; height: 38px;">
                                 <i class="bi bi-paperclip fs-5 text-muted"></i>
                             </button>
 
                             <div class="dropdown">
-                                <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 text-primary" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)">
+                                <button type="button" class="btn btn-light border rounded-circle btn-icon p-0 flex-shrink-0 text-primary hover-dark" data-bs-toggle="dropdown" aria-expanded="false" id="btnQuickReplies" title="Quick Reply Snippets (or type / in message)" style="width: 38px; height: 38px;">
                                     <i class="bi bi-chat-square-quote-fill fs-5"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-4 p-2 wa-quick-reply-dropdown" style="max-height: 280px; overflow-y: auto; width: 300px; z-index: 1060;" id="waQuickReplyMenu">
-                                    <li class="dropdown-header small text-uppercase fw-bold text-muted px-2 py-1">Quick Reply Snippets</li>
+                                    <li class="dropdown-header small text-uppercase fw-bold text-muted px-2 py-1">⚡ Quick Reply Snippets</li>
                                     <li class="text-center py-2 text-muted small"><span class="spinner-border spinner-border-sm"></span> Loading snippets...</li>
                                 </ul>
                             </div>
 
-                            <button type="button" class="btn btn-light rounded-circle btn-icon p-0 flex-shrink-0 text-warning" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Meta Template (Bypasses 24h Window)">
+                            <button type="button" class="btn btn-light border rounded-circle btn-icon p-0 flex-shrink-0 text-warning hover-dark" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="Send Meta Template (Bypasses 24h Window)" style="width: 38px; height: 38px;">
                                 <i class="bi bi-lightning-charge-fill fs-5"></i>
                             </button>
 
@@ -538,11 +646,11 @@
                                 <div id="waSlashSuggestions" class="position-absolute bottom-100 start-0 mb-2 w-100 bg-white rounded-3 shadow-lg border p-1 d-none" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
                                 </div>
                                 <textarea id="waMessageInput" rows="1" class="form-control rounded-4 pe-3 py-2"
-                                          placeholder="Type a message or / for snippets..."
-                                          style="resize: none; max-height: 120px; min-height: 38px; overflow-y: auto; font-size: 0.9rem;"></textarea>
+                                          placeholder="Type a message or / for snippets... (Enter to send, Shift+Enter for newline)"
+                                          style="resize: none; max-height: 120px; min-height: 38px; overflow-y: auto; font-size: 0.9rem; line-height: 1.4;"></textarea>
                             </div>
 
-                            <button type="submit" class="btn btn-success rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm" id="btnSendMessage" title="Send message">
+                            <button type="submit" class="btn btn-success rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm" id="btnSendMessage" title="Send message (Enter)" style="width: 40px; height: 40px;">
                                 <i class="bi bi-send-fill text-white fs-6"></i>
                             </button>
                         </form>
@@ -567,14 +675,13 @@
 
             @else
                 <div class="col-12 col-md-8 col-xl-9 d-flex flex-column align-items-center justify-content-center p-5 text-center bg-white" style="min-height: 500px;">
-                    <div class="wa-empty-illustration mb-3 p-4 rounded-circle bg-emerald-subtle text-emerald" style="width: 80px; height: 80px; display: inline-flex; align-items: center; justify-content: center;">
-                        <i class="bi bi-whatsapp fs-1"></i>
+                    <div class="wa-empty-illustration mb-3 p-4 rounded-circle bg-emerald-subtle text-emerald" style="width: 88px; height: 88px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);">
+                        <i class="bi bi-whatsapp fs-1 text-success"></i>
                     </div>
                     <h5 class="fw-bold text-dark">No Conversation Selected</h5>
-                    <p class="text-muted small" style="max-width: 360px;">Select a conversation from the left to read messages, send replies, or share attachments directly with customers.</p>
+                    <p class="text-muted small" style="max-width: 380px; line-height: 1.5;">Select a conversation from the left to read messages, send replies, or share attachments directly with customers.</p>
                 </div>
             @endif
-
         </div>
     </div>
 </div>
@@ -909,9 +1016,10 @@ document.addEventListener('DOMContentLoaded', function () {
             currentComposerMode = 'reply';
             btnModeReply.className = 'btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode active bg-white text-dark shadow-xs';
             btnModeNote.className = 'btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode text-muted';
+            composerWrapper.classList.remove('internal-note-mode');
             composerWrapper.style.backgroundColor = '#ffffff';
             modeHintText.innerHTML = '<i class="bi bi-info-circle me-1"></i>Sends message directly to customer\'s WhatsApp';
-            messageInput.placeholder = 'Type a message or type / for quick replies...';
+            messageInput.placeholder = 'Type a message or / for snippets... (Enter to send, Shift+Enter for newline)';
             btnAttachFile.classList.remove('d-none');
             const btnSend = document.getElementById('btnSendMessage');
             btnSend.className = 'btn btn-success rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm';
@@ -922,9 +1030,10 @@ document.addEventListener('DOMContentLoaded', function () {
             currentComposerMode = 'note';
             btnModeNote.className = 'btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode active bg-white text-dark shadow-xs';
             btnModeReply.className = 'btn btn-xs rounded-pill px-3 py-1 fw-semibold btn-mode text-muted';
-            composerWrapper.style.backgroundColor = '#fffbeb';
+            composerWrapper.classList.add('internal-note-mode');
+            composerWrapper.style.backgroundColor = '#fffdf5';
             modeHintText.innerHTML = '<strong style="color: #92400e;"><i class="bi bi-lock-fill"></i> Internal Staff Note:</strong> Visible to team only. Customer will NOT receive this.';
-            messageInput.placeholder = 'Type a private team note...';
+            messageInput.placeholder = 'Type an internal team note... (Enter to save)';
             btnAttachFile.classList.add('d-none');
             const btnSend = document.getElementById('btnSendMessage');
             btnSend.className = 'btn btn-warning rounded-circle btn-icon p-0 flex-shrink-0 shadow-sm';
@@ -1124,35 +1233,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const div = document.createElement('div');
-        div.className = 'd-flex justify-content-end mb-2';
+        div.className = 'd-flex justify-content-end mb-2 px-1';
         div.setAttribute('id', `msg-${msg.id}`);
         div.setAttribute('data-message-id', msg.id);
 
         let content = '';
         if (msg.message_type === 'image') {
             const url = msg.media_url ? '{{ asset('storage') }}/' + msg.media_url : '#';
-            content = `<div class="mb-1"><img src="${url}" class="rounded-3 img-fluid" style="max-height: 220px;" alt="Photo"></div>`;
-            if (msg.body) content += `<div>${escapeHtml(msg.body)}</div>`;
+            content = `<div class="mb-1.5 overflow-hidden rounded-3"><img src="${url}" class="rounded-3 img-fluid w-100 shadow-2xs" style="max-height: 240px; object-fit: cover;" alt="Photo"></div>`;
+            if (msg.body) content += `<div class="mb-1 text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body)}</div>`;
         } else if (msg.message_type === 'document') {
-            content = `<div class="p-2 rounded bg-light-subtle d-flex align-items-center gap-2 mb-1">
-                <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
-                <div class="text-truncate fw-semibold small" style="max-width: 180px;">${escapeHtml(msg.media_filename || 'Document')}</div>
+            content = `<div class="p-2.5 rounded-3 bg-white d-flex align-items-center gap-2 mb-1.5 border shadow-2xs">
+                <i class="bi bi-file-earmark-pdf fs-4 text-danger flex-shrink-0"></i>
+                <div class="text-truncate fw-semibold small text-dark" style="max-width: 180px;">${escapeHtml(msg.media_filename || 'Document')}</div>
             </div>`;
-            if (msg.body) content += `<div>${escapeHtml(msg.body)}</div>`;
+            if (msg.body) content += `<div class="mb-1 text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body)}</div>`;
         } else if (msg.message_type === 'template') {
-            const header = msg.media_url ? `<div class="mb-1.5"><img src="${msg.media_url}" class="rounded-3 img-fluid" style="max-height: 200px; object-fit: cover;"></div>` : '';
-            content = `${header}<div class="mb-1"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Approved Meta Template</span></div><div>${escapeHtml(msg.body || '')}</div>`;
+            const header = msg.media_url ? `<div class="mb-1.5 overflow-hidden rounded-3"><img src="${msg.media_url}" class="rounded-3 img-fluid w-100 shadow-2xs" style="max-height: 200px; object-fit: cover;"></div>` : '';
+            content = `${header}<div class="mb-1.5"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.65rem;"><i class="bi bi-lightning-charge-fill me-1 text-warning"></i>Approved Meta Template</span></div><div class="text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body || '')}</div>`;
         } else {
-            content = `<div>${escapeHtml(msg.body || '')}</div>`;
+            content = `<div class="text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body || '')}</div>`;
         }
 
         div.innerHTML = `
             <div class="wa-bubble wa-bubble-outbound p-2.5 px-3">
                 ${content}
-                <div class="d-flex align-items-center justify-content-end gap-1 mt-1 text-muted" style="font-size: 0.68rem;">
+                <div class="d-flex align-items-center justify-content-end gap-1 mt-1 text-muted" style="font-size: 0.68rem; opacity: 0.85;">
                     <span>${time}</span>
-                    <span class="message-status-tick">
-                        <i class="bi bi-check2 text-muted" title="Sent"></i>
+                    <span class="message-status-tick ms-0.5">
+                        <i class="bi bi-check2 text-muted" title="Sent to Meta"></i>
                     </span>
                 </div>
             </div>
@@ -1199,39 +1308,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     const isOut = msg.direction === 'outbound';
                     const wrapper = document.createElement('div');
-                    wrapper.className = `d-flex ${isOut ? 'justify-content-end' : 'justify-content-start'} mb-2`;
+                    wrapper.className = `d-flex ${isOut ? 'justify-content-end' : 'justify-content-start'} mb-2 px-1`;
                     wrapper.setAttribute('id', `msg-${msg.id}`);
                     wrapper.setAttribute('data-message-id', msg.id);
 
                     let bodyHtml = '';
                     if (msg.message_type === 'image' && msg.media_url) {
-                        bodyHtml = `<div class="mb-1"><img src="${msg.media_url}" class="rounded-3 img-fluid" style="max-height: 220px;"></div>`;
-                        if (msg.body) bodyHtml += `<div>${escapeHtml(msg.body)}</div>`;
+                        bodyHtml = `<div class="mb-1.5 overflow-hidden rounded-3"><img src="${msg.media_url}" class="rounded-3 img-fluid w-100 shadow-2xs" style="max-height: 240px; object-fit: cover;"></div>`;
+                        if (msg.body) bodyHtml += `<div class="mb-1 text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body)}</div>`;
                     } else if (msg.message_type === 'document') {
-                        bodyHtml = `<div class="p-2 rounded bg-light-subtle d-flex align-items-center gap-2 mb-1">
-                            <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
-                            <div class="text-truncate fw-semibold small">${escapeHtml(msg.media_filename || 'Document')}</div>
-                            <a href="${msg.media_url || '#'}" target="_blank" class="btn btn-sm btn-light p-1 ms-auto"><i class="bi bi-download"></i></a>
+                        bodyHtml = `<div class="p-2.5 rounded-3 bg-white d-flex align-items-center gap-2 mb-1.5 border shadow-2xs">
+                            <i class="bi bi-file-earmark-pdf fs-4 text-danger flex-shrink-0"></i>
+                            <div class="text-truncate fw-semibold small text-dark" style="max-width: 180px;">${escapeHtml(msg.media_filename || 'Document')}</div>
+                            <a href="${msg.media_url || '#'}" target="_blank" class="btn btn-sm btn-light border rounded-circle p-1 ms-auto" style="width: 30px; height: 30px;"><i class="bi bi-download text-dark"></i></a>
                         </div>`;
-                        if (msg.body) bodyHtml += `<div>${escapeHtml(msg.body)}</div>`;
+                        if (msg.body) bodyHtml += `<div class="mb-1 text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body)}</div>`;
                     } else if (msg.message_type === 'template') {
-                        const header = msg.media_url ? `<div class="mb-1.5"><img src="${msg.media_url}" class="rounded-3 img-fluid" style="max-height: 200px; object-fit: cover;"></div>` : '';
-                        bodyHtml = `${header}<div class="mb-1"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Approved Meta Template</span></div><div>${escapeHtml(msg.body || '')}</div>`;
+                        const header = msg.media_url ? `<div class="mb-1.5 overflow-hidden rounded-3"><img src="${msg.media_url}" class="rounded-3 img-fluid w-100 shadow-2xs" style="max-height: 200px; object-fit: cover;"></div>` : '';
+                        bodyHtml = `${header}<div class="mb-1.5"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.65rem;"><i class="bi bi-lightning-charge-fill me-1 text-warning"></i>Approved Meta Template</span></div><div class="text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body || '')}</div>`;
                     } else {
-                        bodyHtml = `<div>${escapeHtml(msg.body || '')}</div>`;
+                        bodyHtml = `<div class="text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body || '')}</div>`;
                     }
 
-                    const tick = msg.status === 'read' ? '<i class="bi bi-check2-all text-primary fw-bold" title="Read"></i>' :
-                                 (msg.status === 'delivered' ? '<i class="bi bi-check2-all text-muted" title="Delivered"></i>' :
-                                 (msg.status === 'failed' ? '<i class="bi bi-exclamation-circle text-danger" title="Failed"></i>' :
-                                 '<i class="bi bi-check2 text-muted" title="Sent"></i>'));
+                    const tick = msg.status === 'read' ? '<i class="bi bi-check2-all" style="color: #53bdeb; font-weight: 800;" title="Read by customer"></i>' :
+                                 (msg.status === 'delivered' ? '<i class="bi bi-check2-all text-muted" title="Delivered to customer phone"></i>' :
+                                 (msg.status === 'failed' ? '<i class="bi bi-exclamation-circle-fill text-danger" title="Delivery failed"></i>' :
+                                 '<i class="bi bi-check2 text-muted" title="Sent to Meta"></i>'));
 
                     wrapper.innerHTML = `
                         <div class="wa-bubble ${isOut ? 'wa-bubble-outbound' : 'wa-bubble-inbound'} p-2.5 px-3">
                             ${bodyHtml}
-                            <div class="d-flex align-items-center ${isOut ? 'justify-content-end' : 'justify-content-start'} gap-1 mt-1 text-muted" style="font-size: 0.68rem;">
+                            <div class="d-flex align-items-center ${isOut ? 'justify-content-end' : 'justify-content-start'} gap-1 mt-1 text-muted" style="font-size: 0.68rem; opacity: 0.85;">
                                 <span>${msg.created_at_time}</span>
-                                ${isOut ? `<span class="message-status-tick">${tick}</span>` : ''}
+                                ${isOut ? `<span class="message-status-tick ms-0.5">${tick}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -1250,9 +1359,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         const tickSpan = bubble.querySelector('.message-status-tick');
                         if (tickSpan) {
                             if (item.status === 'read') {
-                                tickSpan.innerHTML = '<i class="bi bi-check2-all text-primary fw-bold" title="Read by customer"></i>';
+                                tickSpan.innerHTML = '<i class="bi bi-check2-all" style="color: #53bdeb; font-weight: 800;" title="Read by customer"></i>';
                             } else if (item.status === 'delivered') {
-                                tickSpan.innerHTML = '<i class="bi bi-check2-all text-muted" title="Delivered to phone"></i>';
+                                tickSpan.innerHTML = '<i class="bi bi-check2-all text-muted" title="Delivered to customer phone"></i>';
                             } else if (item.status === 'failed') {
                                 tickSpan.innerHTML = '<i class="bi bi-exclamation-circle-fill text-danger" title="Failed to deliver"></i>';
                             }
