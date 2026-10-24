@@ -1045,6 +1045,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="text-truncate fw-semibold small" style="max-width: 180px;">${escapeHtml(msg.media_filename || 'Document')}</div>
             </div>`;
             if (msg.body) content += `<div>${escapeHtml(msg.body)}</div>`;
+        } else if (msg.message_type === 'template') {
+            const header = msg.media_url ? `<div class="mb-1.5"><img src="${msg.media_url}" class="rounded-3 img-fluid" style="max-height: 200px; object-fit: cover;"></div>` : '';
+            content = `${header}<div class="mb-1"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Approved Meta Template</span></div><div>${escapeHtml(msg.body || '')}</div>`;
         } else {
             content = `<div>${escapeHtml(msg.body || '')}</div>`;
         }
@@ -1117,6 +1120,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             <a href="${msg.media_url || '#'}" target="_blank" class="btn btn-sm btn-light p-1 ms-auto"><i class="bi bi-download"></i></a>
                         </div>`;
                         if (msg.body) bodyHtml += `<div>${escapeHtml(msg.body)}</div>`;
+                    } else if (msg.message_type === 'template') {
+                        const header = msg.media_url ? `<div class="mb-1.5"><img src="${msg.media_url}" class="rounded-3 img-fluid" style="max-height: 200px; object-fit: cover;"></div>` : '';
+                        bodyHtml = `${header}<div class="mb-1"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Approved Meta Template</span></div><div>${escapeHtml(msg.body || '')}</div>`;
                     } else {
                         bodyHtml = `<div>${escapeHtml(msg.body || '')}</div>`;
                     }
