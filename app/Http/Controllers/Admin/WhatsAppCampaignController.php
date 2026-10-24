@@ -217,6 +217,54 @@ class WhatsAppCampaignController extends Controller
             ], 422);
         }
 
+        // Record test template in conversation stream so it appears in live chat
+        try {
+            $cleanPhone = ltrim($phone, '+');
+            $conversation = \App\Models\WhatsAppConversation::firstOrCreate(
+                ['phone' => $cleanPhone],
+                [
+                    'contact_name' => 'Test Recipient',
+                    'status' => 'active',
+                ]
+            );
+
+            $tmplName = $request->input('template_name');
+            $templateModel = \App\Models\WhatsAppTemplate::where('name', $tmplName)->first();
+            $renderedBody = $templateModel && ! empty($templateModel->body_text)
+                ? $templateModel->body_text
+                : "📋 Test Template: {$tmplName}";
+
+            if (! empty($parameters)) {
+                foreach ($parameters as $idx => $p) {
+                    $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $p, $renderedBody);
+                }
+            }
+
+            \App\Models\WhatsAppMessage::create([
+                'whatsapp_conversation_id' => $conversation->id,
+                'direction' => 'outbound',
+                'message_type' => 'template',
+                'body' => $renderedBody,
+                'media_url' => $headerImageUrl,
+                'meta_message_id' => $res['message_id'] ?? null,
+                'status' => 'sent',
+                'metadata' => [
+                    'is_test' => true,
+                    'template_name' => $tmplName,
+                    'parameters' => $parameters,
+                ],
+                'sender_admin_id' => auth('admin')->id(),
+                'sent_at' => now(),
+            ]);
+
+            $conversation->update([
+                'last_message_at' => now(),
+                'last_message_preview' => \Illuminate\Support\Str::limit($renderedBody, 90),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to record test WhatsApp template in conversation', ['error' => $e->getMessage()]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Test WhatsApp template dispatched successfully to {$phone}!",

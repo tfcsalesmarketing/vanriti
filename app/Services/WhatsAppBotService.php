@@ -263,8 +263,7 @@ class WhatsAppBotService
 
         $conversation->update([
             'last_message_at' => now(),
-            'last_message_snippet' => \Illuminate\Support\Str::limit($body, 90),
-            'last_message_direction' => 'outbound',
+            'last_message_preview' => \Illuminate\Support\Str::limit($body, 90),
         ]);
 
         return $msg;

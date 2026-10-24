@@ -72,6 +72,20 @@
                 <div class="small text-secondary">{!! nl2br(e($msg->body)) !!}</div>
             </div>
 
+        {{-- Approved Meta Template Message --}}
+        @elseif ($msg->message_type === 'template')
+            @if ($msg->media_url)
+                <div class="mb-1.5 overflow-hidden rounded-3">
+                    <img src="{{ $msg->media_url }}" alt="Template Header" class="img-fluid rounded-3" style="max-height: 200px; object-fit: cover;">
+                </div>
+            @endif
+            <div class="mb-1.5 d-flex align-items-center gap-1.5">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill" style="font-size: 0.65rem;">
+                    <i class="bi bi-lightning-charge-fill me-1"></i>{{ ucwords(str_replace('_', ' ', $msg->metadata['template_name'] ?? 'Meta Template')) }}
+                </span>
+            </div>
+            <div class="text-break">{!! nl2br(e($msg->body)) !!}</div>
+
         {{-- Plain Text / Interactive / Other --}}
         @else
             <div class="text-break">{!! nl2br(e($msg->body)) !!}</div>

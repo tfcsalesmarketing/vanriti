@@ -316,6 +316,48 @@ class WhatsAppOtpService
                 return $this->failure('WhatsApp welcome could not be sent right now. Please try again.');
             }
 
+            // Record in conversation stream so it shows in chat with customer
+            try {
+                $cleanPhone = ltrim($phone, '+');
+                $conversation = \App\Models\WhatsAppConversation::firstOrCreate(
+                    ['phone' => $cleanPhone],
+                    [
+                        'contact_name' => $name !== 'Customer' ? $name : null,
+                        'status' => 'active',
+                    ]
+                );
+
+                $templateModel = \App\Models\WhatsAppTemplate::where('name', $template)->first();
+                $renderedBody = $templateModel && ! empty($templateModel->body_text)
+                    ? str_replace(['{{1}}', '{1}'], $name, $templateModel->body_text)
+                    : "🌿 Welcome to VANRITI! Hello {$name}, welcome to pure Ayurvedic skincare and wellness.";
+
+                \App\Models\WhatsAppMessage::create([
+                    'whatsapp_conversation_id' => $conversation->id,
+                    'direction' => 'outbound',
+                    'message_type' => 'template',
+                    'body' => $renderedBody,
+                    'meta_message_id' => $body['messages'][0]['id'] ?? null,
+                    'status' => 'sent',
+                    'metadata' => [
+                        'template_name' => $template,
+                        'parameters' => [$name],
+                        'is_welcome' => true,
+                    ],
+                    'sent_at' => now(),
+                ]);
+
+                $conversation->update([
+                    'last_message_at' => now(),
+                    'last_message_preview' => Str::limit($renderedBody, 90),
+                ]);
+            } catch (\Throwable $ex) {
+                Log::warning('Failed to record welcome WhatsApp message in inbox conversation', [
+                    'phone' => $phone,
+                    'error' => $ex->getMessage(),
+                ]);
+            }
+
             return ['result' => '1', 'message' => 'WhatsApp welcome sent.', 'data' => ['phone' => $phone]];
         } catch (\Throwable $e) {
             Log::warning('WhatsApp welcome request failed.', [

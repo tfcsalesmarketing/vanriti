@@ -320,16 +320,38 @@ class WhatsAppChatService
         $metaMsgId = $apiRes['message_id'] ?? null;
         $errorMsg = ($apiRes['success'] ?? false) ? null : ($apiRes['message'] ?? 'Template send failed');
 
-        $bodyPreview = '📋 Template: ' . str_replace('_', ' ', $templateName);
-        if (! empty($parameters)) {
-            $bodyPreview .= ' (' . implode(', ', array_slice($parameters, 0, 2)) . ')';
+        // Resolve authentic rendered template text
+        $templateModel = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
+        if ($templateModel && ! empty($templateModel->body_text)) {
+            $renderedBody = $templateModel->body_text;
+            foreach ($parameters as $idx => $val) {
+                $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $val, $renderedBody);
+            }
+        } else {
+            $presets = [
+                'order_confirmation' => 'Hello {1}, thank you for your order! Your order #{2} is confirmed and will be delivered by {3}.',
+                'abandoned_cart_recovery' => 'Hello {1}, you left items in your VANRITI cart! Complete your order now at {2}',
+                'vanriti_welcome' => 'Hello {1}, welcome to VANRITI! Discover the pure essence of Ayurveda and natural holistic skincare with special offers on your first purchase.',
+                'promotional_offer' => 'Hello {1}, celebrate with us! Enjoy {2} on your next order using coupon code: {3} at checkout.',
+            ];
+            if (isset($presets[$templateName])) {
+                $renderedBody = $presets[$templateName];
+                foreach ($parameters as $idx => $val) {
+                    $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], (string) $val, $renderedBody);
+                }
+            } else {
+                $renderedBody = '📋 Template: ' . str_replace('_', ' ', $templateName);
+                if (! empty($parameters)) {
+                    $renderedBody .= ' (' . implode(', ', array_slice($parameters, 0, 3)) . ')';
+                }
+            }
         }
 
         $message = WhatsAppMessage::create([
             'whatsapp_conversation_id' => $conversation->id,
             'direction' => 'outbound',
             'message_type' => 'template',
-            'body' => $bodyPreview,
+            'body' => $renderedBody,
             'media_url' => $headerImageUrl,
             'meta_message_id' => $metaMsgId,
             'status' => $status,
@@ -345,7 +367,7 @@ class WhatsAppChatService
 
         $conversation->update([
             'last_message_at' => now(),
-            'last_message_preview' => Str::limit($bodyPreview, 60),
+            'last_message_preview' => Str::limit($renderedBody, 90),
         ]);
 
         return [

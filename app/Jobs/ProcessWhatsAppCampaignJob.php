@@ -80,6 +80,54 @@ class ProcessWhatsAppCampaignJob implements ShouldQueue
                         'sent_at' => now(),
                     ]);
                     $campaign->increment('sent_count');
+
+                    // Record in conversation stream so it shows in chat with customer
+                    try {
+                        $cleanPhone = ltrim($recipient->phone, '+');
+                        $conversation = \App\Models\WhatsAppConversation::firstOrCreate(
+                            ['phone' => $cleanPhone],
+                            [
+                                'contact_name' => $recipient->customer_name,
+                                'user_id' => $recipient->user_id,
+                                'status' => 'active',
+                            ]
+                        );
+
+                        $renderedBody = $campaign->template?->body_text ?? "📋 Campaign: {$campaign->name}";
+                        if ($campaign->template && ! empty($parameters)) {
+                            foreach ($parameters as $idx => $param) {
+                                $val = str_replace(['{name}', '{{name}}'], $recipient->customer_name ?: 'Customer', (string) $param);
+                                $renderedBody = str_replace(['{{' . ($idx + 1) . '}}', '{' . ($idx + 1) . '}'], $val, $renderedBody);
+                            }
+                        }
+
+                        \App\Models\WhatsAppMessage::create([
+                            'whatsapp_conversation_id' => $conversation->id,
+                            'direction' => 'outbound',
+                            'message_type' => 'template',
+                            'body' => $renderedBody,
+                            'media_url' => $campaign->header_image_url,
+                            'meta_message_id' => $res['message_id'] ?? null,
+                            'status' => 'sent',
+                            'metadata' => [
+                                'campaign_id' => $campaign->id,
+                                'campaign_name' => $campaign->name,
+                                'template_name' => $campaign->template_name,
+                                'parameters' => $parameters,
+                            ],
+                            'sent_at' => now(),
+                        ]);
+
+                        $conversation->update([
+                            'last_message_at' => now(),
+                            'last_message_preview' => \Illuminate\Support\Str::limit($renderedBody, 90),
+                        ]);
+                    } catch (\Throwable $ex) {
+                        Log::warning('Failed to record campaign message in conversation stream', [
+                            'recipient_id' => $recipient->id,
+                            'error' => $ex->getMessage(),
+                        ]);
+                    }
                 } else {
                     $recipient->update([
                         'status' => 'failed',
