@@ -24,7 +24,7 @@ class ShipMojoService
         ];
     }
 
-    protected function isEnabled(): bool
+    public function isEnabled(): bool
     {
         return (bool) setting('shipmojo_enabled', false)
             && ! empty(setting('shipmojo_public_key', ''))

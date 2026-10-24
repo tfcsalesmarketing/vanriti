@@ -239,20 +239,23 @@ class Order extends Model
     }
 
     /**
-     * Best tracking link available: ShipMojo/courier tracking URL, or guest signed tracking URL.
+     * Branded on-site tracking page for the customer (signed URL).
      */
     public function trackingUrl(): string
+    {
+        return $this->guestTrackingUrl();
+    }
+
+    /**
+     * External carrier / ShipMojo tracking URL fallback (e.g. for direct carrier tracking).
+     */
+    public function externalTrackingUrl(): ?string
     {
         if (! empty($this->tracking_url)) {
             return $this->tracking_url;
         }
 
-        $shipmentUrl = $this->shipments->first()?->tracking_url;
-        if (! empty($shipmentUrl)) {
-            return $shipmentUrl;
-        }
-
-        return $this->guestTrackingUrl();
+        return $this->shipments->first()?->tracking_url;
     }
 
     /**
