@@ -281,21 +281,54 @@ class WhatsAppChatService
     ): array {
         $components = [];
 
-        // 1. Optional Header Component (Image)
-        if (! empty($headerImageUrl)) {
+        // 0. Resolve template definition if registered
+        $templateModel = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
+
+        // 1. Header Component (Image)
+        $isImageHeader = ($templateModel && strtoupper($templateModel->header_type ?? '') === 'IMAGE');
+        $resolvedHeaderUrl = $headerImageUrl;
+        if ($isImageHeader && empty($resolvedHeaderUrl)) {
+            $resolvedHeaderUrl = asset('images/logo.png');
+        }
+
+        if (! empty($resolvedHeaderUrl)) {
             $components[] = [
                 'type' => 'header',
                 'parameters' => [
                     [
                         'type' => 'image',
-                        'image' => ['link' => $headerImageUrl],
+                        'image' => ['link' => $resolvedHeaderUrl],
                     ],
                 ],
             ];
         }
 
         // 2. Body Parameters
-        if (! empty($parameters)) {
+        $expectedCount = null;
+        if ($templateModel && ! empty($templateModel->body_text)) {
+            preg_match_all('/\{\{(\d+)\}\}/', $templateModel->body_text, $matches);
+            $indices = ! empty($matches[1]) ? array_map('intval', $matches[1]) : [];
+            $expectedCount = ! empty($indices) ? max($indices) : 0;
+        }
+
+        if ($expectedCount !== null) {
+            if ($expectedCount > 0) {
+                $bodyParams = [];
+                for ($i = 0; $i < $expectedCount; $i++) {
+                    $val = isset($parameters[$i]) && trim((string) $parameters[$i]) !== ''
+                        ? (string) $parameters[$i]
+                        : ($i === 0 ? ($conversation->contact_name ?: 'Customer') : '—');
+                    $bodyParams[] = [
+                        'type' => 'text',
+                        'text' => $val,
+                    ];
+                }
+                $components[] = [
+                    'type' => 'body',
+                    'parameters' => $bodyParams,
+                ];
+            }
+        } elseif (! empty($parameters)) {
             $bodyParams = [];
             foreach ($parameters as $val) {
                 $bodyParams[] = [
@@ -307,6 +340,11 @@ class WhatsAppChatService
                 'type' => 'body',
                 'parameters' => $bodyParams,
             ];
+        }
+
+        // 3. Fallback language code from template if default
+        if ($templateModel && ! empty($templateModel->language) && $langCode === 'en') {
+            $langCode = $templateModel->language;
         }
 
         $apiRes = $this->apiService->sendTemplateMessage(
@@ -321,7 +359,6 @@ class WhatsAppChatService
         $errorMsg = ($apiRes['success'] ?? false) ? null : ($apiRes['message'] ?? 'Template send failed');
 
         // Resolve authentic rendered template text
-        $templateModel = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
         if ($templateModel && ! empty($templateModel->body_text)) {
             $renderedBody = $templateModel->body_text;
             foreach ($parameters as $idx => $val) {

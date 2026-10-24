@@ -579,10 +579,10 @@
                                 <!-- Dynamically populated parameter fields -->
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-dark">Header Image URL (Optional)</label>
-                                <input type="url" class="form-control rounded-3" id="tmplHeaderImageUrl" placeholder="https://vanriti.com/images/banner.jpg">
-                                <small class="text-muted d-block mt-0.5" style="font-size: 0.72rem;">Only needed if your template requires a Media Image Header.</small>
+                            <div class="mb-3" id="tmplHeaderImageGroup">
+                                <label class="form-label fw-bold small text-dark" id="tmplHeaderImageLabel">Header Image URL (Optional)</label>
+                                <input type="url" class="form-control rounded-3" id="tmplHeaderImageUrl" placeholder="{{ asset('images/logo.png') }}">
+                                <small class="text-muted d-block mt-0.5" id="tmplHeaderImageHelp" style="font-size: 0.72rem;">Only needed if your template requires a Media Image Header.</small>
                             </div>
                         </div>
 
@@ -1316,6 +1316,26 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 customTmplGroup.classList.add('d-none');
                 if (customTmplInput) customTmplInput.required = false;
+            }
+        }
+
+        const headerImgGroup = document.getElementById('tmplHeaderImageGroup');
+        const headerImgInput = document.getElementById('tmplHeaderImageUrl');
+        const headerImgLabel = document.getElementById('tmplHeaderImageLabel');
+        const headerImgHelp = document.getElementById('tmplHeaderImageHelp');
+        const defaultLogoUrl = '{{ asset('images/logo.png') }}';
+
+        if (schema && schema.header_type === 'IMAGE') {
+            if (headerImgLabel) headerImgLabel.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-image me-1"></i>Header Image URL (Required by Meta)</span>';
+            if (headerImgHelp) headerImgHelp.innerHTML = 'This template requires an image header. A default logo URL has been prefilled.';
+            if (headerImgInput && !headerImgInput.value.trim()) {
+                headerImgInput.value = defaultLogoUrl;
+            }
+        } else {
+            if (headerImgLabel) headerImgLabel.textContent = 'Header Image URL (Optional)';
+            if (headerImgHelp) headerImgHelp.textContent = 'Only needed if your template requires a Media Image Header.';
+            if (headerImgInput && headerImgInput.value === defaultLogoUrl) {
+                headerImgInput.value = '';
             }
         }
 

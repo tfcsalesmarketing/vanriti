@@ -210,16 +210,21 @@ class WhatsAppCloudApiService
 
         $to = $this->formatRecipientPhone($to);
 
+        $templateData = [
+            'name' => $templateName,
+            'language' => ['code' => $langCode],
+        ];
+
+        if (! empty($components)) {
+            $templateData['components'] = array_values($components);
+        }
+
         $payload = [
             'messaging_product' => 'whatsapp',
             'recipient_type' => 'individual',
             'to' => $to,
             'type' => 'template',
-            'template' => [
-                'name' => $templateName,
-                'language' => ['code' => $langCode],
-                'components' => $components,
-            ],
+            'template' => $templateData,
         ];
 
         return $this->postMessage($payload);
