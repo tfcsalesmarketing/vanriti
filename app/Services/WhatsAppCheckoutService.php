@@ -116,50 +116,25 @@ class WhatsAppCheckoutService
             return ['success' => false, 'errors' => $errors];
         }
 
-        // 2. Check if the customer already has an active session we can add items into
+        // 2. Calculate WhatsApp isolated shipping for the incoming cart
+        $shippingCalc = $this->shippingService->calculate($merchandiseSubtotal);
+        $shippingCharge = $shippingCalc['charge'];
+        $grandTotal = round($merchandiseSubtotal + $shippingCharge, 2);
+
+        $cartData = [
+            'items' => $resolvedItems,
+            'subtotal' => $merchandiseSubtotal,
+            'shipping_charge' => $shippingCharge,
+            'grand_total' => $grandTotal,
+        ];
+
+        // Check if customer already has an active session we can update
         $existingSession = WhatsAppCheckoutSession::findActiveForPhone($phone);
 
-        if ($existingSession && ! $existingSession->isTerminal() && ! empty($existingSession->cart_data['items'])) {
-            $existingItems = (array) ($existingSession->cart_data['items'] ?? []);
-
-            foreach ($resolvedItems as $newItem) {
-                $foundIdx = null;
-                foreach ($existingItems as $idx => $oldItem) {
-                    if (($oldItem['product_id'] ?? null) === $newItem['product_id']
-                        && ($oldItem['product_variant_id'] ?? null) === $newItem['product_variant_id']) {
-                        $foundIdx = $idx;
-                        break;
-                    }
-                }
-
-                if ($foundIdx !== null) {
-                    $existingItems[$foundIdx]['quantity'] += $newItem['quantity'];
-                    $existingItems[$foundIdx]['line_total'] = round($existingItems[$foundIdx]['unit_price'] * $existingItems[$foundIdx]['quantity'], 2);
-                } else {
-                    $existingItems[] = $newItem;
-                }
-            }
-
-            $mergedSubtotal = 0.0;
-            foreach ($existingItems as $item) {
-                $mergedSubtotal += (float) ($item['line_total'] ?? 0);
-            }
-            $mergedSubtotal = round($mergedSubtotal, 2);
-
-            $shippingCalc = $this->shippingService->calculate($mergedSubtotal);
-            $shippingCharge = $shippingCalc['charge'];
-            $grandTotal = round($mergedSubtotal + $shippingCharge, 2);
-
-            $cartData = [
-                'items' => $existingItems,
-                'subtotal' => $mergedSubtotal,
-                'shipping_charge' => $shippingCharge,
-                'grand_total' => $grandTotal,
-            ];
-
+        if ($existingSession && ! $existingSession->isTerminal()) {
             $existingSession->update([
                 'cart_data' => $cartData,
-                'subtotal' => $mergedSubtotal,
+                'subtotal' => $merchandiseSubtotal,
                 'shipping_charge' => $shippingCharge,
                 'grand_total' => $grandTotal,
                 'last_message_id' => $messageId,
@@ -169,44 +144,32 @@ class WhatsAppCheckoutService
             if (! empty($existingSession->customer_name) && ! empty($existingSession->pincode) && ! empty($existingSession->address_data['address_line1'])) {
                 $existingSession->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
 
-                $addedMsg = "🌿 *Added to your order!*\nYour cart has been updated with the new item(s).";
-                $this->apiService->sendTextMessage($phone, $addedMsg);
+                $updatedMsg = "🌿 *Your order has been updated!*\nYour cart now contains only the new item(s).";
+                $this->apiService->sendTextMessage($phone, $updatedMsg);
 
                 $this->sendOrderReviewMessage($existingSession);
 
-                return ['success' => true, 'session' => $existingSession, 'action' => 'cart_merged'];
+                return ['success' => true, 'session' => $existingSession, 'action' => 'cart_updated'];
             }
 
             if (empty($existingSession->customer_name)) {
-                $prompt = "🌿 Items added to your cart!\nPlease enter your full name to continue with your order.";
+                $prompt = "Welcome to VANRITI! 🌿\nPlease enter your full name to continue with your order.";
                 $this->apiService->sendTextMessage($phone, $prompt);
                 return ['success' => true, 'session' => $existingSession, 'action' => 'name_requested'];
             }
 
             if (empty($existingSession->pincode)) {
-                $prompt = "🌿 Items added to your cart!\nPlease enter your 6-digit delivery PIN code.";
+                $prompt = "Please enter your 6-digit delivery PIN code.";
                 $this->apiService->sendTextMessage($phone, $prompt);
                 return ['success' => true, 'session' => $existingSession, 'action' => 'pincode_requested'];
             }
 
-            $prompt = "🌿 Items added to your cart!\nPlease enter your complete delivery address.";
+            $prompt = "Please enter your complete delivery address.";
             $this->apiService->sendTextMessage($phone, $prompt);
             return ['success' => true, 'session' => $existingSession, 'action' => 'address_requested'];
         }
 
-        // Calculate WhatsApp isolated shipping
-        $shippingCalc = $this->shippingService->calculate($merchandiseSubtotal);
-        $shippingCharge = $shippingCalc['charge'];
-        $grandTotal = round($merchandiseSubtotal + $shippingCharge, 2);
-
         // 3. Create fresh checkout session when no active session exists
-        $cartData = [
-            'items' => $resolvedItems,
-            'subtotal' => $merchandiseSubtotal,
-            'shipping_charge' => $shippingCharge,
-            'grand_total' => $grandTotal,
-        ];
-
         $session = WhatsAppCheckoutSession::createForCustomer($phone, $waId, $cartData);
         $session->update([
             'subtotal' => $merchandiseSubtotal,
@@ -530,9 +493,9 @@ class WhatsAppCheckoutService
             $threshold = (float) $shippingCalc['free_threshold'];
             $diff = max(0, round($threshold - $subtotal, 2));
 
-            $prompt = "🌿 *Add More Items to Your Order*\n\n"
+            $prompt = "🌿 *Update Your Cart*\n\n"
                 . ($diff > 0 ? "You need just *" . format_price($diff) . "* more to unlock *FREE Delivery*!\n\n" : "")
-                . "Browse our catalogue below and send the items you'd like to add. Any items you send will be added directly to your current order! 🌿";
+                . "Browse our catalogue below and send your cart with the items you'd like in your order. 🌿";
 
             $this->apiService->sendTextMessage($session->phone, $prompt);
             $this->apiService->sendCatalogueMessage($session->phone);
