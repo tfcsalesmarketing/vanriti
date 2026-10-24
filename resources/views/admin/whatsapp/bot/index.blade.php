@@ -86,6 +86,39 @@
         </div>
     </div>
 
+    <!-- Bot Master Status Banner -->
+    @php
+        $botAutoReplyEnabled = (bool) setting('whatsapp_bot_auto_reply_enabled', false);
+    @endphp
+
+    @if (!$botAutoReplyEnabled)
+        <div class="alert alert-warning border-0 rounded-4 shadow-sm p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <span class="p-2.5 rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-shield-exclamation fs-5"></i></span>
+                <div>
+                    <div class="fw-bold text-dark">Chatbot Auto-Replies are currently PAUSED (Disabled)</div>
+                    <div class="small text-muted">Inbound customer messages will sit cleanly in your Live Inbox for human staff without sending unsolicited bot replies.</div>
+                </div>
+            </div>
+            <a href="{{ route('admin.settings.index') }}#pane-whatsapp" class="btn btn-dark btn-sm rounded-pill px-3 py-2 fw-semibold">
+                <i class="bi bi-toggle-on text-success me-1"></i> Turn ON in Settings
+            </a>
+        </div>
+    @else
+        <div class="alert alert-success border-0 rounded-4 shadow-sm p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <span class="p-2.5 rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-robot fs-5"></i></span>
+                <div>
+                    <div class="fw-bold text-success-emphasis">Chatbot Auto-Replies are ACTIVE</div>
+                    <div class="small text-muted">Active keyword rules below will intercept incoming messages and send automated replies.</div>
+                </div>
+            </div>
+            <a href="{{ route('admin.settings.index') }}#pane-whatsapp" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold">
+                <i class="bi bi-gear-fill me-1"></i> Manage in Settings
+            </a>
+        </div>
+    @endif
+
     <!-- Navigation Tabs -->
     <ul class="nav nav-pills mb-4 gap-2">
         <li class="nav-item">

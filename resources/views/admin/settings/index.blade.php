@@ -12,10 +12,11 @@
 @endphp
     @if ($type === 'boolean')
         <div class="p-2.5 rounded-3 border bg-light-subtle h-100 d-flex align-items-center justify-content-between">
-            <div>
-                <label class="form-check-label small fw-semibold cursor-pointer d-block" for="setting_{{ $key }}">
+            <div class="pe-2">
+                <label class="form-check-label small fw-semibold cursor-pointer d-block mb-0.5" for="setting_{{ $key }}">
                     {{ $label }}
                 </label>
+                <code class="text-muted small" style="font-size: 0.70rem;">{{ $key }}</code>
             </div>
             <div class="form-check form-switch m-0 ps-0">
                 <input type="checkbox" class="form-check-input" style="width: 2.2em; height: 1.2em; cursor: pointer;"
@@ -25,7 +26,10 @@
         </div>
     @else
         <div>
-            <label class="form-label small fw-semibold text-muted mb-1">{{ $label }}</label>
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label small fw-semibold text-muted mb-0">{{ $label }}</label>
+                <code class="text-muted" style="font-size: 0.70rem;">{{ $key }}</code>
+            </div>
             @if ($type === 'textarea')
                 <textarea name="{{ $key }}" class="form-control form-control-sm" rows="3">{{ $val }}</textarea>
             @elseif ($type === 'select')
@@ -295,17 +299,131 @@
         {{-- Pane 5: WhatsApp Meta API --}}
         <div class="tab-pane fade" id="pane-whatsapp" role="tabpanel">
             @if (isset($settingsGrouped['whatsapp']))
-                <div class="card table-card">
-                    <div class="card-header d-flex align-items-center gap-2">
-                        <i class="bi bi-whatsapp text-success"></i>
-                        <span>WhatsApp Cloud API & Commerce Automated Templates</span>
+                @php
+                    $waSettings = $settingsGrouped['whatsapp']->keyBy('key');
+                    $credKeys = ['whatsapp_phone_number_id', 'whatsapp_waba_id', 'whatsapp_access_token'];
+                    $autoReplyKeys = [
+                        'whatsapp_bot_auto_reply_enabled',
+                        'whatsapp_auto_welcome_enabled',
+                        'whatsapp_welcome_template_name',
+                        'whatsapp_away_message_enabled',
+                        'whatsapp_away_message_text',
+                    ];
+                    $timingKeys = [
+                        'whatsapp_away_timing_mode',
+                        'whatsapp_business_hours_start',
+                        'whatsapp_business_hours_end',
+                        'whatsapp_business_days',
+                        'whatsapp_timezone',
+                    ];
+                    $commerceKeys = [
+                        'whatsapp_otp_enabled',
+                        'whatsapp_template_name',
+                        'whatsapp_orders_enabled',
+                        'whatsapp_order_template_name',
+                        'whatsapp_delivery_eta_days',
+                        'whatsapp_shipping_notifications_enabled',
+                        'whatsapp_dispatch_template_name',
+                        'whatsapp_out_for_delivery_template_name',
+                        'whatsapp_delivered_template_name',
+                        'whatsapp_recovery_enabled',
+                        'whatsapp_recovery_template_name',
+                        'whatsapp_recovery_delay_hours',
+                    ];
+                    $handledKeys = array_merge($credKeys, $autoReplyKeys, $timingKeys, $commerceKeys);
+                @endphp
+
+                {{-- Card 1: Credentials & Connectivity --}}
+                <div class="card table-card mb-3">
+                    <div class="card-header d-flex align-items-center justify-content-between py-2.5">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-lock text-success"></i>
+                            <span class="fw-semibold">1. Meta Cloud API Credentials &amp; Connection</span>
+                        </div>
+                        <a href="{{ route('admin.whatsapp.profile') }}" class="btn btn-xs btn-outline-success btn-sm py-0.5 px-2 text-decoration-none">
+                            <i class="bi bi-activity me-1"></i>Check Connection Health
+                        </a>
                     </div>
                     <div class="card-body p-3">
                         <div class="row g-3">
-                            @foreach ($settingsGrouped['whatsapp'] as $setting)
-                                <div class="{{ $setting->type === 'boolean' ? 'col-12 col-md-6' : 'col-12 col-md-4' }}">
-                                    @php $renderSettingField($setting); @endphp
-                                </div>
+                            @foreach ($credKeys as $k)
+                                @if (isset($waSettings[$k]))
+                                    <div class="col-12 col-md-4">
+                                        @php $renderSettingField($waSettings[$k]); @endphp
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Card 2: Auto-Replies, Bot & Away Message Gating --}}
+                <div class="card table-card mb-3 border-success-subtle shadow-sm">
+                    <div class="card-header bg-success-subtle text-success-emphasis d-flex align-items-center justify-content-between py-2.5">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-robot fs-5"></i>
+                            <span class="fw-bold">2. Chatbot Auto-Replies, Welcome Message &amp; Away Responder</span>
+                        </div>
+                        <span class="badge bg-success text-white px-2.5 py-1">Admin Controlled Safeguards</span>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="alert alert-light border small py-2 px-3 mb-3 rounded-3 text-muted">
+                            <i class="bi bi-info-circle-fill text-success me-1"></i>
+                            To prevent sending unwanted messages to customers, automated replies only send when their individual switch below is turned <strong>ON</strong>.
+                        </div>
+                        <div class="row g-3">
+                            @foreach ($autoReplyKeys as $k)
+                                @if (isset($waSettings[$k]))
+                                    <div class="{{ $waSettings[$k]->type === 'boolean' ? 'col-12 col-md-6' : ($waSettings[$k]->type === 'textarea' ? 'col-12' : 'col-12 col-md-6') }}">
+                                        @php $renderSettingField($waSettings[$k]); @endphp
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Card 3: Away Timings & Business Hours --}}
+                <div class="card table-card mb-3">
+                    <div class="card-header d-flex align-items-center gap-2 py-2.5">
+                        <i class="bi bi-clock-history text-primary"></i>
+                        <span class="fw-semibold">3. Away Timings &amp; Business Hours Schedule</span>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            @foreach ($timingKeys as $k)
+                                @if (isset($waSettings[$k]))
+                                    <div class="col-12 col-md-4">
+                                        @php $renderSettingField($waSettings[$k]); @endphp
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Card 4: Automated E-Commerce Notifications --}}
+                <div class="card table-card mb-3">
+                    <div class="card-header d-flex align-items-center gap-2 py-2.5">
+                        <i class="bi bi-bag-check text-secondary"></i>
+                        <span class="fw-semibold">4. Automated E-Commerce Customer Journeys (OTP, Orders &amp; Tracking)</span>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            @foreach ($commerceKeys as $k)
+                                @if (isset($waSettings[$k]))
+                                    <div class="{{ $waSettings[$k]->type === 'boolean' ? 'col-12 col-md-6' : 'col-12 col-md-4' }}">
+                                        @php $renderSettingField($waSettings[$k]); @endphp
+                                    </div>
+                                @endif
+                            @endforeach
+
+                            @foreach ($waSettings as $key => $setting)
+                                @if (!in_array($key, $handledKeys, true))
+                                    <div class="{{ $setting->type === 'boolean' ? 'col-12 col-md-6' : 'col-12 col-md-4' }}">
+                                        @php $renderSettingField($setting); @endphp
+                                    </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>

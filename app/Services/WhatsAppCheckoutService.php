@@ -232,8 +232,8 @@ class WhatsAppCheckoutService
                 ], $messageId);
             }
 
-            // Away Auto-Responder (if explicitly enabled in settings)
-            if (setting('whatsapp_away_message_enabled', false)) {
+            // Away Auto-Responder (if explicitly enabled in settings and matches business hours/timing mode)
+            if (setting('whatsapp_away_message_enabled', false) && $this->shouldSendAwayMessage()) {
                 $awayText = (string) setting('whatsapp_away_message_text', '');
                 if ($awayText !== '') {
                     $this->apiService->sendTextMessage($phone, $awayText);
@@ -946,5 +946,41 @@ class WhatsAppCheckoutService
         }
 
         return ['found' => false, 'product' => null, 'variant' => null];
+    }
+
+    /**
+     * Determine if an away message should be sent based on timing settings.
+     */
+    protected function shouldSendAwayMessage(): bool
+    {
+        $mode = (string) setting('whatsapp_away_timing_mode', 'outside_hours');
+        if ($mode === 'always') {
+            return true;
+        }
+
+        $timezone = (string) setting('whatsapp_timezone', 'Asia/Kolkata');
+        try {
+            $now = now()->setTimezone($timezone);
+        } catch (\Throwable $e) {
+            $now = now();
+        }
+
+        // Check working days (e.g. Mon,Tue,Wed,Thu,Fri,Sat)
+        $workingDays = array_map('trim', explode(',', (string) setting('whatsapp_business_days', 'Mon,Tue,Wed,Thu,Fri,Sat')));
+        $currentDay = $now->format('D'); // Mon, Tue, etc.
+        if (!in_array($currentDay, $workingDays, true)) {
+            return true; // Off day, so away message sends
+        }
+
+        // Check working hours (e.g. 10:00 to 19:00)
+        $startStr = (string) setting('whatsapp_business_hours_start', '10:00');
+        $endStr = (string) setting('whatsapp_business_hours_end', '19:00');
+        $currentTimeStr = $now->format('H:i');
+
+        if ($currentTimeStr < $startStr || $currentTimeStr >= $endStr) {
+            return true; // Outside business hours, so away message sends
+        }
+
+        return false; // Currently within business hours
     }
 }
