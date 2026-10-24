@@ -541,6 +541,6 @@ function submitLabels(form) {
     if (rowAll) rowAll.addEventListener('change', e => toggleAll(e.target.checked));
     if (toolbarAll) toolbarAll.addEventListener('change', e => toggleAll(e.target.checked));
 })();
+@endif
 </script>
 @endpush
-@endif
