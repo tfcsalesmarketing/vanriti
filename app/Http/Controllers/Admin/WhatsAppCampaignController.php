@@ -55,9 +55,11 @@ class WhatsAppCampaignController extends Controller
         // Calculate audience estimates
         $estimates = [
             'all' => User::whereNotNull('phone')->where('phone', '!=', '')->count(),
-            'abandoned_cart' => Cart::has('items')
-                ->where('updated_at', '>=', now()->subDays(7))
-                ->whereHas('user', fn($q) => $q->whereNotNull('phone'))
+            'abandoned_cart' => User::whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->whereHas('carts', function ($q) {
+                    $q->has('items')->where('updated_at', '>=', now()->subDays(7));
+                })
                 ->count(),
             'buyers' => User::whereHas('orders', fn($q) => $q->where('payment_status', 'paid'))->count(),
             'inactive' => User::whereNotNull('phone')
@@ -65,7 +67,9 @@ class WhatsAppCampaignController extends Controller
                 ->count(),
         ];
 
-        return view('admin.whatsapp.campaigns.create', compact('estimates'));
+        $approvedTemplates = \App\Models\WhatsAppTemplate::approved()->orderBy('name')->get();
+
+        return view('admin.whatsapp.campaigns.create', compact('estimates', 'approvedTemplates'));
     }
 
     /**
@@ -246,17 +250,18 @@ class WhatsAppCampaignController extends Controller
                 $recipients[] = ['phone' => $u->phone, 'name' => $u->name];
             }
         } elseif ($segment === 'abandoned_cart') {
-            $carts = Cart::has('items')
-                ->where('updated_at', '>=', now()->subDays(7))
-                ->with('user')
-                ->get();
+            $users = User::whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->whereHas('carts', function ($q) {
+                    $q->has('items')->where('updated_at', '>=', now()->subDays(7));
+                })
+                ->get(['name', 'phone']);
 
             $seen = [];
-            foreach ($carts as $c) {
-                $phone = $c->user?->phone ?: $c->customer_phone;
-                if ($phone && ! isset($seen[$phone])) {
-                    $seen[$phone] = true;
-                    $recipients[] = ['phone' => $phone, 'name' => $c->user?->name ?: 'Customer'];
+            foreach ($users as $u) {
+                if ($u->phone && ! isset($seen[$u->phone])) {
+                    $seen[$u->phone] = true;
+                    $recipients[] = ['phone' => $u->phone, 'name' => $u->name ?: 'Customer'];
                 }
             }
         } elseif ($segment === 'buyers') {

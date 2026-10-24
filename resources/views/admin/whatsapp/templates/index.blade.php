@@ -43,11 +43,95 @@
         </div>
     @endif
 
-    @if (session('error'))
+    @if (session('warning'))
         <div class="alert alert-warning alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+            <i class="bi bi-exclamation-circle-fill fs-5 text-warning"></i>
+            <div>{{ session('warning') }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
             <div>{{ session('error') }}</div>
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if ($errors->has('waba_id'))
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+            <i class="bi bi-x-circle-fill fs-5 text-danger"></i>
+            <div>{{ $errors->first('waba_id') }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    {{-- WABA ID Configuration Card --}}
+    @if (empty($wabaId))
+        <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-warning border-4" style="background: #fffdf5;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 44px; height: 44px; background: rgba(245, 158, 11, 0.15); color: #d97706;">
+                        <i class="bi bi-shield-lock-fill fs-5"></i>
+                    </span>
+                    <div class="flex-grow-1">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                            <h5 class="fw-bold mb-0 text-dark">Action Required: Configure WhatsApp Business Account (WABA) ID</h5>
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1">Missing Configuration</span>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Meta Cloud API manages message templates at the <strong>WhatsApp Business Account (WABA)</strong> level, separate from the Phone Number ID. To sync approved templates or submit new ones, enter your 15–16 digit WABA ID below.
+                        </p>
+
+                        <div class="p-3 rounded-3 bg-white border mb-3 small">
+                            <strong class="d-block text-dark mb-1"><i class="bi bi-question-circle me-1 text-primary"></i> Where to find your WABA ID:</strong>
+                            <ol class="mb-0 ps-3 text-muted">
+                                <li>Open <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener" class="fw-semibold text-primary text-decoration-none">Meta for Developers <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem;"></i></a> and select your App.</li>
+                                <li>In the left sidebar, click <strong>WhatsApp &rarr; API Setup</strong>.</li>
+                                <li>Under <strong>Step 1 (Send and receive messages)</strong>, look right below the Phone Number ID for <strong>WhatsApp Business Account ID</strong> (a 15–16 digit number).</li>
+                            </ol>
+                        </div>
+
+                        <form action="{{ route('admin.whatsapp.templates.waba-id') }}" method="POST" class="d-flex flex-wrap align-items-center gap-2">
+                            @csrf
+                            <div class="input-group" style="max-width: 420px;">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-key-fill"></i></span>
+                                <input type="text" name="waba_id" class="form-control font-monospace border-start-0" placeholder="e.g. 104829482719482" value="{{ old('waba_id') }}" required pattern="[0-9]{10,25}">
+                            </div>
+                            <button type="submit" class="btn btn-warning text-dark fw-semibold rounded-pill px-4">
+                                <i class="bi bi-check-circle-fill me-1"></i> Save WABA ID & Sync
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @else
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light-subtle">
+            <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                        <i class="bi bi-check-circle me-1"></i> WABA Connected
+                    </span>
+                    <span class="small text-muted">
+                        Account ID: <code class="text-dark fw-bold font-monospace">{{ $wabaId }}</code>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none p-0" data-bs-toggle="collapse" data-bs-target="#editWabaCollapse">
+                    <i class="bi bi-pencil me-1"></i> Change WABA ID
+                </button>
+            </div>
+            <div class="collapse px-3 pb-3" id="editWabaCollapse">
+                <form action="{{ route('admin.whatsapp.templates.waba-id') }}" method="POST" class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+                    @csrf
+                    <div class="input-group input-group-sm" style="max-width: 380px;">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
+                        <input type="text" name="waba_id" class="form-control font-monospace" value="{{ $wabaId }}" required pattern="[0-9]{10,25}">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3">Update & Sync</button>
+                </form>
+            </div>
         </div>
     @endif
 

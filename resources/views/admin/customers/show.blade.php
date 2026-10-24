@@ -397,70 +397,145 @@
 {{-- Modal: Send WhatsApp Message / Meta Template to Customer --}}
 @if ($user->phone)
 <div class="modal fade" id="sendCustomerWhatsAppModal" tabindex="-1" aria-labelledby="sendCustomerWhatsAppModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-success text-white">
-                <h6 class="modal-title fw-bold" id="sendCustomerWhatsAppModalLabel">
-                    <i class="bi bi-whatsapp me-1"></i> Send WhatsApp to {{ $user->name }}
-                </h6>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header text-white p-3 px-4" style="background: linear-gradient(135deg, #075E54 0%, #128C7E 100%);">
+                <div class="d-flex align-items-center gap-2.5">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white text-success shadow-xs" style="width: 36px; height: 36px;">
+                        <i class="bi bi-whatsapp fs-5"></i>
+                    </span>
+                    <div>
+                        <h6 class="modal-title fw-bold mb-0 text-white" id="sendCustomerWhatsAppModalLabel">Send WhatsApp Message</h6>
+                        <small class="text-white-50" style="font-size: 0.75rem;">To {{ $user->name }} (+{{ $user->getCleanPhone() }})</small>
+                    </div>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{{ route('admin.customers.send-whatsapp', $user->id) }}">
                 @csrf
-                <div class="modal-body p-3">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Recipient Mobile</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light"><i class="bi bi-phone"></i></span>
-                            <input type="text" class="form-control" value="+{{ $user->getCleanPhone() }}" readonly>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Message Type</label>
-                        <div class="d-flex gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="typeTemplate" value="template" checked onchange="toggleMessageType()">
-                                <label class="form-check-label small" for="typeTemplate">Approved Meta Template</label>
+                <div class="modal-body p-4 bg-light-subtle">
+                    <div class="row g-3">
+                        {{-- Left Column: Form Controls --}}
+                        <div class="col-12 col-md-7">
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Recipient Mobile</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="bi bi-phone text-muted"></i></span>
+                                    <input type="text" class="form-control bg-white font-monospace" value="+{{ $user->getCleanPhone() }}" readonly>
+                                </div>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="typeDirect" value="direct" {{ $conversation && $conversation->isWindowOpen() ? '' : 'disabled' }} onchange="toggleMessageType()">
-                                <label class="form-check-label small" for="typeDirect">
-                                    Direct Message
-                                    @if ($conversation && $conversation->isWindowOpen())
-                                        <span class="badge bg-success" style="font-size:0.65rem;">Window Open</span>
-                                    @else
-                                        <span class="badge bg-secondary" style="font-size:0.65rem;">Window Closed</span>
-                                    @endif
-                                </label>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Message Type</label>
+                                <div class="d-flex gap-3 p-2 bg-white rounded-3 border">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input" type="radio" name="type" id="typeTemplate" value="template" checked onchange="toggleMessageType()">
+                                        <label class="form-check-label small fw-medium" for="typeTemplate">Approved Meta Template</label>
+                                    </div>
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input" type="radio" name="type" id="typeDirect" value="direct" {{ $conversation && $conversation->isWindowOpen() ? '' : 'disabled' }} onchange="toggleMessageType()">
+                                        <label class="form-check-label small fw-medium" for="typeDirect">
+                                            Direct Message
+                                            @if ($conversation && $conversation->isWindowOpen())
+                                                <span class="badge bg-success" style="font-size:0.65rem;">Window Open</span>
+                                            @else
+                                                <span class="badge bg-secondary" style="font-size:0.65rem;">Window Closed</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Template Selection Group --}}
+                            <div id="templateGroup" class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Select Meta Template</label>
+                                <select name="template_name" id="customerTemplateSelect" class="form-select form-select-sm rounded-3" required onchange="updateCustomerTplPreview()">
+                                    @forelse ($approvedTemplates as $tpl)
+                                        <option value="{{ $tpl->name }}"
+                                                data-body="{{ e($tpl->body_text) }}"
+                                                data-header="{{ e($tpl->header_text ?? '') }}"
+                                                data-headertype="{{ $tpl->header_type ?? 'NONE' }}"
+                                                data-footer="{{ e($tpl->footer_text ?? '') }}"
+                                                data-buttons="{{ json_encode($tpl->buttons ?? []) }}">
+                                            {{ $tpl->name }} ({{ strtoupper($tpl->language) }} - {{ ucfirst($tpl->category) }})
+                                        </option>
+                                    @empty
+                                        <option value="vanriti_welcome_v1"
+                                                data-body="Namaste {{ $user->name }}, welcome to Vanriti Ayurveda! Explore our authentic formulations handcrafted for pure wellness."
+                                                data-header="Welcome to Vanriti 🌿"
+                                                data-headertype="TEXT"
+                                                data-footer="Vanriti Pure Ayurveda"
+                                                data-buttons='[{"type":"QUICK_REPLY","text":"Shop Now"}]'>
+                                            vanriti_welcome_v1 (Default Welcome)
+                                        </option>
+                                        <option value="vanriti_order_confirmed_v1"
+                                                data-body="Hello {{ $user->name }}, your Vanriti order is confirmed and being prepared! Tracking will be updated shortly."
+                                                data-header="Order Confirmed 📦"
+                                                data-headertype="TEXT"
+                                                data-footer="Vanriti Customer Care"
+                                                data-buttons='[{"type":"QUICK_REPLY","text":"Track Order"}]'>
+                                            vanriti_order_confirmed_v1 (Order Confirmation)
+                                        </option>
+                                    @endforelse
+                                </select>
+                                <div class="d-flex align-items-center gap-1 text-muted mt-1.5" style="font-size:0.73rem;">
+                                    <i class="bi bi-info-circle text-primary"></i>
+                                    <span>Variable <code>@{{ 1 }}</code> will automatically populate with <strong>{{ $user->name }}</strong>.</span>
+                                </div>
+                            </div>
+
+                            {{-- Direct Message Group --}}
+                            <div id="directGroup" class="mb-3 d-none">
+                                <label class="form-label small fw-semibold text-dark">Direct Message Text</label>
+                                <textarea name="message" id="customerDirectMessage" class="form-control form-control-sm rounded-3" rows="4" placeholder="Type direct WhatsApp message here..." oninput="updateCustomerTplPreview()"></textarea>
+                                <small class="text-muted d-block mt-1" style="font-size:0.72rem;">Sends free-form text within the customer's active 24-hour window.</small>
                             </div>
                         </div>
-                    </div>
 
-                    {{-- Template Selection Group --}}
-                    <div id="templateGroup" class="mb-3">
-                        <label class="form-label small fw-semibold">Select Meta Template</label>
-                        <select name="template_name" class="form-select form-select-sm" required>
-                            @forelse ($approvedTemplates as $tpl)
-                                <option value="{{ $tpl->name }}">{{ $tpl->name }} ({{ strtoupper($tpl->language) }} - {{ ucfirst($tpl->category) }})</option>
-                            @empty
-                                <option value="vanriti_welcome_v1">vanriti_welcome_v1 (Default Welcome)</option>
-                                <option value="vanriti_order_confirmed_v1">vanriti_order_confirmed_v1 (Order Confirmation)</option>
-                            @endforelse
-                        </select>
-                        <small class="text-muted d-block mt-1" style="font-size:0.72rem;">Customer name parameter is populated automatically.</small>
-                    </div>
+                        {{-- Right Column: Live WhatsApp Bubble Preview --}}
+                        <div class="col-12 col-md-5">
+                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">Live WhatsApp Preview</label>
+                            <div class="rounded-4 p-3 border shadow-xs d-flex flex-column justify-content-between" style="min-height: 270px; background-color: #efeae2; background-image: radial-gradient(#d4cbbe 1px, transparent 1px); background-size: 16px 16px;">
+                                <div>
+                                    <div class="text-center mb-2">
+                                        <span class="badge bg-white text-muted px-2 py-0.5 shadow-2xs rounded-pill" style="font-size: 0.65rem;">TODAY</span>
+                                    </div>
 
-                    {{-- Direct Message Group --}}
-                    <div id="directGroup" class="mb-3 d-none">
-                        <label class="form-label small fw-semibold">Direct Message</label>
-                        <textarea name="message" class="form-control form-control-sm" rows="3" placeholder="Type direct WhatsApp reply..."></textarea>
+                                    {{-- WhatsApp outbound bubble --}}
+                                    <div class="p-2.5 rounded-3 shadow-xs bg-white ms-auto border-0 position-relative" style="max-width: 95%; border-top-right-radius: 2px;">
+                                        {{-- Header --}}
+                                        <div id="customerTplPreviewHeader" class="fw-bold small text-dark mb-1 pb-1 border-bottom" style="font-size: 0.8rem; display: none;"></div>
+
+                                        {{-- Body --}}
+                                        <div id="customerTplPreviewBody" class="small text-dark" style="font-size: 0.82rem; white-space: pre-line; line-height: 1.4;">
+                                            Select a template to preview...
+                                        </div>
+
+                                        {{-- Footer --}}
+                                        <div id="customerTplPreviewFooter" class="text-muted mt-1.5 pt-1" style="font-size: 0.7rem; display: none;"></div>
+
+                                        {{-- Time and read ticks --}}
+                                        <div class="d-flex align-items-center justify-content-end gap-1 mt-1 text-muted" style="font-size: 0.65rem;">
+                                            <span>{{ now()->format('h:i A') }}</span>
+                                            <i class="bi bi-check2-all text-success"></i>
+                                        </div>
+
+                                        {{-- Interactive Buttons --}}
+                                        <div id="customerTplPreviewButtons" class="mt-2 pt-1 border-top d-flex flex-column gap-1" style="display: none;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 text-center text-muted" style="font-size: 0.7rem;">
+                                    <i class="bi bi-shield-check text-success me-1"></i>Official Meta Cloud API Template
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer py-2 bg-light">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-send"></i><span>Send WhatsApp</span>
+                <div class="modal-footer py-2.5 px-4 bg-white border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-4 d-inline-flex align-items-center gap-1.5 fw-semibold" style="background-color: #25D366; border-color: #25D366;">
+                        <i class="bi bi-send-fill"></i><span>Send WhatsApp Now</span>
                     </button>
                 </div>
             </form>
@@ -469,13 +544,15 @@
 </div>
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
+const customerName = @json($user->name);
+
 function toggleMessageType() {
     const isDirect = document.getElementById('typeDirect').checked;
     const templateGroup = document.getElementById('templateGroup');
     const directGroup = document.getElementById('directGroup');
-    const templateSelect = templateGroup.querySelector('select');
-    const directTextarea = directGroup.querySelector('textarea');
+    const templateSelect = document.getElementById('customerTemplateSelect');
+    const directTextarea = document.getElementById('customerDirectMessage');
 
     if (isDirect) {
         templateGroup.classList.add('d-none');
@@ -488,7 +565,91 @@ function toggleMessageType() {
         templateSelect.setAttribute('required', 'required');
         directTextarea.removeAttribute('required');
     }
+
+    updateCustomerTplPreview();
 }
+
+function updateCustomerTplPreview() {
+    const isDirect = document.getElementById('typeDirect') && document.getElementById('typeDirect').checked;
+    const headerEl = document.getElementById('customerTplPreviewHeader');
+    const bodyEl = document.getElementById('customerTplPreviewBody');
+    const footerEl = document.getElementById('customerTplPreviewFooter');
+    const buttonsEl = document.getElementById('customerTplPreviewButtons');
+
+    if (!bodyEl) return;
+
+    if (isDirect) {
+        const text = document.getElementById('customerDirectMessage')?.value.trim();
+        if (headerEl) headerEl.style.display = 'none';
+        if (footerEl) footerEl.style.display = 'none';
+        if (buttonsEl) buttonsEl.style.display = 'none';
+        bodyEl.textContent = text || 'Type your message to see live preview...';
+        return;
+    }
+
+    const select = document.getElementById('customerTemplateSelect');
+    if (!select || !select.selectedOptions || !select.selectedOptions[0]) return;
+
+    const opt = select.selectedOptions[0];
+    const rawBody = opt.getAttribute('data-body') || '';
+    const header = opt.getAttribute('data-header') || '';
+    const footer = opt.getAttribute('data-footer') || '';
+    let buttons = [];
+    try {
+        const btnsData = opt.getAttribute('data-buttons');
+        if (btnsData) buttons = JSON.parse(btnsData);
+    } catch (e) {}
+
+    const braceOpen = '{' + '{';
+    const braceClose = '}' + '}';
+    const re1 = new RegExp('\\' + braceOpen + '\\s*1\\s*\\' + braceClose, 'g');
+    const reName = new RegExp('\\' + braceOpen + '\\s*name\\s*\\' + braceClose, 'gi');
+    const re2 = new RegExp('\\' + braceOpen + '\\s*2\\s*\\' + braceClose, 'g');
+    const re3 = new RegExp('\\' + braceOpen + '\\s*3\\s*\\' + braceClose, 'g');
+
+    let parsedBody = rawBody
+        .replace(re1, customerName)
+        .replace(reName, customerName)
+        .replace(re2, 'VAN-2026')
+        .replace(re3, 'https://vanriti.com');
+
+    bodyEl.textContent = parsedBody || 'No template body content available.';
+
+    if (header) {
+        headerEl.textContent = header.replace(re1, customerName);
+        headerEl.style.display = 'block';
+    } else {
+        headerEl.style.display = 'none';
+    }
+
+    if (footer) {
+        footerEl.textContent = footer;
+        footerEl.style.display = 'block';
+    } else {
+        footerEl.style.display = 'none';
+    }
+
+    if (Array.isArray(buttons) && buttons.length > 0) {
+        buttonsEl.innerHTML = buttons.map(b => `
+            <div class="text-center py-1 text-primary small border rounded bg-light fw-medium" style="font-size: 0.74rem;">
+                <i class="bi bi-arrow-up-right me-1 font-2xs"></i>${b.text || b.title || 'Quick Action'}
+            </div>
+        `).join('');
+        buttonsEl.style.display = 'flex';
+    } else {
+        buttonsEl.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const modalEl = document.getElementById('sendCustomerWhatsAppModal');
+    if (modalEl) {
+        modalEl.addEventListener('shown.bs.modal', function () {
+            updateCustomerTplPreview();
+        });
+    }
+    updateCustomerTplPreview();
+});
 </script>
 @endpush
 @endif

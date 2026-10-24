@@ -231,6 +231,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Meta Templates Manager (Phase 7)
             Route::get('templates', [WhatsAppTemplateController::class, 'index'])->name('templates.index');
             Route::post('templates/sync', [WhatsAppTemplateController::class, 'sync'])->name('templates.sync');
+            Route::post('templates/waba-id', [WhatsAppTemplateController::class, 'updateWabaId'])->name('templates.waba-id');
             Route::get('templates/create', [WhatsAppTemplateController::class, 'create'])->name('templates.create');
             Route::post('templates', [WhatsAppTemplateController::class, 'store'])->name('templates.store');
             Route::delete('templates/{template}', [WhatsAppTemplateController::class, 'destroy'])->name('templates.destroy');

@@ -102,6 +102,33 @@ class WhatsAppCampaignTest extends TestCase
         $response->assertSee('150');
     }
 
+    public function test_admin_can_view_campaign_create_page(): void
+    {
+        $admin = $this->superAdmin();
+
+        $user = User::factory()->create(['name' => 'Cart Abandoner', 'phone' => '919876543211']);
+        $cart = \App\Models\Cart::create([
+            'owner_type' => User::class,
+            'owner_id' => $user->id,
+            'session_id' => 'cart_test_123',
+        ]);
+        $product = \App\Models\Product::factory()->create();
+        $cart->items()->create([
+            'product_id' => $product->id,
+            'quantity' => 2,
+            'unit_price' => 599.00,
+            'mrp' => 699.00,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.whatsapp.campaigns.create'));
+
+        $response->assertOk();
+        $response->assertSee('Create Broadcast Campaign');
+        $response->assertSee('Select Target Audience Cohort');
+        $response->assertSee('Abandoned Carts (7d)');
+    }
+
     public function test_admin_can_create_campaign_and_target_audience(): void
     {
         $admin = $this->superAdmin();

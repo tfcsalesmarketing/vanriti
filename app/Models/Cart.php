@@ -27,6 +27,11 @@ class Cart extends Model
         return $this->morphTo('owner');
     }
 
+    public function user(): MorphTo
+    {
+        return $this->morphTo('owner');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(CartItem::class);

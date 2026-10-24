@@ -57,22 +57,30 @@ class WhatsAppTemplateController extends Controller
             'rejectedCount' => $allTemplates->where('status', 'REJECTED')->count(),
             'lastSynced' => $allTemplates->max('synced_at'),
             'isConfigured' => $this->whatsappApi->isConfigured(),
+            'wabaId' => $this->whatsappApi->wabaId(),
         ]);
     }
 
     /**
-     * Sync all registered templates from Meta Graph API.
+     * Core routine to fetch and upsert templates from Meta Cloud API.
+     *
+     * @return array{success: bool, count: int, message?: string}
      */
-    public function sync(): RedirectResponse
+    private function syncFromMeta(): array
     {
         if (! $this->whatsappApi->isConfigured()) {
-            return back()->with('error', 'WhatsApp Cloud API is not configured.');
+            return ['success' => false, 'count' => 0, 'message' => 'WhatsApp Cloud API credentials (Phone Number ID or Access Token) are not configured.'];
+        }
+
+        $wabaId = $this->whatsappApi->wabaId();
+        if (empty($wabaId)) {
+            return ['success' => false, 'count' => 0, 'message' => 'WhatsApp Business Account (WABA) ID is not configured. Please enter your WABA ID from Meta Developer Portal > WhatsApp > API Setup.'];
         }
 
         $res = $this->whatsappApi->getMessageTemplates();
 
         if (! $res['success']) {
-            return back()->with('error', 'Failed to fetch templates from Meta: ' . ($res['message'] ?? 'Unknown error'));
+            return ['success' => false, 'count' => 0, 'message' => $res['message'] ?? 'Failed to fetch templates from Meta.'];
         }
 
         $metaTemplates = $res['data'] ?? [];
@@ -128,7 +136,60 @@ class WhatsAppTemplateController extends Controller
             $syncedCount++;
         }
 
-        return back()->with('success', "Successfully synced {$syncedCount} templates directly from Meta WABA.");
+        return ['success' => true, 'count' => $syncedCount];
+    }
+
+    /**
+     * Sync all registered templates from Meta Graph API.
+     */
+    public function sync(): RedirectResponse
+    {
+        $result = $this->syncFromMeta();
+
+        if (! $result['success']) {
+            return back()->with('error', 'Failed to fetch templates from Meta: ' . $result['message']);
+        }
+
+        return back()->with('success', "Successfully synced {$result['count']} templates directly from Meta WABA.");
+    }
+
+    /**
+     * Update the WhatsApp Business Account (WABA) ID and immediately attempt sync.
+     */
+    public function updateWabaId(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'waba_id' => ['required', 'string', 'regex:/^[0-9]{10,25}$/'],
+        ], [
+            'waba_id.required' => 'Please provide your WhatsApp Business Account (WABA) ID.',
+            'waba_id.regex' => 'The WABA ID must be numeric (typically 15-16 digits) as found in Meta Developer Portal.',
+        ]);
+
+        $cleanWabaId = trim($validated['waba_id']);
+
+        \App\Models\Setting::updateOrCreate(
+            ['key' => 'whatsapp_waba_id'],
+            [
+                'value' => $cleanWabaId,
+                'label' => 'WhatsApp Business Account (WABA) ID',
+                'group' => 'whatsapp',
+                'type' => 'text',
+            ]
+        );
+
+        if (function_exists('cache')) {
+            cache()->forget('settings.all');
+        }
+
+        $syncResult = $this->syncFromMeta();
+
+        if ($syncResult['success']) {
+            return redirect()->route('admin.whatsapp.templates.index')
+                ->with('success', "WhatsApp Business Account (WABA) ID saved! Successfully synced {$syncResult['count']} templates from Meta.");
+        }
+
+        return redirect()->route('admin.whatsapp.templates.index')
+            ->with('warning', 'WhatsApp Business Account (WABA) ID saved! Sync attempt message: ' . $syncResult['message']);
     }
 
     /**

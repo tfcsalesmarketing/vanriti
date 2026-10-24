@@ -161,4 +161,55 @@ class WhatsAppTemplateTest extends TestCase
             ],
         ]);
     }
+
+    public function test_admin_can_update_waba_id_and_trigger_sync(): void
+    {
+        Http::fake([
+            'graph.facebook.com/v21.0/123456789012345/message_templates*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 'meta_tmpl_999',
+                        'name' => 'ayurvedic_winter_glow',
+                        'status' => 'APPROVED',
+                        'category' => 'MARKETING',
+                        'language' => 'en',
+                        'components' => [
+                            ['type' => 'BODY', 'text' => 'Winter care with Vanriti pure herbs.'],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $admin = $this->superAdmin();
+
+        $response = $this->actingAs($admin, 'admin')->post(route('admin.whatsapp.templates.waba-id'), [
+            'waba_id' => '123456789012345',
+        ]);
+
+        $response->assertRedirect(route('admin.whatsapp.templates.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('settings', [
+            'key' => 'whatsapp_waba_id',
+            'value' => '123456789012345',
+        ]);
+
+        $this->assertDatabaseHas('whatsapp_templates', [
+            'name' => 'ayurvedic_winter_glow',
+            'status' => 'APPROVED',
+        ]);
+    }
+
+    public function test_sync_fails_gracefully_when_waba_id_is_not_configured(): void
+    {
+        Setting::updateOrCreate(['key' => 'whatsapp_waba_id'], ['value' => '']);
+
+        $admin = $this->superAdmin();
+
+        $response = $this->actingAs($admin, 'admin')->post(route('admin.whatsapp.templates.sync'));
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('WABA', session('error'));
+    }
 }

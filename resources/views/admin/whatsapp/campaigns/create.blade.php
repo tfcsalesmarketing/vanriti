@@ -108,11 +108,22 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-dark">Meta Template</label>
                         <select name="template_name" id="campTmplSelect" class="form-select rounded-3" required>
-                            <option value="promotional_offer">🎉 Promotional Discount (3 variables)</option>
-                            <option value="abandoned_cart_recovery">🛒 Abandoned Cart Recovery (2 variables)</option>
-                            <option value="vanriti_welcome">🌿 Welcome Offer (1 variable)</option>
-                            <option value="order_confirmation">📦 Order Confirmation (3 variables)</option>
-                            <option value="custom">⚙️ Custom Approved Template Name</option>
+                            @if (!empty($approvedTemplates) && $approvedTemplates->isNotEmpty())
+                                <optgroup label="Approved Meta Templates (Live)">
+                                    @foreach ($approvedTemplates as $tpl)
+                                        <option value="{{ $tpl->name }}">
+                                            {{ $tpl->name }} ({{ strtoupper($tpl->language) }} - {{ ucfirst($tpl->category) }})
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                            <optgroup label="Preset Standard Templates">
+                                <option value="promotional_offer">🎉 Promotional Discount (3 variables)</option>
+                                <option value="abandoned_cart_recovery">🛒 Abandoned Cart Recovery (2 variables)</option>
+                                <option value="vanriti_welcome">🌿 Welcome Offer (1 variable)</option>
+                                <option value="order_confirmation">📦 Order Confirmation (3 variables)</option>
+                                <option value="custom">⚙️ Custom Approved Template Name</option>
+                            </optgroup>
                         </select>
                     </div>
 
@@ -298,9 +309,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    const approvedMetaTemplates = @json($approvedTemplates ?? []);
+    if (Array.isArray(approvedMetaTemplates)) {
+        approvedMetaTemplates.forEach(tpl => {
+            const matches = tpl.body_text ? (tpl.body_text.match(/\{\{\s*\d+\s*\}\}/g) || []) : [];
+            const uniqueTokens = [...new Set(matches)];
+            const fields = uniqueTokens.map((t, idx) => ({
+                name: "parameters[]",
+                label: `Parameter ${t}`,
+                default: idx === 0 ? "Customer" : ""
+            }));
+
+            templateSchemas[tpl.name] = {
+                title: tpl.header_text || (tpl.name.replace(/_/g, ' ').toUpperCase()),
+                text: tpl.body_text || '',
+                fields: fields,
+                language: tpl.language || 'en'
+            };
+        });
+    }
+
     function renderFields() {
         const key = tmplSelect.value;
         const schema = templateSchemas[key] || templateSchemas.promotional_offer;
+
+        if (schema.language) {
+            const langInput = document.querySelector('input[name="template_lang"]');
+            if (langInput) langInput.value = schema.language;
+        }
 
         if (key === 'custom') {
             customTmplGroup.classList.remove('d-none');

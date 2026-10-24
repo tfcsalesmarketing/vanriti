@@ -105,6 +105,7 @@ class WhatsAppInboxController extends Controller
         $activeWindowsCount = WhatsAppConversation::where('window_expires_at', '>', now())->count();
         $isConfigured = $this->apiService->isConfigured();
         $admins = Admin::orderBy('name')->get(['id', 'name', 'email']);
+        $approvedTemplates = \App\Models\WhatsAppTemplate::approved()->orderBy('name')->get();
 
         return view('admin.whatsapp.inbox', compact(
             'conversations',
@@ -116,7 +117,8 @@ class WhatsAppInboxController extends Controller
             'isConfigured',
             'search',
             'filter',
-            'admins'
+            'admins',
+            'approvedTemplates'
         ));
     }
 
