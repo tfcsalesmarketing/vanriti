@@ -28,6 +28,11 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShipmentController;
 use App\Http\Controllers\Admin\ShipMojoController;
+use App\Http\Controllers\Admin\WhatsAppBotController;
+use App\Http\Controllers\Admin\WhatsAppCampaignController;
+use App\Http\Controllers\Admin\WhatsAppInboxController;
+use App\Http\Controllers\Admin\WhatsAppProfileController;
+use App\Http\Controllers\Admin\WhatsAppTemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -54,6 +59,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('products/variants/{variant}', [ProductController::class, 'destroyVariant'])->name('products.variants.destroy');
             Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
             Route::post('products/{product}/stock', [ProductController::class, 'updateStock'])->name('products.stock');
+            Route::post('products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
+            Route::post('products/{product}/toggle-featured', [ProductController::class, 'toggleFeatured'])->name('products.toggle-featured');
         });
 
         Route::resource('categories', CategoryController::class)->except(['show'])->middleware('permission:manage-categories');
@@ -78,6 +85,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('orders/{order}/shipmojo/label', [ShipMojoController::class, 'getLabel'])->name('orders.shipmojo.label');
             Route::post('orders/{order}/shipmojo/track', [ShipMojoController::class, 'syncTracking'])->name('orders.shipmojo.track');
             Route::post('orders/{order}/send-recovery-whatsapp', [OrderController::class, 'sendRecoveryWhatsApp'])->name('orders.send-recovery-whatsapp');
+            Route::post('orders/{order}/send-whatsapp', [OrderController::class, 'sendWhatsAppAlert'])->name('orders.send-whatsapp');
         });
 
         // Payment status is a financial action: it needs the dedicated
@@ -116,6 +124,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
             Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
             Route::post('customers/{user}/toggle', [CustomerController::class, 'toggleStatus'])->name('customers.toggle');
+            Route::post('customers/{user}/send-whatsapp', [CustomerController::class, 'sendWhatsApp'])->name('customers.send-whatsapp');
             Route::get('carts', [CartWishlistController::class, 'carts'])->name('carts.index');
             Route::post('carts/{cart}/send-recovery-whatsapp', [CartWishlistController::class, 'sendRecoveryWhatsApp'])->name('carts.send-recovery-whatsapp');
             Route::get('wishlists', [CartWishlistController::class, 'wishlists'])->name('wishlists.index');
@@ -179,6 +188,53 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('shipmojo/ping', [ShipMojoController::class, 'ping'])->name('shipmojo.ping');
             Route::get('shipmojo/warehouses', [ShipMojoController::class, 'warehouses'])->name('shipmojo.warehouses');
             Route::post('shipmojo/rates', [ShipMojoController::class, 'rates'])->name('shipmojo.rates');
+        });
+
+        // WhatsApp CRM & Live Chat Inbox
+        Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+            Route::get('inbox', [WhatsAppInboxController::class, 'index'])->name('inbox');
+            Route::post('inbox/{conversation}/send', [WhatsAppInboxController::class, 'sendText'])->name('inbox.send');
+            Route::post('inbox/{conversation}/send-media', [WhatsAppInboxController::class, 'sendMedia'])->name('inbox.send-media');
+            Route::post('inbox/{conversation}/send-template', [WhatsAppInboxController::class, 'sendTemplate'])->name('inbox.send-template');
+            Route::get('inbox/{conversation}/poll', [WhatsAppInboxController::class, 'poll'])->name('inbox.poll');
+            Route::post('inbox/{conversation}/read', [WhatsAppInboxController::class, 'markRead'])->name('inbox.read');
+            Route::post('inbox/{conversation}/assign', [WhatsAppInboxController::class, 'assign'])->name('inbox.assign');
+            Route::post('inbox/{conversation}/status', [WhatsAppInboxController::class, 'updateStatus'])->name('inbox.status');
+            Route::post('inbox/{conversation}/note', [WhatsAppInboxController::class, 'addNote'])->name('inbox.note');
+            Route::get('media/{message}', [WhatsAppInboxController::class, 'streamMedia'])->name('media.download');
+
+            // Broadcast Campaigns (Phase 4)
+            Route::get('campaigns', [WhatsAppCampaignController::class, 'index'])->name('campaigns.index');
+            Route::get('campaigns/create', [WhatsAppCampaignController::class, 'create'])->name('campaigns.create');
+            Route::post('campaigns', [WhatsAppCampaignController::class, 'store'])->name('campaigns.store');
+            Route::get('campaigns/{campaign}', [WhatsAppCampaignController::class, 'show'])->name('campaigns.show');
+            Route::post('campaigns/test-send', [WhatsAppCampaignController::class, 'sendTest'])->name('campaigns.test-send');
+            Route::post('campaigns/{campaign}/dispatch', [WhatsAppCampaignController::class, 'dispatchCampaign'])->name('campaigns.dispatch');
+
+            // Business Profile & Health (Phase 5)
+            Route::get('profile', [WhatsAppProfileController::class, 'index'])->name('profile');
+            Route::post('profile', [WhatsAppProfileController::class, 'update'])->name('profile.update');
+            Route::post('profile/sync', [WhatsAppProfileController::class, 'sync'])->name('profile.sync');
+
+            // Chatbot & Quick Replies (Phase 6)
+            Route::get('bot', [WhatsAppBotController::class, 'index'])->name('bot.index');
+            Route::post('bot/rules', [WhatsAppBotController::class, 'storeRule'])->name('bot.rules.store');
+            Route::put('bot/rules/{rule}', [WhatsAppBotController::class, 'updateRule'])->name('bot.rules.update');
+            Route::post('bot/rules/{rule}/toggle', [WhatsAppBotController::class, 'toggleRule'])->name('bot.rules.toggle');
+            Route::delete('bot/rules/{rule}', [WhatsAppBotController::class, 'destroyRule'])->name('bot.rules.destroy');
+
+            Route::post('bot/quick-replies', [WhatsAppBotController::class, 'storeQuickReply'])->name('bot.quick-replies.store');
+            Route::put('bot/quick-replies/{quickReply}', [WhatsAppBotController::class, 'updateQuickReply'])->name('bot.quick-replies.update');
+            Route::delete('bot/quick-replies/{quickReply}', [WhatsAppBotController::class, 'destroyQuickReply'])->name('bot.quick-replies.destroy');
+            Route::get('bot/quick-replies/api', [WhatsAppBotController::class, 'apiQuickReplies'])->name('bot.quick-replies.api');
+
+            // Meta Templates Manager (Phase 7)
+            Route::get('templates', [WhatsAppTemplateController::class, 'index'])->name('templates.index');
+            Route::post('templates/sync', [WhatsAppTemplateController::class, 'sync'])->name('templates.sync');
+            Route::get('templates/create', [WhatsAppTemplateController::class, 'create'])->name('templates.create');
+            Route::post('templates', [WhatsAppTemplateController::class, 'store'])->name('templates.store');
+            Route::delete('templates/{template}', [WhatsAppTemplateController::class, 'destroy'])->name('templates.destroy');
+            Route::get('templates/api/approved', [WhatsAppTemplateController::class, 'apiApproved'])->name('templates.api.approved');
         });
     });
 });

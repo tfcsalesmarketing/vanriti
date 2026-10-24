@@ -8,8 +8,16 @@
         <h5 class="mb-0 fw-bold">{{ $product->name }}</h5>
         <small class="text-muted">SKU: {{ $product->sku ?: '—' }} &middot; Slug: {{ $product->slug }}</small>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('admin.products.edit', $product->slug) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="{{ route('product.show', $product->slug) }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" target="_blank">
+            <i class="bi bi-box-arrow-up-right"></i><span>Storefront View</span>
+        </a>
+        <a href="{{ $product->getWhatsAppOrderUrl() }}" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 shadow-sm" target="_blank" title="Test direct WhatsApp order link">
+            <i class="bi bi-whatsapp"></i><span>WhatsApp Order</span>
+        </a>
+        <a href="{{ route('admin.products.edit', $product->slug) }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1">
+            <i class="bi bi-pencil"></i><span>Edit</span>
+        </a>
         <a href="{{ route('admin.products.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>
 </div>
@@ -93,14 +101,37 @@
                 @if ($images->count())
                     <div class="row g-2">
                         @foreach ($images as $img)
-                            <div class="col-4">
+                            <div class="col-4 position-relative">
                                 <img src="{{ image_url($img->image_path) }}" alt="{{ $img->alt_text }}" class="rounded border w-100" style="height:80px;object-fit:cover;">
+                                @if ($img->type === 'main')
+                                    <span class="badge bg-primary position-absolute top-0 start-0 m-1 py-0 px-1" style="font-size:0.65rem;">Main</span>
+                                @elseif ($img->type === 'whatsapp')
+                                    <span class="badge bg-success position-absolute top-0 start-0 m-1 py-0 px-1" style="font-size:0.65rem;"><i class="bi bi-whatsapp"></i> WA</span>
+                                @endif
                             </div>
                         @endforeach
                     </div>
                 @else
                     <p class="text-muted small mb-0">No images.</p>
                 @endif
+            </div>
+        </div>
+
+        {{-- WhatsApp Commerce Direct Buy Card --}}
+        <div class="card mb-3 border-success-subtle">
+            <div class="card-header bg-success-subtle text-success fw-semibold d-flex align-items-center justify-content-between py-2">
+                <span class="small d-inline-flex align-items-center gap-1"><i class="bi bi-whatsapp"></i> WhatsApp Buy Link</span>
+                <span class="badge bg-success text-white" style="font-size:0.65rem;">Direct Order</span>
+            </div>
+            <div class="card-body p-3">
+                <p class="small text-muted mb-2" style="font-size:0.75rem;">Share this instant checkout link with customers on WhatsApp, Instagram DMs, or campaigns:</p>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" class="form-control font-monospace" id="waOrderLink" value="{{ $product->getWhatsAppOrderUrl() }}" readonly style="font-size:0.72rem;">
+                    <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('waOrderLink').value); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy', 2000);">Copy</button>
+                </div>
+                <a href="{{ $product->getWhatsAppOrderUrl() }}" target="_blank" class="btn btn-sm btn-outline-success w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                    <i class="bi bi-whatsapp"></i> Test WhatsApp Buy Link
+                </a>
             </div>
         </div>
 

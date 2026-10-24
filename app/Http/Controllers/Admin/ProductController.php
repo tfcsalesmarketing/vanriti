@@ -45,7 +45,15 @@ class ProductController extends Controller
         $products = $query->latest()->paginate(25)->withQueryString();
         $categories = Category::orderBy('name')->get();
 
-        return view('admin.products.index', compact('products', 'categories'));
+        $kpis = [
+            'total' => Product::count(),
+            'active' => Product::where('status', 'active')->count(),
+            'low_stock' => Product::where('status', 'active')->where('stock', '>', 0)->whereColumn('stock', '<=', 'low_stock_threshold')->count(),
+            'out_of_stock' => Product::where('status', 'active')->where('stock', '<=', 0)->count(),
+            'featured' => Product::where('is_featured', true)->count(),
+        ];
+
+        return view('admin.products.index', compact('products', 'categories', 'kpis'));
     }
 
     public function create(): View
@@ -550,6 +558,41 @@ class ProductController extends Controller
 
     public function updateStock(Request $request, Product $product)
     {
+        // Support direct stock level adjustment (e.g. from quick inline modal)
+        if ($request->has('stock') && ! $request->has('type')) {
+            $data = $request->validate([
+                'stock' => 'required|integer|min:0',
+                'reason' => 'nullable|string|max:255',
+            ]);
+
+            $diff = (int) $data['stock'] - (int) $product->stock;
+            if ($diff !== 0) {
+                $type = $diff > 0 ? 'purchase' : 'adjustment';
+                $old = $product->stock;
+
+                $this->inventoryService->adjust(
+                    $type,
+                    $product,
+                    $diff,
+                    $data['reason'] ?? 'Manual stock update from catalog',
+                    auth('admin')->user()
+                );
+
+                $this->logger->stockChanged(auth('admin')->user(), $product, $old, $product->fresh()->stock, $data['reason'] ?? null);
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'stock' => $product->fresh()->stock,
+                    'is_out_of_stock' => $product->fresh()->isOutOfStock(),
+                    'is_low_stock' => $product->fresh()->isLowStock(),
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Stock updated to {$product->fresh()->stock}.");
+        }
+
         $validated = $request->validate([
             'type' => 'required|in:sale,purchase,adjustment,return,reversal',
             'quantity' => 'required|integer|min:1',
@@ -572,6 +615,48 @@ class ProductController extends Controller
 
         $this->logger->stockChanged(auth('admin')->user(), $product, $old, $product->fresh()->stock, $validated['reason'] ?? null);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'stock' => $product->fresh()->stock,
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Stock updated.');
+    }
+
+    public function toggleStatus(Product $product)
+    {
+        $newStatus = match ($product->status) {
+            'active' => 'inactive',
+            'inactive' => 'active',
+            default => 'active',
+        };
+
+        $product->update(['status' => $newStatus]);
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $newStatus,
+                'label' => ucfirst($newStatus),
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Product status changed to {$newStatus}.");
+    }
+
+    public function toggleFeatured(Product $product)
+    {
+        $product->update(['is_featured' => ! $product->is_featured]);
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'is_featured' => (bool) $product->is_featured,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Featured status updated.');
     }
 }

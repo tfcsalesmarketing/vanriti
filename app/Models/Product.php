@@ -258,6 +258,17 @@ class Product extends Model
             ?? $this->getPrimaryImage();
     }
 
+    public function getWhatsAppOrderUrl(): string
+    {
+        $bizPhone = preg_replace('/[^0-9]/', '', (string) setting('whatsapp_business_phone', setting('whatsapp_phone_number_id', '919876543210')));
+        if (strlen($bizPhone) === 10) {
+            $bizPhone = '91' . $bizPhone;
+        }
+        $msg = "Hi Vanriti, I would like to order *{$this->name}* (SKU: {$this->sku}) at " . format_price($this->selling_price) . ". Link: " . route('product.show', $this->slug);
+
+        return "https://wa.me/{$bizPhone}?text=" . rawurlencode($msg);
+    }
+
     /**
      * Absolute URL for the product video, or null when no video is configured.
      */

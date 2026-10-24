@@ -57,6 +57,8 @@ class Order extends Model
         'checkout_source',
         'whatsapp_confirmation_sent_at',
         'whatsapp_recovery_sent_at',
+        'whatsapp_shipped_sent_at',
+        'whatsapp_delivered_sent_at',
         'order_status',
         'cancellation_reason',
         'internal_notes',
@@ -75,6 +77,8 @@ class Order extends Model
             'cancelled_at' => 'datetime',
             'whatsapp_confirmation_sent_at' => 'datetime',
             'whatsapp_recovery_sent_at' => 'datetime',
+            'whatsapp_shipped_sent_at' => 'datetime',
+            'whatsapp_delivered_sent_at' => 'datetime',
         ];
     }
 

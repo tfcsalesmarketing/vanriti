@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SendWhatsAppOrderConfirmation;
+use App\Jobs\SendWhatsAppOrderStatusNotification;
 use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Refund;
@@ -16,7 +17,13 @@ class NotificationService
 {
     public function orderStatusChanged(Order $order, string $status): void
     {
-        $order->user->notify(new OrderStatusNotification($order, $status));
+        if ($order->user) {
+            $order->user->notify(new OrderStatusNotification($order, $status));
+        }
+
+        if (in_array(strtolower($status), ['shipped', 'out_for_delivery', 'delivered'], true)) {
+            SendWhatsAppOrderStatusNotification::dispatch($order, $status);
+        }
     }
 
     public function orderPlaced(Order $order): void

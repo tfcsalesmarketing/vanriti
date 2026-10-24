@@ -8,28 +8,95 @@
         <h5 class="mb-0 fw-bold">Order {{ $order->order_number }}</h5>
         <small class="text-muted">Placed on {{ $order->created_at->format('d M Y, h:i A') }}</small>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
         @php
             $oClass = ['cancelled'=>'danger','failed'=>'danger','delivered'=>'success','shipped'=>'info','out_for_delivery'=>'info','pending'=>'secondary','confirmed'=>'primary','processing'=>'warning','packed'=>'warning'];
-            $custPhone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
-            $cleanPhone = preg_replace('/[^0-9]/', '', $custPhone);
-            if (strlen($cleanPhone) === 10) {
-                $cleanPhone = '91' . $cleanPhone;
-            }
-            $recoveryMsg = "Hi " . ($order->user?->name ?: $order->billing_name) . ", we noticed your order #" . $order->order_number . " at Vanriti was not completed. You can complete your order here: " . route('account.order', $order) . " - Let us know if you need any assistance!";
-            $waUrl = $cleanPhone ? "https://wa.me/{$cleanPhone}?text=" . rawurlencode($recoveryMsg) : null;
+            $custPhone = $phone ?? trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
         @endphp
-        <span class="badge bg-{{ $oClass[$order->order_status] ?? 'secondary' }} align-self-center">{{ ucwords(str_replace('_', ' ', $order->order_status)) }}</span>
+        <span class="badge bg-{{ $oClass[$order->order_status] ?? 'secondary' }} align-self-center py-2 px-3">{{ ucwords(str_replace('_', ' ', $order->order_status)) }}</span>
         @if ($custPhone)
-            <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" class="d-inline" onsubmit="return confirm('Send automated WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-whatsapp me-1"></i>Send via Meta API</button>
-            </form>
+            <button type="button" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#sendWhatsAppModal">
+                <i class="bi bi-whatsapp"></i>
+                <span>WhatsApp Customer</span>
+                @if (isset($conversation) && $conversation->isWindowOpen())
+                    <span class="badge bg-white text-success ms-1 px-1 py-0" style="font-size:0.65rem;">Live</span>
+                @endif
+            </button>
+            @if (isset($conversation))
+                <a href="{{ route('admin.whatsapp.inbox', ['conversation' => $conversation->id]) }}" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1" target="_blank" title="View conversation stream in Live Inbox">
+                    <i class="bi bi-chat-dots-fill"></i>
+                    <span>Live Chat</span>
+                </a>
+            @endif
         @endif
         <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>
 </div>
+
+{{-- ── Fulfillment Stepper Tracker ───────────────────────────────── --}}
+@php
+    $isCancelled = in_array($order->order_status, ['cancelled', 'failed']);
+    $statusOrder = ['pending' => 1, 'confirmed' => 1, 'processing' => 2, 'packed' => 2, 'shipped' => 3, 'out_for_delivery' => 4, 'delivered' => 5];
+    $currentStep = $statusOrder[$order->order_status] ?? 1;
+    $shipment = $order->shipments->first();
+@endphp
+
+@if ($isCancelled)
+    <div class="alert alert-danger d-flex align-items-center gap-3 p-3 mb-3 rounded-3 shadow-xs">
+        <i class="bi bi-x-octagon-fill fs-3 text-danger"></i>
+        <div>
+            <div class="fw-bold">Order Cancelled</div>
+            <div class="small text-danger-emphasis">
+                This order was cancelled on {{ $order->cancelled_at ? $order->cancelled_at->format('d M Y, h:i A') : $order->updated_at->format('d M Y') }}.
+                @if ($order->cancellation_reason)
+                    <div class="mt-0.5"><strong>Reason:</strong> {{ $order->cancellation_reason }}</div>
+                @endif
+            </div>
+        </div>
+    </div>
+@else
+    <div class="card mb-3 border-0 shadow-xs" style="border-radius:12px; background:#ffffff;">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="small fw-bold text-uppercase text-muted" style="letter-spacing:0.05em; font-size:0.75rem;">Fulfillment Progress</span>
+                <span class="badge bg-light text-dark border small fw-semibold">
+                    Current: {{ ucwords(str_replace('_', ' ', $order->order_status)) }}
+                </span>
+            </div>
+            <div class="stepper-wrapper d-flex justify-content-between position-relative flex-wrap gap-2">
+                @php
+                    $steps = [
+                        1 => ['title' => 'Placed & Confirmed', 'icon' => 'bi-bag-check', 'date' => $order->created_at->format('d M, h:i A')],
+                        2 => ['title' => 'Packed & Ready', 'icon' => 'bi-box-seam', 'date' => $order->statusHistories->whereIn('status', ['processing', 'packed'])->first()?->created_at?->format('d M, h:i A')],
+                        3 => ['title' => 'Shipped', 'icon' => 'bi-truck', 'date' => $shipment?->shipped_at?->format('d M, h:i A')],
+                        4 => ['title' => 'Out for Delivery', 'icon' => 'bi-geo-alt', 'date' => $order->statusHistories->where('status', 'out_for_delivery')->first()?->created_at?->format('d M, h:i A')],
+                        5 => ['title' => 'Delivered', 'icon' => 'bi-check2-circle', 'date' => $shipment?->delivered_at?->format('d M, h:i A')],
+                    ];
+                @endphp
+                @foreach ($steps as $stepNum => $s)
+                    @php
+                        $isCompleted = $currentStep > $stepNum || ($currentStep === $stepNum && $stepNum === 5);
+                        $isCurrent = $currentStep === $stepNum && $stepNum !== 5;
+                    @endphp
+                    <div class="stepper-item text-center flex-fill position-relative" style="min-width: 120px;">
+                        <div class="stepper-icon mx-auto mb-2 rounded-circle d-flex align-items-center justify-content-center"
+                             style="width:38px; height:38px; font-size:1.1rem; transition:all 0.2s;
+                             {{ $isCompleted ? 'background:#059669; color:#fff; box-shadow:0 0 0 3px #d1fae5;' : ($isCurrent ? 'background:#075e54; color:#fff; box-shadow:0 0 0 4px #a7f3d0;' : 'background:#f3f4f6; color:#9ca3af; border:1px solid #e5e7eb;') }}">
+                            <i class="bi {{ $isCompleted ? 'bi-check-lg' : $s['icon'] }}"></i>
+                        </div>
+                        <div class="stepper-title fw-semibold small {{ $isCurrent || $isCompleted ? 'text-dark' : 'text-muted' }}" style="font-size:0.78rem;">
+                            {{ $s['title'] }}
+                        </div>
+                        @if ($s['date'])
+                            <div class="stepper-date text-muted" style="font-size:0.68rem;">{{ $s['date'] }}</div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+@endif
 
 <div class="row g-3 mb-3">
     <div class="col-md-3">
@@ -77,11 +144,15 @@
                 <div class="text-muted small">{{ $order->user?->email }}</div>
                 <div class="text-muted small">{{ $custPhone }}</div>
                 @if ($custPhone)
-                    <div class="mt-2">
-                        <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" onsubmit="return confirm('Send automated WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2 small" style="font-size:0.75rem;"><i class="bi bi-whatsapp me-1"></i>Send via Meta API</button>
-                        </form>
+                    <div class="mt-2 d-flex gap-1 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-success py-1 px-2 d-inline-flex align-items-center gap-1" style="font-size:0.75rem;" data-bs-toggle="modal" data-bs-target="#sendWhatsAppModal">
+                            <i class="bi bi-whatsapp"></i> Send WhatsApp
+                        </button>
+                        @if (isset($conversation))
+                            <a href="{{ route('admin.whatsapp.inbox', ['conversation' => $conversation->id]) }}" class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size:0.75rem;" target="_blank">
+                                <i class="bi bi-box-arrow-up-right"></i> Chat
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>
@@ -452,6 +523,126 @@
     </div>
 </div>
 @endif
-{{-- ── End ShipMojo Panel ──────────────────────────────────────────── --}}
+{{-- ── WhatsApp Interactive Send Modal ────────────────────────────── --}}
+@if ($custPhone)
+<div class="modal fade" id="sendWhatsAppModal" tabindex="-1" aria-labelledby="sendWhatsAppModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0" style="border-radius:14px; overflow:hidden;">
+            <div class="modal-header text-white" style="background:#075e54;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-whatsapp fs-5"></i>
+                    <div>
+                        <h6 class="modal-title mb-0 fw-bold" id="sendWhatsAppModalLabel">Send WhatsApp to Customer</h6>
+                        <small class="opacity-75" style="font-size:0.75rem;">{{ $order->user?->name ?: ($order->shipping_name ?: $order->billing_name) }} · {{ $custPhone }}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ route('admin.orders.send-whatsapp', $order) }}" id="orderWhatsAppForm">
+                @csrf
+                <div class="modal-body p-3">
+                    {{-- Session Status Pill --}}
+                    <div class="d-flex align-items-center justify-content-between p-2 mb-3 rounded" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-check text-success fs-5"></i>
+                            <div>
+                                <div class="fw-semibold small text-success">
+                                    @if (isset($conversation) && $conversation->isWindowOpen())
+                                        24-Hour Active Session
+                                    @else
+                                        Meta Cloud API Mode
+                                    @endif
+                                </div>
+                                <div class="text-muted" style="font-size:0.72rem;">
+                                    @if (isset($conversation) && $conversation->isWindowOpen())
+                                        Customer messaged recently. Free-form text and Meta templates are both permitted.
+                                    @else
+                                        Session window is closed. Send via approved Meta Template to bypass the window.
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Send Type Selection --}}
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-muted">Message Mode</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="send_type" id="sendTypeTemplate" value="template" checked autocomplete="off" onchange="toggleOrderSendMode()">
+                            <label class="btn btn-outline-success btn-sm py-2" for="sendTypeTemplate">
+                                <i class="bi bi-file-earmark-text me-1"></i> Meta Approved Template
+                            </label>
+
+                            <input type="radio" class="btn-check" name="send_type" id="sendTypeText" value="custom_text" autocomplete="off" onchange="toggleOrderSendMode()" {{ (isset($conversation) && $conversation->isWindowOpen()) ? '' : 'disabled' }}>
+                            <label class="btn btn-outline-success btn-sm py-2 {{ (isset($conversation) && $conversation->isWindowOpen()) ? '' : 'text-muted' }}" for="sendTypeText" title="{{ (isset($conversation) && $conversation->isWindowOpen()) ? 'Free-form message' : 'Requires active 24h customer session' }}">
+                                <i class="bi bi-chat-text me-1"></i> Direct Message
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Template Selector --}}
+                    <div id="templateSection">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Select Order Journey Template</label>
+                            <select name="template_name" id="orderTemplateSelect" class="form-select form-select-sm">
+                                <optgroup label="🚚 Order Journey Presets">
+                                    <option value="order_dispatched" selected>📦 Order Dispatched & Tracking Link</option>
+                                    <option value="order_out_for_delivery">🚚 Out for Delivery Alert</option>
+                                    <option value="order_delivered">🎉 Order Delivered & Reviews</option>
+                                    <option value="order_confirmation">✅ Order Confirmation</option>
+                                    <option value="checkout_recovery">🛒 Abandoned Checkout Recovery</option>
+                                </optgroup>
+                                @if (isset($approvedTemplates) && $approvedTemplates->count())
+                                    <optgroup label="📋 All Approved Meta Templates">
+                                        @foreach ($approvedTemplates as $tpl)
+                                            <option value="{{ $tpl->name }}">{{ $tpl->name }} ({{ $tpl->category }})</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            </select>
+                        </div>
+
+                        {{-- Parameter Preview Card --}}
+                        <div class="card bg-light border-0 p-2 mb-2">
+                            <div class="small fw-semibold text-muted mb-1" style="font-size:0.75rem;">Template Parameters Preview:</div>
+                            <div class="small text-secondary" style="font-size:0.78rem;">
+                                <div>• <strong>Customer:</strong> {{ explode(' ', $order->user?->name ?: ($order->shipping_name ?: $order->billing_name))[0] }}</div>
+                                <div>• <strong>Order #:</strong> {{ $order->order_number }}</div>
+                                <div>• <strong>Courier:</strong> {{ $order->shipments()->latest()->first()?->courier ?: 'ShipMojo Express' }}</div>
+                                <div>• <strong>AWB / Tracking:</strong> {{ $order->shipments()->latest()->first()?->awb_number ?: ($order->shipments()->latest()->first()?->tracking_number ?: $order->order_number) }}</div>
+                                <div>• <strong>Link:</strong> {{ route('account.order', $order) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Direct Custom Text Section --}}
+                    <div id="customTextSection" style="display:none;">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Direct Message to Customer</label>
+                            <textarea name="custom_message" class="form-control form-control-sm" rows="4" placeholder="Type your custom update or customer service message..."></textarea>
+                            <small class="text-muted" style="font-size:0.72rem;">Delivered directly to {{ $custPhone }}. Response will appear in Live Inbox.</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success px-3 d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i class="bi bi-send-fill"></i>
+                        <span>Send WhatsApp Now</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleOrderSendMode() {
+    const isTemplate = document.getElementById('sendTypeTemplate').checked;
+    document.getElementById('templateSection').style.display = isTemplate ? 'block' : 'none';
+    document.getElementById('customTextSection').style.display = isTemplate ? 'none' : 'block';
+}
+</script>
+@endif
 
 @endsection

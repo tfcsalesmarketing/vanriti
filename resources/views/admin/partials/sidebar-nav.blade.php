@@ -100,6 +100,49 @@
     </li>
     @endif
 
+    <li class="nav-heading">WhatsApp CRM</li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.whatsapp.inbox*') ? 'active' : '' }}"
+           href="{{ route('admin.whatsapp.inbox') }}">
+            <i class="bi bi-whatsapp" style="color: #25D366;"></i>
+            <span>Live Inbox</span>
+            @php
+                $_waUnreadCount = \App\Models\WhatsAppConversation::sum('unread_count');
+            @endphp
+            @if ($_waUnreadCount > 0)
+                <span class="badge rounded-pill bg-success ms-auto" style="font-size: 0.72rem;">{{ $_waUnreadCount }}</span>
+            @endif
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.whatsapp.campaigns*') ? 'active' : '' }}"
+           href="{{ route('admin.whatsapp.campaigns.index') }}">
+            <i class="bi bi-megaphone"></i>
+            <span>Broadcast Campaigns</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.whatsapp.profile*') ? 'active' : '' }}"
+           href="{{ route('admin.whatsapp.profile') }}">
+            <i class="bi bi-person-badge"></i>
+            <span>Business Profile & Health</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.whatsapp.bot*') ? 'active' : '' }}"
+           href="{{ route('admin.whatsapp.bot.index') }}">
+            <i class="bi bi-robot"></i>
+            <span>Chatbot & Quick Replies</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.whatsapp.templates*') ? 'active' : '' }}"
+           href="{{ route('admin.whatsapp.templates.index') }}">
+            <i class="bi bi-file-earmark-check"></i>
+            <span>Meta Templates</span>
+        </a>
+    </li>
+
     @if ($admin->hasPermission(['manage-customers', 'manage-coupons', 'manage-reviews', 'manage-newsletters']))
     <li class="nav-heading">Customers</li>
     @endif

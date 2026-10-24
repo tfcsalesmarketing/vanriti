@@ -82,6 +82,101 @@ class User extends Authenticatable
         return $this->hasMany(ConsentChoice::class);
     }
 
+    public function whatsappConversation(): HasOne
+    {
+        return $this->hasOne(WhatsAppConversation::class);
+    }
+
+    public function carts(): HasMany
+    {
+        return $this->hasMany(Cart::class, 'owner_id')->where('owner_type', self::class);
+    }
+
+    public function activeCart(): HasOne
+    {
+        return $this->hasOne(Cart::class, 'owner_id')
+            ->where('owner_type', self::class)
+            ->latestOfMany();
+    }
+
+    public function getCleanPhone(): ?string
+    {
+        if (! $this->phone) {
+            return null;
+        }
+
+        $clean = preg_replace('/[^0-9]/', '', (string) $this->phone);
+        if (strlen($clean) === 10) {
+            return '91' . $clean;
+        }
+
+        return $clean;
+    }
+
+    public function getWhatsAppDirectUrl(?string $message = null): ?string
+    {
+        $clean = $this->getCleanPhone();
+        if (! $clean) {
+            return null;
+        }
+
+        $text = $message ?: "Hi {$this->name}, this is Vanriti support.";
+
+        return "https://wa.me/{$clean}?text=" . rawurlencode($text);
+    }
+
+    public function getCustomerSegment(): array
+    {
+        $ordersCount = $this->orders()->whereNotIn('order_status', ['cancelled'])->count();
+        $totalSpent = (float) $this->orders()->whereNotIn('order_status', ['cancelled'])->sum('grand_total');
+
+        if ($totalSpent >= 2500 || $ordersCount >= 3) {
+            return [
+                'key' => 'vip',
+                'label' => 'VIP Champion',
+                'badge' => 'primary',
+                'icon' => 'bi-stars',
+                'description' => 'High lifetime value shopper',
+            ];
+        }
+
+        if ($ordersCount >= 2) {
+            return [
+                'key' => 'repeat',
+                'label' => 'Repeat Buyer',
+                'badge' => 'info',
+                'icon' => 'bi-arrow-repeat',
+                'description' => 'Multi-order returning customer',
+            ];
+        }
+
+        if ($ordersCount === 1) {
+            return [
+                'key' => 'first_time',
+                'label' => 'First-Time Buyer',
+                'badge' => 'success',
+                'icon' => 'bi-bag-check',
+                'description' => 'Single order completed',
+            ];
+        }
+
+        return [
+            'key' => 'prospect',
+            'label' => 'Prospect / Lead',
+            'badge' => 'secondary',
+            'icon' => 'bi-person-badge',
+            'description' => 'Registered, no confirmed orders',
+        ];
+    }
+
+    public function getLastActiveAt(): ?\Carbon\Carbon
+    {
+        return $this->last_login_at
+            ?? $this->orders()->latest('created_at')->value('created_at')
+            ?? $this->updated_at
+            ?? $this->created_at;
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

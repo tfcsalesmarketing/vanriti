@@ -167,7 +167,16 @@ class OrderController extends Controller
     {
         $order->load(['items', 'user', 'payments', 'statusHistories', 'shipments', 'refunds']);
 
-        return view('admin.orders.show', compact('order'));
+        $phone = $this->resolveOrderPhone($order);
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+        if (strlen($cleanPhone) === 10) {
+            $cleanPhone = '91' . $cleanPhone;
+        }
+
+        $conversation = $cleanPhone ? \App\Models\WhatsAppConversation::where('phone', $cleanPhone)->first() : null;
+        $approvedTemplates = \App\Models\WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get();
+
+        return view('admin.orders.show', compact('order', 'conversation', 'approvedTemplates', 'phone', 'cleanPhone'));
     }
 
     public function edit(Order $order): View
@@ -384,5 +393,104 @@ class OrderController extends Controller
         }
 
         return back()->with('error', 'Meta WhatsApp API delivery failed: ' . ($result['message'] ?? 'Unknown error'));
+    }
+
+    public function sendWhatsAppAlert(
+        Request $request,
+        Order $order,
+        \App\Services\WhatsAppChatService $chatService
+    ): RedirectResponse {
+        $phone = $this->resolveOrderPhone($order);
+        if ($phone === '') {
+            return back()->with('error', 'No customer mobile number associated with this order.');
+        }
+
+        $data = $request->validate([
+            'send_type' => 'required|in:template,custom_text',
+            'template_name' => 'nullable|string|max:120',
+            'custom_message' => 'nullable|string|max:1000',
+        ]);
+
+        $name = trim((string) ($order->shipping_name ?: $order->billing_name)) ?: 'Customer';
+        $firstName = explode(' ', $name)[0];
+        $order->loadMissing('shipments');
+        $shipment = $order->shipments()->latest()->first();
+        $courier = $shipment?->courier ?: 'ShipMojo Express';
+        $trackingNumber = $shipment?->awb_number ?: ($shipment?->tracking_number ?: $order->order_number);
+        $orderUrl = route('account.order', $order);
+
+        $conversation = $chatService->getOrCreateConversation($phone, $name);
+        $admin = auth('admin')->user();
+
+        if ($data['send_type'] === 'custom_text') {
+            $text = trim((string) ($data['custom_message'] ?? ''));
+            if ($text === '') {
+                return back()->with('error', 'Please enter a message to send.');
+            }
+
+            if (! $conversation->isWindowOpen()) {
+                return back()->with('error', 'The 24-hour customer session window is closed. Please select an approved Meta Template to initiate or contact the customer.');
+            }
+
+            $res = $chatService->sendTextMessage($conversation, $text, $admin);
+
+            if ($res['success']) {
+                $note = '[' . now()->format('d M Y H:i') . "] WhatsApp direct message sent by {$admin?->name}: \"{$text}\"";
+                $order->update([
+                    'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . $note),
+                ]);
+
+                return back()->with('success', "WhatsApp message sent successfully to {$phone}!");
+            }
+
+            return back()->with('error', 'Failed to send WhatsApp message: ' . ($res['error'] ?? 'API error'));
+        }
+
+        // Template Send
+        $tpl = $data['template_name'] ?? '';
+        if (empty($tpl)) {
+            return back()->with('error', 'Please select a Meta Template.');
+        }
+
+        $params = match ($tpl) {
+            'order_confirmation' => [$firstName, $order->order_number, now()->addDays(5)->toDateString()],
+            'order_dispatched' => [$firstName, $order->order_number, $courier, $trackingNumber],
+            'order_out_for_delivery' => [$firstName, $order->order_number, $courier],
+            'order_delivered' => [$firstName, $order->order_number],
+            'checkout_recovery' => [$firstName, (string) number_format((float) $order->grand_total, 2, '.', ''), $order->order_number],
+            default => [$firstName, $order->order_number],
+        };
+
+        $res = $chatService->sendTemplateMessage($conversation, $tpl, 'en', $params, null, $admin);
+
+        if ($res['success']) {
+            $note = '[' . now()->format('d M Y H:i') . "] WhatsApp template '{$tpl}' sent via Meta Cloud API by {$admin?->name}";
+            $order->update([
+                'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . $note),
+            ]);
+
+            return back()->with('success', "WhatsApp template '{$tpl}' sent successfully to {$phone}!");
+        }
+
+        return back()->with('error', 'Meta template send failed: ' . ($res['error'] ?? 'API error'));
+    }
+
+    protected function resolveOrderPhone(Order $order): string
+    {
+        $candidates = [
+            $order->shipping_mobile,
+            $order->billing_mobile,
+            $order->user?->phone,
+            $order->guest_mobile,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $phone = trim((string) $candidate);
+            if ($phone !== '') {
+                return $phone;
+            }
+        }
+
+        return '';
     }
 }

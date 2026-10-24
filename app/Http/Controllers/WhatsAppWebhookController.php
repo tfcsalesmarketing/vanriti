@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WhatsAppWebhookLog;
+use App\Services\WhatsAppChatService;
 use App\Services\WhatsAppCheckoutService;
 use App\Services\WhatsAppCloudApiService;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,7 @@ class WhatsAppWebhookController extends Controller
     public function __construct(
         protected WhatsAppCloudApiService $apiService,
         protected WhatsAppCheckoutService $checkoutService,
+        protected WhatsAppChatService $chatService,
     ) {}
 
     /**
@@ -108,15 +110,23 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['status' => 'no change']);
         }
 
-        // Ignore status delivery notifications (sent, delivered, read) to avoid advancing checkout
-        if (! empty($changes['statuses']) && empty($changes['messages'])) {
-            return response()->json(['status' => 'status update ignored']);
+        // Process status delivery notifications (sent, delivered, read, failed)
+        if (! empty($changes['statuses'])) {
+            foreach ($changes['statuses'] as $status) {
+                try {
+                    $this->chatService->recordStatusUpdate($status);
+                } catch (\Throwable $e) {
+                    Log::warning('WhatsApp status processing exception', ['error' => $e->getMessage()]);
+                }
+            }
         }
 
         $messages = $changes['messages'] ?? [];
         if (empty($messages)) {
-            return response()->json(['status' => 'no messages']);
+            return response()->json(['status' => 'status processed']);
         }
+
+        $senderProfileName = $changes['contacts'][0]['profile']['name'] ?? null;
 
         foreach ($messages as $msg) {
             $messageId = (string) ($msg['id'] ?? '');
@@ -137,6 +147,13 @@ class WhatsAppWebhookController extends Controller
                 'payload' => $msg,
                 'processed' => true,
             ]);
+
+            // Record message in WhatsApp Inbox & Live Chat engine
+            try {
+                $this->chatService->recordInboundMessage($from, $msg, $waId, $senderProfileName);
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp chat message recording exception', ['error' => $e->getMessage()]);
+            }
 
             try {
                 // Check if user clicked "Message Business" on a product card or shared an item

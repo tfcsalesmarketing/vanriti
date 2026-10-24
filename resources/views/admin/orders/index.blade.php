@@ -44,6 +44,66 @@
     </div>
 </div>
 
+{{-- Modern Order KPI Metric Cards --}}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-xs" style="border-radius:12px; background:linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left:4px solid #10b981 !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-semibold">Total Revenue</span>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;background:#d1fae5;color:#059669;">
+                        <i class="bi bi-currency-rupee"></i>
+                    </div>
+                </div>
+                <div class="fs-5 fw-bold text-dark">{{ format_price(\App\Models\Order::whereNotIn('order_status', ['cancelled', 'failed'])->sum('grand_total')) }}</div>
+                <div class="text-muted" style="font-size:0.72rem;">Confirmed order volume</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-xs" style="border-radius:12px; background:linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border-left:4px solid #3b82f6 !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-semibold">Pending Fulfillment</span>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;background:#dbeafe;color:#2563eb;">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                </div>
+                <div class="fs-5 fw-bold text-dark">{{ $tabCounts['pending'] ?? 0 }}</div>
+                <div class="text-muted" style="font-size:0.72rem;">Needs courier assignment</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-xs" style="border-radius:12px; background:linear-gradient(135deg, #fefce8 0%, #ffffff 100%); border-left:4px solid #eab308 !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-semibold">Ready to Ship</span>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;background:#fef9c3;color:#ca8a04;">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+                <div class="fs-5 fw-bold text-dark">{{ $tabCounts['ready_to_ship'] ?? 0 }}</div>
+                <div class="text-muted" style="font-size:0.72rem;">AWB assigned, schedule pickup</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-xs" style="border-radius:12px; background:linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left:4px solid #64748b !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-semibold">In Transit / Shipped</span>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;background:#e2e8f0;color:#475569;">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+                <div class="fs-5 fw-bold text-dark">{{ $tabCounts['shipped'] ?? 0 }}</div>
+                <div class="text-muted" style="font-size:0.72rem;">Delivered: {{ $tabCounts['delivered'] ?? 0 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modern Segmented Status Tabs --}}
 <div class="card mb-3 border-0 bg-transparent">
     <ul class="nav nav-tabs flex-nowrap overflow-auto pb-1" style="border-bottom: 2px solid var(--vanriti-border);">
@@ -191,25 +251,35 @@
                                 <div style="font-size: 0.72rem; color: #8C9E90;">{{ $order->created_at->format('h:i A') }}</div>
                             </td>
                             <td>
-                                <div class="fw-semibold small text-dark">{{ $order->user?->name ?: $order->billing_name }}</div>
-                                <div class="text-muted small" style="font-size:0.75rem;">{{ $order->user?->email ?: 'No email' }}</div>
                                 @php
-                                    $custPhone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: $order->user?->phone)));
+                                    $custName = $order->user?->name ?: ($order->shipping_name ?: $order->billing_name);
+                                    $initials = strtoupper(substr($custName, 0, 1) . substr(explode(' ', $custName)[1] ?? '', 0, 1));
+                                    $custPhone = trim((string) ($order->shipping_mobile ?: ($order->billing_mobile ?: ($order->user?->phone ?: $order->guest_mobile))));
                                     $cleanPhone = preg_replace('/[^0-9]/', '', $custPhone);
                                     if (strlen($cleanPhone) === 10) {
                                         $cleanPhone = '91' . $cleanPhone;
                                     }
-                                    $recoveryMsg = "Hi " . ($order->user?->name ?: $order->billing_name) . ", we noticed your order #" . $order->order_number . " at Vanriti was not completed. You can complete your order here: " . route('account.order', $order) . " - Let us know if you need any assistance!";
-                                    $waUrl = $cleanPhone ? "https://wa.me/{$cleanPhone}?text=" . rawurlencode($recoveryMsg) : null;
                                     $latestPayment = $order->payments->sortByDesc('created_at')->first();
                                     $failReason = $latestPayment?->gateway_response['failure_reason'] ?? $order->cancellation_reason;
                                     $dropReason = $latestPayment?->gateway_response['dropoff_reason'] ?? null;
                                 @endphp
-                                @if ($custPhone)
-                                    <div class="text-muted small" style="font-size:0.75rem;">
-                                        <i class="bi bi-telephone me-1 text-muted"></i>{{ $custPhone }}
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-dark fw-bold"
+                                         style="width:32px; height:32px; font-size:0.75rem; background:#EBF3ED; color:#1C3C24; flex-shrink:0;">
+                                        {{ $initials ?: 'C' }}
                                     </div>
-                                @endif
+                                    <div>
+                                        <div class="fw-semibold small text-dark">{{ $custName }}</div>
+                                        <div class="text-muted small" style="font-size:0.75rem;">{{ $order->user?->email ?: ($order->guest_email ?: 'No email') }}</div>
+                                        @if ($custPhone)
+                                            <div class="d-flex align-items-center gap-1 small" style="font-size:0.72rem;">
+                                                <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="text-success text-decoration-none fw-semibold d-inline-flex align-items-center gap-0.5">
+                                                    <i class="bi bi-whatsapp"></i> {{ $custPhone }}
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                             <td class="text-center small"><span class="badge bg-light text-dark border">{{ $order->items_count }}</span></td>
                             <td class="text-end fw-bold small text-dark">{{ format_price($order->grand_total) }}</td>
