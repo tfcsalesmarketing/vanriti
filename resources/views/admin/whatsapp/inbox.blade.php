@@ -609,14 +609,20 @@
                                     @if(isset($approvedTemplates) && $approvedTemplates->isNotEmpty())
                                         <optgroup label="Synchronized Meta Templates" id="tmplOptGroupSynced">
                                             @foreach($approvedTemplates as $at)
-                                                <option value="{{ $at->name }}" data-category="{{ $at->category }}">{{ $at->name }} ({{ ucfirst($at->category) }})</option>
+                                                @php
+                                                    $vars = $at->variables ?? [];
+                                                    $varSummary = !empty($vars) ? ' • ' . '{' . '{' . implode('}' . '}, ' . '{' . '{', $vars) . '}' . '}' : '';
+                                                @endphp
+                                                <option value="{{ $at->name }}" data-category="{{ $at->category }}" {{ $loop->first ? 'selected' : '' }}>
+                                                    {{ $at->name }} ({{ ucfirst($at->category) }}{{ $varSummary }})
+                                                </option>
                                             @endforeach
                                         </optgroup>
                                     @endif
                                     <optgroup label="Standard Presets">
-                                        <option value="order_confirmation">📦 Order Confirmation (3 variables)</option>
-                                        <option value="abandoned_cart_reminder">🛒 Abandoned Cart Reminder (3 variables)</option>
-                                        <option value="shipping_update">🚚 Shipping Dispatch Update (5 variables)</option>
+                                        <option value="welcome_message">🌿 Welcome Message (1 variable: name)</option>
+                                        <option value="order_confirmation">📦 Order Confirmation (2 variables: 1, 2)</option>
+                                        <option value="checkout_recovery">🛒 Checkout Recovery (1 variable: text + image)</option>
                                         <option value="promotional_offer">🎉 Promotional Discount (3 variables)</option>
                                         <option value="custom">⚙️ Custom Approved Template Name</option>
                                     </optgroup>
@@ -1296,90 +1302,111 @@ document.addEventListener('DOMContentLoaded', function () {
     const recentOrderNumber = '{{ $customerContext["orders"]->first()?->order_number ?? "VAN-1001" }}';
 
     const templateSchemas = {
-        order_confirmation: {
-            title: "VANRITI — Order Confirmed 🌿",
-            text: "Hello {1}, thank you for your order! Your order #{2} is confirmed and will be delivered by {3}. Track your order here:",
-            fields: [
-                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
-                { id: "p2", label: "Order Number (Param 2)", default: recentOrderNumber },
-                { id: "p3", label: "Delivery Date (Param 3)", default: "in 3-5 business days" },
-            ],
-            language: "en"
-        },
-        abandoned_cart_recovery: {
-            title: "Items left in your cart! 🌿",
-            text: "Hello {1}, you left items in your VANRITI cart! Complete your order now with 10% OFF at {2}",
-            fields: [
-                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
-                { id: "p2", label: "Checkout Link (Param 2)", default: "{{ url('/cart') }}" },
-            ],
-            language: "en"
-        },
-        vanriti_welcome: {
+        welcome_message: {
             title: "Welcome to VANRITI 🌿",
-            text: "Hello {1}, welcome to VANRITI! Discover the pure essence of Ayurveda and natural holistic skincare with special offers on your first purchase.",
+            text: "Hi " + "{" + "{name}" + "}" + ",\n\nWe're happy to have you with us!\n\nEnjoy ₹100 OFF on your first order of ₹499 or more, plus FREE SHIPPING.\n\nUse Code: FIRST100",
             fields: [
-                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
+                { id: "p_name", name: "name", token: "{" + "{name}" + "}", label: "{" + "{name}" + "}", default: customerName },
+            ],
+            language: "en"
+        },
+        order_confirmation: {
+            title: "Order Confirmed 📦",
+            text: "Hi " + "{" + "{1}" + "}" + ",\nYour order has been successfully placed and is being processed. Your order number is " + "{" + "{2}" + "}" + ". You can view order details below.",
+            fields: [
+                { id: "p1", name: "1", token: "{" + "{1}" + "}", label: "{" + "{1}" + "}", default: customerName },
+                { id: "p2", name: "2", token: "{" + "{2}" + "}", label: "{" + "{2}" + "}", default: recentOrderNumber },
+            ],
+            language: "en_US"
+        },
+        checkout_recovery: {
+            title: "Checkout Recovery 🛒",
+            text: "Hi Greetings From VANRITI !! \n\nWe noticed you did not finish your order for \n\n" + "{" + "{text}" + "}" + "\n\nYour items are reserved for a short time.",
+            header_type: "IMAGE",
+            fields: [
+                { id: "p_text", name: "text", token: "{" + "{text}" + "}", label: "{" + "{text}" + "}", default: "Selected Items" },
+            ],
+            language: "en"
+        },
+        otp_verification: {
+            title: "Verification Code 🔐",
+            text: "*" + "{" + "{1}" + "}" + "* is your verification code. For your security, do not share this code.",
+            fields: [
+                { id: "p1", name: "1", token: "{" + "{1}" + "}", label: "{" + "{1}" + "}", default: "123456" },
             ],
             language: "en"
         },
         promotional_offer: {
             title: "Special VIP Offer 🎉",
-            text: "Hello {1}, celebrate with us! Enjoy {2} on your next order using coupon code: {3} at checkout.",
+            text: "Hello " + "{" + "{1}" + "}" + ", celebrate with us! Enjoy " + "{" + "{2}" + "}" + " on your next order using coupon code: " + "{" + "{3}" + "}" + " at checkout.",
             fields: [
-                { id: "p1", label: "Customer Name (Param 1)", default: customerName },
-                { id: "p2", label: "Offer Title (Param 2)", default: "Flat 15% OFF" },
-                { id: "p3", label: "Coupon Code (Param 3)", default: "FESTIVE15" },
+                { id: "p1", name: "1", token: "{" + "{1}" + "}", label: "{" + "{1}" + "}", default: customerName },
+                { id: "p2", name: "2", token: "{" + "{2}" + "}", label: "{" + "{2}" + "}", default: "Flat 15% OFF" },
+                { id: "p3", name: "3", token: "{" + "{3}" + "}", label: "{" + "{3}" + "}", default: "FESTIVE15" },
             ],
             language: "en"
         },
         custom: {
             title: "Custom Meta Template",
-            text: "Template variables: {1}, {2}",
+            text: "Template variables: " + "{" + "{1}" + "}" + ", " + "{" + "{2}" + "}",
             fields: [
-                { id: "p1", label: "Parameter 1", default: customerName },
-                { id: "p2", label: "Parameter 2", default: "" },
+                { id: "p1", name: "1", token: "{" + "{1}" + "}", label: "{" + "{1}" + "}", default: customerName },
+                { id: "p2", name: "2", token: "{" + "{2}" + "}", label: "{" + "{2}" + "}", default: "" },
             ],
             language: "en"
         }
     };
 
-    function parseTemplateFields(bodyText) {
-        const tokenRegex = new RegExp('\\' + '{' + '\\' + '{' + '\\s*([a-zA-Z0-9_]+)\\s*' + '\\' + '}' + '\\' + '}', 'g');
-        const matches = bodyText ? [...bodyText.matchAll(tokenRegex)] : [];
-        const fields = [];
-        const seen = new Set();
-        matches.forEach((m, idx) => {
-            const tokenKey = m[1];
-            if (!seen.has(tokenKey)) {
-                seen.add(tokenKey);
-                const tokenBadge = '{' + '{' + tokenKey + '}' + '}';
-                let defVal = '';
-                const lower = tokenKey.toLowerCase();
-                if (tokenKey === '1' || lower.includes('name')) {
-                    defVal = customerName;
-                } else if (tokenKey === '2' || lower.includes('order')) {
-                    defVal = recentOrderNumber;
-                } else if (lower.includes('text') || lower.includes('item')) {
-                    defVal = 'Selected Items';
+    function extractTemplateTokens(bodyText) {
+        if (!bodyText || typeof bodyText !== 'string') return [];
+        const tokens = [];
+        const openDelimiter = '{' + '{';
+        const closeDelimiter = '}' + '}';
+        const parts = bodyText.split(openDelimiter);
+        for (let i = 1; i < parts.length; i++) {
+            const closeIdx = parts[i].indexOf(closeDelimiter);
+            if (closeIdx !== -1) {
+                const token = parts[i].substring(0, closeIdx).trim();
+                if (token && !tokens.includes(token)) {
+                    tokens.push(token);
                 }
-                fields.push({
-                    id: "p_" + tokenKey,
-                    name: tokenKey,
-                    token: tokenBadge,
-                    label: tokenBadge,
-                    default: defVal
-                });
             }
+        }
+        return tokens;
+    }
+
+    function buildFieldsForTokens(tokens) {
+        if (!Array.isArray(tokens)) return [];
+        return tokens.map((tokenKey, idx) => {
+            const tokenBadge = '{' + '{' + tokenKey + '}' + '}';
+            let defVal = '';
+            const lower = String(tokenKey).toLowerCase();
+            if (tokenKey === '1' || lower.includes('name')) {
+                defVal = customerName;
+            } else if (tokenKey === '2' || lower.includes('order')) {
+                defVal = recentOrderNumber;
+            } else if (lower.includes('text') || lower.includes('item') || lower.includes('cart') || lower.includes('product')) {
+                defVal = 'Selected Items';
+            }
+            return {
+                id: "p_" + tokenKey,
+                name: String(tokenKey),
+                token: tokenBadge,
+                label: tokenBadge,
+                default: defVal
+            };
         });
-        return fields;
     }
 
     // Hydrate synchronized Meta templates from backend
     const approvedMetaTemplates = @json($approvedTemplates ?? []);
     if (Array.isArray(approvedMetaTemplates)) {
         approvedMetaTemplates.forEach(tpl => {
-            const fields = parseTemplateFields(tpl.body_text || '');
+            const tokens = (Array.isArray(tpl.variables) && tpl.variables.length > 0)
+                ? tpl.variables
+                : extractTemplateTokens(tpl.body_text || '');
+            const fields = buildFieldsForTokens(tokens);
+
             templateSchemas[tpl.name] = {
                 title: tpl.header_text || (tpl.name.replace(/_/g, ' ').toUpperCase()),
                 text: tpl.body_text || '',
@@ -1626,10 +1653,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     res.templates.forEach(t => {
                         const opt = document.createElement('option');
                         opt.value = t.name;
-                        opt.textContent = `${t.name} (${t.category})`;
+                        const tokens = (Array.isArray(t.variables) && t.variables.length > 0)
+                            ? t.variables
+                            : extractTemplateTokens(t.body_text || '');
+                        const fields = buildFieldsForTokens(tokens);
+                        const varInfo = tokens.length > 0 ? ' • {{' + tokens.join('}}, {{') + '}}' : '';
+                        opt.textContent = `${t.name} (${t.category}${varInfo})`;
                         optGroup.appendChild(opt);
 
-                        const fields = parseTemplateFields(t.body_text || '');
                         templateSchemas[t.name] = {
                             title: t.header_text || (t.name.replace(/_/g, ' ').toUpperCase()),
                             text: t.body_text || '',
@@ -1674,12 +1705,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const params = [];
             if (tmplDynamicFields) {
                 tmplDynamicFields.querySelectorAll('.tmpl-param-input').forEach(inp => {
-                    const val = inp.value.trim();
+                    const rawVal = inp.value.trim();
+                    const finalVal = rawVal !== '' ? rawVal : '-';
                     const pName = inp.dataset.name || '';
                     if (pName && isNaN(pName)) {
-                        params.push({ name: pName, value: val });
+                        params.push({ name: pName, value: finalVal });
                     } else {
-                        params.push(val);
+                        params.push(finalVal);
                     }
                 });
             }

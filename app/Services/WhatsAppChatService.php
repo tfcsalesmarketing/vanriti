@@ -326,16 +326,18 @@ class WhatsAppChatService
                     }
                 }
 
-                if ($paramText !== '') {
-                    $paramObj = [
-                        'type' => 'text',
-                        'text' => $paramText,
-                    ];
-                    if (! empty($paramName) && ! ctype_digit($paramName)) {
-                        $paramObj['parameter_name'] = $paramName;
-                    }
-                    $bodyParams[] = $paramObj;
+                if ($paramText === '') {
+                    $paramText = '-';
                 }
+
+                $paramObj = [
+                    'type' => 'text',
+                    'text' => $paramText,
+                ];
+                if (! empty($paramName) && ! ctype_digit($paramName)) {
+                    $paramObj['parameter_name'] = $paramName;
+                }
+                $bodyParams[] = $paramObj;
                 $paramIndex++;
             }
 

@@ -34,6 +34,11 @@ class WhatsAppTemplate extends Model
         ];
     }
 
+    protected $appends = [
+        'variables',
+        'variable_count',
+    ];
+
     public function isApproved(): bool
     {
         return strtoupper($this->status) === 'APPROVED';

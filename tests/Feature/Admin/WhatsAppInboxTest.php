@@ -403,5 +403,53 @@ class WhatsAppInboxTest extends TestCase
         ]);
         $this->assertEquals(2, $response->json('total_unread'));
     }
+
+    public function test_admin_can_send_template_with_parameters(): void
+    {
+        $admin = $this->superAdmin();
+        $conversation = WhatsAppConversation::create([
+            'phone' => '919876543210',
+            'contact_name' => 'Aarav Patel',
+        ]);
+
+        \App\Models\WhatsAppTemplate::create([
+            'name' => 'checkout_recovery',
+            'category' => 'MARKETING',
+            'status' => 'APPROVED',
+            'language' => 'en',
+            'header_type' => 'IMAGE',
+            'body_text' => 'Hi Greetings From VANRITI !! We noticed you did not finish your order for {{text}}.',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'https://graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response([
+                'messaging_product' => 'whatsapp',
+                'contacts' => [['input' => '919876543210', 'wa_id' => '919876543210']],
+                'messages' => [['id' => 'wamid.template_test_123']],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->postJson(route('admin.whatsapp.inbox.send-template', $conversation->id), [
+                'template_name' => 'checkout_recovery',
+                'lang_code' => 'en',
+                'parameters' => [
+                    ['name' => 'text', 'value' => 'Kumkumadi Tailam & Rose Water'],
+                ],
+                'header_image_url' => 'https://example.com/product.jpg',
+            ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+        ]);
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'whatsapp_conversation_id' => $conversation->id,
+            'direction' => 'outbound',
+            'message_type' => 'template',
+            'status' => 'sent',
+        ]);
+    }
 }
 
