@@ -15,13 +15,15 @@
     var Login = {
         pendingForm: null,
         pendingRedirect: null,
+        pendingRedirectAfterName: null,
         currentPurpose: 'fast_checkout',
         open: open,
         close: close,
         replay: replay,
         registerUrl: window.vrLoginModal && window.vrLoginModal.registerUrl,
         otpSendUrl: (window.vrOtpConfig && window.vrOtpConfig.sendUrl) || '',
-        otpVerifyUrl: (window.vrOtpConfig && window.vrOtpConfig.verifyUrl) || ''
+        otpVerifyUrl: (window.vrOtpConfig && window.vrOtpConfig.verifyUrl) || '',
+        saveNameUrl: (window.vrOtpConfig && window.vrOtpConfig.saveNameUrl) || '/otp/save-name'
     };
 
     window.vrLoginModal = Login;
@@ -123,18 +125,30 @@
     function setOtpStep(step) {
         var phoneStep = first('[data-vr-otp-step="phone"]');
         var codeStep = first('[data-vr-otp-step="code"]');
+        var nameStep = first('[data-vr-otp-step="name"]');
+
+        if (phoneStep) phoneStep.classList.add('d-none');
+        if (codeStep) {
+            codeStep.classList.add('d-none');
+            codeStep.classList.remove('show');
+        }
+        if (nameStep) {
+            nameStep.classList.add('d-none');
+            nameStep.classList.remove('show');
+        }
+
         if (step === 'code') {
-            if (phoneStep) phoneStep.classList.add('d-none');
             if (codeStep) {
                 codeStep.classList.remove('d-none');
                 codeStep.classList.add('show');
             }
+        } else if (step === 'name') {
+            if (nameStep) {
+                nameStep.classList.remove('d-none');
+                nameStep.classList.add('show');
+            }
         } else {
             if (phoneStep) phoneStep.classList.remove('d-none');
-            if (codeStep) {
-                codeStep.classList.add('d-none');
-                codeStep.classList.remove('show');
-            }
         }
     }
 
@@ -158,6 +172,11 @@
         if (verifyBtn) {
             verifyBtn.disabled = false;
             verifyBtn.innerHTML = '<span class="vr-btn-label"><span>Verify &amp; Continue</span><i class="ri-arrow-right-line"></i></span>';
+        }
+        var nameBtn = first('[data-vr-login-name-submit]');
+        if (nameBtn) {
+            nameBtn.disabled = false;
+            nameBtn.innerHTML = '<span class="vr-btn-label"><span>Continue to Checkout</span><i class="ri-arrow-right-line"></i></span>';
         }
     }
 
@@ -281,6 +300,23 @@
               if (verifyBtn) verifyBtn.disabled = false;
               if (data && (data.result === '1' || data.success)) {
                   refreshToken(data.csrf_token);
+
+                  // Option 2 Progressive Onboarding: if user needs a name, slide to Step 3
+                  if (data.needs_name) {
+                      Login.pendingRedirectAfterName = data.redirect || Login.pendingRedirect;
+                      var namePhoneDisplay = byId('vrNamePhoneDisplay');
+                      if (namePhoneDisplay) {
+                          namePhoneDisplay.textContent = '+91 ' + rawPhone;
+                      }
+                      setOtpStep('name');
+                      var nameInput = byId('vrLoginModalCustomerName');
+                      if (nameInput) {
+                          nameInput.value = '';
+                          setTimeout(function () { nameInput.focus(); }, 150);
+                      }
+                      return;
+                  }
+
                   replay(data.redirect || Login.pendingRedirect);
               } else {
                   if (verifyBtn) {
@@ -297,6 +333,62 @@
           });
     }
 
+    function submitName() {
+        var nameInput = byId('vrLoginModalCustomerName');
+        var errSel = '[data-vr-login-otp-error]';
+        var errEl = first(errSel);
+        if (errEl) { errEl.classList.add('d-none'); errEl.classList.remove('show'); }
+
+        var rawName = nameInput ? nameInput.value.trim() : '';
+        if (!rawName || rawName.length < 2) {
+            flashError(errSel, 'Please enter your name (at least 2 letters).');
+            if (nameInput) nameInput.focus();
+            return;
+        }
+
+        var submitBtn = first('[data-vr-login-name-submit]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="vr-btn-label"><span class="spinner-border spinner-border-sm me-1"></span><span>Saving...</span></span>';
+        }
+
+        var saveUrl = Login.saveNameUrl || (window.vrOtpConfig && window.vrOtpConfig.saveNameUrl) || '/otp/save-name';
+
+        fetch(saveUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ name: rawName })
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+          .then(function (data) {
+              if (submitBtn) submitBtn.disabled = false;
+              if (data && (data.result === '1' || data.success)) {
+                  if (data.csrf_token) refreshToken(data.csrf_token);
+                  if (window.vrToast) window.vrToast('Welcome, ' + rawName + '!');
+                  replay(data.redirect || Login.pendingRedirectAfterName || Login.pendingRedirect);
+              } else {
+                  if (submitBtn) {
+                      submitBtn.innerHTML = '<span class="vr-btn-label"><span>Continue to Checkout</span><i class="ri-arrow-right-line"></i></span>';
+                  }
+                  flashError(errSel, (data && data.message) || 'Could not save your name. Please try again.');
+              }
+          }).catch(function () {
+              if (submitBtn) {
+                  submitBtn.disabled = false;
+                  submitBtn.innerHTML = '<span class="vr-btn-label"><span>Continue to Checkout</span><i class="ri-arrow-right-line"></i></span>';
+              }
+              // Even if network fails, don't block user from checking out
+              replay(Login.pendingRedirectAfterName || Login.pendingRedirect);
+          });
+    }
+
+    function skipName() {
+        replay(Login.pendingRedirectAfterName || Login.pendingRedirect);
+    }
+
     function wire() {
         // OTP actions
         var send = first('[data-vr-login-otp-send]');
@@ -304,6 +396,20 @@
 
         var verify = first('[data-vr-login-otp-verify]');
         if (verify) verify.addEventListener('click', function () { verifyOtp(); });
+
+        // Name step actions
+        var nameBtn = first('[data-vr-login-name-submit]');
+        if (nameBtn) nameBtn.addEventListener('click', function () { submitName(); });
+
+        var skipBtn = first('[data-vr-login-name-skip]');
+        if (skipBtn) skipBtn.addEventListener('click', function () { skipName(); });
+
+        var nameInput = byId('vrLoginModalCustomerName');
+        if (nameInput) {
+            nameInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); submitName(); }
+            });
+        }
 
         var changePhone = byId('vrChangePhoneBtn');
         if (changePhone) {

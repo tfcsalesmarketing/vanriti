@@ -343,8 +343,30 @@ class OtpTest extends TestCase
         $verifyResponse->assertJson([
             'result' => '1',
             'redirect' => route('checkout.index'),
+            'needs_name' => false,
         ]);
 
         $this->assertAuthenticatedAs($existing);
+    }
+
+    public function test_save_name_updates_authenticated_user_name(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Customer 5678',
+            'phone' => '9812345678',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/otp/save-name', [
+            'name' => 'Ananya Roy',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'result' => '1',
+            'name' => 'Ananya Roy',
+        ]);
+
+        $this->assertEquals('Ananya Roy', $user->fresh()->name);
     }
 }

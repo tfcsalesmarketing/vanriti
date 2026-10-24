@@ -75,6 +75,18 @@
                 <div class="mb-1 text-break" style="font-size: 0.9rem; line-height: 1.5; color: #111b21;">{!! nl2br(e($msg->body)) !!}</div>
             @endif
 
+        {{-- Video Message --}}
+        @elseif ($msg->message_type === 'video' && $mediaUrl)
+            <div class="mb-2 overflow-hidden rounded-3 position-relative">
+                <video controls class="w-100 rounded-3 shadow-2xs" style="max-height: 280px;">
+                    <source src="{{ $mediaUrl }}" type="{{ $msg->media_mime_type ?: 'video/mp4' }}">
+                    Your browser does not support video playback.
+                </video>
+            </div>
+            @if ($msg->body)
+                <div class="mb-1 text-break" style="font-size: 0.9rem; line-height: 1.5; color: #111b21;">{!! nl2br(e($msg->body)) !!}</div>
+            @endif
+
         {{-- Interactive / Order Message Card --}}
         @elseif ($msg->message_type === 'order')
             <div class="p-2.5 rounded-3 bg-white text-dark mb-2 border border-success-subtle shadow-xs">

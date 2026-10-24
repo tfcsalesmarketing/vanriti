@@ -85,6 +85,11 @@ class WhatsAppMessage extends Model
             return $this->media_url;
         }
 
-        return Storage::disk('public')->url($this->media_url);
+        $disk = config('filesystems.whatsapp_disk', 's3');
+        if (config('filesystems.disks.s3.key') || $disk === 's3') {
+            return Storage::disk('s3')->url($this->media_url);
+        }
+
+        return Storage::disk($disk)->url($this->media_url);
     }
 }

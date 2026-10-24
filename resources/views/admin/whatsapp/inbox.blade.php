@@ -1611,7 +1611,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let content = '';
         if (msg.message_type === 'image') {
-            const url = msg.media_url ? '{{ asset('storage') }}/' + msg.media_url : '#';
+            const url = msg.media_url ? (msg.media_url.startsWith('http') ? msg.media_url : '{{ asset('storage') }}/' + msg.media_url) : '#';
             content = `<div class="mb-1.5 overflow-hidden rounded-3"><img src="${url}" class="rounded-3 img-fluid w-100 shadow-2xs" style="max-height: 240px; object-fit: cover;" alt="Photo"></div>`;
             if (msg.body) content += `<div class="mb-1 text-break" style="font-size: 0.88rem; line-height: 1.45;">${escapeHtml(msg.body)}</div>`;
         } else if (msg.message_type === 'document') {

@@ -88,17 +88,19 @@ class WhatsAppChatService
             $type = 'video';
         }
 
-        // Store file locally in public storage
-        $storedPath = $file->store('whatsapp_media/' . date('Y/m'), 'public');
-        $fullPath = Storage::disk('public')->path($storedPath);
-        $publicUrl = asset('storage/' . $storedPath);
+        // Determine disk (S3 preferred; falls back to config)
+        $disk = config('filesystems.whatsapp_disk', 's3');
 
-        // Upload to Meta Cloud API Media endpoint to get Media ID
-        $uploadRes = $this->apiService->uploadMedia($fullPath, $mime);
+        // 1. Upload to Meta Cloud API directly from the upload temporary stream (no permanent local file)
+        $uploadRes = $this->apiService->uploadMedia($file->getRealPath(), $mime);
         $mediaId = $uploadRes['media_id'] ?? null;
 
-        // Fallback to sending public URL if media ID upload fails
-        $mediaTarget = $mediaId ?: $publicUrl;
+        // 2. Store file on S3 bucket
+        $storedPath = $file->store('whatsapp_media/' . date('Y/m'), $disk);
+        $mediaUrl = Storage::disk($disk)->url($storedPath);
+
+        // Fallback to sending S3 URL if media ID upload fails
+        $mediaTarget = $mediaId ?: $mediaUrl;
 
         $apiRes = $this->apiService->sendMediaMessage(
             $conversation->phone,

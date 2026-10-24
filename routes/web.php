@@ -87,6 +87,7 @@ Route::get('/email/verify/{user}', [AuthController::class, 'verifyEmail'])->name
 // customers changing the mobile number on their profile.
 Route::post('/otp/send', [OtpController::class, 'send'])->name('otp.send')->middleware('throttle:otp.send');
 Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify')->middleware('throttle:otp.verify');
+Route::post('/otp/save-name', [OtpController::class, 'saveName'])->name('otp.save-name')->middleware('auth:web');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ---------- Checkout (requires login; guest carts merge on login) ----------

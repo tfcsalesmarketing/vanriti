@@ -327,10 +327,22 @@ class WhatsAppInboxController extends Controller
     /**
      * Stream or proxy media file for inbox previews.
      */
-    public function streamMedia(WhatsAppMessage $message): Response|\Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function streamMedia(WhatsAppMessage $message): Response|\Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
     {
-        if ($message->media_url && Storage::disk('public')->exists($message->media_url)) {
-            return response()->file(Storage::disk('public')->path($message->media_url));
+        $disk = config('filesystems.whatsapp_disk', 's3');
+
+        if ($message->media_url) {
+            if (str_starts_with($message->media_url, 'http://') || str_starts_with($message->media_url, 'https://')) {
+                return redirect()->away($message->media_url);
+            }
+
+            if ($disk === 's3' || config('filesystems.disks.s3.key')) {
+                return redirect()->away(Storage::disk('s3')->url($message->media_url));
+            }
+
+            if (Storage::disk('public')->exists($message->media_url)) {
+                return response()->file(Storage::disk('public')->path($message->media_url));
+            }
         }
 
         // Fetch binary from Meta Graph API

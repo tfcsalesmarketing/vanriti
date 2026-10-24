@@ -190,6 +190,52 @@
                                 </button>
                             </div>
                         </div>
+
+                        {{-- Step 3: Progressive Name Prompt (Shown after OTP verified for first-time / unnamed users) --}}
+                        <div class="vr-step-container d-none" data-vr-otp-step="name">
+                            <div class="vr-phone-confirmed-card mb-3">
+                                <div class="vr-confirmed-icon text-success">
+                                    <i class="ri-checkbox-circle-fill"></i>
+                                </div>
+                                <div class="vr-confirmed-info">
+                                    <div class="vr-confirmed-label text-success">Verified Successfully!</div>
+                                    <div class="vr-confirmed-phone" id="vrNamePhoneDisplay">+91 ••••••••••</div>
+                                </div>
+                            </div>
+
+                            <div class="vr-input-block">
+                                <label class="vr-label" for="vrLoginModalCustomerName">
+                                    <span>What should we call you?</span>
+                                    <span class="vr-label-badge"><i class="ri-user-smile-line"></i> Full Name</span>
+                                </label>
+                                <div class="vr-phone-field">
+                                    <input type="text" name="customer_name" id="vrLoginModalCustomerName"
+                                           class="vr-phone-control ps-3"
+                                           placeholder="Enter your full name"
+                                           autocomplete="name"
+                                           maxlength="60">
+                                    <div class="vr-field-trailing-icon">
+                                        <i class="ri-user-line"></i>
+                                    </div>
+                                </div>
+                                <div class="vr-input-note">
+                                    <i class="ri-information-line"></i> Used for your order billing and delivery updates.
+                                </div>
+                            </div>
+
+                            <button type="button" class="vr-modal-btn vr-btn-primary mb-2" data-vr-login-name-submit>
+                                <span class="vr-btn-label">
+                                    <span>Continue to Checkout</span>
+                                    <i class="ri-arrow-right-line"></i>
+                                </span>
+                            </button>
+
+                            <div class="text-center">
+                                <button type="button" class="btn btn-link text-muted py-1 px-2" data-vr-login-name-skip style="font-size: 0.8rem; text-decoration: none;">
+                                    Skip for now &rarr;
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Footer: link to full auth page for password login / registration --}}
@@ -206,13 +252,17 @@
 
 <script nonce="{{ $cspNonce }}">
 window.vrOtpConfig = window.vrOtpConfig || {
-    sendUrl:   '{{ route('otp.send') }}',
-    verifyUrl: '{{ route('otp.verify') }}'
+    sendUrl:     '{{ route('otp.send') }}',
+    verifyUrl:   '{{ route('otp.verify') }}',
+    saveNameUrl: '{{ route('otp.save-name') }}'
 };
 window.vrLoginModal = window.vrLoginModal || {};
 window.vrLoginModal.phone = 'vrLoginModalOtpPhone';
 window.vrLoginModal.code = 'vrLoginModalOtpCode';
+window.vrLoginModal.name = 'vrLoginModalCustomerName';
 window.vrLoginModal.sendBtn = 'vrLoginModalOtpSend';
 window.vrLoginModal.verifyBtn = 'vrLoginModalOtpVerify';
+window.vrLoginModal.nameBtn = 'vrLoginModalNameSubmit';
 window.vrLoginModal.registerUrl = '{{ route('register') }}';
+window.vrLoginModal.saveNameUrl = '{{ route('otp.save-name') }}';
 </script>

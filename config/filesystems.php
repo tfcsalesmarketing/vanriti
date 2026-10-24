@@ -15,6 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'whatsapp_disk' => env('WHATSAPP_STORAGE_DISK', env('AWS_BUCKET') ? 's3' : 'public'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

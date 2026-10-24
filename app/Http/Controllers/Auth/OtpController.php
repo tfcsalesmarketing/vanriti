@@ -242,8 +242,10 @@ class OtpController extends Controller
         // ── fast_checkout: 1-tap WhatsApp checkout & login (auto-provisions new user if not found) ──
         if ($data['purpose'] === 'fast_checkout') {
             $user = user_by_phone($phone);
+            $isNewUser = false;
 
             if (! $user) {
+                $isNewUser = true;
                 $user = \App\Models\User::create([
                     'name' => 'Customer '.substr($phone, -4),
                     'phone' => $phone,
@@ -280,8 +282,13 @@ class OtpController extends Controller
             $this->wishlistService->mergeGuestIntoUser($user);
             $this->consentService->mergeAnonymousIntoUser($user);
 
+            $hasPlaceholderName = empty(trim((string) $user->name)) || (bool) preg_match('/^Customer\s+\d{4}$/i', trim((string) $user->name));
+            $needsName = $isNewUser || $hasPlaceholderName;
+
             $result['csrf_token'] = csrf_token();
             $result['redirect'] = route('checkout.index');
+            $result['needs_name'] = $needsName;
+            $result['is_new'] = $isNewUser;
 
             if ($request->wantsJson()) {
                 return response()->json($result);
@@ -324,12 +331,13 @@ class OtpController extends Controller
             // stale. Ship a fresh token back so the storefront modal can replay the
             // pending add-to-cart / wishlist POST without hitting a 419 mismatch.
             $result['csrf_token'] = csrf_token();
+            $hasPlaceholderName = empty(trim((string) $user->name)) || (bool) preg_match('/^Customer\s+\d{4}$/i', trim((string) $user->name));
+            $result['needs_name'] = $hasPlaceholderName;
 
             if ($request->wantsJson()) {
                 // OTP login regenerates the session + CSRF token. Hand back a fresh
                 // token so the modal can replay the pending add/wishlist POST without
                 // hitting a 419 mismatch.
-                $result['csrf_token'] = csrf_token();
                 return response()->json($result);
             }
 
@@ -358,5 +366,51 @@ class OtpController extends Controller
         $token = \Illuminate\Support\Facades\Password::broker('users')->createToken($user);
 
         return redirect()->route('password.reset', ['token' => $token])->withInput(['phone' => $phone]);
+    }
+
+    // ── Save Name (Progressive Onboarding Step 2) ──────────────────────────────
+    public function saveName(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:100'],
+        ], [
+            'name.required' => 'Please enter your name.',
+            'name.min' => 'Name must be at least 2 characters.',
+            'name.max' => 'Name cannot exceed 100 characters.',
+        ]);
+
+        /** @var \App\Models\User|null $user */
+        $user = auth('web')->user();
+
+        if (! $user) {
+            return response()->json([
+                'result' => '0',
+                'message' => 'Please sign in first.',
+            ], 401);
+        }
+
+        $cleanName = trim(strip_tags((string) $data['name']));
+        $user->update(['name' => $cleanName]);
+
+        // Send WhatsApp welcome message now that we have customer's real name
+        try {
+            if ($this->whatsapp->isEnabled() && setting('whatsapp_auto_welcome_enabled', false) && ! empty($user->phone)) {
+                $firstName = explode(' ', $cleanName)[0] ?? $cleanName;
+                $this->whatsapp->sendWelcome($user->phone, $firstName);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('WhatsApp welcome could not be delivered after saving name.', [
+                'phone' => $user->phone,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'result' => '1',
+            'message' => 'Name saved successfully.',
+            'name' => $cleanName,
+            'csrf_token' => csrf_token(),
+            'redirect' => route('checkout.index'),
+        ]);
     }
 }
