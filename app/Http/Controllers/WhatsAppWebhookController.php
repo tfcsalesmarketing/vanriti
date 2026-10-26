@@ -179,6 +179,25 @@ class WhatsAppWebhookController extends Controller
                     $this->checkoutService->handleIncomingCart($from, $waId, [
                         ['product_retailer_id' => $referredRetailerId, 'quantity' => 1],
                     ], $messageId);
+                } elseif ($type === 'button') {
+                    $buttonPayload = (string) ($msg['button']['payload'] ?? '');
+                    $buttonText = (string) ($msg['button']['text'] ?? '');
+
+                    if (str_starts_with($buttonPayload, 'COD_CONFIRM_')) {
+                        $orderNumber = substr($buttonPayload, strlen('COD_CONFIRM_'));
+                        app(\App\Services\CodConfirmationService::class)->handleCustomerConfirm($orderNumber, $from);
+                    } elseif (str_starts_with($buttonPayload, 'COD_CANCEL_')) {
+                        $orderNumber = substr($buttonPayload, strlen('COD_CANCEL_'));
+                        app(\App\Services\CodConfirmationService::class)->handleCustomerCancel($orderNumber, $from);
+                    } elseif (str_starts_with($buttonPayload, 'NDR_REATTEMPT_')) {
+                        $orderNumber = substr($buttonPayload, strlen('NDR_REATTEMPT_'));
+                        app(\App\Services\NdrService::class)->handleCustomerReattempt($orderNumber, $from);
+                    } elseif (str_starts_with($buttonPayload, 'NDR_UPDATE_')) {
+                        $orderNumber = substr($buttonPayload, strlen('NDR_UPDATE_'));
+                        app(\App\Services\NdrService::class)->handleCustomerLandmarkPrompt($orderNumber, $from);
+                    } else {
+                        $this->checkoutService->processCustomerInput($from, $buttonText, $buttonPayload, $messageId);
+                    }
                 } elseif ($type === 'interactive') {
                     $interactive = $msg['interactive'] ?? [];
                     $buttonId = (string) ($interactive['button_reply']['id']
