@@ -89,21 +89,14 @@ class WhatsAppShippingService
         }
 
         try {
-            $response = Http::timeout(4)->get("https://api.postalpincode.in/pincode/{$pincode}");
-            if ($response->successful()) {
-                $data = $response->json();
-                if (! empty($data[0]['PostOffice'][0])) {
-                    $po = $data[0]['PostOffice'][0];
-                    return [
-                        'city' => $po['District'] ?? ($po['Block'] ?? null),
-                        'state' => $po['State'] ?? null,
-                    ];
-                }
-            }
-        } catch (\Throwable $e) {
-            // Silently fall back; customer enters or confirms city/state directly
-        }
+            $loc = app(PincodeService::class)->resolveLocation($pincode);
 
-        return ['city' => null, 'state' => null];
+            return [
+                'city' => ! empty($loc['city']) ? $loc['city'] : null,
+                'state' => ! empty($loc['state']) ? $loc['state'] : null,
+            ];
+        } catch (\Throwable) {
+            return ['city' => null, 'state' => null];
+        }
     }
 }

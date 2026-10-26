@@ -55,6 +55,12 @@ class CheckoutController extends Controller
             return view('storefront.checkout.guest');
         }
 
+        if ($user->status !== 'active') {
+            auth('web')->logout();
+
+            return redirect()->route('login')->with('error', 'Your account has been suspended.');
+        }
+
         $addresses = $user->addresses()->get();
 
         $selectedAddress = null;

@@ -1068,7 +1068,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var token = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
 
-            fetch('/pincode/check', {
+            var metaUrl = document.querySelector('meta[name="vr-pincode-check-url"]');
+            var checkUrl = (metaUrl ? metaUrl.content : '') || window.vrPincodeCheckUrl || '/pincode/check';
+
+            fetch(checkUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1092,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     setStatus('✓ ' + (loc || 'Serviceable'), 'success');
                     try { localStorage.setItem('vr_pincode', pin); } catch (e) {}
                 } else if (data && !data.serviceable) {
-                    setStatus('⚠ We are currently unable to deliver to this pincode.', 'error');
+                    setStatus('⚠ ' + (data.message || 'We are currently unable to deliver to this pincode.'), 'error');
                 } else {
                     fallbackExternalLookup(pin);
                 }
@@ -1106,23 +1109,54 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('https://api.postalpincode.in/pincode/' + pin)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    cityInput.readOnly = false;
-                    stateInput.readOnly = false;
                     if (!data || !data[0] || data[0].Status !== 'Success' || !data[0].PostOffice || !data[0].PostOffice.length) {
-                        setStatus('Pincode not found. Please enter manually.', 'error');
+                        fallbackZippopotam(pin);
                         return;
                     }
+                    cityInput.readOnly = false;
+                    stateInput.readOnly = false;
                     var po = data[0].PostOffice[0];
-                    cityInput.value = po.District || '';
-                    stateInput.value = po.State || '';
+                    var city = po.District || po.Division || po.Name || '';
+                    if (city === 'Gautam Buddha Nagar') {
+                        if ((po.Name && po.Name.indexOf('Noida') !== -1) || (po.Block && po.Block.indexOf('Noida') !== -1)) {
+                            city = 'Noida';
+                        }
+                    }
+                    var state = po.State || '';
+                    if (city) cityInput.value = city;
+                    if (state) stateInput.value = state;
                     cityInput.dispatchEvent(new Event('input', { bubbles: true }));
                     stateInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    setStatus('✓ ' + (po.District || '') + ', ' + (po.State || ''), 'success');
+                    setStatus('✓ ' + (city && state ? city + ', ' + state : (city || state || 'Serviceable')), 'success');
+                })
+                .catch(function () {
+                    fallbackZippopotam(pin);
+                });
+        }
+
+        function fallbackZippopotam(pin) {
+            fetch('https://api.zippopotam.us/IN/' + pin)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    cityInput.readOnly = false;
+                    stateInput.readOnly = false;
+                    if (data && data.places && data.places.length) {
+                        var p = data.places[0];
+                        var city = p['place name'] || '';
+                        var state = p['state'] || '';
+                        if (city) cityInput.value = city;
+                        if (state) stateInput.value = state;
+                        cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        stateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        setStatus('✓ ' + (city && state ? city + ', ' + state : (city || state || 'Serviceable')), 'success');
+                        return;
+                    }
+                    setStatus('Pincode not found. Please enter city & state manually.', 'error');
                 })
                 .catch(function () {
                     cityInput.readOnly = false;
                     stateInput.readOnly = false;
-                    setStatus('Could not auto-fill. Please enter manually.', 'error');
+                    setStatus('Could not auto-fill. Please enter city & state manually.', 'error');
                 });
         }
 

@@ -108,7 +108,7 @@
             @endif
         </div>
 
-        <a href="{{ route('checkout.index') }}" class="btn btn-vr btn-lg w-100 mb-2 d-flex align-items-center justify-content-center gap-2 py-2.5 shadow-sm">
+        <a href="{{ route('checkout.index') }}" class="btn btn-vr btn-lg w-100 mb-2 d-flex align-items-center justify-content-center gap-2 py-2.5 shadow-sm js-cart-drawer-checkout" id="vrDrawerProceedCheckoutBtn">
             <span>Proceed to Checkout</span>
             <i class="bi bi-arrow-right"></i>
         </a>

@@ -150,6 +150,32 @@
                                 </button>
                             </div>
 
+                            <div id="vrOtpNameStep" class="d-none mt-4 pt-3 border-top border-light">
+                                <div class="text-center mb-3">
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success mb-2" style="width: 52px; height: 52px; font-size: 1.6rem;">
+                                        <i class="ri-user-smile-line"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">What should we call you?</h6>
+                                    <p class="small text-muted mb-0">Enter your full name for order updates and billing.</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold" for="vrOtpCustomerName">Full Name</label>
+                                    <div class="vr-input-wrap">
+                                        <input type="text" id="vrOtpCustomerName" class="form-control" placeholder="Enter your full name" maxlength="60" autocomplete="name">
+                                        <i class="ri-user-line vr-input-icon"></i>
+                                    </div>
+                                    <small id="vrOtpNameMsg" class="text-danger d-block mt-1"></small>
+                                </div>
+                                <button id="vrOtpSaveNameBtn" type="button" class="btn btn-vr w-100 py-2.5 mb-2">
+                                    Continue to Checkout &rarr;
+                                </button>
+                                <div class="text-center">
+                                    <button id="vrOtpSkipNameBtn" type="button" class="btn btn-link btn-sm small text-muted p-0 text-decoration-none">
+                                        Skip for now &rarr;
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="text-center mt-3">
                                 <button id="vrOtpBack" type="button" class="btn btn-link btn-sm small text-muted p-0 text-decoration-none">
                                     &larr; Login with password instead
@@ -179,7 +205,8 @@
     /* ── Route config injected once; shared by the OTP helper ── */
     window.vrOtpConfig = {
         sendUrl:   '{{ route('otp.send') }}',
-        verifyUrl: '{{ route('otp.verify') }}'
+        verifyUrl: '{{ route('otp.verify') }}',
+        saveNameUrl: '{{ route('otp.save-name') }}'
     };
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -284,11 +311,69 @@
                     btn       : verifyBtn,
                     purpose   : 'fast_checkout',
                     onVerified: function (data) {
-                        if (data && data.redirect) {
-                            window.location.href = data.redirect;
-                        } else {
-                            window.location.href = '{{ route('account.dashboard') }}';
+                        var targetUrl = (data && data.redirect) ? data.redirect : '{{ route('checkout.index') }}';
+                        if (data && data.needs_name) {
+                            var verifyStep = document.getElementById('vrOtpVerifyStep');
+                            var phoneGroup = document.getElementById('vrOtpPhoneGroup');
+                            var sendBtn = document.getElementById('vrOtpSend');
+                            var backBtn = document.getElementById('vrOtpBack');
+                            var nameStep = document.getElementById('vrOtpNameStep');
+
+                            if (verifyStep) verifyStep.classList.add('d-none');
+                            if (phoneGroup) phoneGroup.classList.add('d-none');
+                            if (sendBtn) sendBtn.classList.add('d-none');
+                            if (backBtn) backBtn.classList.add('d-none');
+                            if (nameStep) {
+                                nameStep.classList.remove('d-none');
+                                var nameInput = document.getElementById('vrOtpCustomerName');
+                                if (nameInput) setTimeout(function () { nameInput.focus(); }, 100);
+                            }
+
+                            var saveBtn = document.getElementById('vrOtpSaveNameBtn');
+                            var skipBtn = document.getElementById('vrOtpSkipNameBtn');
+
+                            function proceed() {
+                                window.location.href = targetUrl;
+                            }
+
+                            if (saveBtn) {
+                                saveBtn.onclick = function () {
+                                    var nameInput = document.getElementById('vrOtpCustomerName');
+                                    var val = nameInput ? nameInput.value.trim() : '';
+                                    var nameMsg = document.getElementById('vrOtpNameMsg');
+                                    if (nameMsg) nameMsg.textContent = '';
+                                    if (!val || val.length < 2) {
+                                        if (nameMsg) nameMsg.textContent = 'Please enter your name (at least 2 letters).';
+                                        return;
+                                    }
+                                    saveBtn.disabled = true;
+                                    saveBtn.textContent = 'Saving...';
+                                    var csrf = (data && data.csrf_token) ? data.csrf_token : document.querySelector('meta[name="csrf-token"]').content;
+                                    fetch('{{ route('otp.save-name') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': csrf,
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({ name: val })
+                                    }).then(function () {
+                                        proceed();
+                                    }).catch(function () {
+                                        proceed();
+                                    });
+                                };
+                            }
+
+                            if (skipBtn) {
+                                skipBtn.onclick = function () {
+                                    proceed();
+                                };
+                            }
+                            return;
                         }
+
+                        window.location.href = targetUrl;
                     },
                     onError: function (msg) {
                         if (codeMsg) codeMsg.textContent = msg;

@@ -44,9 +44,42 @@ class CheckoutTest extends TestCase
         ];
     }
 
-    public function test_guest_is_redirected_to_login_on_checkout(): void
+    public function test_guest_with_empty_cart_redirected_to_cart_index(): void
     {
-        $this->get(route('checkout.index'))->assertRedirect(route('login'));
+        $this->get(route('checkout.index'))->assertRedirect(route('cart.index'));
+    }
+
+    public function test_guest_with_cart_items_renders_fast_checkout_guest_view(): void
+    {
+        $product = Product::factory()->active()->create([
+            'selling_price' => 500.00,
+            'stock' => 10,
+        ]);
+
+        $sessionId = 'guest-checkout-test-session';
+        $cart = Cart::create([
+            'owner_type' => 'guest',
+            'owner_id' => 0,
+            'session_id' => $sessionId,
+        ]);
+        $cart->items()->create([
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => $product->selling_price,
+            'mrp' => $product->mrp ?? 1000.00,
+            'line_total' => $product->selling_price,
+        ]);
+
+        $response = $this->withCookie(\App\Services\CartService::COOKIE_NAME, $sessionId)
+            ->get(route('checkout.index'));
+        $response->assertOk();
+        $response->assertViewIs('storefront.checkout.guest');
+    }
+
+    public function test_guest_is_redirected_to_login_on_checkout_store(): void
+    {
+        $this->post(route('checkout.store'), $this->addressData())
+            ->assertRedirect(route('login'));
     }
 
     public function test_full_cod_checkout_creates_order_with_correct_totals(): void

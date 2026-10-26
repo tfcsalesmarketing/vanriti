@@ -102,9 +102,10 @@ Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify')
 Route::post('/otp/save-name', [OtpController::class, 'saveName'])->name('otp.save-name')->middleware('auth:web');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// ---------- Checkout (requires login; guest carts merge on login) ----------
+// ---------- Checkout (Fast Checkout for guests; order submission requires login) ----------
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+
 Route::middleware(['auth', 'active'])->group(function () {
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:checkout');
     Route::post('/checkout/validate', [CheckoutController::class, 'validateFields'])->name('checkout.validate');
     Route::post('/checkout/verify', [CheckoutController::class, 'verify'])->name('checkout.verify')->middleware('throttle:10,1');

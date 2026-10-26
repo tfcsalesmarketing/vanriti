@@ -252,5 +252,33 @@
         e.stopPropagation();
         openDrawer();
     });
+
+    // Intercept Proceed to Checkout inside drawer for fast 1-tap WhatsApp checkout
+    document.addEventListener('click', function (e) {
+        var el = e.target && e.target.nodeType === 1 ? e.target : (e.target ? e.target.parentElement : null);
+        if (!el || !el.closest) return;
+
+        var checkoutBtn = el.closest('#vrDrawerProceedCheckoutBtn, .js-cart-drawer-checkout');
+        if (!checkoutBtn) return;
+
+        var guestMeta = document.querySelector('meta[name="vr-is-guest"]');
+        var isGuest = guestMeta && guestMeta.getAttribute('content') === '1';
+
+        if (isGuest) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeDrawer();
+            if (window.vrLoginModal && typeof window.vrLoginModal.open === 'function') {
+                window.vrLoginModal.open({
+                    title: '⚡ Fast Checkout with WhatsApp',
+                    subtitle: 'Enter your mobile number to checkout in seconds.',
+                    purpose: 'fast_checkout',
+                    redirect: '{{ route('checkout.index') }}'
+                });
+            } else {
+                window.location.href = checkoutBtn.href;
+            }
+        }
+    });
 })();
 </script>

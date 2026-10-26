@@ -282,7 +282,11 @@ class OtpController extends Controller
             $this->wishlistService->mergeGuestIntoUser($user);
             $this->consentService->mergeAnonymousIntoUser($user);
 
-            $hasPlaceholderName = empty(trim((string) $user->name)) || (bool) preg_match('/^Customer\s+\d{4}$/i', trim((string) $user->name));
+            $rawName = trim((string) $user->name);
+            $hasPlaceholderName = empty($rawName)
+                || (bool) preg_match('/^Customer(\s+\d+)?$/i', $rawName)
+                || strcasecmp($rawName, 'Guest') === 0
+                || strcasecmp($rawName, 'User') === 0;
             $needsName = $isNewUser || $hasPlaceholderName;
 
             $result['csrf_token'] = csrf_token();
@@ -302,11 +306,21 @@ class OtpController extends Controller
             $user = user_by_phone($phone);
 
             if (! $user) {
-                return back()->with('error', 'Unable to sign you in. Please try again or register a new account.');
+                $notFound = 'Unable to sign you in. Please try again or register a new account.';
+                if ($request->wantsJson()) {
+                    return response()->json(['result' => '0', 'message' => $notFound], 422);
+                }
+
+                return back()->with('error', $notFound);
             }
 
             if ($user->status !== 'active') {
-                return back()->with('error', 'Your account has been suspended. Contact support.');
+                $suspended = 'Your account has been suspended. Contact support.';
+                if ($request->wantsJson()) {
+                    return response()->json(['result' => '0', 'message' => $suspended], 403);
+                }
+
+                return back()->with('error', $suspended);
             }
 
             if ($user->phone !== $phone && ! \App\Models\User::query()->where('phone', $phone)->whereKeyNot($user->id)->exists()) {
@@ -331,13 +345,17 @@ class OtpController extends Controller
             // stale. Ship a fresh token back so the storefront modal can replay the
             // pending add-to-cart / wishlist POST without hitting a 419 mismatch.
             $result['csrf_token'] = csrf_token();
-            $hasPlaceholderName = empty(trim((string) $user->name)) || (bool) preg_match('/^Customer\s+\d{4}$/i', trim((string) $user->name));
+            $rawName = trim((string) $user->name);
+            $hasPlaceholderName = empty($rawName)
+                || (bool) preg_match('/^Customer(\s+\d+)?$/i', $rawName)
+                || strcasecmp($rawName, 'Guest') === 0
+                || strcasecmp($rawName, 'User') === 0;
             $result['needs_name'] = $hasPlaceholderName;
 
+            $hasCart = $this->cartService->count() > 0;
+            $result['redirect'] = $hasCart ? route('checkout.index') : route('account.dashboard');
+
             if ($request->wantsJson()) {
-                // OTP login regenerates the session + CSRF token. Hand back a fresh
-                // token so the modal can replay the pending add/wishlist POST without
-                // hitting a 419 mismatch.
                 return response()->json($result);
             }
 
@@ -410,7 +428,7 @@ class OtpController extends Controller
             'message' => 'Name saved successfully.',
             'name' => $cleanName,
             'csrf_token' => csrf_token(),
-            'redirect' => route('checkout.index'),
+            'redirect' => $this->cartService->count() > 0 ? route('checkout.index') : route('account.dashboard'),
         ]);
     }
 }

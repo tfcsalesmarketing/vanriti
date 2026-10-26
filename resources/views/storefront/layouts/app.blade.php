@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="facebook-domain-verification" content="uiy2uo8dqx16mp5h2f784kpbs4ry53" />
     <meta name="vr-is-guest" content="{{ auth('web')->guest() ? '1' : '0' }}">
+    <meta name="vr-pincode-check-url" content="{{ route('pincode.check') }}">
+    <script nonce="{{ $cspNonce }}">window.vrPincodeCheckUrl = @json(route('pincode.check'));</script>
     @php
         $_seoTitle = trim((string) $__env->yieldContent('title'));
         $_brandName = store_name();
