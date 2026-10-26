@@ -1419,11 +1419,13 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
         btn.disabled = true;
         btn.textContent = 'Registering...';
 
+        var token = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+
         fetch('{{ route('stock.notify') }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-CSRF-TOKEN': token,
                 'Accept': 'application/json'
             },
             body: JSON.stringify({

@@ -233,15 +233,18 @@
 
     // Global click listener to open drawer from any cart icon or trigger
     document.addEventListener('click', function (e) {
-        var cartTrigger = e.target.closest('.js-cart-drawer-trigger, a[href$="/cart"], a[href$="/cart/"], a[href*="/cart"]');
+        var el = e.target && e.target.nodeType === 1 ? e.target : (e.target ? e.target.parentElement : null);
+        if (!el || !el.closest) return;
+
+        var cartTrigger = el.closest('.js-cart-drawer-trigger, a[href$="/cart"], a[href$="/cart/"], a[href*="/cart"]');
         if (!cartTrigger) return;
 
         // Never intercept links inside the drawer itself (like "View Full Bag" or "Checkout")
         if (cartTrigger.closest('#vrCartDrawer')) return;
 
         // If currently on cart or checkout pages, allow natural navigation
-        var path = window.location.pathname.toLowerCase();
-        if (path.indexOf('/cart') !== -1 || path.indexOf('/checkout') !== -1) {
+        var isCartOrCheckout = /(?:^|\/)(cart|checkout)(?:\/|$)/i.test(window.location.pathname);
+        if (isCartOrCheckout) {
             return;
         }
 

@@ -64,34 +64,6 @@
     </div>
 </div>
 
-<style>
-.vr-search-item {
-    transition: all 0.2s ease;
-    border-radius: 10px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    color: #1e293b;
-    border: 1px solid transparent;
-}
-.vr-search-item:hover, .vr-search-item:focus {
-    background: #f8fafc;
-    border-color: #e2e8f0;
-    color: #0f172a;
-    transform: translateX(4px);
-}
-.vr-search-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: #f1f5f9;
-    flex-shrink: 0;
-}
-</style>
-
 <script nonce="{{ $cspNonce ?? '' }}">
 (function () {
     var searchInput = document.getElementById('vrSearchInput');
