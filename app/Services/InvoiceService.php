@@ -64,7 +64,7 @@ class InvoiceService
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
         $options->set('defaultFont', 'DejaVu Sans');
-        $options->set('dpi', 150);
+        $options->set('dpi', 96);
 
         $dompdf = new Dompdf($options);
         $dompdf->setPaper('A4', 'portrait');
@@ -78,7 +78,10 @@ class InvoiceService
         // Attempt S3 storage if configured
         if ($this->isS3Configured()) {
             try {
-                Storage::disk('s3')->put($path, $pdfOutput, 'public');
+                Storage::disk('s3')->put($path, $pdfOutput, [
+                    'visibility' => 'public',
+                    'CacheControl' => 'no-cache, no-store, must-revalidate, max-age=0',
+                ]);
                 $storedDisk = 's3';
                 $invoiceUrl = Storage::disk('s3')->url($path);
             } catch (\Throwable $e) {
@@ -121,10 +124,14 @@ class InvoiceService
     /**
      * Return a binary PDF response for inline viewing (in-browser PDF reader) or file download.
      */
-    public function getPdfResponse(Order $order, bool $download = false): Response
+    public function getPdfResponse(Order $order, bool $download = false, bool $force = false): Response
     {
         $path = $order->invoice_pdf_path ?: "invoices/INV-{$order->order_number}.pdf";
         $pdfContent = null;
+
+        if ($force) {
+            $this->generateAndStorePdf($order, true);
+        }
 
         try {
             if ($this->isS3Configured() && Storage::disk('s3')->exists($path)) {
@@ -157,7 +164,9 @@ class InvoiceService
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => "{$disposition}; filename=\"{$filename}\"",
             'Content-Length' => strlen($pdfContent),
-            'Cache-Control' => 'private, max-age=3600',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ]);
     }
 }

@@ -95,7 +95,15 @@ class Order extends Model
 
     public function invoiceUrl(): ?string
     {
-        return $this->invoice_url;
+        if (empty($this->invoice_url)) {
+            return null;
+        }
+
+        $v = $this->invoice_generated_at?->timestamp ?? $this->updated_at?->timestamp ?? time();
+
+        return str_contains($this->invoice_url, '?')
+            ? $this->invoice_url . '&v=' . $v
+            : $this->invoice_url . '?v=' . $v;
     }
 
     public function user(): BelongsTo

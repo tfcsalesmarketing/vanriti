@@ -28,8 +28,9 @@
                     <span>Live Chat</span>
                 </a>
             @endif
+        @endif
         <div class="btn-group">
-            <a href="{{ route('admin.orders.invoice', $order) }}" class="btn btn-sm btn-outline-dark" target="_blank" title="View A4 PDF Invoice">
+            <a href="{{ route('admin.orders.invoice', ['order' => $order->id, 'v' => $order->invoice_generated_at?->timestamp ?? time()]) }}" class="btn btn-sm btn-outline-dark" target="_blank" title="View A4 PDF Invoice">
                 <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Tax Invoice (PDF)
             </a>
             <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
@@ -37,13 +38,25 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
                 <li>
-                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', $order) }}" target="_blank">
+                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', ['order' => $order->id, 'v' => $order->invoice_generated_at?->timestamp ?? time()]) }}" target="_blank">
                         <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>View PDF (A4)
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', ['order' => $order->id, 'download' => 1]) }}">
+                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', ['order' => $order->id, 'download' => 1, 'v' => $order->invoice_generated_at?->timestamp ?? time()]) }}">
                         <i class="bi bi-download me-2 text-primary"></i>Download PDF
+                    </a>
+                </li>
+                @if ($order->invoice_url)
+                    <li>
+                        <a class="dropdown-item" href="{{ $order->invoiceUrl() }}" target="_blank">
+                            <i class="bi bi-cloud-arrow-down me-2 text-info"></i>Direct S3 Cloud PDF
+                        </a>
+                    </li>
+                @endif
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', ['order' => $order->id, 'refresh' => 1]) }}" target="_blank">
+                        <i class="bi bi-arrow-repeat me-2 text-warning"></i>Force Regenerate PDF
                     </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>

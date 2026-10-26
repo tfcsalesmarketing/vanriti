@@ -568,7 +568,11 @@ class OrderController extends Controller
             return view('invoices.gst-tax-invoice', compact('order'));
         }
 
-        return $invoiceService->getPdfResponse($order, $request->boolean('download'));
+        return $invoiceService->getPdfResponse(
+            $order,
+            $request->boolean('download'),
+            $request->boolean('force') || $request->boolean('refresh')
+        );
     }
 
     public function manifest(Request $request): View

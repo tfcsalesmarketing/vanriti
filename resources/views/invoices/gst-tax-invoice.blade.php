@@ -11,36 +11,102 @@
     $storeWebsite = setting('store_website', 'www.vanriti.com');
     $gstin = setting('gst_number', setting('gstin', '06AXYPG2957R1ZD'));
 
-    // Logo image resolving
+    // Logo image resolving (base64 for robust Dompdf rendering, asset() for web)
     $logoSetting = setting('store_logo');
     $logoSrc = null;
+    $logoPath = null;
     if ($logoSetting && file_exists(public_path('storage/' . $logoSetting))) {
-        $logoSrc = ($isPdf ?? false) ? public_path('storage/' . $logoSetting) : asset('storage/' . $logoSetting);
+        $logoPath = public_path('storage/' . $logoSetting);
     } elseif (file_exists(public_path('images/logo.png'))) {
-        $logoSrc = ($isPdf ?? false) ? public_path('images/logo.png') : asset('images/logo.png');
-    } elseif (file_exists(public_path('images/logo.webp'))) {
-        $logoSrc = ($isPdf ?? false) ? public_path('images/logo.webp') : asset('images/logo.webp');
+        $logoPath = public_path('images/logo.png');
+    } elseif (file_exists(public_path('images/logo.jpg'))) {
+        $logoPath = public_path('images/logo.jpg');
     }
 
-    // Totals calculations without delivery charges (as explicitly requested)
-    $itemsTotalQuantity = $items->sum('quantity');
-    $itemsSubtotal = 0.0;
-    $totalTaxable = 0.0;
-    $totalGst = 0.0;
+    if ($logoPath) {
+        if ($isPdf ?? false) {
+            $ext = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+            $mime = ($ext === 'jpg' || $ext === 'jpeg') ? 'image/jpeg' : 'image/png';
+            $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+        } else {
+            $logoSrc = asset(str_replace(str_replace('\\', '/', public_path()) . '/', '', str_replace('\\', '/', $logoPath)));
+        }
+    }
 
+    // Items calculation
+    $itemsTotalQuantity = (int) $items->sum('quantity');
+    $itemsGrossSubtotal = 0.0;
     foreach ($items as $item) {
-        $itemTotal = (float) ($item->total_price ?: ($item->unit_price * $item->quantity));
-        $taxableVal = $item->taxable();
-        $taxVal = $item->tax();
-        
-        $itemsSubtotal += $itemTotal;
-        $totalTaxable += $taxableVal;
-        $totalGst += $taxVal;
+        $lineGross = (float) ($item->total_price ?: ($item->unit_price * $item->quantity));
+        $itemsGrossSubtotal += $lineGross;
     }
 
     $discountAmount = (float) ($order->discount_amount ?? 0);
-    // Invoice Total strictly removes delivery charges
-    $invoiceGrandTotal = max(0, $itemsSubtotal - $discountAmount);
+    // Invoice Grand Total strictly excludes delivery charges as requested
+    $invoiceGrandTotal = max(0.0, $itemsGrossSubtotal - $discountAmount);
+
+    // Proportionate discount factor to distribute order discount across items
+    $discountFactor = ($itemsGrossSubtotal > 0 && $discountAmount > 0)
+        ? max(0.0, ($itemsGrossSubtotal - $discountAmount) / $itemsGrossSubtotal)
+        : 1.0;
+
+    // Build row-level calculated items so table and totals reconcile 100%
+    $tableRows = [];
+    $runningTaxable = 0.0;
+    $runningGst = 0.0;
+    $runningTotal = 0.0;
+
+    foreach ($items as $item) {
+        $origLine = (float) ($item->total_price ?: ($item->unit_price * $item->quantity));
+        $rate = (float) ($item->gst_rate ?: setting('default_gst_rate', 5));
+        
+        // Effective line total after discount
+        $lineTotalAfterDiscount = round($origLine * $discountFactor, 2);
+        
+        // Effective unit price after discount
+        $unitPriceAfterDiscount = $item->quantity > 0 ? ($lineTotalAfterDiscount / $item->quantity) : $lineTotalAfterDiscount;
+
+        // Since selling price is GST-inclusive: Taxable = Total / (1 + rate/100)
+        $taxableVal = round($lineTotalAfterDiscount / (1.0 + ($rate / 100.0)), 2);
+        $taxAmt = round($lineTotalAfterDiscount - $taxableVal, 2);
+
+        $runningTaxable += $taxableVal;
+        $runningGst += $taxAmt;
+        $runningTotal += $lineTotalAfterDiscount;
+
+        $tableRows[] = [
+            'item' => $item,
+            'hsn' => $item->product?->hsn_code ?: '330590',
+            'unit_price_after_discount' => $unitPriceAfterDiscount,
+            'qty' => $item->quantity,
+            'taxable' => $taxableVal,
+            'gst_rate' => $rate,
+            'gst_amount' => $taxAmt,
+            'total' => $lineTotalAfterDiscount,
+        ];
+    }
+
+    // Reconcile any rounding drift on the last item to match exact invoice grand total
+    $totalDrift = round($invoiceGrandTotal - $runningTotal, 2);
+    if ($totalDrift != 0.0 && !empty($tableRows)) {
+        $lastIdx = count($tableRows) - 1;
+        $tableRows[$lastIdx]['total'] = round($tableRows[$lastIdx]['total'] + $totalDrift, 2);
+        $tableRows[$lastIdx]['unit_price_after_discount'] = $tableRows[$lastIdx]['qty'] > 0 
+            ? ($tableRows[$lastIdx]['total'] / $tableRows[$lastIdx]['qty']) 
+            : $tableRows[$lastIdx]['total'];
+        $tableRows[$lastIdx]['taxable'] = round($tableRows[$lastIdx]['total'] / (1.0 + ($tableRows[$lastIdx]['gst_rate'] / 100.0)), 2);
+        $tableRows[$lastIdx]['gst_amount'] = round($tableRows[$lastIdx]['total'] - $tableRows[$lastIdx]['taxable'], 2);
+    }
+
+    // Re-sum final reconciled totals
+    $totalTaxable = round(array_sum(array_column($tableRows, 'taxable')), 2);
+    $totalGst = round(array_sum(array_column($tableRows, 'gst_amount')), 2);
+
+    $defaultRate = (float) setting('default_gst_rate', 5);
+    $halfRate = $defaultRate / 2;
+    $cgstAmount = round($totalGst / 2, 2);
+    $sgstAmount = round($totalGst - $cgstAmount, 2);
+    $igstAmount = $totalGst;
 
     // Number to words converter in Indian Currency
     $numberToWords = function ($number) {
@@ -105,6 +171,11 @@
             --vr-border-light: #E5EBE6;
         }
 
+        @page {
+            size: A4 portrait;
+            margin: {{ ($isPdf ?? false) ? '8mm 6mm' : '0' }};
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -124,7 +195,7 @@
 
         /* Top Action Buttons (Hidden when printing or in PDF) */
         .invoice-actions {
-            max-width: 800px;
+            max-width: 210mm;
             margin: 0 auto 14px auto;
             display: flex;
             justify-content: space-between;
@@ -161,82 +232,73 @@
             background: #f8fafc;
         }
 
-        /* Invoice Container */
+        /* Invoice Container: Exact Standard A4 Dimensions (210mm x 297mm) */
         .invoice-paper {
-            max-width: 800px;
+            width: 100%;
+            max-width: {{ ($isPdf ?? false) ? '100%' : '210mm' }};
+            min-height: {{ ($isPdf ?? false) ? 'auto' : '297mm' }};
             margin: 0 auto;
             background: #ffffff;
-            border-radius: {{ ($isPdf ?? false) ? '0' : '10px' }};
-            box-shadow: {{ ($isPdf ?? false) ? 'none' : '0 4px 18px rgba(0, 0, 0, 0.06)' }};
+            border-radius: {{ ($isPdf ?? false) ? '0' : '4px' }};
+            box-shadow: {{ ($isPdf ?? false) ? 'none' : '0 4px 20px rgba(0, 0, 0, 0.08)' }};
             overflow: hidden;
             position: relative;
-            border: {{ ($isPdf ?? false) ? 'none' : '1px solid #e5ebe7' }};
+            border: {{ ($isPdf ?? false) ? 'none' : '1px solid #d1d5db' }};
         }
 
         .invoice-content {
-            padding: {{ ($isPdf ?? false) ? '12px 16px 10px 16px' : '22px 26px 18px 26px' }};
+            padding: {{ ($isPdf ?? false) ? '4px 6px' : '18px 22px' }};
             position: relative;
         }
 
-        /* Header Table */
+        /* Header Table: Left Logo, Right Brand & Store Details */
         .header-table {
             width: 100%;
             border-collapse: collapse;
             border: none;
             margin-bottom: 12px;
         }
+        .header-logo-cell {
+            vertical-align: middle;
+            width: 42%;
+            text-align: left;
+        }
         .header-brand-cell {
             vertical-align: top;
-            width: 68%;
-        }
-        .header-tagline-cell {
-            vertical-align: top;
-            width: 32%;
+            width: 58%;
             text-align: right;
-            padding-top: 4px;
         }
         .brand-logo-img {
-            max-width: 140px;
-            max-height: 65px;
-            vertical-align: middle;
+            max-width: 180px;
+            max-height: 62px;
+            display: inline-block;
         }
         .company-brand-name {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 800;
             color: #14361E;
-            line-height: 1.15;
+            line-height: 1.2;
             letter-spacing: 0.5px;
         }
         .company-legal-name {
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
             color: #2F3E34;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .company-address {
-            font-size: 9.5px;
+            font-size: 8.5px;
             color: #556B5C;
             line-height: 1.35;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
         .company-contacts {
-            font-size: 9.5px;
+            font-size: 8.5px;
             color: #3C4E43;
             line-height: 1.35;
         }
         .company-contacts strong {
             color: #14361E;
-        }
-        .pure-care-script {
-            font-family: 'Caveat', cursive, 'DejaVu Sans', serif;
-            font-size: 24px;
-            color: #37533B;
-            line-height: 1.05;
-        }
-        .pure-care-script span {
-            font-size: 28px;
-            color: #2B462F;
-            display: block;
         }
 
         /* TAX INVOICE Banner Table */
@@ -607,34 +669,23 @@
 
         <div class="invoice-content">
 
-            {{-- 1. Top Header (Table format for pixel-perfect A4 alignment) --}}
+            {{-- 1. Top Header: Brand Logo on Left, Address & Brand Details on Right --}}
             <table class="header-table">
                 <tr>
-                    <td class="header-brand-cell">
-                        <table style="border:none; border-collapse:collapse;">
-                            <tr>
-                                @if (!empty($logoSrc))
-                                    <td style="vertical-align:middle; padding-right:16px;">
-                                        <img src="{{ $logoSrc }}" alt="{{ $storeName }}" class="brand-logo-img">
-                                    </td>
-                                @endif
-                                <td style="vertical-align:middle; border-left:1.5px solid #E2E8E2; padding-left:14px;">
-                                    <div class="company-brand-name">{{ $storeName }}</div>
-                                    <div class="company-legal-name">A brand of {{ $companyName }}</div>
-                                    <div class="company-address">{!! nl2br(e($storeAddress)) !!}</div>
-                                    <div class="company-contacts">
-                                        <span>Ph: {{ $storePhone }} &bull; Email: {{ $storeEmail }} &bull; Web: {{ $storeWebsite }}</span><br>
-                                        <span>GSTIN: <strong>{{ $gstin }}</strong></span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
+                    <td class="header-logo-cell">
+                        @if (!empty($logoSrc))
+                            <img src="{{ $logoSrc }}" alt="{{ $storeName }}" class="brand-logo-img">
+                        @else
+                            <div class="company-brand-name">{{ $storeName }}</div>
+                        @endif
                     </td>
-                    <td class="header-tagline-cell">
-                        <div class="pure-care-script">
-                            Pure<br>
-                            <em>Care</em><br>
-                            <span>Natural You <i>♡</i></span>
+                    <td class="header-brand-cell">
+                        <div class="company-brand-name">{{ $storeName }}</div>
+                        <div class="company-legal-name">A brand of {{ $companyName }}</div>
+                        <div class="company-address">{!! nl2br(e($storeAddress)) !!}</div>
+                        <div class="company-contacts">
+                            <span>Ph: {{ $storePhone }} &bull; Email: {{ $storeEmail }} &bull; Web: {{ $storeWebsite }}</span><br>
+                            <span>GSTIN: <strong>{{ $gstin }}</strong></span>
                         </div>
                     </td>
                 </tr>
@@ -724,32 +775,26 @@
                 </tr>
             </table>
 
-            {{-- 4. Products Table --}}
+            {{-- 4. Products Table (Cleaned up: Unit Price after discount, Taxable, GST, Total) --}}
             <div class="items-table-wrap">
                 <table class="invoice-items-table">
                     <thead>
                         <tr>
                             <th style="width:24px;">#</th>
                             <th class="th-prod">Product Details</th>
-                            <th style="width:65px;">HSN</th>
-                            <th style="width:75px;">Unit Price (₹)</th>
-                            <th style="width:36px;">Qty</th>
-                            <th style="width:65px;">Discount (₹)</th>
-                            <th style="width:78px;">Taxable (₹)</th>
-                            <th style="width:50px;">GST (%)</th>
+                            <th style="width:58px;">HSN</th>
+                            <th style="width:90px;">Unit Price (₹)<br><span style="font-size:7.5px; font-weight:500; opacity:0.85;">(after discount)</span></th>
+                            <th style="width:34px;">Qty</th>
+                            <th style="width:80px;">Taxable Value (₹)</th>
+                            <th style="width:48px;">GST (%)</th>
                             <th style="width:75px;">GST Amount (₹)</th>
                             <th style="width:85px;" class="text-end">Total Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($items as $idx => $item)
+                        @foreach ($tableRows as $idx => $row)
                             @php
-                                $rate = (float) ($item->gst_rate ?: setting('default_gst_rate', 5));
-                                $taxable = $item->taxable();
-                                $taxAmt = $item->tax();
-                                $lineTotal = (float) ($item->total_price ?: ($item->unit_price * $item->quantity));
-                                $discount = (float) ($item->discount ?? 0);
-                                $hsn = $item->product?->hsn_code ?: '330590';
+                                $item = $row['item'];
                             @endphp
                             <tr>
                                 <td class="td-idx">{{ $idx + 1 }}</td>
@@ -761,14 +806,13 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td>{{ $hsn }}</td>
-                                <td>{{ number_format((float) $item->unit_price, 2) }}</td>
-                                <td style="font-weight:700;">{{ $item->quantity }}</td>
-                                <td>{{ $discount > 0 ? number_format($discount, 2) : '0.00' }}</td>
-                                <td>{{ number_format($taxable, 2) }}</td>
-                                <td>{{ (int)$rate == $rate ? (int)$rate : $rate }}%</td>
-                                <td>{{ number_format($taxAmt, 2) }}</td>
-                                <td class="td-amount">{{ number_format($lineTotal, 2) }}</td>
+                                <td>{{ $row['hsn'] }}</td>
+                                <td class="text-end">{{ number_format($row['unit_price_after_discount'], 2) }}</td>
+                                <td style="font-weight:700;">{{ $row['qty'] }}</td>
+                                <td class="text-end">{{ number_format($row['taxable'], 2) }}</td>
+                                <td>{{ (int)$row['gst_rate'] == $row['gst_rate'] ? (int)$row['gst_rate'] : $row['gst_rate'] }}%</td>
+                                <td class="text-end">{{ number_format($row['gst_amount'], 2) }}</td>
+                                <td class="td-amount">{{ number_format($row['total'], 2) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -835,7 +879,7 @@
                             <table class="summary-totals-table">
                                 <tr>
                                     <td>Subtotal ({{ $itemsTotalQuantity }} {{ $itemsTotalQuantity > 1 ? 'items' : 'item' }})</td>
-                                    <td class="total-val">₹ {{ number_format($itemsSubtotal, 2) }}</td>
+                                    <td class="total-val">₹ {{ number_format($itemsGrossSubtotal, 2) }}</td>
                                 </tr>
                                 @if ($discountAmount > 0)
                                     <tr>
@@ -844,22 +888,22 @@
                                     </tr>
                                 @endif
                                 <tr>
-                                    <td>Total Taxable Value</td>
+                                    <td>Taxable Value</td>
                                     <td class="total-val">₹ {{ number_format($totalTaxable, 2) }}</td>
                                 </tr>
                                 @if ($isIntra)
                                     <tr>
-                                        <td>CGST ({{ ((float)setting('default_gst_rate', 5)) / 2 }}%)</td>
-                                        <td class="total-val">₹ {{ number_format($totalGst / 2, 2) }}</td>
+                                        <td>CGST ({{ $halfRate }}%)</td>
+                                        <td class="total-val">₹ {{ number_format($cgstAmount, 2) }}</td>
                                     </tr>
                                     <tr>
-                                        <td>SGST ({{ ((float)setting('default_gst_rate', 5)) / 2 }}%)</td>
-                                        <td class="total-val">₹ {{ number_format($totalGst / 2, 2) }}</td>
+                                        <td>SGST ({{ $halfRate }}%)</td>
+                                        <td class="total-val">₹ {{ number_format($sgstAmount, 2) }}</td>
                                     </tr>
                                 @else
                                     <tr>
-                                        <td>IGST ({{ (float)setting('default_gst_rate', 5) }}%)</td>
-                                        <td class="total-val">₹ {{ number_format($totalGst, 2) }}</td>
+                                        <td>IGST ({{ $defaultRate }}%)</td>
+                                        <td class="total-val">₹ {{ number_format($igstAmount, 2) }}</td>
                                     </tr>
                                 @endif
                             </table>
