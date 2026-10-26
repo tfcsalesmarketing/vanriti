@@ -42,7 +42,7 @@ class CodConfirmationService
         $footerText = 'Tap an option above';
 
         $templateName = (string) setting('whatsapp_template_cod_confirmation', 'cod_order_confirmation');
-        $useTemplate = (bool) setting('whatsapp_template_cod_enabled', true);
+        $useTemplate = (bool) setting('whatsapp_template_cod_enabled', false);
 
         $res = null;
 

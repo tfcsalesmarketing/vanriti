@@ -115,12 +115,33 @@ class StockNotificationService
         $productUrl = route('product.show', $product->slug);
         $itemName = $product->name . ($variant && $variant->name ? ' (' . $variant->name . ')' : '');
 
+        $templateName = (string) setting('whatsapp_template_back_in_stock', 'product_back_in_stock');
+        $useTemplate = (bool) setting('whatsapp_template_back_in_stock_enabled', false);
+
         foreach ($notifications as $notification) {
             if (! empty($notification->phone)) {
                 $text = "🌿 Great news from Vanriti!\n\n*{$itemName}* is back in stock! Only limited pieces available.\n\nTap below to order now before it sells out again:\n{$productUrl}";
 
                 try {
-                    $res = $this->whatsApp->sendTextMessage($notification->phone, $text);
+                    $res = null;
+
+                    if ($useTemplate && $templateName !== '') {
+                        $components = [
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', 'text' => $itemName],
+                                    ['type' => 'text', 'text' => $productUrl],
+                                ],
+                            ],
+                        ];
+                        $res = $this->whatsApp->sendTemplateMessage($notification->phone, $templateName, 'en', $components);
+                    }
+
+                    if (empty($res['success'])) {
+                        $res = $this->whatsApp->sendTextMessage($notification->phone, $text);
+                    }
+
                     if ($res['success'] ?? false) {
                         $notification->update([
                             'status' => 'notified',

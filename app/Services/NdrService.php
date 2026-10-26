@@ -40,13 +40,53 @@ class NdrService
         $headerText = 'Delivery Attempt Update';
         $footerText = 'Vanriti Order # ' . $orderNumber;
 
-        $res = $this->apiService->sendInteractiveButtonMessage(
-            $phone,
-            $bodyText,
-            $buttons,
-            $headerText,
-            $footerText
-        );
+        $templateName = (string) setting('whatsapp_template_ndr', 'order_delivery_reattempt');
+        $useTemplate = (bool) setting('whatsapp_template_ndr_enabled', false);
+
+        $res = null;
+
+        // Try approved Meta Template first (required for business-initiated outside 24h window)
+        if ($useTemplate && $templateName !== '') {
+            $components = [
+                [
+                    'type' => 'body',
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $name],
+                        ['type' => 'text', 'text' => $orderNumber],
+                        ['type' => 'text', 'text' => $reason ?: 'Delivery attempt was unsuccessful'],
+                    ],
+                ],
+                [
+                    'type' => 'button',
+                    'sub_type' => 'quick_reply',
+                    'index' => '0',
+                    'parameters' => [
+                        ['type' => 'payload', 'payload' => 'NDR_REATTEMPT_' . $orderNumber],
+                    ],
+                ],
+                [
+                    'type' => 'button',
+                    'sub_type' => 'quick_reply',
+                    'index' => '1',
+                    'parameters' => [
+                        ['type' => 'payload', 'payload' => 'NDR_UPDATE_' . $orderNumber],
+                    ],
+                ],
+            ];
+
+            $res = $this->apiService->sendTemplateMessage($phone, $templateName, 'en', $components);
+        }
+
+        // If template message not enabled or failed, fallback to interactive button message
+        if (empty($res['success'])) {
+            $res = $this->apiService->sendInteractiveButtonMessage(
+                $phone,
+                $bodyText,
+                $buttons,
+                $headerText,
+                $footerText
+            );
+        }
 
         if ($res['success'] ?? false) {
             $note = '[' . now()->format('d M Y H:i') . '] NDR alert sent to ' . $phone . ($reason ? ' with reason: ' . $reason : '');
