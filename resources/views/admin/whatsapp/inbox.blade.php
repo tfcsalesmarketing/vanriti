@@ -125,9 +125,9 @@
 
 /* Card 1: Sidebar Directory */
 .wa-sidebar-card {
-    width: 330px;
-    min-width: 290px;
-    max-width: 350px;
+    width: 295px;
+    min-width: 260px;
+    max-width: 315px;
     height: 100%;
     min-height: 0;
     background: #ffffff;
@@ -414,8 +414,8 @@
     color: #ffffff;
 }
 .wa-composer-icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: none;
     background: transparent;
@@ -423,7 +423,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     cursor: pointer;
     transition: all 0.15s ease;
     flex-shrink: 0;
@@ -439,32 +439,35 @@
 }
 .wa-input-capsule {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 22px;
+    border: 1px solid #dcdfe4;
+    border-radius: 24px;
     padding: 8px 16px;
-    min-height: 42px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     position: relative;
     width: 100%;
-    transition: border-color 0.15s ease;
+    flex: 1 1 auto;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .wa-input-capsule:focus-within {
     border-color: #107548;
+    box-shadow: 0 0 0 2px rgba(16, 117, 72, 0.12);
 }
 .wa-input-capsule textarea {
     width: 100% !important;
     min-width: 0 !important;
+    flex: 1 1 auto !important;
     border: none !important;
     outline: none !important;
     resize: none !important;
     background: transparent !important;
-    font-size: 14px !important;
+    font-size: 14.5px !important;
     color: #0f172a !important;
     line-height: 1.45 !important;
     padding: 0 !important;
     margin: 0 !important;
-    max-height: 120px !important;
+    max-height: 140px !important;
 }
 .wa-input-capsule textarea::placeholder {
     color: #94a3b8;
@@ -494,9 +497,9 @@
 
 /* Card 3: Context Drawer */
 .wa-context-card {
-    width: 320px;
-    min-width: 290px;
-    max-width: 350px;
+    width: 285px;
+    min-width: 260px;
+    max-width: 310px;
     height: 100%;
     min-height: 0;
     background: #ffffff;
@@ -949,13 +952,13 @@
                         </span>
                     </div>
 
-                    {{-- Main Typing Row (4 action icons + expansive typing capsule + send button) --}}
-                    <form id="waSendForm" class="d-flex align-items-center gap-2 w-100 mb-0">
+                    {{-- Main Typing Row (compact action icons + expansive full-width typing capsule + send button) --}}
+                    <form id="waSendForm" class="d-flex align-items-center gap-1.5 w-100 mb-0">
                         @csrf
                         <input type="file" id="waFileInput" class="d-none" accept="image/*,application/pdf,.doc,.docx,audio/*,video/*">
 
                         {{-- Action Icons Left (Emoji, Paperclip, Quick replies, Templates) --}}
-                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                        <div class="d-flex align-items-center gap-0.5 flex-shrink-0">
                             {{-- Emoji Icon --}}
                             <button type="button" class="wa-composer-icon" title="Emoji">
                                 <i class="bi bi-emoji-smile"></i>
@@ -991,9 +994,6 @@
                             <div class="wa-input-capsule">
                                 <textarea id="waMessageInput" rows="1"
                                           placeholder="Type a message..."></textarea>
-                                <div class="text-muted ms-2 flex-shrink-0">
-                                    <i class="bi bi-chevron-expand" style="font-size: 0.8rem;"></i>
-                                </div>
                             </div>
                         </div>
 
@@ -1005,8 +1005,8 @@
                 </div>
             </main>
 
-            {{-- Column 3: Customer Context Drawer --}}
-            <aside class="wa-context-card d-none d-xl-flex" id="waContextColumn">
+            {{-- Column 3: Customer Context Drawer (Toggleable; on screens < 1440px collapsed by default for maximum chat typing width) --}}
+            <aside class="wa-context-card d-none d-xxl-flex" id="waContextColumn">
                 @include('admin.whatsapp.partials.customer-context', ['customerContext' => $customerContext, 'activeConversation' => $activeConversation])
             </aside>
 
@@ -1398,17 +1398,32 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Toggle Desktop Customer Context Panel
+    // Toggle Desktop Customer Context Panel (with state memory)
     const btnToggleContextDesktop = document.getElementById('btnToggleContextDesktop');
     const waContextColumn = document.getElementById('waContextColumn');
     if (btnToggleContextDesktop && waContextColumn) {
+        // Restore user's saved drawer state if preference exists
+        const savedDrawerState = localStorage.getItem('wa_context_drawer_open');
+        if (savedDrawerState === '0') {
+            waContextColumn.classList.add('d-none');
+            waContextColumn.classList.remove('d-xxl-flex', 'd-xl-flex');
+            btnToggleContextDesktop.classList.add('text-primary');
+        } else if (savedDrawerState === '1') {
+            waContextColumn.classList.remove('d-none');
+            btnToggleContextDesktop.classList.remove('text-primary');
+        }
+
         btnToggleContextDesktop.addEventListener('click', () => {
-            if (waContextColumn.classList.contains('d-none')) {
+            const isCurrentlyHidden = waContextColumn.classList.contains('d-none') || window.getComputedStyle(waContextColumn).display === 'none';
+            if (isCurrentlyHidden) {
                 waContextColumn.classList.remove('d-none');
                 btnToggleContextDesktop.classList.remove('text-primary');
+                localStorage.setItem('wa_context_drawer_open', '1');
             } else {
                 waContextColumn.classList.add('d-none');
+                waContextColumn.classList.remove('d-xxl-flex', 'd-xl-flex');
                 btnToggleContextDesktop.classList.add('text-primary');
+                localStorage.setItem('wa_context_drawer_open', '0');
             }
         });
     }
