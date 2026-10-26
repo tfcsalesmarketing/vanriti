@@ -124,23 +124,46 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
             $buttonSuffix = $actionUrl;
         }
 
-        $components = [
-            [
-                'type' => 'body',
-                'parameters' => array_map(fn ($p) => ['type' => 'text', 'text' => (string) $p], $params),
-            ],
-            [
-                'type' => 'button',
-                'sub_type' => 'url',
-                'index' => '0',
-                'parameters' => [
-                    ['type' => 'text', 'text' => $buttonSuffix],
-                ],
+        $bodyComponent = [
+            'type' => 'body',
+            'parameters' => array_map(fn ($p) => ['type' => 'text', 'text' => (string) $p], $params),
+        ];
+
+        $buttonComponent = [
+            'type' => 'button',
+            'sub_type' => 'url',
+            'index' => '0',
+            'parameters' => [
+                ['type' => 'text', 'text' => $buttonSuffix],
             ],
         ];
 
-        // 1. Try sending via Meta Approved Template
-        $result = $apiService->sendTemplateMessage($phone, $templateName, 'en', $components);
+        $components = [$bodyComponent, $buttonComponent];
+
+        // 1. Try sending via Meta Approved Template (with Document Header for delivered if invoice URL is present)
+        if ($status === 'delivered' && ! empty($invoiceUrl)) {
+            $headerComponent = [
+                'type' => 'header',
+                'parameters' => [
+                    [
+                        'type' => 'document',
+                        'document' => [
+                            'link' => $invoiceUrl,
+                            'filename' => ($this->order->invoice_number ?: "INV-{$this->order->order_number}") . '.pdf',
+                        ],
+                    ],
+                ],
+            ];
+
+            $result = $apiService->sendTemplateMessage($phone, $templateName, 'en', [$headerComponent, $bodyComponent, $buttonComponent]);
+
+            // If template in Meta does not have a media header, fall back to body-only template
+            if (! ($result['success'] ?? false)) {
+                $result = $apiService->sendTemplateMessage($phone, $templateName, 'en', $components);
+            }
+        } else {
+            $result = $apiService->sendTemplateMessage($phone, $templateName, 'en', $components);
+        }
 
         // 2. If template failed and customer's 24hr session window is currently active, fall back to rich text
         if (! ($result['success'] ?? false) && $conversation->isWindowOpen()) {

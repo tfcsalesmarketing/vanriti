@@ -113,6 +113,14 @@ class InvoicePdfTest extends TestCase
             'total_price' => 500.00,
         ]);
 
+        // 1. Before delivery: Customer is redirected and cannot view/download invoice
+        $notDeliveredResponse = $this->actingAs($user)->get(route('account.order.invoice', $order));
+        $notDeliveredResponse->assertRedirect(route('account.order', $order));
+        $notDeliveredResponse->assertSessionHas('error');
+
+        // 2. Once delivered: Customer can view/download
+        $order->update(['order_status' => 'delivered']);
+
         // Stream inline view
         $response = $this->actingAs($user)->get(route('account.order.invoice', $order));
         $response->assertStatus(200);

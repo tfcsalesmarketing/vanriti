@@ -41,7 +41,7 @@ class AccountController extends Controller
     {
         $orders = auth('web')->user()
             ->orders()
-            ->with(['items', 'payments'])
+            ->with(['items.review', 'payments'])
             ->latest()
             ->paginate(10);
 
@@ -57,9 +57,15 @@ class AccountController extends Controller
         return view('storefront.account.order-detail', compact('order'));
     }
 
-    public function invoice(Request $request, Order $order, InvoiceService $invoiceService): View|Response
+    public function invoice(Request $request, Order $order, InvoiceService $invoiceService): View|Response|RedirectResponse
     {
         abort_unless($order->user_id === auth('web')->id(), 403);
+
+        if ($order->order_status !== 'delivered') {
+            return redirect()
+                ->route('account.order', $order)
+                ->with('error', 'Tax invoice will be available for download once your order has been delivered.');
+        }
 
         $order->loadMissing(['items.product', 'items.variant', 'user']);
 

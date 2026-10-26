@@ -35,7 +35,21 @@
                             </span>
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{{ route('account.order', $order) }}" class="btn btn-sm btn-vr-outline">View</a>
+                            <div class="d-flex justify-content-end align-items-center gap-1 flex-nowrap">
+                                @if ($order->order_status === 'delivered')
+                                    @php
+                                        $unreviewedItem = $order->items->first(function ($item) {
+                                            return ! $item->review;
+                                        });
+                                    @endphp
+                                    @if ($unreviewedItem)
+                                        <a href="{{ route('account.order', $order) }}#review-{{ $unreviewedItem->id }}" class="btn btn-sm btn-outline-warning text-dark fw-semibold rounded-pill px-2.5 py-1 shadow-xs" style="font-size: 0.75rem;" title="Give a review for your delivered item">
+                                            <i class="bi bi-star-fill text-warning me-1"></i>Give a Review
+                                        </a>
+                                    @endif
+                                @endif
+                                <a href="{{ route('account.order', $order) }}" class="btn btn-sm btn-vr-outline rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">View</a>
+                            </div>
                         </td>
                     </tr>
                 @endforeach

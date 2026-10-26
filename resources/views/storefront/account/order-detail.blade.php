@@ -26,14 +26,16 @@
                 {{ ucwords(str_replace('_', ' ', $order->order_status)) }}
             </span>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('account.order.invoice', $order) }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
-                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>View Invoice (PDF)
-            </a>
-            <a href="{{ route('account.order.invoice', ['order' => $order->id, 'download' => 1]) }}" class="btn btn-sm btn-outline-dark rounded-pill">
-                <i class="bi bi-download me-1"></i>Download PDF
-            </a>
-        </div>
+        @if ($order->order_status === 'delivered')
+            <div class="d-flex gap-2">
+                <a href="{{ route('account.order.invoice', $order) }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>View Invoice (PDF)
+                </a>
+                <a href="{{ route('account.order.invoice', ['order' => $order->id, 'download' => 1]) }}" class="btn btn-sm btn-outline-dark rounded-pill">
+                    <i class="bi bi-download me-1"></i>Download PDF
+                </a>
+            </div>
+        @endif
     </div>
 
     <div class="row g-4">
@@ -61,10 +63,21 @@
                         <div class="text-end small">
                             <div class="fw-semibold">{{ format_price($item->total_price) }}</div>
 
+                            @if ($order->order_status === 'delivered')
+                                @if (! $item->review)
+                                    <button class="btn btn-sm btn-outline-warning text-dark fw-semibold rounded-pill mt-2 shadow-xs" data-bs-toggle="collapse" data-bs-target="#review-{{ $item->id }}">
+                                        <i class="bi bi-star-fill text-warning me-1"></i>Give a Review
+                                    </button>
+                                @else
+                                    <div class="mt-2">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-1 px-2.5" style="font-size:0.75rem;">
+                                            <i class="bi bi-patch-check-fill me-1"></i>Reviewed &bull; {{ $item->review->rating }} ★
+                                        </span>
+                                    </div>
+                                @endif
+                            @endif
+
                             @if ($order->order_status === 'delivered' && ! $item->review)
-                                <button class="btn btn-sm btn-vr-outline mt-2" data-bs-toggle="collapse" data-bs-target="#review-{{ $item->id }}">
-                                    <i class="bi bi-star me-1"></i>Review
-                                </button>
                                 <div class="collapse mt-2" id="review-{{ $item->id }}">
                                     <form method="POST" action="{{ route('account.order.review', $order) }}" enctype="multipart/form-data" class="text-start" novalidate>
                                         @csrf
