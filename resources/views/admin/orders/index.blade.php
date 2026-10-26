@@ -40,6 +40,9 @@
         <div class="text-muted small mt-0.5">Showing {{ $orders->total() }} order(s) in <span class="fw-semibold text-dark">{{ $tabs[$activeTab] }}</span></div>
     </div>
     <div class="d-flex align-items-center gap-2">
+        <a href="{{ route('admin.orders.manifest') }}" target="_blank" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1" title="Print courier handover manifest for dispatched orders">
+            <i class="bi bi-file-earmark-spreadsheet text-success"></i><span>Handover Manifest</span>
+        </a>
         <a href="{{ route('admin.orders.index', ['tab' => 'pending']) }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
             <i class="bi bi-clock-history"></i><span>Pending ({{ $tabCounts['pending'] ?? 0 }})</span>
         </a>

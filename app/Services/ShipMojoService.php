@@ -856,6 +856,15 @@ class ShipMojoService
             $this->notifyOrderStatus($order, $orderStatus);
         }
 
+        if ($mappedStatus === 'failed' || str_contains(strtolower((string) $rawStatus), 'ndr') || str_contains(strtolower((string) $rawStatus), 'undelivered')) {
+            try {
+                $reason = $this->extractFirst($payload, ['reason', 'remarks', 'remark', 'ndr_reason', 'message', 'comment']);
+                app(\App\Services\NdrService::class)->handleNdrAlert($order, $reason ? (string) $reason : null);
+            } catch (\Throwable $e) {
+                Log::warning('ShipMojo: NDR alert trigger error', ['error' => $e->getMessage()]);
+            }
+        }
+
         Log::info('ShipMojo: Webhook applied', [
             'order' => $order->order_number,
             'shipment_status' => $mappedStatus,

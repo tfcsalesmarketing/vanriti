@@ -13,6 +13,7 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PincodeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\ShopController;
@@ -36,13 +37,24 @@ Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/category/{category:slug}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 
-// ---------- Cart ----------
+// ---------- Cart & Slide-Over Drawer ----------
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::get('/cart/drawer', [CartController::class, 'drawer'])->name('cart.drawer');
 Route::post('/cart/add/{product:slug}', [CartController::class, 'add'])->name('cart.add')->middleware('throttle:30,1');
 Route::post('/cart/{cartItem}/update', [CartController::class, 'update'])->name('cart.update')->middleware('throttle:30,1');
 Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])->name('cart.remove')->middleware('throttle:30,1');
 Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon')->middleware('throttle:30,1');
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')->middleware('throttle:30,1');
+
+// ---------- Pincode Estimator & Auto-fill ----------
+Route::post('/pincode/check', [PincodeController::class, 'check'])->name('pincode.check')->middleware('throttle:60,1');
+Route::get('/pincode/saved', [PincodeController::class, 'saved'])->name('pincode.saved');
+
+// ---------- Back-in-Stock Alerts ----------
+Route::post('/stock-notifications', [\App\Http\Controllers\StockNotificationController::class, 'store'])->name('stock.notify')->middleware('throttle:30,1');
+
+// ---------- Predictive Live Search Autocomplete ----------
+Route::get('/search/suggest', [\App\Http\Controllers\SearchSuggestController::class, 'suggest'])->name('search.suggest')->middleware('throttle:60,1');
 
 // ---------- Wishlist ----------
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
@@ -103,6 +115,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/account', [AccountController::class, 'dashboard'])->name('account.dashboard');
     Route::get('/account/orders', [AccountController::class, 'orders'])->name('account.orders');
     Route::get('/account/orders/{order}', [AccountController::class, 'orderShow'])->name('account.order');
+    Route::get('/account/orders/{order}/invoice', [AccountController::class, 'invoice'])->name('account.order.invoice');
     Route::post('/account/orders/{order}/cancel', [AccountController::class, 'cancelOrder'])->name('account.order.cancel');
     Route::post('/account/orders/{order}/return', [AccountController::class, 'createReturn'])->name('account.order.return');
     Route::post('/account/orders/{order}/review', [AccountController::class, 'submitReview'])->name('account.order.review');

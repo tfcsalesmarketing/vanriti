@@ -55,6 +55,15 @@ class AccountController extends Controller
         return view('storefront.account.order-detail', compact('order'));
     }
 
+    public function invoice(Order $order): View
+    {
+        abort_unless($order->user_id === auth('web')->id(), 403);
+
+        $order->load(['items.product', 'items.variant']);
+
+        return view('invoices.gst-tax-invoice', compact('order'));
+    }
+
     public function cancelOrder(Request $request, Order $order): RedirectResponse
     {
         abort_unless($order->user_id === auth('web')->id(), 403);

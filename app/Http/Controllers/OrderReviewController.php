@@ -92,10 +92,13 @@ class OrderReviewController extends Controller
     {
         $sortOrder = 0;
         foreach ($files as $file) {
-            $path = $file->store('reviews/' . $review->id, 'public');
+            $path = $file->store('reviews/' . $review->id, 's3');
             ReviewImage::create([
                 'review_id' => $review->id,
-                'image_path' => $path,
+                'path' => $path,
+                'disk' => 's3',
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
                 'sort_order' => $sortOrder++,
             ]);
         }

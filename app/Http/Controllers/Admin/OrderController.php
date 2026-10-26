@@ -568,4 +568,78 @@ class OrderController extends Controller
 
         return '';
     }
+
+    public function invoice(Order $order): View
+    {
+        $order->load(['items.product', 'items.variant', 'user']);
+
+        return view('invoices.gst-tax-invoice', compact('order'));
+    }
+
+    public function manifest(Request $request): View
+    {
+        $orderIds = $request->input('order_ids');
+        if (is_string($orderIds)) {
+            $orderIds = explode(',', $orderIds);
+        }
+
+        $query = Order::query()->with(['items.product', 'shipments', 'user']);
+
+        if (! empty($orderIds) && is_array($orderIds)) {
+            $query->whereIn('id', array_filter($orderIds));
+        } else {
+            $query->whereHas('shipments', function ($q) {
+                $q->where(function ($sq) {
+                    $sq->whereNotNull('awb_number')
+                        ->orWhereNotNull('tracking_number');
+                });
+            })->latest()->take(50);
+        }
+
+        $orders = $query->get();
+
+        return view('admin.orders.manifest', compact('orders'));
+    }
+
+    public function confirmCod(Order $order): RedirectResponse
+    {
+        if ($order->payment_method !== 'cod') {
+            return back()->with('error', 'This order is not a Cash on Delivery order.');
+        }
+
+        $oldStatus = $order->order_status;
+        $order->update([
+            'order_status' => 'processing',
+            'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . '[' . now()->format('d M Y H:i') . '] COD confirmed manually by admin ' . auth('admin')->user()?->name),
+        ]);
+
+        $this->logger->orderStatusChanged(
+            auth('admin')->user(),
+            $order,
+            $oldStatus,
+            'processing',
+            'COD confirmed manually by admin.'
+        );
+
+        if ((bool) setting('shipmojo_auto_push', false)) {
+            \App\Jobs\PushOrderToShipMojo::dispatch($order);
+        }
+
+        return back()->with('success', "Order #{$order->order_number} COD confirmed and moved to processing!");
+    }
+
+    public function resendCodPrompt(Order $order): RedirectResponse
+    {
+        if ($order->payment_method !== 'cod') {
+            return back()->with('error', 'This order is not a Cash on Delivery order.');
+        }
+
+        $res = app(\App\Services\CodConfirmationService::class)->dispatchPrompt($order);
+
+        if ($res['success'] ?? false) {
+            return back()->with('success', 'WhatsApp 1-Tap COD confirmation prompt resent successfully to customer!');
+        }
+
+        return back()->with('error', 'Failed to dispatch WhatsApp prompt: ' . ($res['message'] ?? ($res['error'] ?? 'API error')));
+    }
 }

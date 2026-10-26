@@ -1049,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ---- Pincode Lookup (India Post API) ----
+    // ---- Pincode Lookup (First-party Backend + India Post Fallback) ----
     window.vrPincodeLookup = function (pincodeInput, cityInput, stateInput, feedbackEl) {
         if (!pincodeInput || !cityInput || !stateInput) return;
 
@@ -1062,10 +1062,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function doLookup(pin) {
             if (pin.length !== 6 || !/^\d{6}$/.test(pin)) return;
-            setStatus('Looking up pincode…', 'loading');
+            setStatus('Checking pincode…', 'loading');
             cityInput.readOnly = true;
             stateInput.readOnly = true;
 
+            var token = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+
+            fetch('/pincode/check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ pincode: pin })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                cityInput.readOnly = false;
+                stateInput.readOnly = false;
+
+                if (data && data.success && data.serviceable) {
+                    if (data.city) cityInput.value = data.city;
+                    if (data.state) stateInput.value = data.state;
+                    cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    stateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    var loc = data.location_display || ((data.city ? data.city + ', ' : '') + (data.state || ''));
+                    setStatus('✓ ' + (loc || 'Serviceable'), 'success');
+                    try { localStorage.setItem('vr_pincode', pin); } catch (e) {}
+                } else if (data && !data.serviceable) {
+                    setStatus('⚠ We are currently unable to deliver to this pincode.', 'error');
+                } else {
+                    fallbackExternalLookup(pin);
+                }
+            })
+            .catch(function () {
+                fallbackExternalLookup(pin);
+            });
+        }
+
+        function fallbackExternalLookup(pin) {
             fetch('https://api.postalpincode.in/pincode/' + pin)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
@@ -1078,14 +1115,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     var po = data[0].PostOffice[0];
                     cityInput.value = po.District || '';
                     stateInput.value = po.State || '';
-                    cityInput.dispatchEvent(new Event('input'));
-                    stateInput.dispatchEvent(new Event('input'));
+                    cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    stateInput.dispatchEvent(new Event('input', { bubbles: true }));
                     setStatus('✓ ' + (po.District || '') + ', ' + (po.State || ''), 'success');
                 })
                 .catch(function () {
                     cityInput.readOnly = false;
                     stateInput.readOnly = false;
-                    setStatus('Could not fetch pincode. Please enter manually.', 'error');
+                    setStatus('Could not auto-fill. Please enter manually.', 'error');
                 });
         }
 
@@ -1096,9 +1133,17 @@ document.addEventListener('DOMContentLoaded', function () {
             else setStatus('', '');
         });
 
-        // Trigger on existing value (edit scenario)
+        // Trigger on existing value or saved pincode
         if (pincodeInput.value && pincodeInput.value.length === 6) {
             doLookup(pincodeInput.value);
+        } else if (!pincodeInput.value) {
+            try {
+                var saved = localStorage.getItem('vr_pincode');
+                if (saved && saved.length === 6) {
+                    pincodeInput.value = saved;
+                    doLookup(saved);
+                }
+            } catch (e) {}
         }
     };
 

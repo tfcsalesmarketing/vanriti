@@ -288,10 +288,61 @@
 
             <div class="mb-3">
                 @if ($out)
-                    <span class="vr-stock-label out d-inline-block mb-2">Out of stock</span>
+                    <div class="p-3 rounded-3 border mb-3" style="background: #fdf2f2; border-color: #fecaca !important;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="vr-stock-label out">Currently Sold Out</span>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            This luxury edition is handcrafted in limited batches. Leave your WhatsApp number to receive an instant alert as soon as it's restocked.
+                        </p>
+                        <form id="vrStockNotifyForm" class="d-flex flex-column gap-2">
+                            @csrf
+                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                            <input type="hidden" name="product_variant_id" id="vrStockNotifyVariantId" value="{{ $firstInStockVariant?->id }}">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white"><i class="bi bi-whatsapp text-success"></i></span>
+                                <input type="tel" name="phone" id="vrStockNotifyPhone" class="form-control" placeholder="10-digit WhatsApp number" maxlength="10" required>
+                                <button type="submit" class="btn btn-sm btn-dark px-3" id="vrStockNotifySubmit">Notify Me</button>
+                            </div>
+                        </form>
+                        <div class="small mt-1.5 d-none fw-semibold" id="vrStockNotifyMsg"></div>
+                    </div>
                 @elseif ($low)
                     <span class="vr-stock-label in d-inline-block mb-2">Only {{ $available }} left in stock</span>
                 @endif
+            </div>
+
+            {{-- Pincode Delivery & COD Estimator --}}
+            <div class="vr-pincode-card p-3 rounded-3 border bg-white shadow-xs mb-3.5" id="vrPdpPincodeCard">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label for="pdpPincodeInput" class="small fw-semibold text-dark mb-0 d-flex align-items-center gap-1.5">
+                        <i class="bi bi-geo-alt text-success"></i>
+                        <span>Delivery &amp; COD Availability</span>
+                    </label>
+                    <span class="text-muted small" id="vrPdpPincodeLocation" style="font-size: 0.75rem;"></span>
+                </div>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="pdpPincodeInput" placeholder="Enter 6-digit Pincode" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" value="{{ session('delivery_pincode', '') }}">
+                    <button class="btn btn-vr btn-sm px-3" type="button" id="pdpPincodeCheckBtn">Check</button>
+                </div>
+                <div class="vr-pincode-result mt-2.5 d-none" id="vrPdpPincodeResult">
+                    <div class="d-flex align-items-start gap-2 text-dark small py-1">
+                        <i class="bi bi-truck text-success fs-6 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="fw-semibold text-dark" id="vrPdpDeliveryDate">Delivery in 2–4 days</span>
+                            <span class="text-muted d-block small" id="vrPdpDispatchNote" style="font-size: 0.75rem;">Dispatches within 24 hours</span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">
+                        <span class="badge bg-light text-dark border small fw-normal d-inline-flex align-items-center gap-1" id="vrPdpCodBadge">
+                            <i class="bi bi-cash-coin text-success"></i> <span id="vrPdpCodText">COD Available</span>
+                        </span>
+                        <span class="badge bg-light text-dark border small fw-normal d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-shield-check text-success"></i> Free Delivery &gt; {{ format_price(setting('free_shipping_threshold', 499)) }}
+                        </span>
+                    </div>
+                </div>
+                <div class="small text-danger mt-1.5 d-none" id="vrPdpPincodeError"></div>
             </div>
 
             <ul class="list-unstyled d-flex flex-wrap gap-3 small text-muted mb-0">
@@ -1040,6 +1091,9 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
               if (data.redirect_only) { window.location.href = data.redirect; return; }
               btn.innerHTML = original;
               setTimeout(function () { btn.disabled = false; }, 600);
+              if (window.vrCartDrawer && typeof window.vrCartDrawer.open === 'function') {
+                  window.vrCartDrawer.open(data.drawerHtml);
+              }
           }).catch(function () {
               btn.disabled = false;
               btn.innerHTML = original;
@@ -1243,6 +1297,159 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     container.addEventListener('mouseenter', activateZoom);
     container.addEventListener('mouseleave', deactivateZoom);
     container.addEventListener('mousemove', moveLens);
+})();
+</script>
+<script nonce="{{ $cspNonce }}">
+(function () {
+    var pinInput = document.getElementById('pdpPincodeInput');
+    var checkBtn = document.getElementById('pdpPincodeCheckBtn');
+    var resultBox = document.getElementById('vrPdpPincodeResult');
+    var errorBox = document.getElementById('vrPdpPincodeError');
+    var dateEl = document.getElementById('vrPdpDeliveryDate');
+    var noteEl = document.getElementById('vrPdpDispatchNote');
+    var codText = document.getElementById('vrPdpCodText');
+    var locationEl = document.getElementById('vrPdpPincodeLocation');
+
+    if (!pinInput || !checkBtn) return;
+
+    var token = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+
+    function checkPincode(pin) {
+        if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+            errorBox.textContent = 'Please enter a valid 6-digit postal pincode.';
+            errorBox.classList.remove('d-none');
+            resultBox.classList.add('d-none');
+            return;
+        }
+
+        errorBox.classList.add('d-none');
+        checkBtn.disabled = true;
+        checkBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        fetch('{{ route('pincode.check') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ pincode: pin })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            checkBtn.disabled = false;
+            checkBtn.textContent = 'Change';
+
+            if (!data.success || !data.serviceable) {
+                errorBox.textContent = data.message || 'We are currently unable to deliver to this pincode.';
+                errorBox.classList.remove('d-none');
+                resultBox.classList.add('d-none');
+                locationEl.textContent = '';
+                return;
+            }
+
+            errorBox.classList.add('d-none');
+            resultBox.classList.remove('d-none');
+            dateEl.textContent = 'Delivery by ' + (data.estimated_delivery || '3-5 days');
+            noteEl.textContent = data.dispatch_note || 'Dispatches within 24 hours';
+            locationEl.textContent = data.location_display ? '📍 ' + data.location_display : '';
+            if (codText) {
+                codText.textContent = data.cod_available ? 'COD Available' : 'Prepaid Only';
+            }
+            try { localStorage.setItem('vr_pincode', pin); } catch (e) {}
+        })
+        .catch(function () {
+            checkBtn.disabled = false;
+            checkBtn.textContent = 'Check';
+            errorBox.textContent = 'Unable to check pincode. Please try again.';
+            errorBox.classList.remove('d-none');
+        });
+    }
+
+    checkBtn.addEventListener('click', function () {
+        checkPincode(pinInput.value.trim());
+    });
+
+    pinInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            checkPincode(pinInput.value.trim());
+        }
+    });
+
+    pinInput.addEventListener('input', function () {
+        var val = this.value.replace(/\D/g, '').slice(0, 6);
+        this.value = val;
+        if (val.length === 6) {
+            checkPincode(val);
+        } else {
+            resultBox.classList.add('d-none');
+            errorBox.classList.add('d-none');
+            checkBtn.textContent = 'Check';
+        }
+    });
+
+    var initialPin = pinInput.value.trim() || (function () {
+        try { return localStorage.getItem('vr_pincode'); } catch (e) { return ''; }
+    })();
+
+    if (initialPin && initialPin.length === 6) {
+        pinInput.value = initialPin;
+        checkPincode(initialPin);
+    }
+})();
+
+(function () {
+    var form = document.getElementById('vrStockNotifyForm');
+    if (!form) return;
+    var btn = document.getElementById('vrStockNotifySubmit');
+    var msg = document.getElementById('vrStockNotifyMsg');
+    var phoneInput = document.getElementById('vrStockNotifyPhone');
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var phone = phoneInput.value.trim().replace(/\D/g, '');
+        if (phone.length < 10) {
+            msg.className = 'small mt-1.5 text-danger fw-semibold';
+            msg.textContent = 'Please enter a valid 10-digit WhatsApp number.';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Registering...';
+
+        fetch('{{ route('stock.notify') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                product_id: form.querySelector('input[name="product_id"]').value,
+                product_variant_id: form.querySelector('input[name="product_variant_id"]').value,
+                phone: phone
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            msg.className = 'small mt-1.5 fw-semibold ' + (data.success ? 'text-success' : 'text-danger');
+            msg.textContent = data.message;
+            if (data.success) {
+                btn.textContent = 'Subscribed ✓';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Notify Me';
+            }
+        })
+        .catch(function () {
+            msg.className = 'small mt-1.5 fw-semibold text-danger';
+            msg.textContent = 'Network error. Please try again.';
+            btn.disabled = false;
+            btn.textContent = 'Notify Me';
+        });
+    });
 })();
 </script>
 @endpush

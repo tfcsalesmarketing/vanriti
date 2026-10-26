@@ -228,6 +228,8 @@
         @yield('content')
     </main>
     @include('storefront.partials.login-modal')
+    @include('storefront.partials.cart-drawer')
+    @include('storefront.partials.search-modal')
     @include('storefront.partials.whatsapp-button')
     @include('storefront.partials.footer')
 

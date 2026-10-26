@@ -44,4 +44,9 @@ class CartItem extends Model
     {
         return (float) $this->unit_price * $this->quantity;
     }
+
+    public function lineTotal(): float
+    {
+        return $this->subtotal();
+    }
 }

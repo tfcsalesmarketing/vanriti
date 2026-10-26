@@ -181,12 +181,26 @@ class WhatsAppWebhookController extends Controller
                     ], $messageId);
                 } elseif ($type === 'interactive') {
                     $interactive = $msg['interactive'] ?? [];
-                    $buttonId = $interactive['button_reply']['id']
-                        ?? ($interactive['list_reply']['id'] ?? ($interactive['nfm_reply']['response_json'] ?? null));
+                    $buttonId = (string) ($interactive['button_reply']['id']
+                        ?? ($interactive['list_reply']['id'] ?? ($interactive['nfm_reply']['response_json'] ?? '')));
                     $buttonTitle = $interactive['button_reply']['title']
                         ?? ($interactive['list_reply']['title'] ?? null);
 
-                    $this->checkoutService->processCustomerInput($from, $buttonTitle, $buttonId, $messageId);
+                    if (str_starts_with($buttonId, 'COD_CONFIRM_')) {
+                        $orderNumber = substr($buttonId, strlen('COD_CONFIRM_'));
+                        app(\App\Services\CodConfirmationService::class)->handleCustomerConfirm($orderNumber, $from);
+                    } elseif (str_starts_with($buttonId, 'COD_CANCEL_')) {
+                        $orderNumber = substr($buttonId, strlen('COD_CANCEL_'));
+                        app(\App\Services\CodConfirmationService::class)->handleCustomerCancel($orderNumber, $from);
+                    } elseif (str_starts_with($buttonId, 'NDR_REATTEMPT_')) {
+                        $orderNumber = substr($buttonId, strlen('NDR_REATTEMPT_'));
+                        app(\App\Services\NdrService::class)->handleCustomerReattempt($orderNumber, $from);
+                    } elseif (str_starts_with($buttonId, 'NDR_UPDATE_')) {
+                        $orderNumber = substr($buttonId, strlen('NDR_UPDATE_'));
+                        app(\App\Services\NdrService::class)->handleCustomerLandmarkPrompt($orderNumber, $from);
+                    } else {
+                        $this->checkoutService->processCustomerInput($from, $buttonTitle, $buttonId, $messageId);
+                    }
                 } elseif ($type === 'text') {
                     $text = $msg['text']['body'] ?? '';
                     $this->checkoutService->processCustomerInput($from, $text, null, $messageId);

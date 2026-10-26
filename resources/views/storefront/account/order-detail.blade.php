@@ -20,10 +20,17 @@
     </nav>
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h5 class="fw-bold mb-0">Order {{ $order->order_number }}</h5>
-        <span class="vr-pill-badge {{ $statusColors[$order->order_status] ?? 'ps-pending' }}">
-            {{ ucwords(str_replace('_', ' ', $order->order_status)) }}
-        </span>
+        <div>
+            <h5 class="fw-bold mb-0">Order {{ $order->order_number }}</h5>
+            <span class="vr-pill-badge {{ $statusColors[$order->order_status] ?? 'ps-pending' }} mt-1">
+                {{ ucwords(str_replace('_', ' ', $order->order_status)) }}
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('account.order.invoice', $order) }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
+                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Tax Invoice
+            </a>
+        </div>
     </div>
 
     <div class="row g-4">

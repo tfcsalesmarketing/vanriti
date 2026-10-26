@@ -339,7 +339,7 @@
         @endauth
 
         {{-- Item 5: Cart (Bag Icon) --}}
-        <a href="{{ route('cart.index') }}" class="vr-dock-item {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="Cart">
+        <a href="{{ route('cart.index') }}" class="vr-dock-item js-cart-drawer-trigger {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="Cart">
             <div class="vr-dock-icon position-relative">
                 <i class="{{ request()->routeIs('cart.*') ? 'ri-shopping-bag-3-fill' : 'ri-shopping-bag-3-line' }}"></i>
                 @if ($cartCount > 0)

@@ -90,12 +90,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index')->middleware('permission:view-inventory,manage-inventory');
 
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index')->middleware('permission:view-orders,manage-orders');
+        Route::get('orders/manifest', [OrderController::class, 'manifest'])->name('orders.manifest')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->middleware('permission:view-orders,manage-orders');
+        Route::get('orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice')->middleware('permission:view-orders,manage-orders');
 
         Route::middleware('permission:manage-orders')->group(function () {
             Route::get('orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
             Route::post('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
             Route::post('orders/{order}/notes', [OrderController::class, 'addNote'])->name('orders.notes');
+            Route::post('orders/{order}/confirm-cod', [OrderController::class, 'confirmCod'])->name('orders.confirm-cod');
+            Route::post('orders/{order}/resend-cod', [OrderController::class, 'resendCodPrompt'])->name('orders.resend-cod');
             // ShipMojo bulk actions
             Route::post('orders/bulk/push', [ShipMojoController::class, 'bulkPush'])->name('orders.shipmojo.bulk.push');
             Route::post('orders/bulk/auto-assign', [ShipMojoController::class, 'bulkAutoAssign'])->name('orders.shipmojo.bulk.auto-assign');

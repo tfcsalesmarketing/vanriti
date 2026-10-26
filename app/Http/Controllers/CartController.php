@@ -52,6 +52,31 @@ class CartController extends Controller
         ));
     }
 
+    public function drawer(): JsonResponse
+    {
+        $subtotal = $this->cartService->subtotal();
+        $count = $this->cartService->count();
+
+        return response()->json([
+            'success' => true,
+            'count' => $count,
+            'subtotal' => $subtotal,
+            'formatted_subtotal' => format_price($subtotal),
+            'html' => $this->renderDrawerHtml(),
+        ]);
+    }
+
+    protected function renderDrawerHtml(): string
+    {
+        $cartItems = $this->cartService->items();
+        $subtotal = $this->cartService->subtotal();
+        $count = $this->cartService->count();
+
+        return view('storefront.partials.cart-drawer-content', compact(
+            'cartItems', 'subtotal', 'count'
+        ))->render();
+    }
+
     public function add(Request $request, Product $product): JsonResponse|RedirectResponse
     {
         // Guests may add to cart anonymously (the cart is keyed to the session
@@ -113,6 +138,9 @@ class CartController extends Controller
                 'cartItemId' => $cartItem->id,
                 'quantity' => $cartItem->quantity,
                 'analytics' => $analytics,
+                'subtotal' => $this->cartService->subtotal(),
+                'formatted_subtotal' => format_price($this->cartService->subtotal()),
+                'drawerHtml' => $this->renderDrawerHtml(),
             ]);
         }
 
@@ -167,6 +195,9 @@ class CartController extends Controller
                 'message' => 'Cart updated.',
                 'cartCount' => $this->cartService->count(),
                 'quantity' => (int) $validated['quantity'],
+                'subtotal' => $this->cartService->subtotal(),
+                'formatted_subtotal' => format_price($this->cartService->subtotal()),
+                'drawerHtml' => $this->renderDrawerHtml(),
             ]);
         }
 
@@ -190,6 +221,9 @@ class CartController extends Controller
                 'success' => true,
                 'message' => 'Item removed.',
                 'cartCount' => $this->cartService->count(),
+                'subtotal' => $this->cartService->subtotal(),
+                'formatted_subtotal' => format_price($this->cartService->subtotal()),
+                'drawerHtml' => $this->renderDrawerHtml(),
             ]);
         }
 

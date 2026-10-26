@@ -259,9 +259,22 @@ class CheckoutController extends Controller
 
             session()->forget('cart_coupon');
 
-            // Auto-push to ShipMojo for COD orders
-            if ((bool) setting('shipmojo_auto_push', false)) {
-                PushOrderToShipMojo::dispatch($order);
+            $codVerifyEnabled = (bool) setting('cod_whatsapp_verification_enabled', true);
+
+            if ($codVerifyEnabled) {
+                $order->update([
+                    'order_status' => 'pending',
+                ]);
+                try {
+                    app(\App\Services\CodConfirmationService::class)->dispatchPrompt($order);
+                } catch (\Throwable $e) {
+                    Log::warning('COD prompt dispatch failed: ' . $e->getMessage());
+                }
+            } else {
+                // Auto-push to ShipMojo for COD orders only when verification is disabled
+                if ((bool) setting('shipmojo_auto_push', false)) {
+                    PushOrderToShipMojo::dispatch($order);
+                }
             }
 
             // COD conversion is recorded when the order is successfully placed.

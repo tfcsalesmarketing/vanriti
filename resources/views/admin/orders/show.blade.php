@@ -29,10 +29,39 @@
                 </a>
             @endif
         @endif
+        <a href="{{ route('admin.orders.invoice', $order) }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Print/Download GST Tax Invoice">
+            <i class="bi bi-file-earmark-text me-1"></i>Tax Invoice
+        </a>
         <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>
 </div>
+
+@if ($order->payment_method === 'cod' && in_array($order->order_status, ['on_hold', 'pending']))
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mb-3 rounded-3 shadow-xs">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history fs-4 text-warning-emphasis"></i>
+            <div>
+                <strong class="d-block text-dark">COD Order Awaiting Customer Confirmation</strong>
+                <span class="small text-muted">Customer has received an automated WhatsApp 1-tap confirmation prompt.</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="POST" action="{{ route('admin.orders.confirm-cod', $order) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-check-circle me-1"></i>Confirm COD Manually
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.orders.resend-cod', $order) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-whatsapp me-1 text-success"></i>Resend WhatsApp Prompt
+                </button>
+            </form>
+        </div>
+    </div>
+@endif
 
 {{-- ── Fulfillment Stepper Tracker ───────────────────────────────── --}}
 @php

@@ -75,6 +75,14 @@ class OrderItem extends Model
     }
 
     /**
+     * Total price for this line item.
+     */
+    public function subtotal(): float
+    {
+        return (float) ($this->total_price ?: ($this->unit_price * $this->quantity));
+    }
+
+    /**
      * GST embedded in this line's inclusive total.
      */
     public function tax(): float

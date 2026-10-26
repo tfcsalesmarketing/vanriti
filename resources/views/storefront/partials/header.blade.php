@@ -39,15 +39,20 @@
                     @endif
                 </a>
 
-                @auth('web')
-                    <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('account.*') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Account">
-                        <i class="ri-user-3-line"></i>
+                <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="vr-mobile-header-btn" data-bs-toggle="modal" data-bs-target="#vrSearchModal" aria-label="Search">
+                        <i class="ri-search-line"></i>
                     </button>
-                @else
-                    <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Login">
-                        <i class="ri-user-3-line"></i>
-                    </button>
-                @endauth
+                    @auth('web')
+                        <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('account.*') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Account">
+                            <i class="ri-user-3-line"></i>
+                        </button>
+                    @else
+                        <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Login">
+                            <i class="ri-user-3-line"></i>
+                        </button>
+                    @endauth
+                </div>
             </div>
 
             {{-- Desktop: logo + category nav --}}
@@ -93,6 +98,9 @@
             </div>
 
             <div class="col-lg-3 d-none d-lg-flex align-items-center justify-content-end gap-3">
+                <button type="button" class="vr-icon-link border-0 bg-transparent p-0" data-bs-toggle="modal" data-bs-target="#vrSearchModal" title="Search" aria-label="Search">
+                    <i class="bi bi-search"></i>
+                </button>
                 @auth('web')
                     <a href="{{ route('account.dashboard') }}" class="vr-icon-link" title="Account" aria-label="Account">
                         <i class="bi bi-person"></i>
@@ -110,7 +118,7 @@
                         <span class="vr-badge js-wishlist-count d-none">0</span>
                     @endif
                 </a>
-                <a href="{{ route('cart.index') }}" class="vr-icon-link position-relative" title="Cart" aria-label="Cart">
+                <a href="{{ route('cart.index') }}" class="vr-icon-link position-relative js-cart-drawer-trigger" title="Cart" aria-label="Cart">
                     <i class="bi bi-bag"></i>
                     @if ($cartCount > 0)
                         <span class="vr-badge js-cart-count">{{ $cartCount }}</span>

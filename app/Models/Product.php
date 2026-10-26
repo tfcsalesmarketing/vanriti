@@ -234,6 +234,11 @@ class Product extends Model
         return (int) $this->stock;
     }
 
+    public function hasStock(): bool
+    {
+        return $this->getAvailableStock() > 0;
+    }
+
     public function isLowStock(): bool
     {
         $threshold = $this->low_stock_threshold ?: 0;

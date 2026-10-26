@@ -11,6 +11,19 @@ class ProductVariant extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::updated(function (ProductVariant $variant) {
+            if ($variant->wasChanged('stock') && $variant->stock > 0 && ((int) $variant->getOriginal('stock')) <= 0) {
+                try {
+                    app(\App\Services\StockNotificationService::class)->notifySubscribersForVariant($variant);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Auto stock notification error: ' . $e->getMessage());
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'product_id',
         'name',
