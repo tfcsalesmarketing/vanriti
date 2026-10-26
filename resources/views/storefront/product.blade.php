@@ -1091,9 +1091,6 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
               if (data.redirect_only) { window.location.href = data.redirect; return; }
               btn.innerHTML = original;
               setTimeout(function () { btn.disabled = false; }, 600);
-              if (window.vrCartDrawer && typeof window.vrCartDrawer.open === 'function') {
-                  window.vrCartDrawer.open(data.drawerHtml);
-              }
           }).catch(function () {
               btn.disabled = false;
               btn.innerHTML = original;

@@ -186,7 +186,7 @@
                         </div>
                     @endforeach
                 </div>
-                <div class="mt-4 d-flex justify-content-center">
+                <div class="mt-4 d-flex justify-content-center w-100 overflow-hidden">
                     {{ $products->links('storefront.partials.pagination') }}
                 </div>
             @endif

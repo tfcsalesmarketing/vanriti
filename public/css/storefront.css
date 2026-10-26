@@ -38,6 +38,11 @@
 /* ---------- Reset & Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 
+html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
 body {
     font-family: var(--vr-font-sans);
     color: var(--vr-text);
@@ -1512,19 +1517,26 @@ img { max-width: 100%; height: auto; }
 .vr-pagination {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: 0 auto;
+    max-width: 100%;
+    box-sizing: border-box;
 }
-.vr-pagination .page-item { margin: 0; }
+.vr-pagination .page-item {
+    margin: 0;
+    display: inline-flex;
+}
 .vr-pagination .page-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 40px;
-    height: 40px;
-    padding: 0;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 8px;
     border: 1px solid var(--vr-border);
     border-radius: var(--vr-radius-sm);
     background: #fff;
@@ -1533,6 +1545,7 @@ img { max-width: 100%; height: auto; }
     font-size: 0.88rem;
     text-decoration: none;
     transition: all var(--vr-transition-fast);
+    box-sizing: border-box;
 }
 .vr-pagination .page-link:hover {
     background: var(--vr-cream);
@@ -1549,6 +1562,19 @@ img { max-width: 100%; height: auto; }
     border-color: var(--vr-border);
     color: #bbb;
     cursor: default;
+}
+
+@media (max-width: 575.98px) {
+    .vr-pagination {
+        gap: 0.25rem;
+        padding: 0 4px;
+    }
+    .vr-pagination .page-link {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 6px;
+        font-size: 0.78rem;
+    }
 }
 
 /* ---------- Shop Filters ---------- */
@@ -4054,6 +4080,32 @@ img { max-width: 100%; height: auto; }
     .vr-cart-drawer {
         max-width: 100% !important;
     }
+}
+.vr-drawer-close-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(38, 61, 37, 0.12);
+    background: #ffffff;
+    color: var(--vr-green-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 6px rgba(38, 61, 37, 0.05);
+    flex-shrink: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+.vr-drawer-close-btn:hover {
+    background: var(--vr-green-soft);
+    border-color: var(--vr-green);
+    color: var(--vr-green-dark);
+}
+.vr-drawer-close-btn:active {
+    transform: scale(0.92);
 }
 
 /* ==========================================================================

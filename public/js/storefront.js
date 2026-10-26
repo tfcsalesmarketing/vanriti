@@ -635,8 +635,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     if (data.redirect_only) {
                         window.location.href = data.redirect;
-                    } else if (window.vrCartDrawer && typeof window.vrCartDrawer.open === 'function') {
-                        window.vrCartDrawer.open(data.drawerHtml);
                     }
                 } else {
                     toast(data.message || 'Something went wrong.', 'error');

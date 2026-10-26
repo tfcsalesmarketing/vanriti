@@ -7,8 +7,8 @@
             <link rel="next" href="{{ $paginator->nextPageUrl() }}">
         @endif
     @endpush
-    <nav aria-label="Page navigation">
-        <ul class="pagination vr-pagination mb-0">
+    <nav aria-label="Page navigation" class="w-100 d-flex justify-content-center overflow-hidden">
+        <ul class="pagination vr-pagination justify-content-center flex-wrap mb-0">
             @if ($paginator->onFirstPage())
                 <li class="page-item disabled">
                     <span class="page-link">&laquo;</span>
