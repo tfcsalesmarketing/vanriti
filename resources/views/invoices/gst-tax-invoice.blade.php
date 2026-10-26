@@ -4,7 +4,7 @@
 
     // Store & Company details from settings
     $storeName = setting('store_name', 'VANRITI');
-    $companyName = setting('company_name', 'Eduse Marketing Private Limited');
+    $companyName = setting('company_name', 'TFC sales & marketing');
     $storeAddress = setting('store_address', "12, 1st Floor, Ramnik Complex, Tikona Park,\nNIT-1, Faridabad, Haryana - 121001, India");
     $storePhone = setting('store_phone', '+91 7888673594');
     $storeEmail = setting('support_email', 'support@vanriti.com');
