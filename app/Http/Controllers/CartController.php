@@ -47,8 +47,17 @@ class CartController extends Controller
         $couponDiscount = $coupon['discount'];
         $couponCode = $coupon['code'];
 
+        $cartProductIds = $cartItems->pluck('product_id')->filter()->all();
+        $relatedProducts = Product::query()
+            ->active()
+            ->whereNotIn('id', $cartProductIds)
+            ->with(['categories', 'images', 'variants'])
+            ->inRandomOrder()
+            ->take(4)
+            ->get();
+
         return view('storefront.cart.index', compact(
-            'cartItems', 'subtotal', 'count', 'shipping', 'couponDiscount', 'couponCode', 'viewCartPayload'
+            'cartItems', 'subtotal', 'count', 'shipping', 'couponDiscount', 'couponCode', 'viewCartPayload', 'relatedProducts'
         ));
     }
 
