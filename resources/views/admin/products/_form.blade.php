@@ -208,12 +208,12 @@
                         <input type="text" name="hsn_code" class="form-control form-control-sm" value="{{ old('hsn_code', $product->hsn_code ?? '') }}">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Net Quantity</label>
-                        <input type="text" name="net_quantity" class="form-control form-control-sm" value="{{ old('net_quantity', $product->net_quantity ?? '') }}">
+                        <label class="form-label small fw-semibold">Weight</label>
+                        <input type="number" step="0.01" min="0" name="weight" class="form-control form-control-sm" value="{{ old('weight', $product->weight ?? '') }}" placeholder="e.g. 100">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Unit</label>
-                        <input type="text" name="unit" class="form-control form-control-sm" value="{{ old('unit', $product->unit ?? '') }}">
+                        <input type="text" name="unit" class="form-control form-control-sm" value="{{ old('unit', $product->unit ?? '') }}" placeholder="gm / ml / pcs">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Shelf Life</label>

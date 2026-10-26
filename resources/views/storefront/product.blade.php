@@ -362,10 +362,10 @@
             <div id="collapse-description" class="accordion-collapse collapse show" data-bs-parent="#vrProductAccordion">
                 <div class="accordion-body">
                     <div>{!! $product->description ? clean_html($product->description) : 'No description available.' !!}</div>
-                    @if ($product->net_quantity || $product->country_of_origin || $product->shelf_life)
+                    @if ($product->weight || $product->country_of_origin || $product->shelf_life)
                         <div class="row g-3 mt-3 small">
-                            @if ($product->net_quantity)
-                                <div class="col-6 col-md-3"><div class="text-muted">Net Quantity</div><div class="fw-semibold">{{ $product->net_quantity }} {{ $product->unit }}</div></div>
+                            @if ($product->weight)
+                                <div class="col-6 col-md-3"><div class="text-muted">Weight / Quantity</div><div class="fw-semibold">{{ $product->weight }} {{ $product->unit }}</div></div>
                             @endif
                             @if ($product->country_of_origin)
                                 <div class="col-6 col-md-3"><div class="text-muted">Country of Origin</div><div class="fw-semibold">{{ $product->country_of_origin }}</div></div>

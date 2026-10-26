@@ -483,16 +483,6 @@
             </form>
             @endif
 
-            {{-- 2. Auto-Assign --}}
-            @if ($pushed && ! $hasAwb)
-            <form method="POST" action="{{ route('admin.orders.shipmojo.auto-assign', $order) }}" class="d-inline" data-confirm="Auto-assign courier for this order?">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-primary">
-                    <i class="bi bi-lightning me-1"></i> Auto-Assign Courier
-                </button>
-            </form>
-            @endif
-
             {{-- 3. Schedule Pickup --}}
             @if ($pushed && ! $hasAwb)
             <form method="POST" action="{{ route('admin.orders.shipmojo.schedule-pickup', $order) }}" class="d-inline" data-confirm="Schedule pickup for this order?">

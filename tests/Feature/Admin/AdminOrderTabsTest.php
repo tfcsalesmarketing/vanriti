@@ -49,7 +49,7 @@ class AdminOrderTabsTest extends TestCase
             ->assertDontSee($pushed->order_number);
     }
 
-    public function test_ready_to_ship_tab_shows_courier_assigned_orders_only(): void
+    public function test_ready_to_ship_tab_shows_all_pushed_orders(): void
     {
         $this->actingAdmin();
 
@@ -67,25 +67,21 @@ class AdminOrderTabsTest extends TestCase
         $this->get(route('admin.orders.index', ['tab' => 'ready_to_ship']))
             ->assertOk()
             ->assertSee($withAwb->order_number)
-            ->assertDontSee($noAwb->order_number)
+            ->assertSee($noAwb->order_number)
             ->assertDontSee($alreadyShipped->order_number)
             ->assertDontSee($unpushed->order_number);
     }
 
-    public function test_assign_courier_tab_shows_pushed_orders_without_awb_only(): void
+    public function test_assign_courier_tab_falls_back_to_ready_to_ship(): void
     {
         $this->actingAdmin();
 
-        $noAwb = $this->createOrder();
-        $this->createShipment($noAwb);
-
-        $withAwb = $this->createOrder();
-        $this->createShipment($withAwb, ['awb_number' => 'AWB123456', 'status' => 'packed']);
+        $pushed = $this->createOrder();
+        $this->createShipment($pushed);
 
         $this->get(route('admin.orders.index', ['tab' => 'assign_courier']))
             ->assertOk()
-            ->assertSee($noAwb->order_number)
-            ->assertDontSee($withAwb->order_number);
+            ->assertSee($pushed->order_number);
     }
 
     public function test_shipped_delivered_and_cancelled_tabs_filter_by_status(): void
@@ -125,7 +121,7 @@ class AdminOrderTabsTest extends TestCase
             ->assertOk()
             ->assertSee('Pending Orders')
             ->assertSee('Ready to Ship')
-            ->assertSee('Assign Courier')
+            ->assertDontSee('Assign Courier')
             ->assertSee('Shipped')
             ->assertSee('Cancelled')
             ->assertSee('Delivered');

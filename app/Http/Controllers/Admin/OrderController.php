@@ -26,7 +26,6 @@ class OrderController extends Controller
 
     protected array $tabs = [
         'pending' => 'Pending Orders',
-        'assign_courier' => 'Assign Courier',
         'ready_to_ship' => 'Ready to Ship',
         'shipped' => 'Shipped',
         'delivered' => 'Delivered',
@@ -42,6 +41,9 @@ class OrderController extends Controller
     public function index(Request $request): View
     {
         $activeTab = (string) $request->input('tab', 'pending');
+        if ($activeTab === 'assign_courier') {
+            $activeTab = 'ready_to_ship';
+        }
 
         if (! array_key_exists($activeTab, $this->tabs)) {
             $activeTab = 'pending';
@@ -180,24 +182,11 @@ class OrderController extends Controller
                     });
                 break;
 
-            case 'assign_courier':
-                // Pushed to ShipMojo, awaiting courier assignment
-                $query->whereNotIn('order_status', ['cancelled', 'failed', 'delivered'])
-                    ->whereHas('shipments', function (Builder $q) {
-                        $q->whereNotNull('shipmojo_pushed_at')
-                            ->whereNotIn('status', ['delivered', 'returning', 'returned', 'failed', 'cancelled']);
-                    })
-                    ->whereDoesntHave('shipments', function (Builder $q) {
-                        $q->whereNotNull('shipmojo_pushed_at')->whereNotNull('awb_number');
-                    });
-                break;
-
             case 'ready_to_ship':
-                // Courier assigned (has AWB), ready for pickup and label print
+                // All orders pushed to ShipMojo, awaiting courier assignment / pickup / label in ShipMojo
                 $query->whereNotIn('order_status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled'])
                     ->whereHas('shipments', function (Builder $q) {
                         $q->whereNotNull('shipmojo_pushed_at')
-                            ->whereNotNull('awb_number')
                             ->whereNotIn('status', ['shipped', 'out_for_delivery', 'delivered', 'returning', 'returned', 'failed', 'cancelled']);
                     });
                 break;

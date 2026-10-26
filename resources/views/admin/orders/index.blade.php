@@ -12,10 +12,6 @@
         'hold' => [
             ['route' => route('admin.orders.bulk.cancel'), 'label' => 'Cancel Selected', 'btn' => 'outline-danger', 'icon' => 'bi-x-circle', 'type' => 'danger', 'ok' => 'Cancel Orders', 'confirm' => 'Cancel selected orders?'],
         ],
-        'assign_courier' => [
-            ['route' => route('admin.orders.shipmojo.bulk.auto-assign'), 'label' => 'Auto-Assign Courier', 'btn' => 'dark', 'icon' => 'bi-check2-all', 'type' => 'primary', 'ok' => 'Assign', 'confirm' => 'Auto-assign courier for selected orders?'],
-            ['route' => route('admin.orders.bulk.cancel'), 'label' => 'Cancel Selected', 'btn' => 'outline-danger', 'icon' => 'bi-x-circle', 'type' => 'danger', 'ok' => 'Cancel Orders', 'confirm' => 'Cancel selected orders in system & ShipMojo?'],
-        ],
         'ready_to_ship' => [
             ['route' => route('admin.orders.shipmojo.bulk.schedule-pickup'), 'label' => 'Schedule Pickup', 'btn' => 'dark', 'icon' => 'bi-truck', 'type' => 'primary', 'ok' => 'Schedule', 'confirm' => 'Schedule pickup for selected orders?'],
             ['route' => route('admin.orders.shipmojo.bulk.labels'), 'label' => 'Download Labels (ZIP)', 'btn' => 'dark', 'icon' => 'bi-printer', 'type' => 'primary', 'ok' => 'Download', 'confirm' => 'Download shipping labels for selected orders?'],
@@ -78,7 +74,7 @@
                     </div>
                 </div>
                 <div class="fs-5 fw-bold text-dark">{{ $tabCounts['pending'] ?? 0 }}</div>
-                <div class="text-muted" style="font-size:0.72rem;">Needs courier assignment</div>
+                <div class="text-muted" style="font-size:0.72rem;">Awaiting ShipMojo push</div>
             </div>
         </div>
     </div>
@@ -92,7 +88,7 @@
                     </div>
                 </div>
                 <div class="fs-5 fw-bold text-dark">{{ $tabCounts['ready_to_ship'] ?? 0 }}</div>
-                <div class="text-muted" style="font-size:0.72rem;">AWB assigned, schedule pickup</div>
+                <div class="text-muted" style="font-size:0.72rem;">Pushed to ShipMojo / Ready for dispatch</div>
             </div>
         </div>
     </div>
@@ -259,7 +255,7 @@
                         <th>Customer Details</th>
                         <th class="text-center">Items</th>
                         <th class="text-end">Total Amount</th>
-                        @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped', 'delivered'], true))
+                        @if (in_array($activeTab, ['ready_to_ship', 'shipped', 'delivered'], true))
                             <th>Courier Partner</th>
                             <th>AWB / Tracking</th>
                         @endif
@@ -320,7 +316,7 @@
                             </td>
                             <td class="text-center small"><span class="badge bg-light text-dark border">{{ $order->items_count }}</span></td>
                             <td class="text-end fw-bold small text-dark">{{ format_price($order->grand_total) }}</td>
-                            @if (in_array($activeTab, ['ready_to_ship', 'assign_courier', 'shipped', 'delivered'], true))
+                            @if (in_array($activeTab, ['ready_to_ship', 'shipped', 'delivered'], true))
                                 <td class="small fw-semibold text-secondary">{{ $shipment?->courier ?: '—' }}</td>
                                 <td class="small font-monospace" style="font-size:0.78rem;">
                                     @if ($shipment?->awb_number)

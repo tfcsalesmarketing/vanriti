@@ -237,6 +237,78 @@ class ShipMojoService
         return $this->get('/get-return-reason');
     }
 
+    /**
+     * Calculate total order weight in grams from actual products in database.
+     */
+    public function calculateOrderWeight(Order $order): int
+    {
+        $order->loadMissing(['items.product', 'items.variant']);
+
+        $totalWeight = 0.0;
+
+        foreach ($order->items as $item) {
+            $itemQty = max(1, (int) $item->quantity);
+            $itemWeight = null;
+
+            // 1. Variant weight
+            if ($item->variant && $item->variant->weight !== null && (float) $item->variant->weight > 0) {
+                $itemWeight = (float) $item->variant->weight;
+            }
+
+            // 2. Product weight column
+            if ($itemWeight === null && $item->product && $item->product->weight !== null && (float) $item->product->weight > 0) {
+                $itemWeight = (float) $item->product->weight;
+            }
+
+            // 3. Fallback: Parse net_quantity string (e.g. "100", "200g", "0.5 kg")
+            if ($itemWeight === null && $item->product && ! empty($item->product->net_quantity)) {
+                if (preg_match('/([0-9]+(?:\.[0-9]+)?)/', (string) $item->product->net_quantity, $matches)) {
+                    $val = (float) $matches[1];
+                    if (strtolower(trim((string) $item->product->unit)) === 'kg') {
+                        $val *= 1000;
+                    }
+                    $itemWeight = $val;
+                }
+            }
+
+            // 4. Default fallback if not found anywhere (e.g. 100g)
+            if ($itemWeight === null || $itemWeight <= 0) {
+                $itemWeight = 100.0;
+            }
+
+            $totalWeight += ($itemWeight * $itemQty);
+        }
+
+        return max(50, (int) round($totalWeight));
+    }
+
+    /**
+     * Calculate compact package dimensions (L, W, H in cm) so volumetric weight
+     * never exceeds actual weight, preventing couriers from overcharging based on package size.
+     *
+     * Volumetric weight formula: (L * W * H) / 5000 kg => (L * W * H) / 5 grams.
+     *
+     * @return array{length: int, width: int, height: int}
+     */
+    public function calculatePackageDimensions(int $weightGrams): array
+    {
+        if ($weightGrams <= 300) {
+            return ['length' => 10, 'width' => 10, 'height' => 4];
+        }
+        if ($weightGrams <= 600) {
+            return ['length' => 12, 'width' => 10, 'height' => 5];
+        }
+        if ($weightGrams <= 1000) {
+            return ['length' => 15, 'width' => 12, 'height' => 6];
+        }
+
+        return [
+            'length' => (int) setting('shipmojo_default_length', 18),
+            'width' => (int) setting('shipmojo_default_width', 14),
+            'height' => (int) setting('shipmojo_default_height', 8),
+        ];
+    }
+
     // ── Push Forward Order ────────────────────────────────────────────────────
     public function pushOrder(Order $order): array
     {
@@ -284,10 +356,11 @@ class ShipMojoService
             ];
         })->toArray();
 
-        $weight = (int) setting('shipmojo_default_weight_grams', 500);
-        $length = (int) setting('shipmojo_default_length', 20);
-        $width = (int) setting('shipmojo_default_width', 15);
-        $height = (int) setting('shipmojo_default_height', 10);
+        $weight = $this->calculateOrderWeight($order);
+        $dimensions = $this->calculatePackageDimensions($weight);
+        $length = $dimensions['length'];
+        $width = $dimensions['width'];
+        $height = $dimensions['height'];
 
         $payload = [
             'order_id' => $order->order_number,
@@ -610,7 +683,8 @@ class ShipMojoService
             ];
         })->toArray();
 
-        $weight = (int) setting('shipmojo_default_weight_grams', 500);
+        $weight = $this->calculateOrderWeight($order);
+        $dimensions = $this->calculatePackageDimensions($weight);
 
         $payload = [
             'order_id' => $returnRequest->return_number,
@@ -627,9 +701,9 @@ class ShipMojoService
             'product_detail' => $items,
             'payment_type' => 'PREPAID',
             'weight' => $weight,
-            'length' => (int) setting('shipmojo_default_length', 20),
-            'width' => (int) setting('shipmojo_default_width', 15),
-            'height' => (int) setting('shipmojo_default_height', 10),
+            'length' => $dimensions['length'],
+            'width' => $dimensions['width'],
+            'height' => $dimensions['height'],
             'warehouse_id' => (string) setting('shipmojo_warehouse_id', ''),
             'return_reason_id' => $returnReasonId,
             'customer_request' => $customerRequest,

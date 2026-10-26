@@ -76,8 +76,8 @@ class Product extends Model
         'warnings',
         'precautions',
         'disclaimer',
-        'net_quantity',
         'unit',
+        'weight',
         'mrp',
         'selling_price',
         'discount_percent',
@@ -430,5 +430,12 @@ class Product extends Model
             ->where('slug', $slug)
             ->when($ignoreId, fn ($q) => $q->where('product_id', '!=', $ignoreId))
             ->exists();
+    }
+
+    public function getNetQuantityAttribute(): ?string
+    {
+        return isset($this->attributes['weight']) && $this->attributes['weight'] !== null
+            ? (string) $this->attributes['weight']
+            : null;
     }
 }

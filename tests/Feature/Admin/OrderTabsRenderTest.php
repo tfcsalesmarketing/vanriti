@@ -33,7 +33,7 @@ class OrderTabsRenderTest extends TestCase
     {
         $admin = $this->superAdmin();
 
-        $tabs = ['pending', 'hold', 'assign_courier', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+        $tabs = ['pending', 'hold', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
 
         foreach ($tabs as $tab) {
             $response = $this->actingAs($admin, 'admin')->get(route('admin.orders.index', ['tab' => $tab]));
