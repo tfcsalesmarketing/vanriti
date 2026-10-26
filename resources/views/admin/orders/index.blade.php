@@ -213,10 +213,10 @@
         <span class="small text-muted border-start ps-3"><strong id="selected-count" class="text-dark">0</strong> order(s) selected</span>
         <div class="d-flex align-items-center gap-1.5 flex-wrap">
             @foreach ($tabBulkActions as $action)
-                <button type="submit" form="bulk-form" class="btn btn-sm btn-{{ $action['btn'] }}"
+                <button type="button" class="btn btn-sm btn-{{ $action['btn'] }}"
                     data-action="{{ $action['route'] }}" data-confirm="{{ $action['confirm'] }}"
                     data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}"
-                    onclick="return bulkSubmit(this)">
+                    onclick="bulkSubmit(this)">
                     <i class="bi {{ $action['icon'] }} me-1"></i>{{ $action['label'] }}
                 </button>
             @endforeach
@@ -233,21 +233,23 @@
     </div>
     <div class="d-flex align-items-center gap-2">
         @foreach ($tabBulkActions as $action)
-            <button type="submit" form="bulk-form" class="btn btn-sm btn-light text-dark fw-semibold"
+            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold"
                 data-action="{{ $action['route'] }}" data-confirm="{{ $action['confirm'] }}"
                 data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}"
-                onclick="return bulkSubmit(this)">
+                onclick="bulkSubmit(this)">
                 <i class="bi {{ $action['icon'] }} me-1"></i>{{ $action['label'] }}
             </button>
         @endforeach
     </div>
 </div>
+
+<form method="POST" id="bulk-form" action="{{ $tabBulkActions[0]['route'] ?? route('admin.orders.shipmojo.bulk.push') }}" style="display:none;">
+    @csrf
+</form>
 @endif
 
 <div class="card table-card">
-    <form method="POST" id="bulk-form" action="#" @if (! $tabBulkActions) data-disabled @endif>
-        @csrf
-        <div class="table-responsive">
+    <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
@@ -366,6 +368,23 @@
                                             </button>
                                         </form>
                                     @endif
+                                    @if ($activeTab === 'pending')
+                                        <form method="POST" action="{{ route('admin.orders.shipmojo.push', $order) }}" class="d-inline" data-confirm="Push order {{ $order->order_number }} to ShipMojo?">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-dark p-1 px-2" title="Push to ShipMojo">
+                                                <i class="bi bi-cloud-upload"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                    @if (! in_array($order->order_status, ['cancelled', 'delivered'], true))
+                                        <form method="POST" action="{{ route('admin.orders.bulk.cancel') }}" class="d-inline" data-confirm="Cancel order {{ $order->order_number }}? Stock will be restored and paid orders will receive a refund.">
+                                            @csrf
+                                            <input type="hidden" name="order_ids[]" value="{{ $order->id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2" title="Cancel Order">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                     @if ($activeTab === 'ready_to_ship')
                                         <a href="{{ route('admin.orders.shipmojo.label', $order) }}" class="btn btn-sm btn-outline-dark p-1 px-2" title="Download Shipping Label">
                                             <i class="bi bi-printer"></i>
@@ -402,7 +421,6 @@
                 </tbody>
             </table>
         </div>
-    </form>
     @if ($orders->hasPages())
         <div class="card-footer d-flex align-items-center justify-content-between">
             <span class="small text-muted">Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} entries</span>
@@ -442,18 +460,54 @@ document.addEventListener('DOMContentLoaded', function () {
 
 @if ($tabBulkActions)
 window.bulkSubmit = function (btn) {
+    var checkedBoxes = document.querySelectorAll('.order-check:checked');
+    if (!checkedBoxes.length) {
+        if (window.vrAlert) {
+            window.vrAlert('Please select at least one order using the checkboxes to perform this action.', {
+                title: 'No Orders Selected',
+                type: 'danger',
+                okLabel: 'Got It'
+            });
+        } else {
+            alert('Please select at least one order using the checkboxes to perform this action.');
+        }
+        return false;
+    }
+
     var form = document.getElementById('bulk-form');
-    window.vrConfirm(btn.dataset.confirm, {
-        okLabel: btn.dataset.ok,
-        type: btn.dataset.type
+    if (!form) return false;
+
+    var countText = checkedBoxes.length + ' order' + (checkedBoxes.length > 1 ? 's' : '');
+    var confirmMsg = btn.dataset.confirm ? btn.dataset.confirm.replace('selected orders', countText) : 'Proceed with ' + countText + '?';
+
+    window.vrConfirm(confirmMsg, {
+        title: btn.textContent.trim(),
+        okLabel: btn.dataset.ok || 'Yes, proceed',
+        type: btn.dataset.type || 'primary'
     }).then(function (ok) {
         if (!ok) return;
+
+        // Clear existing hidden inputs for order_ids
+        form.querySelectorAll('input[name="order_ids[]"]').forEach(function (el) { el.remove(); });
+
+        // Add checked order IDs
+        checkedBoxes.forEach(function (cb) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'order_ids[]';
+            input.value = cb.value;
+            form.appendChild(input);
+        });
+
+        form.action = btn.dataset.action;
+
         if (btn.dataset.action === '{{ route('admin.orders.shipmojo.bulk.labels') }}') {
             submitLabels(form);
             return;
         }
-        form.action = btn.dataset.action;
-        if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+
+        if (window.showPageLoader) window.showPageLoader();
+        form.submit();
     });
     return false;
 };
@@ -508,10 +562,9 @@ function submitLabels(form) {
 }
 
 (function () {
-    const bulkForm = document.getElementById('bulk-form');
     const toolbarAll = document.getElementById('select-all');
     const rowAll = document.querySelector('.row-select-all');
-    const boxes = () => Array.from(bulkForm.querySelectorAll('.order-check'));
+    const boxes = () => Array.from(document.querySelectorAll('.order-check'));
     const counter = document.getElementById('selected-count');
 
     const count = () => boxes().filter(b => b.checked).length;

@@ -90,6 +90,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index')->middleware('permission:view-inventory,manage-inventory');
 
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index')->middleware('permission:view-orders,manage-orders');
+        Route::post('orders', function () {
+            return redirect()->route('admin.orders.index')->with('warning', 'Please select one or more orders and use the action buttons to proceed.');
+        })->middleware('permission:view-orders,manage-orders');
         Route::get('orders/manifest', [OrderController::class, 'manifest'])->name('orders.manifest')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice')->middleware('permission:view-orders,manage-orders');
