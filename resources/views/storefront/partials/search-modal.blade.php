@@ -3,7 +3,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden; background: #ffffff;">
             <div class="modal-header border-0 pb-0 pt-3 px-4 d-flex align-items-center justify-content-between">
-                <span class="small text-uppercase fw-bold text-muted" id="vrSearchModalLabel" style="letter-spacing: 0.5px; font-size: 11px;">Search Vanriti Collections</span>
+                <span class="small text-uppercase fw-bold text-muted" id="vrSearchModalLabel" style="letter-spacing: 0.5px; font-size: 11px;">Search Vanriti Herbal &amp; Ayurvedic Care</span>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 pt-2">
@@ -13,7 +13,7 @@
                             <i class="bi bi-search fs-5 text-success"></i>
                         </span>
                         <input type="search" name="q" id="vrSearchInput" class="form-control bg-transparent border-0 fs-6"
-                               placeholder="Search sarees, kurtas, dupattas, fabrics..." autocomplete="off" autofocus>
+                               placeholder="Search hair care, skin care, amla, beetroot, wellness..." autocomplete="off" autofocus>
                         <div class="d-none align-items-center pe-3" id="vrSearchSpinner">
                             <div class="spinner-border spinner-border-sm text-success" role="status"></div>
                         </div>
@@ -46,10 +46,12 @@
                 <div id="vrSearchEmptyState" class="py-3 text-center text-muted">
                     <p class="small mb-2">Try searching for:</p>
                     <div class="d-flex flex-wrap justify-content-center gap-2">
-                        <a href="{{ route('shop.index', ['q' => 'Silk']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Silk</a>
-                        <a href="{{ route('shop.index', ['q' => 'Saree']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Saree</a>
-                        <a href="{{ route('shop.index', ['q' => 'Kurta']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Kurta</a>
-                        <a href="{{ route('shop.index', ['q' => 'Dupatta']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Dupatta</a>
+                        <a href="{{ route('shop.index', ['q' => 'Hair Care']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Hair Care</a>
+                        <a href="{{ route('shop.index', ['q' => 'Skin Care']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Skin Care</a>
+                        <a href="{{ route('shop.index', ['q' => 'Health Care']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Health Care</a>
+                        <a href="{{ route('shop.index', ['q' => 'Amla']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Amla</a>
+                        <a href="{{ route('shop.index', ['q' => 'Beetroot']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Beetroot</a>
+                        <a href="{{ route('shop.index', ['q' => 'Face Pack']) }}" class="badge rounded-pill bg-light text-dark text-decoration-none px-3 py-2 border">Face Pack</a>
                     </div>
                 </div>
 

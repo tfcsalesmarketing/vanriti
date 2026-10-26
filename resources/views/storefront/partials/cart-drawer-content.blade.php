@@ -33,8 +33,8 @@
             <div class="vr-drawer-empty-icon mb-3">
                 <i class="bi bi-bag-x text-muted" style="font-size: 3rem; opacity: 0.4;"></i>
             </div>
-            <h6 class="fw-semibold text-dark mb-1">Your Luxury Bag is Empty</h6>
-            <p class="text-muted small mb-4">Discover our curated herbal wellness rituals crafted with pure botanical extracts.</p>
+            <h6 class="fw-semibold text-dark mb-1">Your Shopping Bag is Empty</h6>
+            <p class="text-muted small mb-4">Discover our pure Ayurvedic &amp; herbal care for hair, skin and health crafted with amla, beetroot &amp; natural botanicals.</p>
             <a href="{{ route('shop.index') }}" class="btn btn-vr btn-sm px-4 py-2" onclick="window.vrCartDrawer && window.vrCartDrawer.close()">
                 Explore Collection
             </a>

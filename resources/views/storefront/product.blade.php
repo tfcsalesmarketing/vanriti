@@ -293,7 +293,7 @@
                             <span class="vr-stock-label out">Currently Sold Out</span>
                         </div>
                         <p class="small text-muted mb-2">
-                            This luxury edition is handcrafted in limited batches. Leave your WhatsApp number to receive an instant alert as soon as it's restocked.
+                            This Ayurvedic formulation is crafted in fresh authentic batches. Leave your WhatsApp number to receive an instant alert as soon as it's restocked.
                         </p>
                         <form id="vrStockNotifyForm" class="d-flex flex-column gap-2">
                             @csrf

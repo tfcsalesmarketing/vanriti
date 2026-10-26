@@ -4,7 +4,7 @@
     <div class="vr-drawer-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white">
         <div class="d-flex align-items-center gap-2">
             <i class="bi bi-bag text-success fs-5"></i>
-            <h6 class="mb-0 fw-bold text-dark">Your Luxury Bag</h6>
+            <h6 class="mb-0 fw-bold text-dark">Your Shopping Bag</h6>
             <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 small js-drawer-count"></span>
         </div>
         <button type="button" class="btn btn-sm btn-light rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" id="vrCartDrawerClose" aria-label="Close Bag">
