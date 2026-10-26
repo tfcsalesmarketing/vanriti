@@ -13,12 +13,13 @@
 
     // Logo image resolving
     $logoSetting = setting('store_logo');
+    $logoSrc = null;
     if ($logoSetting && file_exists(public_path('storage/' . $logoSetting))) {
-        $logoSrc = asset('storage/' . $logoSetting);
+        $logoSrc = ($isPdf ?? false) ? public_path('storage/' . $logoSetting) : asset('storage/' . $logoSetting);
     } elseif (file_exists(public_path('images/logo.png'))) {
-        $logoSrc = asset('images/logo.png');
-    } else {
-        $logoSrc = asset('images/logo.webp');
+        $logoSrc = ($isPdf ?? false) ? public_path('images/logo.png') : asset('images/logo.png');
+    } elseif (file_exists(public_path('images/logo.webp'))) {
+        $logoSrc = ($isPdf ?? false) ? public_path('images/logo.webp') : asset('images/logo.webp');
     }
 
     // Totals calculations without delivery charges (as explicitly requested)
@@ -84,10 +85,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tax Invoice - INV-{{ $order->order_number }} - {{ $storeName }}</title>
+    @unless($isPdf ?? false)
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @endunless
 
     <style>
         :root {
@@ -109,20 +112,20 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: var(--vr-text-main);
-            background: #F4F6F4;
-            padding: 24px 16px;
-            font-size: 11px;
-            line-height: 1.45;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'DejaVu Sans', sans-serif;
+            color: #1C2826;
+            background: {{ ($isPdf ?? false) ? '#ffffff' : '#F4F6F4' }};
+            padding: {{ ($isPdf ?? false) ? '0' : '20px 14px' }};
+            font-size: 10px;
+            line-height: 1.35;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        /* Top Action Buttons (Hidden when printing) */
+        /* Top Action Buttons (Hidden when printing or in PDF) */
         .invoice-actions {
-            max-width: 820px;
-            margin: 0 auto 16px auto;
+            max-width: 800px;
+            margin: 0 auto 14px auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -132,7 +135,7 @@
             align-items: center;
             gap: 8px;
             padding: 8px 18px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
             border-radius: 8px;
             cursor: pointer;
@@ -140,13 +143,13 @@
             transition: all 0.2s ease;
         }
         .btn-action-primary {
-            background: var(--vr-forest);
+            background: #14361E;
             color: #ffffff;
-            border: 1px solid var(--vr-forest);
+            border: 1px solid #14361E;
             box-shadow: 0 2px 4px rgba(20, 54, 30, 0.2);
         }
         .btn-action-primary:hover {
-            background: var(--vr-forest-dark);
+            background: #0D2614;
             color: #ffffff;
         }
         .btn-action-outline {
@@ -160,168 +163,115 @@
 
         /* Invoice Container */
         .invoice-paper {
-            max-width: 820px;
+            max-width: 800px;
             margin: 0 auto;
             background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border-radius: {{ ($isPdf ?? false) ? '0' : '10px' }};
+            box-shadow: {{ ($isPdf ?? false) ? 'none' : '0 4px 18px rgba(0, 0, 0, 0.06)' }};
             overflow: hidden;
             position: relative;
-            border: 1px solid #e5ebe7;
+            border: {{ ($isPdf ?? false) ? 'none' : '1px solid #e5ebe7' }};
         }
 
         .invoice-content {
-            padding: 28px 32px 24px 32px;
+            padding: {{ ($isPdf ?? false) ? '12px 16px 10px 16px' : '22px 26px 18px 26px' }};
             position: relative;
         }
 
-        /* Botanical Corner Accents */
-        .botanical-bg-top {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 220px;
-            height: 140px;
-            pointer-events: none;
-            opacity: 0.85;
-            z-index: 1;
+        /* Header Table */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-bottom: 12px;
         }
-        .botanical-bg-bottom {
-            position: absolute;
-            bottom: 45px;
-            left: 0;
-            width: 130px;
-            height: 100px;
-            pointer-events: none;
-            opacity: 0.8;
-            z-index: 1;
+        .header-brand-cell {
+            vertical-align: top;
+            width: 68%;
         }
-
-        /* Top Header */
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            position: relative;
-            z-index: 2;
-            padding-bottom: 20px;
+        .header-tagline-cell {
+            vertical-align: top;
+            width: 32%;
+            text-align: right;
+            padding-top: 4px;
         }
-
-        .header-brand-wrap {
-            display: flex;
-            align-items: center;
-            gap: 22px;
-            max-width: 580px;
-        }
-
         .brand-logo-img {
-            max-width: 155px;
-            max-height: 85px;
-            object-fit: contain;
+            max-width: 140px;
+            max-height: 65px;
+            vertical-align: middle;
         }
-
-        .brand-company-info {
-            border-left: 1.5px solid #E2E8E2;
-            padding-left: 20px;
-        }
-
-        .brand-company-info .company-brand-name {
-            font-size: 18px;
+        .company-brand-name {
+            font-size: 17px;
             font-weight: 800;
+            color: #14361E;
+            line-height: 1.15;
             letter-spacing: 0.5px;
-            color: var(--vr-forest);
-            line-height: 1.2;
         }
-        .brand-company-info .company-legal-name {
-            font-size: 11px;
+        .company-legal-name {
+            font-size: 10.5px;
             font-weight: 700;
             color: #2F3E34;
+            margin-bottom: 3px;
+        }
+        .company-address {
+            font-size: 9.5px;
+            color: #556B5C;
+            line-height: 1.35;
             margin-bottom: 4px;
         }
-        .brand-company-info .company-address {
-            font-size: 10px;
-            color: #556B5C;
-            line-height: 1.4;
-            margin-bottom: 6px;
-            white-space: pre-line;
-        }
-        .brand-company-info .company-contacts {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            font-size: 10px;
+        .company-contacts {
+            font-size: 9.5px;
             color: #3C4E43;
+            line-height: 1.35;
         }
-        .brand-company-info .company-contacts i {
-            color: var(--vr-forest);
-            font-size: 10px;
-            margin-right: 5px;
-            display: inline-block;
+        .company-contacts strong {
+            color: #14361E;
         }
-        .brand-company-info .company-contacts strong {
-            color: var(--vr-forest);
-            font-weight: 700;
-        }
-
-        .header-tagline-art {
-            text-align: right;
-            position: relative;
-            z-index: 2;
-            padding-top: 10px;
-            padding-right: 10px;
-        }
-        .header-tagline-art .pure-care-script {
-            font-family: 'Caveat', cursive;
-            font-size: 27px;
+        .pure-care-script {
+            font-family: 'Caveat', cursive, 'DejaVu Sans', serif;
+            font-size: 24px;
             color: #37533B;
             line-height: 1.05;
-            letter-spacing: 0.2px;
         }
-        .header-tagline-art .pure-care-script span {
-            font-size: 32px;
+        .pure-care-script span {
+            font-size: 28px;
             color: #2B462F;
             display: block;
         }
-        .header-tagline-art .pure-care-script em {
-            font-style: normal;
-            color: #4C6E51;
-        }
 
-        /* Green TAX INVOICE Banner */
-        .tax-invoice-banner {
-            background: linear-gradient(135deg, var(--vr-sage-light) 0%, #F3F8F4 100%);
-            border: 1px solid var(--vr-sage-border);
-            border-radius: 8px;
-            padding: 14px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-            position: relative;
-            z-index: 2;
+        /* TAX INVOICE Banner Table */
+        .tax-invoice-banner-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #EBF4EE;
+            border: 1px solid #D1E4D6;
+            border-radius: 6px;
+            margin-bottom: 12px;
         }
-
+        .tax-invoice-banner-table td {
+            padding: 8px 14px;
+        }
         .tax-invoice-title-block h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 26px;
+            font-family: 'Cinzel', serif, 'DejaVu Sans';
+            font-size: 20px;
             font-weight: 800;
             letter-spacing: 1px;
-            color: var(--vr-forest);
+            color: #14361E;
             line-height: 1;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .tax-invoice-title-block p {
-            font-size: 10.5px;
+            font-size: 9.5px;
             color: #4C6053;
             font-weight: 500;
         }
-
         .invoice-meta-table {
             border-collapse: collapse;
+            margin-left: auto;
         }
         .invoice-meta-table td {
-            padding: 2px 6px;
-            font-size: 10.5px;
+            padding: 1.5px 4px !important;
+            font-size: 9.5px;
         }
         .invoice-meta-table td.label-col {
             font-weight: 600;
@@ -331,7 +281,7 @@
         .invoice-meta-table td.colon-col {
             font-weight: 600;
             color: #6B8072;
-            padding: 2px 2px;
+            padding: 1.5px 2px !important;
         }
         .invoice-meta-table td.val-col {
             font-weight: 700;
@@ -339,427 +289,275 @@
             white-space: nowrap;
         }
 
-        /* Two Column Addresses */
-        .addresses-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
+        /* Two-Column Addresses Table */
+        .addresses-layout-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-bottom: 12px;
         }
-
-        .address-card {
-            border: 1px solid var(--vr-border-light);
-            border-radius: 8px;
+        .address-box {
+            border: 1px solid #E5EBE6;
+            border-radius: 6px;
             overflow: hidden;
             background: #ffffff;
         }
-
-        .address-card-header {
-            background: var(--vr-sage-pill);
-            padding: 7px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--vr-sage-border);
-        }
-        .address-card-header .title {
-            font-size: 10.5px;
+        .address-box-header {
+            background: #E1EFE5;
+            padding: 5px 10px;
+            border-bottom: 1px solid #D1E4D6;
+            font-size: 9.5px;
             font-weight: 800;
-            letter-spacing: 0.6px;
-            color: var(--vr-forest);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            letter-spacing: 0.5px;
+            color: #14361E;
             text-transform: uppercase;
         }
-        .address-card-header .title i {
-            font-size: 12px;
-            color: var(--vr-forest);
-        }
-        .same-addr-badge {
-            font-size: 9px;
-            font-weight: 700;
-            background: #CBE6D3;
-            color: #174221;
-            padding: 2px 8px;
-            border-radius: 9999px;
-        }
-
-        .address-card-body {
-            padding: 12px 14px;
-            font-size: 10.5px;
-            line-height: 1.45;
+        .address-box-body {
+            padding: 8px 10px;
+            font-size: 9.5px;
+            line-height: 1.35;
             color: #2F3E34;
         }
-        .address-card-body .cust-name {
-            font-size: 12px;
+        .address-box-body .cust-name {
+            font-size: 11px;
             font-weight: 800;
             color: #132418;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
-        .address-card-body .cust-lines {
+        .address-box-body .cust-lines {
             color: #495C50;
-            margin-bottom: 6px;
-        }
-        .address-card-body .cust-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            font-size: 10px;
-            color: #384A3E;
-        }
-        .address-card-body .cust-meta i {
-            color: var(--vr-forest);
-            font-size: 10px;
-            margin-right: 5px;
+            margin-bottom: 4px;
         }
 
         /* Items Table */
         .items-table-wrap {
-            margin-bottom: 18px;
-            border-radius: 8px;
+            margin-bottom: 12px;
+            border-radius: 6px;
             overflow: hidden;
             border: 1px solid #D7E2D9;
-            position: relative;
-            z-index: 2;
         }
-
         .invoice-items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5px;
-        }
-
-        .invoice-items-table thead th {
-            background: var(--vr-forest);
-            color: #ffffff;
             font-size: 9.5px;
+        }
+        .invoice-items-table thead th {
+            background: #14361E;
+            color: #ffffff;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            padding: 9px 8px;
+            letter-spacing: 0.3px;
+            padding: 6px 6px;
             text-align: center;
             border: none;
             vertical-align: middle;
         }
         .invoice-items-table thead th.th-prod {
             text-align: left;
-            padding-left: 12px;
+            padding-left: 10px;
         }
-
         .invoice-items-table tbody td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #E3ECE5;
-            color: #223327;
-            vertical-align: middle;
+            padding: 6px 6px;
+            border-bottom: 1px solid #EAF0EC;
             text-align: center;
-            background: #ffffff;
+            color: #1F2E23;
+            vertical-align: middle;
         }
-        .invoice-items-table tbody tr:nth-child(even) td {
-            background: #FAFCFA;
+        .invoice-items-table tbody td.td-idx {
+            color: #6C8174;
+            font-weight: 600;
+            width: 24px;
         }
-        .invoice-items-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .invoice-items-table td.td-idx {
-            font-weight: 700;
-            color: #556B5C;
-            width: 28px;
-        }
-        .invoice-items-table td.td-prod {
+        .invoice-items-table tbody td.td-prod {
             text-align: left;
             padding-left: 10px;
         }
-        .prod-cell-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .prod-thumb-img {
-            width: 44px;
-            height: 44px;
-            border-radius: 6px;
-            object-fit: cover;
-            border: 1px solid #E0EAE2;
-            background: #f8faf8;
-            flex-shrink: 0;
-        }
-        .prod-details-text .prod-title {
-            font-size: 11px;
+        .prod-title {
             font-weight: 700;
-            color: #14281B;
-            line-height: 1.3;
+            color: #122416;
+            font-size: 10px;
+            line-height: 1.25;
         }
-        .prod-details-text .prod-sku {
-            font-size: 9px;
-            color: #728578;
-            font-family: monospace;
-            margin-top: 2px;
-            text-transform: uppercase;
+        .prod-sku {
+            font-size: 8.5px;
+            color: #687E71;
         }
-        .prod-details-text .prod-weight-tag {
-            font-size: 9px;
-            color: var(--vr-forest);
+        .prod-weight-tag {
+            font-size: 8px;
             font-weight: 600;
-            background: var(--vr-sage-pill);
-            padding: 1px 5px;
-            border-radius: 4px;
+            background: #EAF3EC;
+            color: #184323;
+            padding: 1px 4px;
+            border-radius: 3px;
             display: inline-block;
-            margin-top: 2px;
         }
-
         .td-amount {
             font-weight: 700;
-            color: #112216;
+            color: #14361E;
             text-align: right !important;
-            padding-right: 12px !important;
+            padding-right: 8px !important;
+        }
+        .text-end {
+            text-align: right !important;
+            padding-right: 8px !important;
         }
 
-        /* Bottom Section: Payment + T&C vs Totals */
-        .bottom-summary-grid {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 16px;
-            margin-bottom: 18px;
-            position: relative;
-            z-index: 2;
+        /* Summary Layout Table (Left Terms vs Right Totals) */
+        .summary-layout-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-bottom: 10px;
+        }
+        .summary-left-cell {
+            width: 55%;
+            vertical-align: top;
+        }
+        .summary-right-cell {
+            width: 45%;
+            vertical-align: top;
         }
 
-        /* Left Info Cards */
-        .left-info-cards {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .payment-method-card {
-            border: 1px solid var(--vr-border-light);
-            border-radius: 8px;
+        .summary-card-box {
+            border: 1px solid #E5EBE6;
+            border-radius: 6px;
             overflow: hidden;
             background: #ffffff;
+            margin-bottom: 8px;
         }
-        .payment-method-header {
-            background: var(--vr-sage-pill);
-            padding: 6px 12px;
-            font-size: 10px;
+        .summary-card-header {
+            background: #F3F8F5;
+            padding: 5px 10px;
+            border-bottom: 1px solid #E5EBE6;
+            font-size: 9px;
             font-weight: 800;
-            letter-spacing: 0.6px;
-            color: var(--vr-forest);
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            border-bottom: 1px solid var(--vr-sage-border);
-        }
-        .payment-method-body {
-            padding: 9px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 10.5px;
-        }
-        .payment-method-name {
-            font-weight: 700;
-            color: #1F3025;
-        }
-        .payment-status-badge {
-            font-size: 9.5px;
-            font-weight: 800;
-            padding: 2px 10px;
-            border-radius: 9999px;
-            text-transform: uppercase;
+            color: #14361E;
             letter-spacing: 0.4px;
-        }
-        .status-paid {
-            background: #D4ECD9;
-            color: #0E481D;
-        }
-        .status-pending {
-            background: #FEF3C7;
-            color: #92400E;
-        }
-
-        .terms-conditions-card {
-            border: 1px solid var(--vr-border-light);
-            border-radius: 8px;
-            overflow: hidden;
-            background: #ffffff;
-            padding: 10px 12px;
-        }
-        .terms-conditions-header {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.6px;
-            color: var(--vr-forest);
             text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 6px;
+        }
+        .summary-card-body {
+            padding: 6px 10px;
+            font-size: 9px;
+            line-height: 1.35;
+            color: #3B4E41;
         }
         .terms-conditions-list {
-            list-style: none;
-            padding-left: 0;
-            font-size: 9.5px;
-            color: #556B5C;
-            line-height: 1.45;
+            margin: 0;
+            padding-left: 14px;
+            font-size: 8.5px;
+            line-height: 1.35;
+            color: #4C6053;
         }
         .terms-conditions-list li {
-            position: relative;
-            padding-left: 12px;
-            margin-bottom: 3px;
-        }
-        .terms-conditions-list li::before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: var(--vr-forest);
-            font-weight: 700;
+            margin-bottom: 2px;
         }
         .terms-highlight-computer {
+            color: #14361E;
             font-weight: 700;
-            color: var(--vr-forest);
         }
 
-        /* Right Totals Card */
-        .totals-card {
-            border: 1px solid var(--vr-border-light);
-            border-radius: 8px;
+        /* Totals Card */
+        .totals-box {
+            border: 1.5px solid #14361E;
+            border-radius: 6px;
             overflow: hidden;
             background: #ffffff;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .totals-table-wrap {
-            padding: 10px 14px;
         }
         .summary-totals-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5px;
         }
         .summary-totals-table td {
-            padding: 4px 0;
-            color: #374A3D;
+            padding: 4px 10px;
+            font-size: 9.5px;
+            color: #384C3E;
+            border-bottom: 1px dashed #E5EDE7;
         }
         .summary-totals-table td.total-val {
             text-align: right;
             font-weight: 700;
-            color: #1A2C20;
-        }
-
-        .grand-total-highlight-row {
-            background: var(--vr-sage-light);
-            border-top: 1.5px solid var(--vr-sage-border);
-            padding: 10px 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .grand-total-highlight-row .gt-label {
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--vr-forest);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .grand-total-highlight-row .gt-val {
-            font-size: 16px;
-            font-weight: 900;
-            color: var(--vr-forest);
-        }
-
-        /* Digital Generated Verification Pill */
-        .digital-verification-notice {
-            background: #F2F8F4;
-            border: 1px dashed #B8D6C0;
-            border-radius: 6px;
-            padding: 6px 10px;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 9px;
-            color: #2D4C35;
-        }
-        .digital-verification-notice i {
-            font-size: 13px;
-            color: #1B5628;
-        }
-
-        /* Trust Badges & Thank you Script Row */
-        .trust-script-row {
-            border-top: 1px solid #E5EBE6;
-            padding: 14px 4px 6px 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .trust-badges-list {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            font-size: 9.5px;
-            font-weight: 700;
-            color: #384E3F;
-        }
-        .trust-badge-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .trust-badge-item i {
-            font-size: 13px;
-            color: var(--vr-forest);
-        }
-
-        .thank-you-script-col {
-            font-family: 'Caveat', cursive;
-            font-size: 22px;
-            color: #2F4D33;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+            color: #112415;
             white-space: nowrap;
         }
+        .grand-total-row {
+            background: #14361E;
+            color: #ffffff;
+            padding: 8px 10px;
+        }
+        .grand-total-row table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .grand-total-row td {
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 12px;
+            border: none;
+            padding: 0;
+        }
+        .grand-total-row td.gt-val {
+            text-align: right;
+            font-size: 14px;
+            color: #C2A267;
+        }
 
-        /* Dark Bottom Footer Bar */
+        /* Words strip */
+        .words-strip {
+            font-size: 9px;
+            color: #3D5344;
+            margin-bottom: 8px;
+            background: #F8FCF9;
+            border-left: 3px solid #14361E;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Trust badges table */
+        .trust-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-top: 4px;
+            margin-bottom: 6px;
+        }
+        .trust-item-td {
+            text-align: center;
+            font-size: 8px;
+            font-weight: 600;
+            color: #3B5242;
+            line-height: 1.2;
+            padding: 2px 4px;
+        }
+        .thank-you-script-col {
+            font-family: 'Caveat', cursive, 'DejaVu Sans', serif;
+            font-size: 18px;
+            color: #14361E;
+            text-align: right;
+            font-weight: 700;
+        }
+
+        /* Bottom Dark Bar */
         .invoice-bottom-bar {
-            background: var(--vr-forest);
+            background: #14361E;
             color: #ffffff;
-            padding: 10px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 10px;
-            font-weight: 500;
+            padding: 6px 16px;
         }
-        .footer-links-group {
-            display: flex;
-            align-items: center;
-            gap: 16px;
+        .invoice-bottom-bar table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .footer-links-group a {
-            color: #ffffff;
+        .invoice-bottom-bar td {
+            color: #D3E4D7;
+            font-size: 8.5px;
+            border: none;
+            padding: 0;
+        }
+        .invoice-bottom-bar a {
+            color: #D3E4D7;
             text-decoration: none;
         }
-        .footer-social-icons {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 12px;
-            color: #C8DEC9;
-        }
 
-        /* Print Media Styles */
         @media print {
             body {
                 background: #ffffff !important;
@@ -773,182 +571,174 @@
                 box-shadow: none !important;
                 border: none !important;
                 max-width: 100% !important;
-                width: 100% !important;
                 border-radius: 0 !important;
             }
             .invoice-content {
-                padding: 20px 24px 16px 24px !important;
-            }
-            .invoice-bottom-bar {
-                padding: 8px 24px !important;
+                padding: 10mm 8mm 6mm 8mm !important;
             }
             @page {
                 size: A4 portrait;
-                margin: 8mm 6mm;
+                margin: 0;
             }
         }
     </style>
 </head>
 <body>
 
-    {{-- Screen Action Toolbar --}}
+    {{-- Screen Action Toolbar (hidden in PDF / print) --}}
+    @unless($isPdf ?? false)
     <div class="invoice-actions">
-        <a href="javascript:history.back()" class="btn-action btn-action-outline">
+        <a href="{{ auth('admin')->check() ? route('admin.orders.show', $order) : (auth()->check() ? route('account.orders') : url('/')) }}" class="btn-action btn-action-outline" id="btnBackInvoice">
             <i class="bi bi-arrow-left"></i> Back to Order
         </a>
-        <button type="button" class="btn-action btn-action-primary" onclick="window.print()">
-            <i class="bi bi-printer"></i> Print / Download Tax Invoice
-        </button>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <a href="{{ auth('admin')->check() ? route('admin.orders.invoice', ['order' => $order->id, 'format' => 'pdf', 'download' => 1]) : route('account.order.invoice', ['order' => $order->id, 'format' => 'pdf', 'download' => 1]) }}" class="btn-action btn-action-outline" id="btnDownloadPdf" style="background:#ffffff; color:#14361E; border:1px solid #14361E;">
+                <i class="bi bi-file-earmark-pdf"></i> Download PDF
+            </a>
+            <button type="button" class="btn-action btn-action-primary" id="btnPrintInvoice">
+                <i class="bi bi-printer"></i> Print Invoice
+            </button>
+        </div>
     </div>
+    @endunless
 
     {{-- Main Printable Invoice Card --}}
     <div class="invoice-paper">
 
-        {{-- Botanical Decorative Corner Elements --}}
-        <svg class="botanical-bg-top" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M220 10C180 30 160 80 170 130" stroke="#87A98F" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M190 25C175 10 150 15 155 35C160 55 185 45 190 25Z" fill="#C3D9C8" opacity="0.65"/>
-            <path d="M175 60C155 50 140 65 150 82C160 99 180 80 175 60Z" fill="#A8C8AF" opacity="0.7"/>
-            <path d="M185 95C170 90 160 110 175 125C190 140 200 115 185 95Z" fill="#91B699" opacity="0.6"/>
-            <path d="M225 45C215 35 195 45 205 60C215 75 235 60 225 45Z" fill="#B3CDB7" opacity="0.7"/>
-            <path d="M235 85C220 75 210 95 220 110C230 125 245 105 235 85Z" fill="#A2C3A8" opacity="0.5"/>
-        </svg>
-
-        <svg class="botanical-bg-bottom" viewBox="0 0 150 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 110C40 90 60 50 50 10" stroke="#9BBCA3" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 85C45 95 65 85 55 70C45 55 25 70 30 85Z" fill="#C7DDCB" opacity="0.6"/>
-            <path d="M48 50C60 60 78 50 70 35C62 20 42 35 48 50Z" fill="#A8C9AF" opacity="0.65"/>
-        </svg>
-
         <div class="invoice-content">
 
-            {{-- 1. Top Header --}}
-            <div class="invoice-header">
-                <div class="header-brand-wrap">
-                    @if (!empty($logoSrc))
-                        <img src="{{ $logoSrc }}" alt="{{ $storeName }}" class="brand-logo-img">
-                    @else
-                        <div style="font-family:'Cinzel', serif; font-size:24px; font-weight:800; color:var(--vr-forest);">{{ $storeName }}</div>
-                    @endif
-
-                    <div class="brand-company-info">
-                        <div class="company-brand-name">{{ $storeName }}</div>
-                        <div class="company-legal-name">A brand of {{ $companyName }}</div>
-                        <div class="company-address">{!! nl2br(e($storeAddress)) !!}</div>
-                        <div class="company-contacts">
-                            <div><i class="bi bi-telephone-fill"></i> {{ $storePhone }}</div>
-                            <div><i class="bi bi-envelope-fill"></i> {{ $storeEmail }}</div>
-                            <div><i class="bi bi-globe"></i> {{ $storeWebsite }}</div>
-                            <div style="margin-top: 3px; font-weight:700;"><i class="bi bi-card-text"></i> GSTIN: <strong>{{ $gstin }}</strong></div>
+            {{-- 1. Top Header (Table format for pixel-perfect A4 alignment) --}}
+            <table class="header-table">
+                <tr>
+                    <td class="header-brand-cell">
+                        <table style="border:none; border-collapse:collapse;">
+                            <tr>
+                                @if (!empty($logoSrc))
+                                    <td style="vertical-align:middle; padding-right:16px;">
+                                        <img src="{{ $logoSrc }}" alt="{{ $storeName }}" class="brand-logo-img">
+                                    </td>
+                                @endif
+                                <td style="vertical-align:middle; border-left:1.5px solid #E2E8E2; padding-left:14px;">
+                                    <div class="company-brand-name">{{ $storeName }}</div>
+                                    <div class="company-legal-name">A brand of {{ $companyName }}</div>
+                                    <div class="company-address">{!! nl2br(e($storeAddress)) !!}</div>
+                                    <div class="company-contacts">
+                                        <span>Ph: {{ $storePhone }} &bull; Email: {{ $storeEmail }} &bull; Web: {{ $storeWebsite }}</span><br>
+                                        <span>GSTIN: <strong>{{ $gstin }}</strong></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td class="header-tagline-cell">
+                        <div class="pure-care-script">
+                            Pure<br>
+                            <em>Care</em><br>
+                            <span>Natural You <i>♡</i></span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="header-tagline-art">
-                    <div class="pure-care-script">
-                        Pure<br>
-                        <em>Care</em><br>
-                        <span>Natural You <i>♡</i></span>
-                    </div>
-                </div>
-            </div>
+                    </td>
+                </tr>
+            </table>
 
             {{-- 2. TAX INVOICE Banner --}}
-            <div class="tax-invoice-banner">
-                <div class="tax-invoice-title-block">
-                    <h1>TAX INVOICE</h1>
-                    <p>Thank you for choosing {{ $storeName }}. We appreciate your support.</p>
-                </div>
+            <table class="tax-invoice-banner-table">
+                <tr>
+                    <td style="vertical-align:middle;" class="tax-invoice-title-block">
+                        <h1>TAX INVOICE</h1>
+                        <p>Thank you for choosing {{ $storeName }}. We appreciate your support.</p>
+                    </td>
+                    <td style="vertical-align:middle; text-align:right;">
+                        <table class="invoice-meta-table">
+                            <tr>
+                                <td class="label-col">Invoice No.</td>
+                                <td class="colon-col">:</td>
+                                <td class="val-col">INV-{{ $order->order_number }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-col">Invoice Date</td>
+                                <td class="colon-col">:</td>
+                                <td class="val-col">{{ $order->created_at->format('d M Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-col">Order No.</td>
+                                <td class="colon-col">:</td>
+                                <td class="val-col">#{{ $order->order_number }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-col">Order Date</td>
+                                <td class="colon-col">:</td>
+                                <td class="val-col">{{ $order->created_at->format('d M Y') }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
 
-                <table class="invoice-meta-table">
-                    <tr>
-                        <td class="label-col">Invoice No.</td>
-                        <td class="colon-col">:</td>
-                        <td class="val-col">INV-{{ $order->order_number }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Invoice Date</td>
-                        <td class="colon-col">:</td>
-                        <td class="val-col">{{ $order->created_at->format('d M Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Order No.</td>
-                        <td class="colon-col">:</td>
-                        <td class="val-col">#{{ $order->order_number }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Order Date</td>
-                        <td class="colon-col">:</td>
-                        <td class="val-col">{{ $order->created_at->format('d M Y') }}</td>
-                    </tr>
-                </table>
-            </div>
-
-            {{-- 3. Bill To & Shipping Address Two-Column Cards --}}
-            <div class="addresses-grid">
-                {{-- Bill To --}}
-                <div class="address-card">
-                    <div class="address-card-header">
-                        <span class="title"><i class="bi bi-person-fill"></i> BILL TO</span>
-                    </div>
-                    <div class="address-card-body">
-                        <div class="cust-name">{{ $order->billing_name ?: $order->shipping_name }}</div>
-                        <div class="cust-lines">
-                            {{ $order->billing_address_line1 ?: $order->shipping_address_line1 }}<br>
-                            @if ($order->billing_address_line2 || $order->shipping_address_line2)
-                                {{ $order->billing_address_line2 ?: $order->shipping_address_line2 }}<br>
-                            @endif
-                            {{ $order->billing_city ?: $order->shipping_city }}, {{ $order->billing_state ?: $order->shipping_state }} - {{ $order->billing_pincode ?: $order->shipping_pincode }}<br>
-                            {{ $order->billing_country ?: ($order->shipping_country ?: 'India') }}
+            {{-- 3. Bill To & Shipping Address Two-Column Table --}}
+            <table class="addresses-layout-table">
+                <tr>
+                    <td style="width:49%; vertical-align:top;">
+                        <div class="address-box">
+                            <div class="address-box-header">BILL TO</div>
+                            <div class="address-box-body">
+                                <div class="cust-name">{{ $order->billing_name ?: $order->shipping_name }}</div>
+                                <div class="cust-lines">
+                                    {{ $order->billing_address_line1 ?: $order->shipping_address_line1 }}<br>
+                                    @if ($order->billing_address_line2 || $order->shipping_address_line2)
+                                        {{ $order->billing_address_line2 ?: $order->shipping_address_line2 }}<br>
+                                    @endif
+                                    {{ $order->billing_city ?: $order->shipping_city }}, {{ $order->billing_state ?: $order->shipping_state }} - {{ $order->billing_pincode ?: $order->shipping_pincode }}<br>
+                                    {{ $order->billing_country ?: ($order->shipping_country ?: 'India') }}
+                                </div>
+                                <div style="font-size:9px; color:#384A3E;">
+                                    Ph: <strong>{{ $order->billing_mobile ?: $order->shipping_mobile }}</strong> &bull; Email: {{ $customerEmail }}
+                                </div>
+                            </div>
                         </div>
-                        <div class="cust-meta">
-                            <div><i class="bi bi-telephone-fill"></i> {{ $order->billing_mobile ?: $order->shipping_mobile }}</div>
-                            <div><i class="bi bi-envelope-fill"></i> {{ $customerEmail }}</div>
+                    </td>
+                    <td style="width:2%;"></td>
+                    <td style="width:49%; vertical-align:top;">
+                        <div class="address-box">
+                            <div class="address-box-header">
+                                SHIPPING ADDRESS
+                                @if ($isSameAddress)
+                                    <span style="float:right; font-size:8px; background:#CBE6D3; color:#174221; padding:1px 6px; border-radius:4px; text-transform:none;">Same as Billing</span>
+                                @endif
+                            </div>
+                            <div class="address-box-body">
+                                <div class="cust-name">{{ $order->shipping_name }}</div>
+                                <div class="cust-lines">
+                                    {{ $order->shipping_address_line1 }}<br>
+                                    @if ($order->shipping_address_line2)
+                                        {{ $order->shipping_address_line2 }}<br>
+                                    @endif
+                                    {{ $order->shipping_city }}, {{ $order->shipping_state }} - {{ $order->shipping_pincode }}<br>
+                                    {{ $order->shipping_country ?: 'India' }}
+                                </div>
+                                <div style="font-size:9px; color:#384A3E;">
+                                    Ph: <strong>{{ $order->shipping_mobile }}</strong> &bull; Email: {{ $customerEmail }}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                {{-- Shipping Address --}}
-                <div class="address-card">
-                    <div class="address-card-header">
-                        <span class="title"><i class="bi bi-geo-alt-fill"></i> SHIPPING ADDRESS</span>
-                        @if ($isSameAddress)
-                            <span class="same-addr-badge">Same as Billing Address</span>
-                        @endif
-                    </div>
-                    <div class="address-card-body">
-                        <div class="cust-name">{{ $order->shipping_name }}</div>
-                        <div class="cust-lines">
-                            {{ $order->shipping_address_line1 }}<br>
-                            @if ($order->shipping_address_line2)
-                                {{ $order->shipping_address_line2 }}<br>
-                            @endif
-                            {{ $order->shipping_city }}, {{ $order->shipping_state }} - {{ $order->shipping_pincode }}<br>
-                            {{ $order->shipping_country ?: 'India' }}
-                        </div>
-                        <div class="cust-meta">
-                            <div><i class="bi bi-telephone-fill"></i> {{ $order->shipping_mobile }}</div>
-                            <div><i class="bi bi-envelope-fill"></i> {{ $customerEmail }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </td>
+                </tr>
+            </table>
 
             {{-- 4. Products Table --}}
             <div class="items-table-wrap">
                 <table class="invoice-items-table">
                     <thead>
                         <tr>
-                            <th style="width:28px;">#</th>
+                            <th style="width:24px;">#</th>
                             <th class="th-prod">Product Details</th>
-                            <th style="width:68px;">HSN</th>
-                            <th style="width:78px;">Unit Price (₹)</th>
-                            <th style="width:42px;">Qty</th>
-                            <th style="width:68px;">Discount (₹)</th>
-                            <th style="width:82px;">Taxable Value (₹)</th>
-                            <th style="width:52px;">GST (%)</th>
-                            <th style="width:78px;">GST Amount (₹)</th>
-                            <th style="width:88px;" class="text-end">Total Amount (₹)</th>
+                            <th style="width:65px;">HSN</th>
+                            <th style="width:75px;">Unit Price (₹)</th>
+                            <th style="width:36px;">Qty</th>
+                            <th style="width:65px;">Discount (₹)</th>
+                            <th style="width:78px;">Taxable (₹)</th>
+                            <th style="width:50px;">GST (%)</th>
+                            <th style="width:75px;">GST Amount (₹)</th>
+                            <th style="width:85px;" class="text-end">Total Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -960,30 +750,15 @@
                                 $lineTotal = (float) ($item->total_price ?: ($item->unit_price * $item->quantity));
                                 $discount = (float) ($item->discount ?? 0);
                                 $hsn = $item->product?->hsn_code ?: '330590';
-
-                                // Thumbnail resolution
-                                $thumbSrc = null;
-                                if ($item->product?->featured_image) {
-                                    $thumbSrc = image_url($item->product->featured_image, 'placeholder.png');
-                                } elseif ($item->image) {
-                                    $thumbSrc = image_url($item->image, 'placeholder.png');
-                                }
-                                if (!$thumbSrc || !file_exists(public_path($thumbSrc))) {
-                                    $thumbSrc = asset('images/placeholder.png');
-                                }
                             @endphp
                             <tr>
                                 <td class="td-idx">{{ $idx + 1 }}</td>
                                 <td class="td-prod">
-                                    <div class="prod-cell-content">
-                                        <img src="{{ $thumbSrc }}" alt="{{ $item->product_name }}" class="prod-thumb-img" onerror="this.style.display='none'">
-                                        <div class="prod-details-text">
-                                            <div class="prod-title">{{ $item->product_name }}</div>
-                                            <div class="prod-sku">SKU: {{ $item->product?->sku ?: ($item->sku ?: 'VN-' . $item->product_id) }}</div>
-                                            @if ($item->product?->weight)
-                                                <span class="prod-weight-tag">{{ $item->product->weight }} {{ $item->product->unit ?: 'gm' }}</span>
-                                            @endif
-                                        </div>
+                                    <div class="prod-title">{{ $item->product_name }}</div>
+                                    <div class="prod-sku">SKU: {{ $item->product?->sku ?: ($item->sku ?: 'VN-' . $item->product_id) }}
+                                        @if ($item->product?->weight)
+                                            &bull; <span class="prod-weight-tag">{{ $item->product->weight }} {{ $item->product->unit ?: 'gm' }}</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>{{ $hsn }}</td>
@@ -1000,162 +775,172 @@
                 </table>
             </div>
 
-            {{-- 5. Bottom Summary: Payment/Terms vs Totals --}}
-            <div class="bottom-summary-grid">
-                {{-- Left: Payment Method + Terms --}}
-                <div class="left-info-cards">
-                    {{-- Payment Method Card --}}
-                    <div class="payment-method-card">
-                        <div class="payment-method-header">
-                            <i class="bi bi-credit-card-2-front"></i> PAYMENT METHOD
-                        </div>
-                        <div class="payment-method-body">
-                            <div>
-                                <span class="text-muted" style="font-size:9.5px;">Paid via:</span>
-                                <div class="payment-method-name">
-                                    @if ($order->payment_method === 'cod')
-                                        Cash on Delivery (COD)
-                                    @elseif ($order->payment_method === 'razorpay')
-                                        Online Payment (Razorpay)
-                                    @else
-                                        {{ ucwords(str_replace('_', ' ', $order->payment_method ?: 'Prepaid')) }}
-                                    @endif
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <span class="text-muted" style="font-size:9.5px;">Payment Status:</span>
-                                <div>
-                                    @if (in_array(strtolower((string)$order->payment_status), ['paid', 'captured', 'success'], true))
-                                        <span class="payment-status-badge status-paid">Paid</span>
-                                    @else
-                                        <span class="payment-status-badge status-pending">{{ ucfirst($order->payment_status ?: 'Pending') }}</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Terms & Conditions Card (with prominent computer generated notice, no signature needed) --}}
-                    <div class="terms-conditions-card">
-                        <div class="terms-conditions-header">
-                            <i class="bi bi-file-text"></i> Terms &amp; Conditions
-                        </div>
-                        <ul class="terms-conditions-list">
-                            <li><span class="terms-highlight-computer">This is a computer generated invoice and does not require a physical signature.</span></li>
-                            <li>Goods once sold will only be taken back as per our official Return &amp; Refund Policy.</li>
-                            <li>For any questions related to your order, please contact our support at {{ $storeEmail }} or {{ $storePhone }}.</li>
-                            <li>This invoice is issued by {{ $companyName }} ({{ $storeName }}). GSTIN: {{ $gstin }}.</li>
-                            <li>All disputes are subject to Faridabad, Haryana jurisdiction only.</li>
-                        </ul>
-
-                        <div class="digital-verification-notice">
-                            <i class="bi bi-check-circle-fill"></i>
-                            <div>
-                                <strong>Digitally Verified &amp; Authorized</strong> &bull; Generated directly from store records.
+            {{-- 5. Bottom Summary (Table layout for Payment/Terms vs Totals) --}}
+            <table class="summary-layout-table">
+                <tr>
+                    <td class="summary-left-cell">
+                        {{-- Payment Method Box --}}
+                        <div class="summary-card-box">
+                            <div class="summary-card-header">PAYMENT METHOD</div>
+                            <div class="summary-card-body">
+                                <table style="width:100%; border-collapse:collapse;">
+                                    <tr>
+                                        <td>
+                                            <span style="color:#687E71; font-size:8.5px;">Paid via:</span>
+                                            <div style="font-weight:700; color:#14361E;">
+                                                @if ($order->payment_method === 'cod')
+                                                    Cash on Delivery (COD)
+                                                @elseif ($order->payment_method === 'razorpay')
+                                                    Online Payment (Razorpay)
+                                                @else
+                                                    {{ ucwords(str_replace('_', ' ', $order->payment_method ?: 'Prepaid')) }}
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <span style="color:#687E71; font-size:8.5px;">Payment Status:</span>
+                                            <div>
+                                                @if (in_array(strtolower((string)$order->payment_status), ['paid', 'captured', 'success'], true))
+                                                    <span style="background:#CDE8D4; color:#144420; padding:2px 7px; border-radius:4px; font-weight:700; font-size:8.5px;">Paid</span>
+                                                @else
+                                                    <span style="background:#FFF3CD; color:#856404; padding:2px 7px; border-radius:4px; font-weight:700; font-size:8.5px;">{{ ucfirst($order->payment_status ?: 'Pending') }}</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {{-- Right: Totals Card (Delivery Charges Removed) --}}
-                <div class="totals-card">
-                    <div class="totals-table-wrap">
-                        <table class="summary-totals-table">
-                            <tr>
-                                <td>Subtotal ({{ $itemsTotalQuantity }} {{ $itemsTotalQuantity > 1 ? 'items' : 'item' }})</td>
-                                <td class="total-val">₹ {{ number_format($itemsSubtotal, 2) }}</td>
-                            </tr>
-                            @if ($discountAmount > 0)
-                                <tr>
-                                    <td style="color:#1B5628; font-weight:600;">Discount</td>
-                                    <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($discountAmount, 2) }}</td>
-                                </tr>
-                            @endif
-                            <tr>
-                                <td>Total Taxable Value</td>
-                                <td class="total-val">₹ {{ number_format($totalTaxable, 2) }}</td>
-                            </tr>
-                            @if ($isIntra)
-                                <tr>
-                                    <td>CGST ({{ ((float)setting('default_gst_rate', 5)) / 2 }}%)</td>
-                                    <td class="total-val">₹ {{ number_format($totalGst / 2, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td>SGST ({{ ((float)setting('default_gst_rate', 5)) / 2 }}%)</td>
-                                    <td class="total-val">₹ {{ number_format($totalGst / 2, 2) }}</td>
-                                </tr>
-                            @else
-                                <tr>
-                                    <td>IGST ({{ (float)setting('default_gst_rate', 5) }}%)</td>
-                                    <td class="total-val">₹ {{ number_format($totalGst, 2) }}</td>
-                                </tr>
-                            @endif
-                        </table>
-                    </div>
+                        {{-- Terms & Conditions Box --}}
+                        <div class="summary-card-box">
+                            <div class="summary-card-header">TERMS &amp; CONDITIONS</div>
+                            <div class="summary-card-body">
+                                <ul class="terms-conditions-list">
+                                    <li><span class="terms-highlight-computer">This is a computer generated invoice and does not require a physical signature.</span></li>
+                                    <li>Goods once sold will only be taken back as per our official Return &amp; Refund Policy.</li>
+                                    <li>For order support, please reach out to {{ $storeEmail }} or {{ $storePhone }}.</li>
+                                    <li>Issued by {{ $companyName }} ({{ $storeName }}). GSTIN: {{ $gstin }}.</li>
+                                    <li>All disputes are subject to Faridabad, Haryana jurisdiction only.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
 
-                    <div class="grand-total-highlight-row">
-                        <span class="gt-label">Grand Total</span>
-                        <span class="gt-val">₹ {{ number_format($invoiceGrandTotal, 2) }}</span>
-                    </div>
-                </div>
-            </div>
+                    <td style="width:3%;"></td>
 
-            {{-- 6. Amount in words strip --}}
-            <div style="font-size:10px; color:#4E6354; margin-bottom:14px; background:#F8FCF9; border-left:3px solid var(--vr-forest); padding:6px 12px; border-radius:4px; position:relative; z-index:2;">
+                    <td class="summary-right-cell">
+                        {{-- Totals Card (Delivery Charges Strictly Removed) --}}
+                        <div class="totals-box">
+                            <table class="summary-totals-table">
+                                <tr>
+                                    <td>Subtotal ({{ $itemsTotalQuantity }} {{ $itemsTotalQuantity > 1 ? 'items' : 'item' }})</td>
+                                    <td class="total-val">₹ {{ number_format($itemsSubtotal, 2) }}</td>
+                                </tr>
+                                @if ($discountAmount > 0)
+                                    <tr>
+                                        <td style="color:#1B5628; font-weight:600;">Discount</td>
+                                        <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($discountAmount, 2) }}</td>
+                                    </tr>
+                                @endif
+                                <tr>
+                                    <td>Total Taxable Value</td>
+                                    <td class="total-val">₹ {{ number_format($totalTaxable, 2) }}</td>
+                                </tr>
+                                @if ($isIntra)
+                                    <tr>
+                                        <td>CGST ({{ ((float)setting('default_gst_rate', 5)) / 2 }}%)</td>
+                                        <td class="total-val">₹ {{ number_format($totalGst / 2, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>SGST ({{ ((float)setting('default_gst_rate', 5)) / 2 }}%)</td>
+                                        <td class="total-val">₹ {{ number_format($totalGst / 2, 2) }}</td>
+                                    </tr>
+                                @else
+                                    <tr>
+                                        <td>IGST ({{ (float)setting('default_gst_rate', 5) }}%)</td>
+                                        <td class="total-val">₹ {{ number_format($totalGst, 2) }}</td>
+                                    </tr>
+                                @endif
+                            </table>
+
+                            <div class="grand-total-row">
+                                <table>
+                                    <tr>
+                                        <td>Grand Total</td>
+                                        <td class="gt-val">₹ {{ number_format($invoiceGrandTotal, 2) }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            {{-- 6. Amount in Words --}}
+            <div class="words-strip">
                 Amount in Words: <strong style="color:#142B1A;">{{ $numberToWords($invoiceGrandTotal) }}</strong>
             </div>
 
-            {{-- 7. Trust Badges & Script Row --}}
-            <div class="trust-script-row">
-                <div class="trust-badges-list">
-                    <div class="trust-badge-item">
-                        <i class="bi bi-flower1"></i>
-                        <span>100% Natural<br>Ingredients</span>
-                    </div>
-                    <div class="trust-badge-item">
-                        <i class="bi bi-shield-check"></i>
-                        <span>No Harmful<br>Chemicals</span>
-                    </div>
-                    <div class="trust-badge-item">
-                        <i class="bi bi-bag-check"></i>
-                        <span>Safe &amp; Secure<br>Shopping</span>
-                    </div>
-                    <div class="trust-badge-item">
-                        <i class="bi bi-truck"></i>
-                        <span>Fast &amp; Reliable<br>Delivery</span>
-                    </div>
-                    <div class="trust-badge-item">
-                        <i class="bi bi-heart-pulse"></i>
-                        <span>Care for You<br>&amp; Planet</span>
-                    </div>
-                </div>
-
-                <div class="thank-you-script-col">
-                    Thank you for choosing {{ $storeName }} <i>♡</i>
-                </div>
-            </div>
+            {{-- 7. Trust Badges Row (Table layout) --}}
+            <table class="trust-table">
+                <tr>
+                    <td class="trust-item-td" style="width:14%;">🌿<br>100% Natural</td>
+                    <td class="trust-item-td" style="width:14%;">🛡️<br>No Chemicals</td>
+                    <td class="trust-item-td" style="width:14%;">🔒<br>Secure Shopping</td>
+                    <td class="trust-item-td" style="width:14%;">🚚<br>Fast Delivery</td>
+                    <td class="trust-item-td" style="width:14%;">💚<br>Pure Care</td>
+                    <td class="thank-you-script-col" style="width:30%;">
+                        Thank you for choosing {{ $storeName }} ♡
+                    </td>
+                </tr>
+            </table>
 
         </div>
 
         {{-- 8. Dark Forest Green Bottom Bar --}}
         <div class="invoice-bottom-bar">
-            <div class="footer-links-group">
-                <a href="https://{{ $storeWebsite }}" target="_blank">{{ $storeWebsite }}</a>
-                <span>|</span>
-                <a href="mailto:{{ $storeEmail }}">{{ $storeEmail }}</a>
-                <span>|</span>
-                <span>{{ $storePhone }}</span>
-            </div>
-
-            <div class="footer-social-icons">
-                <i class="bi bi-instagram"></i>
-                <i class="bi bi-facebook"></i>
-                <i class="bi bi-pinterest"></i>
-                <i class="bi bi-youtube"></i>
-            </div>
+            <table>
+                <tr>
+                    <td style="text-align:left;">
+                        <a href="https://{{ $storeWebsite }}" target="_blank">{{ $storeWebsite }}</a> &bull;
+                        <a href="mailto:{{ $storeEmail }}">{{ $storeEmail }}</a> &bull;
+                        <span>{{ $storePhone }}</span>
+                    </td>
+                    <td style="text-align:right;">
+                        <span>Faridabad, Haryana &bull; Certified Authentic Luxury</span>
+                    </td>
+                </tr>
+            </table>
         </div>
 
     </div>
+
+    {{-- Screen Interactive Scripts (Nonced for CSP Compliance) --}}
+    @unless($isPdf ?? false)
+    <script nonce="{{ csp_nonce() }}">
+        document.addEventListener('DOMContentLoaded', function () {
+            // Print Button Event Listener
+            var btnPrint = document.getElementById('btnPrintInvoice');
+            if (btnPrint) {
+                btnPrint.addEventListener('click', function () {
+                    window.print();
+                });
+            }
+
+            // Back Button Event Listener
+            var btnBack = document.getElementById('btnBackInvoice');
+            if (btnBack) {
+                btnBack.addEventListener('click', function (e) {
+                    if (window.history.length > 1 && document.referrer && document.referrer !== window.location.href) {
+                        e.preventDefault();
+                        window.history.back();
+                    }
+                });
+            }
+        });
+    </script>
+    @endunless
 
 </body>
 </html>

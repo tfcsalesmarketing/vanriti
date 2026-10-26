@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\ReturnItem;
 use App\Models\ReturnRequest;
 use App\Models\Review;
+use App\Services\InvoiceService;
 use App\Services\OrderService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class AccountController extends Controller
 {
@@ -55,13 +57,17 @@ class AccountController extends Controller
         return view('storefront.account.order-detail', compact('order'));
     }
 
-    public function invoice(Order $order): View
+    public function invoice(Request $request, Order $order, InvoiceService $invoiceService): View|Response
     {
         abort_unless($order->user_id === auth('web')->id(), 403);
 
-        $order->load(['items.product', 'items.variant']);
+        $order->loadMissing(['items.product', 'items.variant', 'user']);
 
-        return view('invoices.gst-tax-invoice', compact('order'));
+        if ($request->query('format') === 'html') {
+            return view('invoices.gst-tax-invoice', compact('order'));
+        }
+
+        return $invoiceService->getPdfResponse($order, $request->boolean('download'));
     }
 
     public function cancelOrder(Request $request, Order $order): RedirectResponse

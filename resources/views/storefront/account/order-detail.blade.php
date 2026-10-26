@@ -28,7 +28,10 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('account.order.invoice', $order) }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
-                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Tax Invoice
+                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>View Invoice (PDF)
+            </a>
+            <a href="{{ route('account.order.invoice', ['order' => $order->id, 'download' => 1]) }}" class="btn btn-sm btn-outline-dark rounded-pill">
+                <i class="bi bi-download me-1"></i>Download PDF
             </a>
         </div>
     </div>

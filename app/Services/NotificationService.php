@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\GenerateOrderInvoicePdf;
 use App\Jobs\SendWhatsAppOrderConfirmation;
 use App\Jobs\SendWhatsAppOrderStatusNotification;
 use App\Models\Admin;
@@ -21,6 +22,10 @@ class NotificationService
             $order->user->notify(new OrderStatusNotification($order, $status));
         }
 
+        if (in_array(strtolower($status), ['confirmed', 'processing'], true)) {
+            GenerateOrderInvoicePdf::dispatch($order);
+        }
+
         if (in_array(strtolower($status), ['shipped', 'out_for_delivery', 'delivered'], true)) {
             SendWhatsAppOrderStatusNotification::dispatch($order, $status);
         }
@@ -34,6 +39,7 @@ class NotificationService
         // WhatsApp waits for paymentSuccessful(); a failed payment must never
         // be told the order is confirmed.
         if ($order->payment_method !== 'razorpay') {
+            GenerateOrderInvoicePdf::dispatch($order);
             SendWhatsAppOrderConfirmation::dispatchSync($order);
         }
     }
@@ -42,6 +48,7 @@ class NotificationService
     {
         $this->orderStatusChanged($order, 'payment_confirmed');
 
+        GenerateOrderInvoicePdf::dispatch($order);
         SendWhatsAppOrderConfirmation::dispatchSync($order);
     }
 

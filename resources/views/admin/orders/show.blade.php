@@ -28,10 +28,32 @@
                     <span>Live Chat</span>
                 </a>
             @endif
-        @endif
-        <a href="{{ route('admin.orders.invoice', $order) }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Print/Download GST Tax Invoice">
-            <i class="bi bi-file-earmark-text me-1"></i>Tax Invoice
-        </a>
+        <div class="btn-group">
+            <a href="{{ route('admin.orders.invoice', $order) }}" class="btn btn-sm btn-outline-dark" target="_blank" title="View A4 PDF Invoice">
+                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Tax Invoice (PDF)
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', $order) }}" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>View PDF (A4)
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', ['order' => $order->id, 'download' => 1]) }}">
+                        <i class="bi bi-download me-2 text-primary"></i>Download PDF
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.orders.invoice', ['order' => $order->id, 'format' => 'html']) }}" target="_blank">
+                        <i class="bi bi-printer me-2 text-success"></i>Print / HTML View
+                    </a>
+                </li>
+            </ul>
+        </div>
         <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>

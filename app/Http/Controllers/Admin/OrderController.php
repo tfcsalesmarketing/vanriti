@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\ActivityLogger;
+use App\Services\InvoiceService;
 use App\Services\NotificationService;
 use App\Services\OrderService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class OrderController extends Controller
 {
@@ -558,11 +560,15 @@ class OrderController extends Controller
         return '';
     }
 
-    public function invoice(Order $order): View
+    public function invoice(Request $request, Order $order, InvoiceService $invoiceService): View|Response
     {
-        $order->load(['items.product', 'items.variant', 'user']);
+        $order->loadMissing(['items.product', 'items.variant', 'user']);
 
-        return view('invoices.gst-tax-invoice', compact('order'));
+        if ($request->query('format') === 'html') {
+            return view('invoices.gst-tax-invoice', compact('order'));
+        }
+
+        return $invoiceService->getPdfResponse($order, $request->boolean('download'));
     }
 
     public function manifest(Request $request): View

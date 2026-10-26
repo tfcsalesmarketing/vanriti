@@ -59,6 +59,10 @@ class Order extends Model
         'whatsapp_recovery_sent_at',
         'whatsapp_shipped_sent_at',
         'whatsapp_delivered_sent_at',
+        'invoice_number',
+        'invoice_url',
+        'invoice_pdf_path',
+        'invoice_generated_at',
         'order_status',
         'cancellation_reason',
         'tracking_url',
@@ -80,7 +84,18 @@ class Order extends Model
             'whatsapp_recovery_sent_at' => 'datetime',
             'whatsapp_shipped_sent_at' => 'datetime',
             'whatsapp_delivered_sent_at' => 'datetime',
+            'invoice_generated_at' => 'datetime',
         ];
+    }
+
+    public function invoiceNumber(): string
+    {
+        return $this->invoice_number ?: 'INV-' . $this->order_number;
+    }
+
+    public function invoiceUrl(): ?string
+    {
+        return $this->invoice_url;
     }
 
     public function user(): BelongsTo

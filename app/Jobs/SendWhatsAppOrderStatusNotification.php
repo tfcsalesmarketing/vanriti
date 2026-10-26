@@ -82,6 +82,19 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
         $productName = $highestItem?->product_name ?: ($highestItem?->product?->name ?: 'your item');
         $reviewUrl = $this->order->guestReviewUrl($highestItem);
 
+        // Ensure invoice PDF is generated and available for delivery success notifications
+        $invoiceUrl = $this->order->invoice_url;
+        if ($status === 'delivered' && empty($invoiceUrl)) {
+            try {
+                $invoiceUrl = app(\App\Services\InvoiceService::class)->generateAndStorePdf($this->order);
+            } catch (\Throwable $e) {
+                Log::warning('SendWhatsAppOrderStatusNotification: Invoice generation failed', [
+                    'order' => $this->order->order_number,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $actionUrl = match ($status) {
             'shipped' => $trackingUrl,
             'delivered' => $reviewUrl,
@@ -134,7 +147,7 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
             $fallbackText = match ($status) {
                 'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}. Tracking / AWB: {$trackingNumber}. Track here: {$trackingUrl}",
                 'out_for_delivery' => "🚚 Hi {$customerName}, your order #{$this->order->order_number} is out for delivery today with {$courier}! Please keep your phone handy.",
-                'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} containing {$productName} has been delivered! We hope you love your Vanriti products. Please share your review here: {$reviewUrl}",
+                'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} containing {$productName} has been delivered! We hope you love your Vanriti products. Please share your review here: {$reviewUrl}" . (! empty($invoiceUrl) ? "\n\n📄 Download Your Official Tax Invoice (PDF): {$invoiceUrl}" : ''),
             };
 
             $result = $apiService->sendTextMessage($phone, $fallbackText);
@@ -157,6 +170,7 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
                     'event' => $status,
                     'courier' => $courier,
                     'awb' => $trackingNumber,
+                    'invoice_url' => $invoiceUrl,
                 ],
                 'sent_at' => now(),
             ]);
@@ -167,9 +181,24 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
                 'last_message_direction' => 'outbound',
             ]);
 
+            // If delivered, invoice URL is available, and session window is active, deliver PDF document directly
+            if ($status === 'delivered' && ! empty($invoiceUrl) && $conversation->isWindowOpen()) {
+                try {
+                    $apiService->sendMediaMessage(
+                        $phone,
+                        'document',
+                        $invoiceUrl,
+                        "Official Tax Invoice for Order #{$this->order->order_number}",
+                        ($this->order->invoice_number ?: "INV-{$this->order->order_number}") . '.pdf'
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('SendWhatsAppOrderStatusNotification: Document send exception: ' . $e->getMessage());
+                }
+            }
+
             // Add note to order internal notes
             $statusLabel = ucwords(str_replace('_', ' ', $status));
-            $note = '[' . now()->format('d M Y H:i') . "] WhatsApp {$statusLabel} notification sent to {$phone} (AWB: {$trackingNumber})";
+            $note = '[' . now()->format('d M Y H:i') . "] WhatsApp {$statusLabel} notification sent to {$phone} (AWB: {$trackingNumber})" . (! empty($invoiceUrl) ? " [Invoice: {$invoiceUrl}]" : '');
             $existing = $this->order->internal_notes ? $this->order->internal_notes . "\n" : '';
             $this->order->update(['internal_notes' => $existing . $note]);
 
