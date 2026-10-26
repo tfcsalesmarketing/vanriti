@@ -31,6 +31,7 @@ class ShipMojoWebhookController extends Controller
         }
 
         $payload = $request->json()->all();
+        Log::info('ShipMojo webhook payload received', ['payload' => $payload]);
 
         try {
             $result = $shipmojo->applyWebhook($payload);
@@ -69,16 +70,22 @@ class ShipMojoWebhookController extends Controller
     protected function authenticate(Request $request): bool
     {
         $secret = (string) secret_setting('shipmojo_webhook_secret', '');
+        $publicKeySetting = (string) secret_setting('shipmojo_public_key', '');
+
+        // If no explicit webhook secret is defined, allow authenticating against the ShipMojo Public Key
+        if ($secret === '' && $publicKeySetting !== '') {
+            $secret = $publicKeySetting;
+        }
 
         if ($secret === '') {
-            Log::warning('ShipMojo webhook received but no secret configured; rejecting request.');
+            Log::warning('ShipMojo webhook received but no secret or public key configured; rejecting request.');
 
             return false;
         }
 
         $publicKey = (string) $request->header('public-key', '');
 
-        if ($publicKey !== '' && hash_equals($secret, $publicKey)) {
+        if ($publicKey !== '' && (hash_equals($secret, $publicKey) || ($publicKeySetting !== '' && hash_equals($publicKeySetting, $publicKey)))) {
             return true;
         }
 
@@ -96,6 +103,6 @@ class ShipMojoWebhookController extends Controller
 
         $bodySecret = (string) $request->input('webhook_secret', $request->input('secret', ''));
 
-        return $bodySecret !== '' && hash_equals($secret, $bodySecret);
+        return $bodySecret !== '' && (hash_equals($secret, $bodySecret) || ($publicKeySetting !== '' && hash_equals($publicKeySetting, $bodySecret)));
     }
 }
