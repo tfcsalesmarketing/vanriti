@@ -597,12 +597,12 @@
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Message Mode</label>
                         <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" name="send_type" id="sendTypeTemplate" value="template" checked autocomplete="off" onchange="toggleOrderSendMode()">
+                            <input type="radio" class="btn-check" name="send_type" id="sendTypeTemplate" value="template" checked autocomplete="off">
                             <label class="btn btn-outline-success btn-sm py-2" for="sendTypeTemplate">
                                 <i class="bi bi-file-earmark-text me-1"></i> Meta Approved Template
                             </label>
 
-                            <input type="radio" class="btn-check" name="send_type" id="sendTypeText" value="custom_text" autocomplete="off" onchange="toggleOrderSendMode()" {{ (isset($conversation) && $conversation->isWindowOpen()) ? '' : 'disabled' }}>
+                            <input type="radio" class="btn-check" name="send_type" id="sendTypeText" value="custom_text" autocomplete="off" {{ (isset($conversation) && $conversation->isWindowOpen()) ? '' : 'disabled' }}>
                             <label class="btn btn-outline-success btn-sm py-2 {{ (isset($conversation) && $conversation->isWindowOpen()) ? '' : 'text-muted' }}" for="sendTypeText" title="{{ (isset($conversation) && $conversation->isWindowOpen()) ? 'Free-form message' : 'Requires active 24h customer session' }}">
                                 <i class="bi bi-chat-text me-1"></i> Direct Message
                             </label>
@@ -665,13 +665,23 @@
     </div>
 </div>
 
-<script>
-function toggleOrderSendMode() {
-    const isTemplate = document.getElementById('sendTypeTemplate').checked;
-    document.getElementById('templateSection').style.display = isTemplate ? 'block' : 'none';
-    document.getElementById('customTextSection').style.display = isTemplate ? 'none' : 'block';
-}
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+    var radioTemplate = document.getElementById('sendTypeTemplate');
+    var radioText = document.getElementById('sendTypeText');
+    function toggleOrderSendMode() {
+        var isTemplate = radioTemplate && radioTemplate.checked;
+        var tplSec = document.getElementById('templateSection');
+        var custSec = document.getElementById('customTextSection');
+        if (tplSec) tplSec.style.display = isTemplate ? 'block' : 'none';
+        if (custSec) custSec.style.display = isTemplate ? 'none' : 'block';
+    }
+    if (radioTemplate) radioTemplate.addEventListener('change', toggleOrderSendMode);
+    if (radioText) radioText.addEventListener('change', toggleOrderSendMode);
+});
 </script>
+@endpush
 @endif
 
 @endsection

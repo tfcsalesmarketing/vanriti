@@ -155,7 +155,7 @@
                 </div>
             </div>
             <div class="col-6 col-md-2">
-                <select name="payment_method" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="payment_method" class="form-select form-select-sm js-auto-submit">
                     <option value="">All Payment Methods</option>
                     <option value="cod" {{ request('payment_method') === 'cod' ? 'selected' : '' }}>Cash on Delivery (COD)</option>
                     <option value="razorpay" {{ request('payment_method') === 'razorpay' ? 'selected' : '' }}>Online / Prepaid (Razorpay)</option>
@@ -163,7 +163,7 @@
                 </select>
             </div>
             <div class="col-6 col-md-2">
-                <select name="courier" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="courier" class="form-select form-select-sm js-auto-submit">
                     <option value="">All Couriers</option>
                     @foreach ($couriers ?? [] as $courierName)
                         <option value="{{ $courierName }}" {{ request('courier') === $courierName ? 'selected' : '' }}>{{ $courierName }}</option>
@@ -171,7 +171,7 @@
                 </select>
             </div>
             <div class="col-6 col-md-1.5" style="flex: 0 0 auto; width: 14%;">
-                <select name="payment_status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="payment_status" class="form-select form-select-sm js-auto-submit">
                     <option value="">All Payment Status</option>
                     @foreach ($paymentStatuses as $status)
                         <option value="{{ $status }}" {{ request('payment_status') === $status ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $status)) }}</option>
@@ -179,7 +179,7 @@
                 </select>
             </div>
             <div class="col-6 col-md-1.5" style="flex: 0 0 auto; width: 13%;">
-                <select name="date_preset" id="datePresetSelect" class="form-select form-select-sm" onchange="handleDatePreset(this)">
+                <select name="date_preset" id="datePresetSelect" class="form-select form-select-sm">
                     <option value="">All Dates</option>
                     <option value="today" {{ request('date_preset') === 'today' ? 'selected' : '' }}>Today</option>
                     <option value="yesterday" {{ request('date_preset') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
@@ -213,10 +213,9 @@
         <span class="small text-muted border-start ps-3"><strong id="selected-count" class="text-dark">0</strong> order(s) selected</span>
         <div class="d-flex align-items-center gap-1.5 flex-wrap">
             @foreach ($tabBulkActions as $action)
-                <button type="button" class="btn btn-sm btn-{{ $action['btn'] }}"
+                <button type="button" class="btn btn-sm btn-{{ $action['btn'] }} js-bulk-btn"
                     data-action="{{ $action['route'] }}" data-confirm="{{ $action['confirm'] }}"
-                    data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}"
-                    onclick="bulkSubmit(this)">
+                    data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}">
                     <i class="bi {{ $action['icon'] }} me-1"></i>{{ $action['label'] }}
                 </button>
             @endforeach
@@ -233,10 +232,9 @@
     </div>
     <div class="d-flex align-items-center gap-2">
         @foreach ($tabBulkActions as $action)
-            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold"
+            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold js-bulk-btn"
                 data-action="{{ $action['route'] }}" data-confirm="{{ $action['confirm'] }}"
-                data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}"
-                onclick="bulkSubmit(this)">
+                data-ok="{{ $action['ok'] ?? 'Yes, proceed' }}" data-type="{{ $action['type'] ?? 'danger' }}">
                 <i class="bi {{ $action['icon'] }} me-1"></i>{{ $action['label'] }}
             </button>
         @endforeach
@@ -361,7 +359,7 @@
                             <td class="text-end">
                                 <div class="d-flex gap-1 justify-content-end align-items-center">
                                     @if ($custPhone)
-                                        <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" class="d-inline" onsubmit="return confirm('Send WhatsApp recovery template via Meta API to {{ $custPhone }}?');">
+                                        <form method="POST" action="{{ route('admin.orders.send-recovery-whatsapp', $order) }}" class="d-inline" data-confirm="Send WhatsApp recovery template via Meta API to {{ $custPhone }}?">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-outline-success p-1 px-2" title="Send WhatsApp Recovery via Meta API">
                                                 <i class="bi bi-whatsapp"></i>
@@ -456,6 +454,32 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 600);
         });
     }
+
+    // Auto-submitting filter selects
+    document.querySelectorAll('.js-auto-submit').forEach(function (select) {
+        select.addEventListener('change', function () {
+            if (this.form) this.form.submit();
+        });
+    });
+
+    // Date preset change handler
+    var datePresetSelect = document.getElementById('datePresetSelect');
+    if (datePresetSelect) {
+        datePresetSelect.addEventListener('change', function () {
+            window.handleDatePreset(this);
+        });
+    }
+
+    // Delegated click handler for bulk action buttons
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.js-bulk-btn');
+        if (btn) {
+            e.preventDefault();
+            if (typeof window.bulkSubmit === 'function') {
+                window.bulkSubmit(btn);
+            }
+        }
+    });
 });
 
 @if ($tabBulkActions)

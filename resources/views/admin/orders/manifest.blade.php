@@ -157,7 +157,7 @@
 
     <div class="manifest-actions">
         <a href="{{ route('admin.orders.index') }}" class="btn btn-outline">&larr; Back to Orders</a>
-        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Print Manifest</button>
+        <button type="button" class="btn btn-primary" id="printManifestBtn">🖨️ Print Manifest</button>
     </div>
 
     <div class="manifest-card">
@@ -260,5 +260,8 @@
         </div>
     </div>
 
+    <script nonce="{{ $cspNonce }}">
+        document.getElementById('printManifestBtn')?.addEventListener('click', function() { window.print(); });
+    </script>
 </body>
 </html>
