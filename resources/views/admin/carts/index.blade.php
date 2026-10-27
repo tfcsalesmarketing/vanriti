@@ -81,7 +81,7 @@
             <tbody>
                 @foreach ($topProducts as $idx => $product)
                     <tr>
-                        <td class="text-muted fw-bold small text-center">{{ $idx + 1 }}</td>
+                        <td class="text-muted fw-bold small text-center">{{ ($topProducts->firstItem() ?? 1) + $idx }}</td>
                         <td>
                             <div class="fw-semibold small text-dark">{{ $product->product_name }}</div>
                             <div class="text-muted font-monospace" style="font-size:0.73rem;">{{ $product->product_sku ?: '—' }}</div>
@@ -94,6 +94,12 @@
             </tbody>
         </table>
     </div>
+    @if ($topProducts->hasPages())
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <span class="small text-muted">Showing {{ $topProducts->firstItem() }} to {{ $topProducts->lastItem() }} of {{ $topProducts->total() }} products</span>
+            <div>{{ $topProducts->withQueryString()->links() }}</div>
+        </div>
+    @endif
 </div>
 @endif
 

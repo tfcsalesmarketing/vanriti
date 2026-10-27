@@ -144,8 +144,7 @@ class CartWishlistController extends Controller
                 DB::raw('COUNT(DISTINCT cart_items.cart_id) as cart_count'),
             ])
             ->groupBy('cart_items.product_id', 'products.name', 'products.sku')
-            ->orderByDesc('total_quantity')
-            ->limit(10);
+            ->orderByDesc('total_quantity');
 
         if ($productId = $request->integer('product_id')) {
             $query->where('cart_items.product_id', $productId);
@@ -197,7 +196,7 @@ class CartWishlistController extends Controller
             $query->where('cart_items.created_at', '<=', $dateTo->endOfDay());
         }
 
-        return $query->get();
+        return $query->orderBy('total_quantity', 'desc')->paginate(10, ['*'], 'top_page')->withQueryString();
     }
 
     protected function topWishlistProducts(Request $request)
