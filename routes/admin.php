@@ -78,13 +78,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('main-categories', [MainCategoryController::class, 'index'])->name('main-categories.index')->middleware('permission:view-categories,manage-categories');
 
         Route::middleware('permission:manage-categories')->group(function () {
+            Route::get('categories/create', [CategoryController::class, 'create'])->name('categories.create');
             Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::get('categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
             Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
+            Route::get('main-categories/create', [MainCategoryController::class, 'create'])->name('main-categories.create');
             Route::post('main-categories', [MainCategoryController::class, 'store'])->name('main-categories.store');
-            Route::put('main-categories/{mainCategory}', [MainCategoryController::class, 'update'])->name('main-categories.update');
-            Route::delete('main-categories/{mainCategory}', [MainCategoryController::class, 'destroy'])->name('main-categories.destroy');
+            Route::get('main-categories/{main_category}/edit', [MainCategoryController::class, 'edit'])->name('main-categories.edit');
+            Route::put('main-categories/{main_category}', [MainCategoryController::class, 'update'])->name('main-categories.update');
+            Route::delete('main-categories/{main_category}', [MainCategoryController::class, 'destroy'])->name('main-categories.destroy');
         });
 
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index')->middleware('permission:view-inventory,manage-inventory');
