@@ -45,6 +45,7 @@ class Order extends Model
         'coupon_type',
         'coupon_value',
         'shipping_charge',
+        'shipping_method',
         'tax_amount',
         'cgst_amount',
         'sgst_amount',

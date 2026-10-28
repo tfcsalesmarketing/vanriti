@@ -2,6 +2,45 @@
 @section('title', 'Order Confirmed')
 @section('robots', 'noindex, nofollow')
 
+@php
+    $deliveryCountry = match (strtolower((string) $order->shipping_country)) {
+        'india' => 'IN',
+        'united states', 'usa', 'us' => 'US',
+        default => strtoupper(substr((string) $order->shipping_country, 0, 2)),
+    };
+    $estimatedDeliveryDate = $order->created_at->copy()->addDays(match ($order->shipping_method ?? 'standard') {
+        'express' => 4,
+        default => 7,
+    })->format('Y-m-d');
+    $reviewProducts = $order->items->map(function ($item) {
+        $gtin = $item->product?->barcode;
+
+        return $gtin ? ['gtin' => (string) $gtin] : null;
+    })->filter()->values()->all();
+@endphp
+
+@push('head')
+@if ($order->user?->email)
+    <script src="https://apis.google.com/js/platform.js?onload=renderOptIn" async defer></script>
+    <script nonce="{{ $cspNonce }}">
+        window.renderOptIn = function () {
+            window.gapi.load('surveyoptin', function () {
+                window.gapi.surveyoptin.render({
+                    "merchant_id": 5871190159,
+                    "order_id": @json($order->order_number),
+                    "email": @json($order->user->email),
+                    "delivery_country": @json($deliveryCountry),
+                    "estimated_delivery_date": @json($estimatedDeliveryDate),
+                    @if (! empty($reviewProducts))
+                    "products": @json($reviewProducts),
+                    @endif
+                });
+            });
+        };
+    </script>
+@endif
+@endpush
+
 @section('content')
 <div class="vr-section py-4 py-lg-5">
     <div class="container">

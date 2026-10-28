@@ -53,7 +53,7 @@ class CartWishlistController extends Controller
             $query->where('created_at', '<=', $dateTo->endOfDay());
         }
 
-        $cartItems = $query->paginate(25)->withQueryString();
+        $cartItems = $query->paginate(10)->withQueryString();
 
         $topProducts = $this->topCartProducts($request);
 
