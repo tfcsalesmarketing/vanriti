@@ -41,11 +41,11 @@ class BlogController extends Controller
             }
         }
 
-        $blogs = $query->paginate(9)->withQueryString();
+        $blogs = $query->paginate(12)->withQueryString();
         $categories = BlogCategory::whereHas('blogs', fn ($q) => $q->published())
             ->withCount(['blogs' => fn ($q) => $q->published()])
             ->get();
-        $recent = Blog::published()->latest('published_at')->limit(4)->get();
+        $recent = Blog::published()->latest('published_at')->limit(5)->get();
 
         return view('storefront.blog.index', compact('blogs', 'recent', 'categories', 'featured', 'activeCategory', 'search'));
     }
@@ -56,26 +56,39 @@ class BlogController extends Controller
 
         $blog->load(['category', 'author']);
 
-        $related = Blog::published()
+        // Recent blogs for the sidebar (5 latest excluding current post)
+        $recent = Blog::published()
+            ->where('id', '!=', $blog->id)
+            ->with(['category', 'author'])
+            ->latest('published_at')
+            ->limit(5)
+            ->get();
+
+        // Popular blogs for the bottom of the article (4 blogs)
+        $popular = Blog::published()
             ->where('id', '!=', $blog->id)
             ->when($blog->blog_category_id, fn ($q) => $q->where('blog_category_id', $blog->blog_category_id))
             ->with(['category', 'author'])
             ->latest('published_at')
-            ->limit(3)
+            ->limit(4)
             ->get();
 
-        if ($related->count() < 3) {
-            $needed = 3 - $related->count();
+        if ($popular->count() < 4) {
+            $needed = 4 - $popular->count();
             $fallback = Blog::published()
                 ->where('id', '!=', $blog->id)
-                ->whereNotIn('id', $related->pluck('id'))
+                ->whereNotIn('id', $popular->pluck('id'))
                 ->with(['category', 'author'])
                 ->latest('published_at')
                 ->limit($needed)
                 ->get();
-            $related = $related->concat($fallback);
+            $popular = $popular->concat($fallback);
         }
 
-        return view('storefront.blog.show', compact('blog', 'related'));
+        $categories = BlogCategory::whereHas('blogs', fn ($q) => $q->published())
+            ->withCount(['blogs' => fn ($q) => $q->published()])
+            ->get();
+
+        return view('storefront.blog.show', compact('blog', 'recent', 'popular', 'categories'));
     }
 }

@@ -161,7 +161,7 @@
         @if ($blogs->count() > 0)
             <div class="row g-4">
                 @foreach ($blogs as $post)
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-xl-3 col-lg-3 col-md-6 col-12">
                         <article class="vr-journal-card">
                             <div class="vr-journal-card-img">
                                 <a href="{{ route('blog.show', $post->slug) }}" class="d-block w-100 h-100">
@@ -187,16 +187,16 @@
                                     <span><i class="ri-time-line me-1"></i>{{ $post->readingTime() }} min read</span>
                                 </div>
 
-                                <a href="{{ route('blog.show', $post->slug) }}" class="text-decoration-none">
-                                    <h3 class="vr-journal-card-title">{{ $post->title }}</h3>
+                                <a href="{{ route('blog.show', $post->slug) }}" class="text-decoration-none" title="{{ $post->title }}">
+                                    <h3 class="vr-journal-card-title">{{ Str::limit($post->title, 50) }}</h3>
                                 </a>
 
                                 <p class="vr-journal-card-excerpt">
-                                    {{ $post->excerpt ?: Str::limit(strip_tags($post->content), 120) }}
+                                    {{ $post->excerpt ? Str::limit($post->excerpt, 75) : Str::limit(strip_tags($post->content), 75) }}
                                 </p>
 
                                 <div class="vr-journal-card-footer">
-                                    <span class="vr-journal-card-author">By {{ $post->author_name }}</span>
+                                    <span class="vr-journal-card-author text-truncate" style="max-width: 110px;">By {{ $post->author_name }}</span>
                                     <a href="{{ route('blog.show', $post->slug) }}" class="vr-journal-card-link">
                                         Read <i class="ri-arrow-right-line"></i>
                                     </a>

@@ -876,4 +876,246 @@
         text-align: center;
         padding: 1.5rem;
     }
+    .vr-blog-sidebar {
+        margin-top: 3rem;
+        position: static;
+    }
+}
+
+/* ==========================================================================
+   SIDEBAR & RECENT BLOGS WIDGETS
+   ========================================================================== */
+.vr-blog-sidebar {
+    position: sticky;
+    top: 90px;
+}
+.vr-sidebar-card {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #ECE7DB;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 6px 22px rgba(38, 61, 37, 0.04);
+}
+.vr-sidebar-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--vr-green-dark, #263D25);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid #F0ECE1;
+    padding-bottom: 0.85rem;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.01em;
+}
+.vr-sidebar-title i {
+    color: var(--vr-green, #6F8736);
+    font-size: 1.15rem;
+}
+
+/* Recent Blog Items in Sidebar */
+.vr-recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.vr-recent-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    text-decoration: none;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #F5F1E8;
+    transition: all 0.2s ease;
+}
+.vr-recent-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+.vr-recent-thumb {
+    width: 70px;
+    height: 70px;
+    min-width: 70px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #EFECE3;
+    position: relative;
+}
+.vr-recent-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vr-recent-item:hover .vr-recent-thumb img {
+    transform: scale(1.08);
+}
+.vr-recent-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+.vr-recent-cat {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--vr-green, #6F8736);
+    margin-bottom: 0.15rem;
+}
+.vr-recent-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--vr-green-dark, #263D25);
+    line-height: 1.35;
+    margin-bottom: 0.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.2s ease;
+}
+.vr-recent-item:hover .vr-recent-title {
+    color: var(--vr-green, #6F8736);
+}
+.vr-recent-meta {
+    font-size: 0.74rem;
+    color: #8C968D;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Sidebar Categories Widget */
+.vr-sidebar-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.vr-sidebar-cat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #455247;
+    background: #FAF8F2;
+    border: 1px solid #ECE7DB;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.vr-sidebar-cat-pill:hover {
+    color: var(--vr-green-dark, #263D25);
+    background: #EEF2E3;
+    border-color: rgba(111, 135, 54, 0.4);
+    transform: translateY(-1px);
+}
+.vr-sidebar-cat-pill .badge {
+    background: rgba(0,0,0,0.06);
+    color: #556056;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+}
+
+/* Sidebar Mini Newsletter */
+.vr-sidebar-newsletter {
+    background: linear-gradient(135deg, var(--vr-green-dark, #263D25) 0%, #1e3220 100%);
+    border-radius: 20px;
+    padding: 1.75rem 1.4rem;
+    color: #F7F4EA;
+    box-shadow: 0 10px 28px rgba(38, 61, 37, 0.18);
+}
+.vr-sidebar-newsletter h5 {
+    color: #F7F4EA;
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+}
+.vr-sidebar-newsletter p {
+    font-size: 0.85rem;
+    color: rgba(247, 244, 234, 0.82);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+.vr-sidebar-newsletter .form-control {
+    border-radius: 999px;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    margin-bottom: 0.6rem;
+}
+.vr-sidebar-newsletter .btn-subscribe {
+    width: 100%;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: var(--vr-green, #6F8736);
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1rem;
+    transition: background 0.2s ease;
+}
+.vr-sidebar-newsletter .btn-subscribe:hover {
+    background: #5D722C;
+}
+
+/* ==========================================================================
+   POPULAR BLOGS SECTION AT BOTTOM OF ARTICLE
+   ========================================================================== */
+.vr-popular-section {
+    background: #FAF8F3;
+    border-top: 1px solid rgba(230, 226, 214, 0.8);
+    padding: 4.5rem 0 4rem;
+}
+.vr-popular-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2.25rem;
+}
+.vr-popular-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+    font-weight: 750;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #B58A3A;
+    background: rgba(181, 138, 58, 0.12);
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    margin-bottom: 0.5rem;
+}
+.vr-popular-title {
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    font-weight: 850;
+    color: var(--vr-green-dark, #263D25);
+    margin-bottom: 0;
+    letter-spacing: -0.015em;
+}
+
+/* 4-column cards exact sizing */
+.col-xl-3 .vr-journal-card-title,
+.col-lg-3 .vr-journal-card-title {
+    font-size: 0.98rem;
+    line-height: 1.38;
+    height: 2.76em;
+}
+.col-xl-3 .vr-journal-card-excerpt,
+.col-lg-3 .vr-journal-card-excerpt {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    height: 2.9em;
+}
+.col-xl-3 .vr-journal-card-body,
+.col-lg-3 .vr-journal-card-body {
+    padding: 1.15rem;
 }

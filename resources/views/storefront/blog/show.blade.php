@@ -92,7 +92,7 @@
 
 {{-- Article Header Section --}}
 <header class="vr-post-header">
-    <div class="container" style="max-width: 900px;">
+    <div class="container">
         <nav class="vr-post-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a>
             <span><i class="ri-arrow-right-s-line"></i></span>
@@ -118,7 +118,7 @@
         <h1 class="vr-post-title">{{ $blog->title }}</h1>
 
         @if ($blog->excerpt)
-            <p class="fs-5 text-muted mb-4" style="line-height: 1.65; max-width: 780px;">
+            <p class="fs-5 text-muted mb-4" style="line-height: 1.65; max-width: 820px;">
                 {{ $blog->excerpt }}
             </p>
         @endif
@@ -168,90 +168,172 @@
     </div>
 </header>
 
-{{-- Article Content Section --}}
-<article class="py-5" style="background:#ffffff; min-height: 50vh;">
-    <div class="container" style="max-width: 900px;">
+{{-- Main Article + Sidebar Layout --}}
+<div class="py-5" style="background:#ffffff; min-height: 50vh;">
+    <div class="container">
+        <div class="row g-5">
 
-        {{-- Featured Image Banner --}}
-        @if ($blog->featured_image)
-            <div class="vr-post-hero-image">
-                <img src="{{ image_url($blog->featured_image) }}" alt="{{ $blog->title }}">
-            </div>
-        @endif
+            {{-- Left Column: Article Body --}}
+            <main class="col-lg-8">
+                {{-- Featured Image Banner --}}
+                @if ($blog->featured_image)
+                    <div class="vr-post-hero-image mt-0">
+                        <img src="{{ image_url($blog->featured_image) }}" alt="{{ $blog->title }}">
+                    </div>
+                @endif
 
-        {{-- Editorial Rich Body --}}
-        <div class="vr-article-body" id="articleBody">
-            {!! clean_html($blog->content) !!}
-        </div>
-
-        {{-- Bottom Share Bar & Engagement --}}
-        <div class="mt-5 pt-4 border-top">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="ri-share-forward-line fs-5 text-muted"></i>
-                    <span class="fw-bold" style="color:var(--vr-green-dark);">Liked this article? Share it forward:</span>
+                {{-- Editorial Rich Body --}}
+                <div class="vr-article-body" id="articleBody">
+                    {!! clean_html($blog->content) !!}
                 </div>
-                <div class="vr-share-bar">
-                    <a href="https://api.whatsapp.com/send?text={{ $shareText }}%20{{ $shareUrl }}" 
-                       target="_blank" rel="noopener" class="vr-share-btn btn-whatsapp" title="Share via WhatsApp">
-                        <i class="ri-whatsapp-line"></i>
-                    </a>
-                    <a href="https://twitter.com/intent/tweet?text={{ $shareText }}&url={{ $shareUrl }}" 
-                       target="_blank" rel="noopener" class="vr-share-btn btn-twitter" title="Share on X">
-                        <i class="ri-twitter-x-line"></i>
-                    </a>
-                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ $shareUrl }}" 
-                       target="_blank" rel="noopener" class="vr-share-btn btn-facebook" title="Share on Facebook">
-                        <i class="ri-facebook-fill"></i>
-                    </a>
-                    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ $shareUrl }}" 
-                       target="_blank" rel="noopener" class="vr-share-btn btn-linkedin" title="Share on LinkedIn">
-                        <i class="ri-linkedin-fill"></i>
-                    </a>
-                    <button type="button" class="vr-share-btn btn-copy js-copy-link" 
-                            data-url="{{ route('blog.show', $blog) }}" title="Copy Article Link">
-                        <i class="ri-link"></i>
-                    </button>
+
+                {{-- Bottom Share Bar & Engagement --}}
+                <div class="mt-5 pt-4 border-top">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ri-share-forward-line fs-5 text-muted"></i>
+                            <span class="fw-bold" style="color:var(--vr-green-dark);">Liked this article? Share it forward:</span>
+                        </div>
+                        <div class="vr-share-bar">
+                            <a href="https://api.whatsapp.com/send?text={{ $shareText }}%20{{ $shareUrl }}" 
+                               target="_blank" rel="noopener" class="vr-share-btn btn-whatsapp" title="Share via WhatsApp">
+                                <i class="ri-whatsapp-line"></i>
+                            </a>
+                            <a href="https://twitter.com/intent/tweet?text={{ $shareText }}&url={{ $shareUrl }}" 
+                               target="_blank" rel="noopener" class="vr-share-btn btn-twitter" title="Share on X">
+                                <i class="ri-twitter-x-line"></i>
+                            </a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u={{ $shareUrl }}" 
+                               target="_blank" rel="noopener" class="vr-share-btn btn-facebook" title="Share on Facebook">
+                                <i class="ri-facebook-fill"></i>
+                            </a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ $shareUrl }}" 
+                               target="_blank" rel="noopener" class="vr-share-btn btn-linkedin" title="Share on LinkedIn">
+                                <i class="ri-linkedin-fill"></i>
+                            </a>
+                            <button type="button" class="vr-share-btn btn-copy js-copy-link" 
+                                    data-url="{{ route('blog.show', $blog) }}" title="Copy Article Link">
+                                <i class="ri-link"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        {{-- Author Bio Card --}}
-        <div class="vr-author-card">
-            <div class="vr-author-card-avatar">
-                {{ strtoupper(substr($blog->author_name, 0, 1)) }}
-            </div>
-            <div class="vr-author-card-content flex-grow-1">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5>Written by {{ $blog->author_name }}</h5>
-                    <span class="badge rounded-pill bg-light text-muted border px-3 py-1">Author & Wellness Guide</span>
+                {{-- Author Bio Card --}}
+                <div class="vr-author-card">
+                    <div class="vr-author-card-avatar">
+                        {{ strtoupper(substr($blog->author_name, 0, 1)) }}
+                    </div>
+                    <div class="vr-author-card-content flex-grow-1">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <h5>Written by {{ $blog->author_name }}</h5>
+                            <span class="badge rounded-pill bg-light text-muted border px-3 py-1">Author & Wellness Guide</span>
+                        </div>
+                        <p>
+                            Passionate about holistic skincare traditions, sustainable rituals, and natural living. Curating the timeless harmony between nature and everyday beauty at {{ store_name() }}.
+                        </p>
+                    </div>
                 </div>
-                <p>
-                    Passionate about holistic skincare traditions, sustainable rituals, and natural living. Curating the timeless harmony between nature and everyday beauty at {{ store_name() }}.
-                </p>
-            </div>
-        </div>
 
-        {{-- Back to Journal Button --}}
-        <div class="text-center mt-5">
-            <a href="{{ route('blog.index') }}" class="btn-vr">
-                <i class="ri-arrow-left-line me-1"></i> Back to all Journal Stories
-            </a>
-        </div>
+                {{-- Back to Journal Button --}}
+                <div class="mt-4">
+                    <a href="{{ route('blog.index') }}" class="btn-vr">
+                        <i class="ri-arrow-left-line me-1"></i> Back to all Journal Stories
+                    </a>
+                </div>
+            </main>
 
+            {{-- Right Column: Editorial Sidebar with Recent Blogs --}}
+            <aside class="col-lg-4">
+                <div class="vr-blog-sidebar">
+
+                    {{-- Recent Blogs Widget --}}
+                    @if ($recent->isNotEmpty())
+                        <div class="vr-sidebar-card">
+                            <div class="vr-sidebar-title">
+                                <i class="ri-history-line"></i> Recent Stories
+                            </div>
+                            <div class="vr-recent-list">
+                                @foreach ($recent as $rec)
+                                    <a href="{{ route('blog.show', $rec->slug) }}" class="vr-recent-item">
+                                        <div class="vr-recent-thumb">
+                                            @if ($rec->featured_image)
+                                                <img src="{{ image_url($rec->featured_image) }}" alt="{{ $rec->title }}" loading="lazy">
+                                            @else
+                                                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
+                                                    <i class="ri-article-line fs-4 opacity-35"></i>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="vr-recent-info">
+                                            @if ($rec->category)
+                                                <span class="vr-recent-cat">{{ $rec->category->name }}</span>
+                                            @endif
+                                            <div class="vr-recent-title" title="{{ $rec->title }}">
+                                                {{ Str::limit($rec->title, 45) }}
+                                            </div>
+                                            <div class="vr-recent-meta">
+                                                <span>{{ $rec->published_at->format('M d, Y') }}</span>
+                                                <span>&middot;</span>
+                                                <span>{{ $rec->readingTime() }}m read</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Categories Widget --}}
+                    @if ($categories->isNotEmpty())
+                        <div class="vr-sidebar-card">
+                            <div class="vr-sidebar-title">
+                                <i class="ri-price-tag-3-line"></i> Explore Topics
+                            </div>
+                            <div class="vr-sidebar-categories">
+                                @foreach ($categories as $cat)
+                                    <a href="{{ route('blog.index', ['category' => $cat->slug]) }}" class="vr-sidebar-cat-pill">
+                                        <span>{{ $cat->name }}</span>
+                                        @if ($cat->blogs_count)
+                                            <span class="badge">{{ $cat->blogs_count }}</span>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Mini Newsletter Card --}}
+                    <div class="vr-sidebar-newsletter">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-warning small fw-bold text-uppercase" style="letter-spacing: 0.12em;">
+                            <i class="ri-leaf-line"></i> The Vanriti Circle
+                        </div>
+                        <h5>Join Our Inner Circle</h5>
+                        <p>Mindful skincare rituals and timeless natural remedies sent to your inbox.</p>
+                        <form action="{{ route('newsletter.subscribe') }}" method="POST">
+                            @csrf
+                            <input type="email" name="email" required placeholder="Enter your email..." class="form-control" aria-label="Email Address">
+                            <button type="submit" class="btn-subscribe">Subscribe Free</button>
+                        </form>
+                    </div>
+
+                </div>
+            </aside>
+
+        </div>
     </div>
-</article>
+</div>
 
-{{-- Related Articles Section --}}
-@if ($related->isNotEmpty())
-    <section class="py-5" style="background:#FAF8F3; border-top: 1px solid rgba(230, 226, 214, 0.7);">
+{{-- Bottom Popular Blogs Section (4 in a row desktop, 1 on mobile) --}}
+@if ($popular->isNotEmpty())
+    <section class="vr-popular-section">
         <div class="container">
-            <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-4">
+            <div class="vr-popular-header">
                 <div>
-                    <span class="vr-journal-eyebrow mb-1">
-                        <i class="ri-sparkling-line"></i> Keep Exploring
+                    <span class="vr-popular-eyebrow">
+                        <i class="ri-fire-line"></i> Trending & Popular
                     </span>
-                    <h2 class="h3 fw-bold mb-0" style="color:var(--vr-green-dark);">Related Stories & Guides</h2>
+                    <h2 class="vr-popular-title">Popular Stories From The Journal</h2>
                 </div>
                 <a href="{{ route('blog.index') }}" class="fw-semibold text-decoration-none" style="color:var(--vr-green);">
                     View all stories <i class="ri-arrow-right-line"></i>
@@ -259,42 +341,42 @@
             </div>
 
             <div class="row g-4">
-                @foreach ($related as $rel)
-                    <div class="col-md-4">
+                @foreach ($popular as $pop)
+                    <div class="col-xl-3 col-lg-3 col-md-6 col-12">
                         <article class="vr-journal-card">
                             <div class="vr-journal-card-img">
-                                <a href="{{ route('blog.show', $rel->slug) }}" class="d-block w-100 h-100">
-                                    @if ($rel->featured_image)
-                                        <img src="{{ image_url($rel->featured_image) }}" alt="{{ $rel->title }}" loading="lazy">
+                                <a href="{{ route('blog.show', $pop->slug) }}" class="d-block w-100 h-100">
+                                    @if ($pop->featured_image)
+                                        <img src="{{ image_url($pop->featured_image) }}" alt="{{ $pop->title }}" loading="lazy">
                                     @else
                                         <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
                                             <i class="ri-article-line fs-1 opacity-25"></i>
                                         </div>
                                     @endif
                                 </a>
-                                @if ($rel->category)
-                                    <span class="vr-journal-card-cat">{{ $rel->category->name }}</span>
+                                @if ($pop->category)
+                                    <span class="vr-journal-card-cat">{{ $pop->category->name }}</span>
                                 @endif
                             </div>
 
                             <div class="vr-journal-card-body">
                                 <div class="vr-journal-card-meta">
-                                    <span>{{ $rel->published_at->format('M d, Y') }}</span>
+                                    <span>{{ $pop->published_at->format('M d, Y') }}</span>
                                     <span>&middot;</span>
-                                    <span>{{ $rel->readingTime() }} min read</span>
+                                    <span><i class="ri-time-line me-1"></i>{{ $pop->readingTime() }} min read</span>
                                 </div>
 
-                                <a href="{{ route('blog.show', $rel->slug) }}" class="text-decoration-none">
-                                    <h3 class="vr-journal-card-title">{{ $rel->title }}</h3>
+                                <a href="{{ route('blog.show', $pop->slug) }}" class="text-decoration-none" title="{{ $pop->title }}">
+                                    <h3 class="vr-journal-card-title">{{ Str::limit($pop->title, 50) }}</h3>
                                 </a>
 
                                 <p class="vr-journal-card-excerpt">
-                                    {{ $rel->excerpt ?: Str::limit(strip_tags($rel->content), 100) }}
+                                    {{ $pop->excerpt ? Str::limit($pop->excerpt, 75) : Str::limit(strip_tags($pop->content), 75) }}
                                 </p>
 
                                 <div class="vr-journal-card-footer">
-                                    <span class="vr-journal-card-author">By {{ $rel->author_name }}</span>
-                                    <a href="{{ route('blog.show', $rel->slug) }}" class="vr-journal-card-link">
+                                    <span class="vr-journal-card-author text-truncate" style="max-width: 110px;">By {{ $pop->author_name }}</span>
+                                    <a href="{{ route('blog.show', $pop->slug) }}" class="vr-journal-card-link">
                                         Read <i class="ri-arrow-right-line"></i>
                                     </a>
                                 </div>
