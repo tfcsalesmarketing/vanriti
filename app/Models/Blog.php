@@ -49,4 +49,15 @@ class Blog extends Model
     {
         return 'slug';
     }
+
+    public function readingTime(): int
+    {
+        $words = str_word_count(strip_tags($this->content ?? ''));
+        return max(1, (int) ceil($words / 200));
+    }
+
+    public function getAuthorNameAttribute(): string
+    {
+        return $this->author?->name ?? store_name();
+    }
 }
