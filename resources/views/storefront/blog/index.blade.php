@@ -98,64 +98,7 @@
             </div>
         @endif
 
-        {{-- Hero Featured Magazine Post (Shown when on page 1 without active filter/search) --}}
-        @if ($featured)
-            <div class="vr-featured-post-card">
-                <div class="row g-0 align-items-stretch">
-                    <div class="col-lg-7">
-                        <a href="{{ route('blog.show', $featured->slug) }}" class="d-block h-100">
-                            <div class="vr-featured-img-wrap">
-                                @if ($featured->featured_image)
-                                    <img src="{{ image_url($featured->featured_image) }}" alt="{{ $featured->title }}" loading="lazy">
-                                @else
-                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
-                                        <i class="ri-article-line display-4 opacity-25"></i>
-                                    </div>
-                                @endif
-                                <div class="vr-featured-badge">
-                                    <i class="ri-sparkling-fill text-warning"></i> Featured Story
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-lg-5">
-                        <div class="vr-featured-body h-100">
-                            <div class="vr-post-meta">
-                                @if ($featured->category)
-                                    <a href="{{ route('blog.index', ['category' => $featured->category->slug]) }}" class="vr-category-badge">
-                                        {{ $featured->category->name }}
-                                    </a>
-                                @endif
-                                <span><i class="ri-time-line me-1"></i>{{ $featured->readingTime() }} min read</span>
-                            </div>
 
-                            <a href="{{ route('blog.show', $featured->slug) }}" class="text-decoration-none">
-                                <h2 class="vr-featured-title">{{ $featured->title }}</h2>
-                            </a>
-
-                            <p class="vr-featured-excerpt">
-                                {{ $featured->excerpt ?: Str::limit(strip_tags($featured->content), 180) }}
-                            </p>
-
-                            <div class="vr-author-row">
-                                <div class="vr-author-info">
-                                    <div class="vr-author-avatar">
-                                        {{ strtoupper(substr($featured->author_name, 0, 1)) }}
-                                    </div>
-                                    <div>
-                                        <div class="vr-author-name">{{ $featured->author_name }}</div>
-                                        <div class="vr-author-date">{{ $featured->published_at->format('M d, Y') }}</div>
-                                    </div>
-                                </div>
-                                <a href="{{ route('blog.show', $featured->slug) }}" class="vr-btn-read">
-                                    Read Story <i class="ri-arrow-right-line"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
 
         {{-- Stories Grid --}}
         @if ($blogs->count() > 0)

@@ -32,22 +32,13 @@ class BlogController extends Controller
 
         $isFiltered = $categorySlug || $search !== '' || request('page', 1) > 1;
 
-        $featured = null;
-        if (! $isFiltered) {
-            // Take the single newest article as featured banner
-            $featured = Blog::published()->with(['category', 'author'])->latest('published_at')->first();
-            if ($featured) {
-                $query->where('id', '!=', $featured->id);
-            }
-        }
-
         $blogs = $query->paginate(12)->withQueryString();
         $categories = BlogCategory::whereHas('blogs', fn ($q) => $q->published())
             ->withCount(['blogs' => fn ($q) => $q->published()])
             ->get();
         $recent = Blog::published()->latest('published_at')->limit(5)->get();
 
-        return view('storefront.blog.index', compact('blogs', 'recent', 'categories', 'featured', 'activeCategory', 'search'));
+        return view('storefront.blog.index', compact('blogs', 'recent', 'categories', 'activeCategory', 'search'));
     }
 
     public function show(Blog $blog)
