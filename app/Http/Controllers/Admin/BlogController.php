@@ -48,11 +48,22 @@ class BlogController extends Controller
         ]);
 
         if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['title']);
+            $baseSlug = Str::slug($validated['title']) ?: 'blog-post';
+            $slug = $baseSlug;
+            $counter = 1;
+            while (Blog::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . $counter++;
+            }
+            $validated['slug'] = $slug;
         }
 
         if ($request->hasFile('featured_image')) {
-            $validated['featured_image'] = $request->file('featured_image')->store('blogs', 's3');
+            try {
+                $validated['featured_image'] = $request->file('featured_image')->store('blogs', 's3');
+            } catch (\Throwable $e) {
+                report($e);
+                $validated['featured_image'] = $request->file('featured_image')->store('blogs', 'public');
+            }
         }
 
         $validated['admin_id'] = auth('admin')->id();
@@ -90,11 +101,22 @@ class BlogController extends Controller
         ]);
 
         if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['title']);
+            $baseSlug = Str::slug($validated['title']) ?: 'blog-post';
+            $slug = $baseSlug;
+            $counter = 1;
+            while (Blog::where('slug', $slug)->where('id', '!=', $blog->id)->exists()) {
+                $slug = $baseSlug . '-' . $counter++;
+            }
+            $validated['slug'] = $slug;
         }
 
         if ($request->hasFile('featured_image')) {
-            $validated['featured_image'] = $request->file('featured_image')->store('blogs', 's3');
+            try {
+                $validated['featured_image'] = $request->file('featured_image')->store('blogs', 's3');
+            } catch (\Throwable $e) {
+                report($e);
+                $validated['featured_image'] = $request->file('featured_image')->store('blogs', 'public');
+            }
         } else {
             unset($validated['featured_image']);
         }

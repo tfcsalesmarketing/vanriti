@@ -59,23 +59,14 @@
     </div>
 
     <div class="col-md-4">
-        <div class="card mb-3">
-            <div class="card-header fw-semibold">Featured Image Preview</div>
-            <div class="card-body text-center">
-                <div id="featuredImagePreviewBox" class="p-2 border rounded bg-light" style="min-height: 180px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    @if ($blog && $blog->featured_image)
-                        <img id="featuredImagePreview" src="{{ image_url($blog->featured_image) }}" alt="Featured Image" class="img-fluid rounded" style="max-height: 220px; object-fit: cover; width: 100%;">
-                    @else
-                        <div id="featuredImagePlaceholder" class="text-muted small py-4">
-                            <i class="bi bi-image fs-1 d-block mb-1 text-secondary"></i>
-                            <span>No image selected</span>
-                        </div>
-                        <img id="featuredImagePreview" src="" alt="Featured Preview" class="img-fluid rounded d-none" style="max-height: 220px; object-fit: cover; width: 100%;">
-                    @endif
+        @if ($blog && $blog->featured_image)
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Current Featured Image</div>
+                <div class="card-body text-center">
+                    <img src="{{ image_url($blog->featured_image) }}" alt="Featured Image" class="img-fluid rounded" style="max-height: 200px; object-fit: cover;">
                 </div>
-                <div class="form-text small mt-2">Recommended: 1200x675px (16:9 ratio). Formats: WEBP, JPG, PNG.</div>
             </div>
-        </div>
+        @endif
 
         <div class="card mb-3">
             <div class="card-header fw-semibold">SEO & Meta</div>
@@ -121,9 +112,6 @@
     border-bottom: 1px solid #e9ecef;
     background: #f8fafc;
     padding: 8px 10px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
 .vr-quill-wrapper .ql-container.ql-snow {
     border: none;
@@ -167,11 +155,13 @@
 <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Initialize Quill editor on .js-rich-editor textareas
+    // Initialize Rich Text Editor on all .js-rich-editor textareas (matching product form)
     if (typeof Quill !== 'undefined') {
         document.querySelectorAll('textarea.js-rich-editor').forEach(function (textarea) {
+            // Hide textarea from view
             textarea.style.display = 'none';
 
+            // Create wrapper element
             const wrapper = document.createElement('div');
             wrapper.className = 'vr-quill-wrapper mb-2';
 
@@ -180,12 +170,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const minHeight = textarea.dataset.minHeight || '380px';
             editorDiv.style.minHeight = minHeight;
 
+            // Put wrapper in DOM where textarea was
             textarea.parentNode.insertBefore(wrapper, textarea);
             wrapper.appendChild(editorDiv);
 
+            // Populate initial content
             const rawContent = textarea.value || '';
             editorDiv.innerHTML = rawContent;
 
+            // Instantiate Quill
             const quill = new Quill(editorDiv, {
                 theme: 'snow',
                 placeholder: 'Write your inspiring blog article story here...',
@@ -196,12 +189,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         ['blockquote', 'code-block'],
                         [{ 'color': [] }, { 'background': [] }],
-                        ['link', 'image'],
+                        ['link'],
                         ['clean']
                     ]
                 }
             });
 
+            // Live synchronize changes back to textarea
             const syncContent = function () {
                 const html = quill.root.innerHTML;
                 const textOnly = quill.getText().trim();
@@ -210,46 +204,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             quill.on('text-change', syncContent);
 
+            // Also flush on form submission
             const form = textarea.closest('form');
             if (form) {
-                form.addEventListener('submit', function (e) {
-                    syncContent();
-                    const trimmed = textarea.value.trim();
-                    if (!trimmed || trimmed === '<p><br></p>') {
-                        if (textarea.name === 'content') {
-                            e.preventDefault();
-                            wrapper.style.borderColor = '#dc3545';
-                            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            let err = wrapper.parentElement.querySelector('.vr-editor-error');
-                            if (!err) {
-                                err = document.createElement('div');
-                                err.className = 'text-danger small mt-1 vr-editor-error';
-                                err.textContent = 'Please enter blog content.';
-                                wrapper.parentElement.appendChild(err);
-                            }
-                        }
-                    }
-                });
-            }
-        });
-    }
-
-    // 2. Live image preview for Featured Image input
-    const fileInput = document.querySelector('input[name="featured_image"]');
-    const previewImg = document.getElementById('featuredImagePreview');
-    const placeholder = document.getElementById('featuredImagePlaceholder');
-
-    if (fileInput && previewImg) {
-        fileInput.addEventListener('change', function () {
-            const file = this.files && this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    previewImg.src = e.target.result;
-                    previewImg.classList.remove('d-none');
-                    if (placeholder) placeholder.classList.add('d-none');
-                };
-                reader.readAsDataURL(file);
+                form.addEventListener('submit', syncContent);
             }
         });
     }
