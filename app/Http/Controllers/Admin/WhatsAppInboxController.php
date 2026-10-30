@@ -501,4 +501,23 @@ class WhatsAppInboxController extends Controller
             'checkout_session' => $checkoutSession,
         ];
     }
+
+    /**
+     * Completely delete conversation, all messages, media files, and webhook logs.
+     */
+    public function destroy(WhatsAppConversation $conversation): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $res = $this->chatService->deleteConversationCompletely($conversation);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Conversation and all associated chat history, files, and webhook logs have been permanently deleted.',
+                'details' => $res,
+                'redirect_url' => route('admin.whatsapp.inbox'),
+            ]);
+        }
+
+        return redirect()->route('admin.whatsapp.inbox')->with('success', 'Conversation, chat history, and logs permanently deleted.');
+    }
 }

@@ -511,4 +511,102 @@ class WhatsAppChatService
             }
         }
     }
+
+    /**
+     * Completely purge a conversation, including all its messages, physical uploaded media files,
+     * raw webhook logs, and checkout sessions from the database.
+     */
+    public function deleteConversationCompletely(WhatsAppConversation $conversation): array
+    {
+        $phone = $conversation->phone;
+        $waId = $conversation->wa_id;
+        $channel = $conversation->channel;
+
+        // 1. Collect all messages and associated media files
+        $messages = $conversation->messages()->get();
+        $metaIds = $messages->pluck('meta_message_id')->filter()->unique()->toArray();
+        $mediaUrls = $messages->pluck('media_url')->filter()->unique()->toArray();
+
+        // 2. Delete physical media files from disk
+        $disk = config('filesystems.whatsapp_disk', 's3');
+        $filesDeleted = 0;
+        foreach ($mediaUrls as $urlOrPath) {
+            if (empty($urlOrPath)) continue;
+
+            $relative = $urlOrPath;
+            if (str_starts_with($urlOrPath, 'http')) {
+                // Extract relative path if full URL
+                $parsed = parse_url($urlOrPath, PHP_URL_PATH);
+                $relative = ltrim((string) $parsed, '/');
+                if (str_contains($relative, 'whatsapp_media/')) {
+                    $relative = substr($relative, strpos($relative, 'whatsapp_media/'));
+                }
+            }
+
+            try {
+                if (Storage::disk($disk)->exists($relative)) {
+                    Storage::disk($disk)->delete($relative);
+                    $filesDeleted++;
+                } elseif (Storage::disk('public')->exists($relative)) {
+                    Storage::disk('public')->delete($relative);
+                    $filesDeleted++;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed deleting WhatsApp media file during conversation purge', [
+                    'path' => $relative,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // 3. Delete all conversation messages
+        $messagesDeleted = $conversation->messages()->delete();
+
+        // 4. Delete webhook logs matching this phone or message IDs
+        $phoneVariants = array_filter(array_unique([
+            $phone,
+            $waId,
+            substr($phone, -10),
+            '91' . substr($phone, -10),
+            '+91' . substr($phone, -10),
+        ]));
+
+        $logsDeleted = 0;
+        try {
+            $logsQuery = \App\Models\WhatsAppWebhookLog::whereIn('from_phone', $phoneVariants);
+            if (! empty($metaIds)) {
+                $logsQuery->orWhereIn('message_id', $metaIds);
+            }
+            $logsDeleted = $logsQuery->delete();
+        } catch (\Throwable $e) {
+            Log::warning('Failed deleting WhatsApp webhook logs during conversation purge', ['error' => $e->getMessage()]);
+        }
+
+        // 5. If Vanriti channel: delete checkout sessions
+        if ($channel === 'vanriti') {
+            try {
+                \App\Models\WhatsAppCheckoutSession::whereIn('phone', $phoneVariants)->delete();
+            } catch (\Throwable) {}
+        }
+
+        // 6. Delete the conversation row itself
+        $conversation->delete();
+
+        Log::info('WhatsApp conversation purged successfully', [
+            'phone' => $phone,
+            'channel' => $channel,
+            'messages_deleted' => $messagesDeleted,
+            'files_deleted' => $filesDeleted,
+            'logs_deleted' => $logsDeleted,
+        ]);
+
+        return [
+            'success' => true,
+            'phone' => $phone,
+            'channel' => $channel,
+            'messages_deleted' => $messagesDeleted,
+            'files_deleted' => $filesDeleted,
+            'logs_deleted' => $logsDeleted,
+        ];
+    }
 }

@@ -636,6 +636,10 @@
 
                     {{-- Actions on the right --}}
                     <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#deleteChatModal" title="Permanently delete conversation, chat history, files and logs">
+                            <i class="bi bi-trash3"></i>
+                            <span class="d-none d-lg-inline">Delete Chat</span>
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#sendTemplateModal">
                             <i class="bi bi-file-earmark-text text-primary"></i>
                             <span class="d-none d-lg-inline">Template</span>
@@ -857,6 +861,13 @@
                             Save Internal Note
                         </button>
                     </form>
+
+                    <div class="pt-3 mt-3 border-top">
+                        <button type="button" class="btn btn-xs btn-outline-danger w-100 py-1.5 d-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#deleteChatModal" style="font-size: 0.75rem;">
+                            <i class="bi bi-trash3"></i>
+                            <span>Delete Chat & Purge Data</span>
+                        </button>
+                    </div>
                 </div>
             </aside>
         @else
@@ -945,6 +956,43 @@
                 <div class="modal-footer border-top">
                     <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-sm btn-success">Send Media</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Modal 3: Delete Chat & Complete Database Purge --}}
+<div class="modal fade" id="deleteChatModal" tabindex="-1" aria-labelledby="deleteChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom bg-danger text-white">
+                <h6 class="modal-title fw-bold" id="deleteChatModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Permanently Delete Chat?</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('admin.tfc.whatsapp.inbox.destroy', $activeConversation) }}" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body p-4">
+                    <p class="text-dark fw-semibold mb-2">Are you sure you want to completely purge this entire chat?</p>
+                    <div class="alert alert-warning small mb-3">
+                        <i class="bi bi-info-circle me-1"></i> This action is <strong>irreversible</strong> and will permanently wipe:
+                        <ul class="mb-0 mt-2 ps-3">
+                            <li>All inbound & outbound WhatsApp messages</li>
+                            <li>All uploaded files & media (photos, PDF documents)</li>
+                            <li>All raw incoming webhook logs and audit trail for this phone number</li>
+                            <li>The conversation contact record</li>
+                        </ul>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Target Contact: <strong>{{ $activeConversation->contact_name ?: '+' . $activeConversation->phone }} (+{{ $activeConversation->phone }})</strong>
+                    </p>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-danger fw-semibold">
+                        <i class="bi bi-trash3 me-1"></i> Yes, Permanently Delete Everything
+                    </button>
                 </div>
             </form>
         </div>

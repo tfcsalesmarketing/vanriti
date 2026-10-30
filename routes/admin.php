@@ -297,6 +297,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::post('inbox/{conversation}/assign', [WhatsAppInboxController::class, 'assign'])->name('inbox.assign');
                 Route::post('inbox/{conversation}/status', [WhatsAppInboxController::class, 'updateStatus'])->name('inbox.status');
                 Route::post('inbox/{conversation}/note', [WhatsAppInboxController::class, 'addNote'])->name('inbox.note');
+                Route::delete('inbox/{conversation}', [WhatsAppInboxController::class, 'destroy'])->name('inbox.destroy');
             });
 
             // Broadcast Campaigns (Phase 4)
@@ -410,6 +411,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::post('inbox/{conversation}/status', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'updateStatus'])->name('inbox.status');
                 Route::post('inbox/{conversation}/assign', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'assign'])->name('inbox.assign');
                 Route::post('inbox/{conversation}/note', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'addNote'])->name('inbox.note');
+                Route::delete('inbox/{conversation}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'destroy'])->name('inbox.destroy');
 
                 // Broadcast Campaigns
                 Route::get('campaigns', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppCampaignController::class, 'index'])->name('campaigns.index');

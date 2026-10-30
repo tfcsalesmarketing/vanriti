@@ -167,6 +167,10 @@
                     <i class="bi bi-slash-circle text-danger" style="font-size: 0.95rem;"></i>
                     <span class="fw-medium text-danger">Block Customer</span>
                 </button>
+                <button type="button" class="btn btn-white border text-start d-flex align-items-center gap-2.5 rounded-3 py-2 px-3 shadow-2xs hover-bg-light" data-bs-toggle="modal" data-bs-target="#deleteChatModal" style="font-size: 0.82rem; border-color: #fecaca !important; background-color: #fef2f2;">
+                    <i class="bi bi-trash3 text-danger" style="font-size: 0.95rem;"></i>
+                    <span class="fw-bold text-danger">Delete Chat & Purge Data</span>
+                </button>
             </div>
         </div>
     </div>
