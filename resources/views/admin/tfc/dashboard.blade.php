@@ -3,21 +3,46 @@
 @section('title', 'TFC Sales & Marketing Dashboard')
 
 @section('content')
-{{-- Statutory Safeguards Alert Header --}}
-<div class="alert alert-warning border-warning d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 shadow-sm" role="alert">
-    <div class="d-flex align-items-center gap-3">
-        <i class="bi bi-shield-exclamation fs-3 text-warning"></i>
-        <div>
-            <div class="fw-bold text-dark">Statutory Direct-Selling Disclosure Notice</div>
-            <div class="small text-muted">
-                Per Consumer Protection (Direct Selling) Rules 2021 &amp; 2023 Amendment: Incomplete legal policies and officer declarations remain strictly in <strong>Draft</strong> state until official administrative details are confirmed.
+{{-- Statutory Safeguards Alert Header (Conditional) --}}
+@php
+    $missingDisclosures = [];
+    if (empty(tfc_setting('cin_or_llpin'))) $missingDisclosures[] = 'CIN / LLPIN';
+    if (empty(tfc_setting('registered_office'))) $missingDisclosures[] = 'Registered Office';
+    if (empty(tfc_setting('grievance_officer_name'))) $missingDisclosures[] = 'Grievance Officer';
+    if (empty(tfc_setting('nodal_officer_name'))) $missingDisclosures[] = 'Nodal Officer';
+    $showStatutoryNotice = ! empty($missingDisclosures) || ($stats['draft_pages'] ?? 0) > 0;
+@endphp
+
+@if ($showStatutoryNotice)
+    <div class="alert alert-warning border-warning alert-dismissible fade show d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 shadow-sm" role="alert">
+        <div class="d-flex align-items-center gap-3 pe-3">
+            <i class="bi bi-shield-exclamation fs-3 text-warning"></i>
+            <div>
+                <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                    <span>Statutory Direct-Selling Disclosure Notice</span>
+                    @if (! empty($missingDisclosures))
+                        <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size: 0.7rem;">
+                            {{ count($missingDisclosures) }} pending field{{ count($missingDisclosures) > 1 ? 's' : '' }}
+                        </span>
+                    @endif
+                </div>
+                <div class="small text-muted mt-1">
+                    Per Consumer Protection (Direct Selling) Rules 2021 &amp; 2023 Amendment: Mandatory administrative disclosures
+                    @if (! empty($missingDisclosures))
+                        (<em>{{ implode(', ', $missingDisclosures) }}</em>)
+                    @endif
+                    remain pending confirmation.
+                </div>
             </div>
         </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.tfc.settings.index') }}" class="btn btn-sm btn-warning text-dark fw-semibold text-nowrap">
+                <i class="bi bi-gear-fill me-1"></i>Configure Disclosures
+            </a>
+            <button type="button" class="btn-close position-static" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     </div>
-    <a href="{{ route('admin.tfc.settings.index') }}" class="btn btn-sm btn-warning text-dark fw-semibold text-nowrap">
-        <i class="bi bi-gear-fill me-1"></i>Configure Disclosures
-    </a>
-</div>
+@endif
 
 {{-- KPI Metrics Cards --}}
 <div class="row g-3 mb-4">

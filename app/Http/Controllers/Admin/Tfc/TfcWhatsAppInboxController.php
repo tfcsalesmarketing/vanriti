@@ -110,6 +110,10 @@ class TfcWhatsAppInboxController extends Controller
             $activeConversation = WhatsAppConversation::with(['user', 'assignedAgent', 'tfcInquiry', 'tfcGrievance'])->find($selectedId);
         }
 
+        if (! $activeConversation && $conversations->isNotEmpty()) {
+            $activeConversation = $conversations->first();
+        }
+
         if ($activeConversation) {
             $activeConversation->markAsRead();
             $activeConversation->load([
@@ -134,6 +138,16 @@ class TfcWhatsAppInboxController extends Controller
         $approvedTemplates = WhatsAppTemplate::where('channel', 'tfc')->where('status', 'APPROVED')->orderBy('name')->get();
 
         $unreadCount = WhatsAppConversation::where('channel', 'tfc')->where('unread_count', '>', 0)->count();
+        $activeWindowsCount = WhatsAppConversation::where('channel', 'tfc')->where('window_expires_at', '>', now())->count();
+        $isConfigured = $this->tfcApi()->isConfigured();
+
+        $stats = [
+            'total' => WhatsAppConversation::where('channel', 'tfc')->count(),
+            'unread' => $unreadCount,
+            'inquiries' => WhatsAppConversation::where('channel', 'tfc')->whereNotNull('tfc_inquiry_id')->count(),
+            'grievances' => WhatsAppConversation::where('channel', 'tfc')->whereNotNull('tfc_grievance_id')->count(),
+            'active_windows' => $activeWindowsCount,
+        ];
 
         return view('admin.tfc.whatsapp.inbox', compact(
             'conversations',
@@ -143,7 +157,10 @@ class TfcWhatsAppInboxController extends Controller
             'approvedTemplates',
             'search',
             'filter',
-            'unreadCount'
+            'unreadCount',
+            'activeWindowsCount',
+            'isConfigured',
+            'stats'
         ));
     }
 
