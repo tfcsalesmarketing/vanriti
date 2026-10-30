@@ -27,8 +27,15 @@ class WhatsAppBotService
             return false;
         }
 
-        // Fetch active rules ordered by priority
+        // Fetch active rules ordered by priority for this channel
+        $channel = $conversation->channel ?: 'vanriti';
         $rules = WhatsAppBotRule::where('is_active', true)
+            ->where(function ($q) use ($channel) {
+                $q->where('channel', $channel);
+                if ($channel === 'vanriti') {
+                    $q->orWhereNull('channel');
+                }
+            })
             ->orderByDesc('priority')
             ->orderBy('id')
             ->get();
@@ -86,13 +93,15 @@ class WhatsAppBotService
 
                 case 'text':
                 default:
+                    $brandName = ($conversation->channel === 'tfc') ? 'TFC Sales & Marketing' : 'Vanriti';
                     $body = str_replace(
                         ['{name}', '{phone}', '{site_url}'],
                         [$name, $phone, url('/')],
-                        $rule->response_text ?: 'Hello {name}, thank you for contacting Vanriti! 🌿'
+                        $rule->response_text ?: "Hello {name}, thank you for contacting {$brandName}! 🌿"
                     );
 
-                    $res = $this->cloudApi->sendTextMessage($phone, $body);
+                    $api = ($conversation->channel === 'tfc') ? $this->cloudApi->forChannel('tfc') : $this->cloudApi;
+                    $res = $api->sendTextMessage($phone, $body);
                     if ($res['success']) {
                         $this->recordBotMessage($conversation, 'text', $body, $res['message_id'] ?? null);
                         return true;

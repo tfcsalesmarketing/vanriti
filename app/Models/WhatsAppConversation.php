@@ -133,7 +133,34 @@ class WhatsAppConversation extends Model
             $cleanPhone = '91' . $cleanPhone;
         }
 
-        $conversation = static::where('phone', $cleanPhone)->first();
+        $conversation = static::where('phone', $cleanPhone)
+            ->where('channel', $channel)
+            ->first();
+
+        if ($channel === 'tfc' && ! $tfcInquiryId) {
+            $inq = \App\Models\Tfc\TfcInquiry::where('phone', $cleanPhone)
+                ->orWhere('phone', substr($cleanPhone, 2))
+                ->latest()
+                ->first();
+            if ($inq) {
+                $tfcInquiryId = $inq->id;
+                if (! $contactName) {
+                    $contactName = $inq->applicant_name;
+                }
+            }
+        }
+        if ($channel === 'tfc' && ! $tfcGrievanceId) {
+            $grievance = \App\Models\Tfc\TfcGrievanceTicket::where('phone', $cleanPhone)
+                ->orWhere('phone', substr($cleanPhone, 2))
+                ->latest()
+                ->first();
+            if ($grievance) {
+                $tfcGrievanceId = $grievance->id;
+                if (! $contactName) {
+                    $contactName = $grievance->consumer_name;
+                }
+            }
+        }
 
         if (! $conversation) {
             // Check if there is an existing User with this phone
@@ -158,9 +185,6 @@ class WhatsAppConversation extends Model
             }
             if ($waId && empty($conversation->wa_id)) {
                 $updates['wa_id'] = $waId;
-            }
-            if ($channel === 'tfc' && $conversation->channel !== 'tfc') {
-                $updates['channel'] = 'tfc';
             }
             if ($tfcInquiryId && empty($conversation->tfc_inquiry_id)) {
                 $updates['tfc_inquiry_id'] = $tfcInquiryId;

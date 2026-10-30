@@ -17,12 +17,21 @@ class WhatsAppChatService
         protected WhatsAppCloudApiService $apiService
     ) {}
 
-    /**
-     * Find or create conversation by phone number.
-     */
-    public function getOrCreateConversation(string $phone, ?string $contactName = null, ?string $waId = null): WhatsAppConversation
+    protected function apiForChannel(?string $channel): WhatsAppCloudApiService
     {
-        return WhatsAppConversation::findOrCreateForPhone($phone, $contactName, $waId);
+        return ($channel === 'tfc') ? $this->apiService->forChannel('tfc') : $this->apiService;
+    }
+
+    /**
+     * Find or create conversation by phone number and channel.
+     */
+    public function getOrCreateConversation(
+        string $phone,
+        ?string $contactName = null,
+        ?string $waId = null,
+        string $channel = 'vanriti'
+    ): WhatsAppConversation {
+        return WhatsAppConversation::findOrCreateForPhone($phone, $contactName, $waId, $channel);
     }
 
     /**
@@ -35,7 +44,8 @@ class WhatsAppChatService
             return ['success' => false, 'message' => 'Message body cannot be empty.'];
         }
 
-        $apiRes = $this->apiService->sendTextMessage($conversation->phone, $text);
+        $api = $this->apiForChannel($conversation->channel);
+        $apiRes = $api->sendTextMessage($conversation->phone, $text);
 
         $status = ($apiRes['success'] ?? false) ? 'sent' : 'failed';
         $metaMsgId = $apiRes['message_id'] ?? null;
@@ -91,8 +101,10 @@ class WhatsAppChatService
         // Determine disk (S3 preferred; falls back to config)
         $disk = config('filesystems.whatsapp_disk', 's3');
 
+        $api = $this->apiForChannel($conversation->channel);
+
         // 1. Upload to Meta Cloud API directly from the upload temporary stream (no permanent local file)
-        $uploadRes = $this->apiService->uploadMedia($file->getRealPath(), $mime);
+        $uploadRes = $api->uploadMedia($file->getRealPath(), $mime);
         $mediaId = $uploadRes['media_id'] ?? null;
 
         // 2. Store file on S3 bucket
@@ -102,7 +114,7 @@ class WhatsAppChatService
         // Fallback to sending S3 URL if media ID upload fails
         $mediaTarget = $mediaId ?: $mediaUrl;
 
-        $apiRes = $this->apiService->sendMediaMessage(
+        $apiRes = $api->sendMediaMessage(
             $conversation->phone,
             $type,
             $mediaTarget,
@@ -152,8 +164,13 @@ class WhatsAppChatService
     /**
      * Process incoming webhook message and attach to conversation.
      */
-    public function recordInboundMessage(string $from, array $metaMsg, ?string $waId = null, ?string $senderName = null): ?WhatsAppMessage
-    {
+    public function recordInboundMessage(
+        string $from,
+        array $metaMsg,
+        ?string $waId = null,
+        ?string $senderName = null,
+        string $channel = 'vanriti'
+    ): ?WhatsAppMessage {
         $messageId = (string) ($metaMsg['id'] ?? '');
         $type = (string) ($metaMsg['type'] ?? 'text');
 
@@ -165,7 +182,7 @@ class WhatsAppChatService
             }
         }
 
-        $conversation = $this->getOrCreateConversation($from, $senderName, $waId);
+        $conversation = $this->getOrCreateConversation($from, $senderName, $waId, $channel);
 
         $body = null;
         $mediaId = null;
@@ -259,7 +276,11 @@ class WhatsAppChatService
         ]);
 
         // Auto-respond via WhatsApp Chatbot ONLY if explicitly enabled by admin in settings
-        if ($body && setting('whatsapp_bot_auto_reply_enabled', false)) {
+        $botEnabled = ($conversation->channel === 'tfc')
+            ? (bool) (function_exists('tfc_setting') ? tfc_setting('whatsapp_bot_auto_reply_enabled', false) : false)
+            : (bool) setting('whatsapp_bot_auto_reply_enabled', false);
+
+        if ($body && $botEnabled) {
             try {
                 app(\App\Services\WhatsAppBotService::class)->handleInbound($conversation, $body);
             } catch (\Throwable $e) {
@@ -356,7 +377,8 @@ class WhatsAppChatService
             $langCode = $templateModel->language;
         }
 
-        $apiRes = $this->apiService->sendTemplateMessage(
+        $api = $this->apiForChannel($conversation->channel);
+        $apiRes = $api->sendTemplateMessage(
             $conversation->phone,
             $templateName,
             $langCode,
