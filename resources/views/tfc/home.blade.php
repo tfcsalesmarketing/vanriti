@@ -102,7 +102,10 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4">
             <div>
                 <div class="tfc-section-eyebrow">Explore By Category</div>
-                <h2 class="tfc-section-title mb-0">Ayurvedic Wellness Disciplines</h2>
+                <h2 class="tfc-section-title mb-1">Ayurvedic Wellness Disciplines</h2>
+                <p class="text-muted small mb-0" style="max-width: 620px;">
+                    Authentic classical and modern Ayurvedic personal care categories, formulated with certified botanical actives.
+                </p>
             </div>
             <a href="{{ tfc_route('products') }}" class="btn btn-tfc-outline mt-3 mt-md-0">
                 All Products <i class="bi bi-arrow-right ms-1"></i>
@@ -111,50 +114,68 @@
 
         <div class="row g-4">
             @foreach ($categories as $cat)
-                <div class="col-12 col-md-4">
+                @php
+                    $prodCount = $cat->total_products_count ?? $cat->products_count ?? 0;
+                    $colClass = $categories->count() >= 4 ? 'col-12 col-sm-6 col-lg-3' : 'col-12 col-md-6 col-lg-4';
+                @endphp
+                <div class="{{ $colClass }}">
                     <div class="tfc-category-card">
-                        <div class="tfc-category-img-wrap">
+                        <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-img-wrap" aria-label="{{ $cat->name }}">
                             @if ($cat->image)
                                 <img src="{{ image_url($cat->image) }}" alt="{{ $cat->name }}" class="tfc-category-img" loading="lazy">
                             @else
-                                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
-                                    <i class="bi bi-flower1 display-4 text-warning opacity-50"></i>
+                                <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-light text-muted p-4 text-center">
+                                    <i class="bi bi-flower1 display-3 text-warning opacity-75 mb-2"></i>
+                                    <span class="small fw-semibold text-secondary">Botanical Formulation</span>
                                 </div>
                             @endif
                             <div class="tfc-category-overlay"></div>
-                            <span class="tfc-category-count">
-                                {{ $cat->total_products_count ?? $cat->products_count }} Formulations
+                            <span class="tfc-category-tag-discipline">
+                                <i class="bi bi-stars me-1"></i> Discipline
                             </span>
-                        </div>
+                            <span class="tfc-category-count-badge">
+                                <i class="bi bi-box-seam text-warning"></i> {{ $prodCount }} {{ \Illuminate\Support\Str::plural('Product', $prodCount) }}
+                            </span>
+                        </a>
+
                         <div class="tfc-category-body">
-                            <h5 class="fw-bold mb-2">
-                                <a href="{{ tfc_route('category', $cat->slug) }}" class="text-dark text-decoration-none">
+                            <h5 class="tfc-category-title">
+                                <a href="{{ tfc_route('category', $cat->slug) }}">
                                     {{ $cat->name }}
                                 </a>
                             </h5>
                             @if ($cat->description)
-                                <p class="text-muted small mb-3 text-truncate-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                <p class="tfc-category-desc" title="{{ $cat->description }}">
                                     {{ $cat->description }}
                                 </p>
                             @else
-                                <p class="text-muted small mb-3">
+                                <p class="tfc-category-desc">
                                     Pure botanical formulations crafted according to time-tested Ayurvedic standards.
                                 </p>
                             @endif
 
-                            @if ($cat->children->isNotEmpty())
-                                <div class="d-flex flex-wrap gap-1 mb-3">
+                            <div class="tfc-category-subs">
+                                @if ($cat->children->isNotEmpty())
                                     @foreach ($cat->children->take(3) as $child)
-                                        <a href="{{ tfc_route('category', $child->slug) }}" class="badge bg-light text-dark text-decoration-none border px-2 py-1" style="font-weight: 500; font-size: 0.72rem;">
+                                        <a href="{{ tfc_route('category', $child->slug) }}" class="tfc-category-sub-pill">
                                             {{ $child->name }}
                                         </a>
                                     @endforeach
-                                </div>
-                            @endif
+                                @else
+                                    <span class="badge bg-light text-muted border px-2 py-1" style="font-weight: 500; font-size: 0.74rem;">
+                                        <i class="bi bi-shield-check text-success me-1"></i> Certified Herbal Formulations
+                                    </span>
+                                @endif
+                            </div>
 
-                            <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-link">
-                                Explore Range <i class="bi bi-arrow-right"></i>
-                            </a>
+                            <div class="tfc-category-footer">
+                                <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-link">
+                                    Explore Range <i class="bi bi-arrow-right"></i>
+                                </a>
+                                <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-circle-btn" aria-label="Explore {{ $cat->name }}">
+                                    <i class="bi bi-arrow-up-right"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
