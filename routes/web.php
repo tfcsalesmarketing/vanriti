@@ -26,6 +26,16 @@ use App\Http\Controllers\WishlistController;
 use App\Models\Page;
 use Illuminate\Support\Facades\Route;
 
+// ============================================================================
+// TFC Sales & Marketing (Dedicated Website Domain Routing)
+// Production Domain: tfcsalesmarketing.com (& www.tfcsalesmarketing.com)
+// Local / Subpath Preview: /tfc
+// ============================================================================
+$tfcDomain = config('tfc.domain', 'tfcsalesmarketing.com');
+Route::domain($tfcDomain)->name('tfc.')->group(base_path('routes/tfc.php'));
+Route::domain('www.' . $tfcDomain)->name('tfc.www.')->group(base_path('routes/tfc.php'));
+Route::prefix('tfc')->name('tfc.preview.')->group(base_path('routes/tfc.php'));
+
 // ---------- Sitemap ----------
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
@@ -184,4 +194,5 @@ Route::get('/shipping', fn () => view('storefront.page', ['page' => Page::where(
 
 // ---------- Dynamic WhatsApp JPEG Header Image ----------
 Route::get('/media/whatsapp-product/{product}.jpg', [MediaController::class, 'whatsappProductImage'])->name('media.whatsapp.product');
+
 

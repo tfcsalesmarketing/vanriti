@@ -569,3 +569,50 @@ if (! function_exists('seo_social_urls')) {
         ], fn ($url) => is_string($url) && $url !== ''));
     }
 }
+
+if (! function_exists('tfc_setting')) {
+    function tfc_setting(string $key, mixed $default = null): mixed
+    {
+        return \App\Models\Tfc\TfcSetting::get($key, $default);
+    }
+}
+
+if (! function_exists('tfc_logo_url')) {
+    function tfc_logo_url(): string
+    {
+        $settingLogo = tfc_setting('logo_url');
+        if ($settingLogo) {
+            return $settingLogo;
+        }
+        if (file_exists(public_path('images/tfc-logo.png'))) {
+            return asset('images/tfc-logo.png');
+        }
+        return config('tfc.logo_url', 'https://eduse-uploadedfiles.s3.ap-south-1.amazonaws.com/media/Ti0GRLXRJGYEbWLLfsuTPg7dcEhK04S2HIxxerIH.png');
+    }
+}
+
+if (! function_exists('tfc_route')) {
+    function tfc_route(string $name, mixed $parameters = [], bool $absolute = true): string
+    {
+        $isLocalPreview = request()->is('tfc') || request()->is('tfc/*') || (request()->route() && str_starts_with(request()->route()->getName() ?? '', 'tfc.preview.'));
+
+        if ($isLocalPreview && \Illuminate\Support\Facades\Route::has('tfc.preview.' . $name)) {
+            return route('tfc.preview.' . $name, $parameters, $absolute);
+        }
+
+        if (\Illuminate\Support\Facades\Route::has('tfc.' . $name)) {
+            return route('tfc.' . $name, $parameters, $absolute);
+        }
+
+        return url('/tfc/' . ltrim($name, '/'));
+    }
+}
+
+if (! function_exists('tfc_vanriti_product_url')) {
+    function tfc_vanriti_product_url(string $slug): string
+    {
+        $baseUrl = rtrim(config('tfc.vanriti_store_url', 'https://vanriti.com'), '/');
+        return $baseUrl . '/products/' . $slug;
+    }
+}
+

@@ -357,5 +357,43 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::delete('templates/{template}', [WhatsAppTemplateController::class, 'destroy'])->name('templates.destroy');
             });
         });
+
+        // ====================================================================
+        // TFC Sales & Marketing Dedicated Admin Section
+        // ====================================================================
+        Route::prefix('tfc')->name('tfc.')->middleware('permission:manage-tfc')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\Tfc\TfcDashboardController::class, 'index'])->name('dashboard');
+            
+            // Live Synced Catalogue View
+            Route::get('products', [\App\Http\Controllers\Admin\Tfc\TfcProductController::class, 'index'])->name('products.index');
+            
+            // TFC Corporate Settings & Statutory Disclosures
+            Route::get('settings', [\App\Http\Controllers\Admin\Tfc\TfcSettingController::class, 'index'])->name('settings.index');
+            Route::post('settings', [\App\Http\Controllers\Admin\Tfc\TfcSettingController::class, 'update'])->name('settings.update');
+            
+            // TFC Pages & Statutory Documents
+            Route::resource('pages', \App\Http\Controllers\Admin\Tfc\TfcPageController::class);
+            
+            // TFC Blogs & Updates
+            Route::resource('blogs', \App\Http\Controllers\Admin\Tfc\TfcBlogController::class);
+            
+            // TFC Banners & CTAs
+            Route::resource('banners', \App\Http\Controllers\Admin\Tfc\TfcBannerController::class);
+            
+            // TFC Navigation Menus
+            Route::resource('menus', \App\Http\Controllers\Admin\Tfc\TfcMenuController::class);
+            
+            // TFC Inquiries & Prospective Seller Applications
+            Route::get('inquiries', [\App\Http\Controllers\Admin\Tfc\TfcInquiryController::class, 'index'])->name('inquiries.index');
+            Route::get('inquiries/{inquiry}', [\App\Http\Controllers\Admin\Tfc\TfcInquiryController::class, 'show'])->name('inquiries.show');
+            Route::put('inquiries/{inquiry}', [\App\Http\Controllers\Admin\Tfc\TfcInquiryController::class, 'update'])->name('inquiries.update');
+            Route::delete('inquiries/{inquiry}', [\App\Http\Controllers\Admin\Tfc\TfcInquiryController::class, 'destroy'])->name('inquiries.destroy');
+            
+            // TFC Consumer Grievance Tickets (Rule 7, Direct Selling Rules 2021)
+            Route::get('grievances', [\App\Http\Controllers\Admin\Tfc\TfcGrievanceController::class, 'index'])->name('grievances.index');
+            Route::get('grievances/{ticket}', [\App\Http\Controllers\Admin\Tfc\TfcGrievanceController::class, 'show'])->name('grievances.show');
+            Route::put('grievances/{ticket}', [\App\Http\Controllers\Admin\Tfc\TfcGrievanceController::class, 'update'])->name('grievances.update');
+        });
     });
 });
+

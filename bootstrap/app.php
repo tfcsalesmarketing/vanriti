@@ -64,6 +64,10 @@ return Application::configure(basePath: dirname(__DIR__))
         if ($appHost !== null && $appHost !== '') {
             $trustedHosts[] = $appHost;
         }
+        $tfcHost = parse_url((string) env('TFC_DOMAIN', 'tfcsalesmarketing.com'), PHP_URL_HOST) ?: env('TFC_DOMAIN', 'tfcsalesmarketing.com');
+        if ($tfcHost !== null && $tfcHost !== '') {
+            $trustedHosts[] = $tfcHost;
+        }
         $trustedHosts = array_values(array_unique($trustedHosts));
 
         if ($trustedHosts !== []) {

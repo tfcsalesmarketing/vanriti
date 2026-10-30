@@ -30,19 +30,29 @@
                 $_adminLogo = brand_logo_path();
             @endphp
             <div class="sidebar-brand d-flex align-items-center justify-content-between">
-                <a href="{{ route('admin.dashboard') }}" class="d-inline-flex align-items-center text-decoration-none">
-                    @if ($_adminLogo)
-                        <img src="{{ image_url($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
-                    @else
-                        <span class="brand-text">{{ strtoupper(store_name()) }}</span>
-                    @endif
-                </a>
+                @if (request()->routeIs('admin.tfc.*'))
+                    <a href="{{ route('admin.tfc.dashboard') }}" class="d-inline-flex align-items-center text-decoration-none">
+                        <img src="{{ tfc_logo_url() }}" alt="TFC Sales & Marketing" class="brand-logo" style="max-height: 38px; object-fit: contain;">
+                    </a>
+                @else
+                    <a href="{{ route('admin.dashboard') }}" class="d-inline-flex align-items-center text-decoration-none">
+                        @if ($_adminLogo)
+                            <img src="{{ image_url($_adminLogo) }}" alt="{{ store_name() }}" class="brand-logo">
+                        @else
+                            <span class="brand-text">{{ strtoupper(store_name()) }}</span>
+                        @endif
+                    </a>
+                @endif
                 <button class="btn btn-sm btn-link text-muted p-1 d-none d-lg-inline-flex align-items-center justify-content-center sidebar-close-btn" id="sidebarDesktopClose" type="button" title="Collapse Sidebar" style="border-radius: 8px; width: 32px; height: 32px; text-decoration: none;">
                     <i class="bi bi-layout-sidebar-inset" style="font-size: 1.15rem;"></i>
                 </button>
             </div>
             <nav class="sidebar-nav">
-                @include('admin.partials.sidebar-nav')
+                @if (request()->routeIs('admin.tfc.*'))
+                    @include('admin.tfc.partials.sidebar-nav')
+                @else
+                    @include('admin.partials.sidebar-nav')
+                @endif
             </nav>
         </aside>
 
@@ -63,11 +73,42 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('home') }}" target="_blank" class="btn btn-light-sm d-none d-sm-inline-flex align-items-center gap-1.5" title="Open Storefront in New Tab">
-                        <i class="bi bi-shop text-muted"></i>
-                        <span class="d-none d-md-inline">Live Store</span>
-                        <i class="bi bi-arrow-up-right small text-muted" style="font-size:0.7rem;"></i>
-                    </a>
+                    {{-- Dedicated Admin Switcher Button --}}
+                    @if (request()->routeIs('admin.tfc.*'))
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 fw-semibold shadow-sm" style="border-radius: 6px; padding: 0.35rem 0.75rem;">
+                            <i class="bi bi-arrow-left-circle-fill"></i>
+                            <span class="d-none d-sm-inline">VANRITI Admin</span>
+                        </a>
+                    @else
+                        @if (auth('admin')->user()->hasPermission('manage-tfc'))
+                            <a href="{{ route('admin.tfc.dashboard') }}" class="btn btn-sm d-inline-flex align-items-center gap-1.5 fw-semibold text-white shadow-sm" style="background: linear-gradient(135deg, #0A1D37, #132D54); border: 1px solid #D49B24; border-radius: 6px; padding: 0.35rem 0.75rem;" title="Switch to TFC Sales & Marketing Administration">
+                                <i class="bi bi-building text-warning"></i>
+                                <span class="d-none d-sm-inline">TFC Admin</span>
+                            </a>
+                        @endif
+                    @endif
+
+                    {{-- Live Sites Dropdown --}}
+                    <div class="dropdown">
+                        <button class="btn btn-light-sm dropdown-toggle d-none d-sm-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="View Public Sites">
+                            <i class="bi bi-globe text-muted"></i>
+                            <span class="d-none d-md-inline">Live Sites</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 220px;">
+                            <li>
+                                <a href="{{ route('home') }}" target="_blank" class="dropdown-item py-2 d-flex align-items-center justify-content-between">
+                                    <span><i class="bi bi-shop text-success me-2"></i>VANRITI Store</span>
+                                    <i class="bi bi-arrow-up-right small text-muted"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ tfc_route('home') }}" target="_blank" class="dropdown-item py-2 d-flex align-items-center justify-content-between">
+                                    <span><i class="bi bi-building text-warning me-2"></i>TFC Sales &amp; Mktg</span>
+                                    <i class="bi bi-arrow-up-right small text-muted"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
                     <div class="dropdown">
                         <button class="btn btn-light-sm dropdown-toggle d-flex align-items-center gap-2" type="button"
