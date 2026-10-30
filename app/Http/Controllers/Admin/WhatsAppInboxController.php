@@ -33,7 +33,10 @@ class WhatsAppInboxController extends Controller
         $search = trim((string) $request->input('search', ''));
         $filter = (string) $request->input('filter', 'all'); // all, unread, window_open, checkout_active
 
-        $query = WhatsAppConversation::with(['latestMessage', 'user'])
+        $query = WhatsAppConversation::where(function ($q) {
+                $q->where('channel', 'vanriti')->orWhereNull('channel');
+            })
+            ->with(['latestMessage', 'user'])
             ->orderByRaw('unread_count DESC')
             ->orderBy('last_message_at', 'desc');
 
@@ -77,7 +80,9 @@ class WhatsAppInboxController extends Controller
         }
 
         if ($selectedId && ! $activeConversation) {
-            $activeConversation = WhatsAppConversation::with(['user', 'assignedAgent'])->find($selectedId);
+            $activeConversation = WhatsAppConversation::where(function ($q) {
+                $q->where('channel', 'vanriti')->orWhereNull('channel');
+            })->with(['user', 'assignedAgent'])->find($selectedId);
         }
 
         if (! $activeConversation && $conversations->isNotEmpty()) {
@@ -101,8 +106,11 @@ class WhatsAppInboxController extends Controller
             $customerContext = $this->buildCustomerContext($activeConversation);
         }
 
-        $totalUnread = WhatsAppConversation::sum('unread_count');
-        $activeWindowsCount = WhatsAppConversation::where('window_expires_at', '>', now())->count();
+        $vanritiScope = function ($q) {
+            $q->where('channel', 'vanriti')->orWhereNull('channel');
+        };
+        $totalUnread = WhatsAppConversation::where($vanritiScope)->sum('unread_count');
+        $activeWindowsCount = WhatsAppConversation::where($vanritiScope)->where('window_expires_at', '>', now())->count();
         $isConfigured = $this->apiService->isConfigured();
         $admins = Admin::orderBy('name')->get(['id', 'name', 'email']);
         $approvedTemplates = \App\Models\WhatsAppTemplate::approved()->orderBy('name')->get();
@@ -276,7 +284,10 @@ class WhatsAppInboxController extends Controller
         $search = trim((string) $request->input('search', ''));
         $filter = (string) $request->input('filter', 'all');
 
-        $query = WhatsAppConversation::with(['latestMessage'])
+        $query = WhatsAppConversation::where(function ($q) {
+                $q->where('channel', 'vanriti')->orWhereNull('channel');
+            })
+            ->with(['latestMessage'])
             ->orderByRaw('unread_count DESC')
             ->orderBy('last_message_at', 'desc');
 
@@ -304,6 +315,10 @@ class WhatsAppInboxController extends Controller
 
         $conversations = $query->take(30)->get();
 
+        $vanritiScope = function ($q) {
+            $q->where('channel', 'vanriti')->orWhereNull('channel');
+        };
+
         return response()->json([
             'conversations' => $conversations->map(function ($convo) {
                 return [
@@ -319,8 +334,8 @@ class WhatsAppInboxController extends Controller
                     'status' => $convo->status,
                 ];
             }),
-            'total_unread' => (int) WhatsAppConversation::sum('unread_count'),
-            'active_windows_count' => (int) WhatsAppConversation::where('window_expires_at', '>', now())->count(),
+            'total_unread' => (int) WhatsAppConversation::where($vanritiScope)->sum('unread_count'),
+            'active_windows_count' => (int) WhatsAppConversation::where($vanritiScope)->where('window_expires_at', '>', now())->count(),
         ]);
     }
 

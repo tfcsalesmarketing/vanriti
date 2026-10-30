@@ -39,14 +39,13 @@ class TfcWhatsAppInboxController extends Controller
         $search = trim((string) $request->input('search', ''));
         $filter = (string) $request->input('filter', 'tfc'); // tfc, unread, inquiry, grievance, all, mine
 
-        $query = WhatsAppConversation::with(['latestMessage', 'user', 'tfcInquiry', 'tfcGrievance'])
+        $query = WhatsAppConversation::where('channel', 'tfc')
+            ->with(['latestMessage', 'user', 'tfcInquiry', 'tfcGrievance'])
             ->orderByRaw('unread_count DESC')
             ->orderBy('last_message_at', 'desc');
 
-        if ($filter === 'tfc' || empty($filter)) {
-            $query->where('channel', 'tfc');
-        } elseif ($filter === 'unread') {
-            $query->where('channel', 'tfc')->where('unread_count', '>', 0);
+        if ($filter === 'unread') {
+            $query->where('unread_count', '>', 0);
         } elseif ($filter === 'inquiry') {
             $query->whereNotNull('tfc_inquiry_id');
         } elseif ($filter === 'grievance') {
@@ -107,7 +106,9 @@ class TfcWhatsAppInboxController extends Controller
         }
 
         if ($selectedId && ! $activeConversation) {
-            $activeConversation = WhatsAppConversation::with(['user', 'assignedAgent', 'tfcInquiry', 'tfcGrievance'])->find($selectedId);
+            $activeConversation = WhatsAppConversation::where('channel', 'tfc')
+                ->with(['user', 'assignedAgent', 'tfcInquiry', 'tfcGrievance'])
+                ->find($selectedId);
         }
 
         if (! $activeConversation && $conversations->isNotEmpty()) {
@@ -169,6 +170,10 @@ class TfcWhatsAppInboxController extends Controller
      */
     public function poll(WhatsAppConversation $conversation): JsonResponse
     {
+        if ($conversation->channel !== 'tfc') {
+            return response()->json(['success' => false, 'message' => 'Invalid channel.'], 403);
+        }
+
         $afterId = request()->query('after_id', 0);
 
         $newMessages = $conversation->messages()
