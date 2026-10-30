@@ -49,3 +49,66 @@ Route::get('/policy/{slug}', [PageController::class, 'show'])->name('policy');
 
 // 8. XML Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+// ============================================================================
+// 9. TFC SALES & MARKETING — MEMBER AUTHENTICATION & REGISTRATION
+// ============================================================================
+use App\Http\Controllers\Tfc\Member\MemberAuthController;
+use App\Http\Controllers\Tfc\Member\MemberDashboardController;
+use App\Http\Controllers\Tfc\Member\MemberProfileController;
+use App\Http\Controllers\Tfc\Member\MemberTeamController;
+use App\Http\Controllers\Tfc\Member\MemberKycController;
+use App\Http\Controllers\Tfc\Member\KycDocumentController;
+
+Route::prefix('member')->name('member.')->group(function () {
+    // Member Registration & Referral
+    Route::get('/register', [MemberAuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [MemberAuthController::class, 'register'])->name('register.submit')->middleware('throttle:10,1');
+    // Live Server-Side Verification AJAX Endpoints (supports both GET and POST)
+    Route::match(['GET', 'POST'], '/ajax/verify-sponsor', [MemberAuthController::class, 'verifySponsorAjax'])->name('ajax.verify-sponsor');
+    Route::match(['GET', 'POST'], '/ajax/verify-placement', [MemberAuthController::class, 'verifyPlacementAjax'])->name('ajax.verify-placement');
+    Route::match(['GET', 'POST'], '/ajax/check-mobile', [MemberAuthController::class, 'checkMobileAjax'])->name('ajax.check-mobile');
+    Route::match(['GET', 'POST'], '/ajax/check-login', [MemberAuthController::class, 'checkLoginAjax'])->name('ajax.check-login');
+
+    // Member Login & Logout
+    Route::get('/login', [MemberAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [MemberAuthController::class, 'login'])->name('login.submit')->middleware('throttle:10,1');
+    Route::post('/logout', [MemberAuthController::class, 'logout'])->name('logout');
+
+    // Secure Expiring WhatsApp Password Setup
+    Route::get('/password-setup', [MemberAuthController::class, 'showPasswordSetup'])->name('password-setup');
+    Route::post('/password-setup', [MemberAuthController::class, 'savePasswordSetup'])->name('password-setup.submit');
+
+    // Mobile Number Verification & OTP Flow
+    Route::get('/verify-mobile', [MemberAuthController::class, 'showVerifyMobile'])->name('verify-mobile');
+    Route::post('/verify-mobile/resend', [MemberAuthController::class, 'resendVerifyMobileOtp'])->name('verify-mobile.resend')->middleware('throttle:6,1');
+    Route::post('/verify-mobile', [MemberAuthController::class, 'verifyMobileOtpSubmit'])->name('verify-mobile.submit')->middleware('throttle:10,1');
+
+    // Set New Password after Mobile Verification
+    Route::get('/set-password', [MemberAuthController::class, 'showSetPassword'])->name('set-password');
+    Route::post('/set-password', [MemberAuthController::class, 'saveSetPassword'])->name('set-password.submit')->middleware('throttle:10,1');
+
+    // ========================================================================
+    // Member Protected Portal
+    // ========================================================================
+    Route::middleware(['auth', 'tfc.member'])->prefix('portal')->group(function () {
+        Route::get('/dashboard', [MemberDashboardController::class, 'index'])->name('dashboard');
+
+        // Profile & Security
+        Route::get('/profile', [MemberProfileController::class, 'show'])->name('profile');
+        Route::post('/profile', [MemberProfileController::class, 'update'])->name('profile.update');
+        Route::post('/profile/password', [MemberProfileController::class, 'updatePassword'])->name('profile.password');
+
+        // Team Genealogy & Lists
+        Route::get('/team/tree', [MemberTeamController::class, 'tree'])->name('team.tree');
+        Route::get('/team/ajax-node/{id}', [MemberTeamController::class, 'ajaxNode'])->name('team.ajax-node');
+        Route::get('/team/direct', [MemberTeamController::class, 'directReferrals'])->name('team.direct');
+        Route::get('/team/group/{leg}', [MemberTeamController::class, 'groupLeg'])->name('team.group');
+
+        // KYC Management & Confidential Document Streaming
+        Route::get('/kyc', [MemberKycController::class, 'index'])->name('kyc.index');
+        Route::post('/kyc', [MemberKycController::class, 'store'])->name('kyc.store');
+        Route::get('/kyc/document/{id}/{type}', [KycDocumentController::class, 'view'])->name('kyc.document');
+    });
+});
+

@@ -36,9 +36,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'active' => EnsureUserIsActive::class,
             'guest' => RedirectIfAuthenticated::class,
+            'tfc.member' => \App\Http\Middleware\EnsureTfcMember::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: ['razorpay/webhook', 'shipmojo/webhook', 'whatsapp/webhook']);
+        $middleware->validateCsrfTokens(except: [
+            'razorpay/webhook',
+            'shipmojo/webhook',
+            'whatsapp/webhook',
+            'member/ajax/*',
+            'tfc/member/ajax/*',
+            '*/ajax/verify-sponsor',
+            '*/ajax/verify-placement',
+            '*/ajax/check-mobile',
+            '*/ajax/check-login',
+        ]);
 
         $middleware->appendToGroup('web', [
             SecurityHeaders::class,

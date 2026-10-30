@@ -3,8 +3,10 @@
     $newInquiriesCount = \App\Models\Tfc\TfcInquiry::where('status', 'new')->count();
     $pendingGrievanceCount = \App\Models\Tfc\TfcGrievanceTicket::where('status', '!=', 'resolved')->count();
     $unreadTfcWaCount = \App\Models\WhatsAppConversation::where('channel', 'tfc')->where('unread_count', '>', 0)->count();
+    $pendingKycCount = \App\Models\Tfc\MemberKyc::where('status', 'pending')->count();
 
     // Group active checks matching VANRITI accordion pattern
+    $membersActive = request()->routeIs('admin.tfc.members.*', 'admin.tfc.kyc.*');
     $crmActive = request()->routeIs('admin.tfc.inquiries.*', 'admin.tfc.grievances.*');
     $waActive = request()->routeIs('admin.tfc.whatsapp.*');
     $cmsActive = request()->routeIs('admin.tfc.pages.*', 'admin.tfc.blogs.*', 'admin.tfc.banners.*', 'admin.tfc.menus.*', 'admin.tfc.products.*');
@@ -39,6 +41,48 @@
             <i class="bi bi-grid-1x2"></i>
             <span>TFC Dashboard</span>
         </a>
+    </li>
+
+    {{-- Direct Selling Network & Members --}}
+    <li class="nav-item">
+        <a class="nav-link sidebar-group-toggle {{ $membersActive ? 'active-parent' : '' }}"
+           data-bs-toggle="collapse"
+           href="#collapseTfcMembers"
+           role="button"
+           aria-expanded="{{ $membersActive ? 'true' : 'false' }}"
+           aria-controls="collapseTfcMembers">
+            <i class="bi bi-diagram-3-fill" style="color: #D49B24;"></i>
+            <span>Network &amp; Members</span>
+            @if ($pendingKycCount > 0)
+                <span class="badge rounded-pill bg-warning text-dark ms-auto me-1" style="font-size: 0.68rem; padding: 0.25em 0.55em;" title="Pending KYC Approvals">
+                    {{ $pendingKycCount }}
+                </span>
+            @endif
+            <i class="bi bi-chevron-right chevron-icon"></i>
+        </a>
+        <div class="collapse {{ $membersActive ? 'show' : '' }}" id="collapseTfcMembers">
+            <ul class="sidebar-submenu">
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.tfc.members.*') ? 'active' : '' }}" 
+                       href="{{ route('admin.tfc.members.index') }}">
+                        <i class="bi bi-person-badge"></i>
+                        <span>Member Directory</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('admin.tfc.kyc.*') ? 'active' : '' }}" 
+                       href="{{ route('admin.tfc.kyc.index') }}">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-check"></i>
+                            <span>KYC Desk</span>
+                        </span>
+                        @if ($pendingKycCount > 0)
+                            <span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.65rem;">{{ $pendingKycCount }}</span>
+                        @endif
+                    </a>
+                </li>
+            </ul>
+        </div>
     </li>
 
     {{-- 2. Direct-Selling Desk & CRM --}}

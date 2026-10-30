@@ -41,6 +41,8 @@ class TfcWhatsAppProfileController extends Controller
             'widget_greeting' => tfc_setting('whatsapp_widget_greeting', 'Hello! Welcome to TFC Sales & Marketing. Have questions about our products or direct selling? Chat with us!'),
             'widget_default_msg' => tfc_setting('whatsapp_widget_default_msg', 'Hello TFC Team, I am interested in learning more about VANRITI botanical formulations and TFC Direct Selling.'),
             'bot_enabled' => (bool) tfc_setting('whatsapp_bot_enabled', true),
+            'welcome_template' => tfc_setting('whatsapp_welcome_template', 'tfc_welcome'),
+            'otp_template' => tfc_setting('whatsapp_otp_template', 'tfc_otp_verification'),
         ];
 
         $webhookUrl = url('/whatsapp/webhook');
@@ -69,6 +71,8 @@ class TfcWhatsAppProfileController extends Controller
             'whatsapp_widget_greeting' => ['nullable', 'string', 'max:255'],
             'whatsapp_widget_default_msg' => ['nullable', 'string', 'max:500'],
             'whatsapp_bot_enabled' => ['nullable', 'boolean'],
+            'whatsapp_welcome_template' => ['nullable', 'string', 'max:100'],
+            'whatsapp_otp_template' => ['nullable', 'string', 'max:100'],
         ]);
 
         $keysToUpdate = [
@@ -79,6 +83,8 @@ class TfcWhatsAppProfileController extends Controller
             'whatsapp_widget_greeting' => $validated['whatsapp_widget_greeting'] ?? '',
             'whatsapp_widget_default_msg' => $validated['whatsapp_widget_default_msg'] ?? '',
             'whatsapp_bot_enabled' => $request->boolean('whatsapp_bot_enabled') ? '1' : '0',
+            'whatsapp_welcome_template' => trim($validated['whatsapp_welcome_template'] ?? 'tfc_welcome'),
+            'whatsapp_otp_template' => trim($validated['whatsapp_otp_template'] ?? 'tfc_otp_verification'),
         ];
 
         if ($request->filled('whatsapp_access_token')) {
@@ -117,5 +123,31 @@ class TfcWhatsAppProfileController extends Controller
         }
 
         return back()->with('error', 'Test Send Failed: ' . ($res['message'] ?? 'Unknown Meta API error.'));
+    }
+
+    /**
+     * Send test member welcome WhatsApp message (User ID, password & login link).
+     */
+    public function testWelcomeMessage(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'test_phone' => ['required', 'string', 'min:10'],
+        ]);
+
+        $phone = $request->input('test_phone');
+        $notificationService = app(\App\Services\Tfc\TfcNotificationService::class);
+
+        $res = $notificationService->sendTestWelcomeNotification(
+            phone: $phone,
+            fullName: 'Test Direct Seller',
+            memberId: 'TFC10001',
+            password: 'TFC@' . random_int(100000, 999999)
+        );
+
+        if ($res['success'] ?? false) {
+            return back()->with('success', "Welcome notification template sent successfully to {$phone}!");
+        }
+
+        return back()->with('error', 'Welcome Template Send Failed: ' . ($res['message'] ?? 'Failed to dispatch WhatsApp message.'));
     }
 }

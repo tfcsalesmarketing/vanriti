@@ -87,6 +87,16 @@ class User extends Authenticatable
         return $this->hasOne(WhatsAppConversation::class);
     }
 
+    public function directSellingMember(): HasOne
+    {
+        return $this->hasOne(\App\Models\Tfc\DirectSellingMember::class);
+    }
+
+    public function isTfcMember(): bool
+    {
+        return $this->directSellingMember()->exists();
+    }
+
     public function carts(): HasMany
     {
         return $this->hasMany(Cart::class, 'owner_id')->where('owner_type', self::class);

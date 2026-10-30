@@ -33,9 +33,42 @@
         {{-- Flash Success Alert --}}
         @if (session('success'))
             <div class="container mt-4">
-                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
                     <i class="bi bi-check-circle-fill fs-5"></i>
                     <div>{{ session('success') }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+
+        {{-- Flash Error Alert --}}
+        @if (session('error'))
+            <div class="container mt-4">
+                <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+                    <div class="fw-semibold">{{ session('error') }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+
+        {{-- Flash Warning Alert --}}
+        @if (session('warning'))
+            <div class="container mt-4">
+                <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-circle-fill fs-5 flex-shrink-0"></i>
+                    <div>{{ session('warning') }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+
+        {{-- Flash Info Alert --}}
+        @if (session('info'))
+            <div class="container mt-4">
+                <div class="alert alert-info alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+                    <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                    <div>{{ session('info') }}</div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             </div>

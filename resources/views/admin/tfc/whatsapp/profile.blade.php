@@ -121,12 +121,65 @@
                         <div class="form-text small">Text automatically typed into the customer's WhatsApp when they click the widget.</div>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-4 pt-3 border-top text-end">
-                    <button type="submit" class="btn btn-success px-4 shadow-sm">
-                        <i class="bi bi-save me-1"></i> Save Configuration
-                    </button>
+            {{-- Approved Meta WhatsApp Templates --}}
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-file-earmark-check-fill text-success me-2"></i>Approved Meta WhatsApp Templates
+                    </h5>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">2 Active Templates</span>
                 </div>
+                <p class="text-muted small mb-3">
+                    Edit your 2 pre-approved Meta template names used for member registration onboarding and OTP mobile verification.
+                </p>
+
+                <div class="row g-3">
+                    {{-- 1. Welcome Onboarding Template --}}
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small fw-bold text-dark mb-0">1. Welcome Onboarding</label>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style="font-size: 0.7rem;">MARKETING</span>
+                            </div>
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-white"><i class="bi bi-chat-heart text-muted"></i></span>
+                                <input type="text" name="whatsapp_welcome_template" class="form-control font-monospace fw-semibold"
+                                       placeholder="tfc_welcome" value="{{ old('whatsapp_welcome_template', $settings['welcome_template']) }}">
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">
+                                <strong>Dispatched:</strong> On member registration<br>
+                                <strong>Approved Name:</strong> <code>tfc_welcome</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2. OTP Verification Template --}}
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small fw-bold text-dark mb-0">2. OTP Verification</label>
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle font-monospace" style="font-size: 0.7rem;">AUTHENTICATION</span>
+                            </div>
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-white"><i class="bi bi-shield-lock text-muted"></i></span>
+                                <input type="text" name="whatsapp_otp_template" class="form-control font-monospace fw-semibold"
+                                       placeholder="tfc_otp_verification" value="{{ old('whatsapp_otp_template', $settings['otp_template']) }}">
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">
+                                <strong>Dispatched:</strong> On mobile verification &amp; password setup<br>
+                                <strong>Approved Name:</strong> <code>tfc_otp_verification</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 text-end">
+                <button type="submit" class="btn btn-success px-4 py-2 shadow-sm fw-semibold">
+                    <i class="bi bi-save me-1"></i> Save Configuration
+                </button>
             </div>
         </form>
     </div>
@@ -202,7 +255,7 @@
         </div>
 
         {{-- Instant Test Send Card --}}
-        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
             <h6 class="fw-bold text-dark mb-2"><i class="bi bi-send text-success me-2"></i>Send Test Message</h6>
             <p class="text-muted small mb-3">Send a real-time test WhatsApp message to verify Cloud API dispatch.</p>
 
@@ -217,6 +270,26 @@
                 </div>
                 <button type="submit" class="btn btn-sm btn-outline-success w-100">
                     <i class="bi bi-send-fill me-1"></i>Send Test Message
+                </button>
+            </form>
+        </div>
+
+        {{-- Test Member Welcome Notification Card --}}
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-4 border-success">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-whatsapp text-success me-2"></i>Test Welcome Credentials</h6>
+            <p class="text-muted small mb-3">Test send the real Welcome Message with sample User ID, password, and portal login link.</p>
+
+            <form method="POST" action="{{ route('admin.tfc.whatsapp.profile.test-welcome') }}">
+                @csrf
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-dark">Destination Phone</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light">+</span>
+                        <input type="text" name="test_phone" class="form-control font-monospace" placeholder="919876543210" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-sm btn-success w-100 shadow-sm">
+                    <i class="bi bi-person-check-fill me-1"></i>Send Welcome Template Test
                 </button>
             </form>
         </div>

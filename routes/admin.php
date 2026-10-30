@@ -371,6 +371,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // TFC Corporate Settings & Statutory Disclosures
             Route::get('settings', [\App\Http\Controllers\Admin\Tfc\TfcSettingController::class, 'index'])->name('settings.index');
             Route::post('settings', [\App\Http\Controllers\Admin\Tfc\TfcSettingController::class, 'update'])->name('settings.update');
+
+            // TFC Direct Selling Members & Genealogy Admin
+            Route::get('members', [\App\Http\Controllers\Admin\Tfc\TfcMemberAdminController::class, 'index'])->name('members.index');
+            Route::get('members/{id}', [\App\Http\Controllers\Admin\Tfc\TfcMemberAdminController::class, 'show'])->name('members.show');
+            Route::post('members/{id}/status', [\App\Http\Controllers\Admin\Tfc\TfcMemberAdminController::class, 'updateStatus'])->name('members.status');
+
+            // TFC Direct Selling KYC Review Desk
+            Route::get('kyc', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'index'])->name('kyc.index');
+            Route::get('kyc/{id}', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'show'])->name('kyc.show');
+            Route::post('kyc/{id}/approve', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'approve'])->name('kyc.approve');
+            Route::post('kyc/{id}/reject', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'reject'])->name('kyc.reject');
             
             // TFC Pages & Statutory Documents
             Route::resource('pages', \App\Http\Controllers\Admin\Tfc\TfcPageController::class);
@@ -439,6 +450,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::get('profile', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'index'])->name('profile');
                 Route::post('profile', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'update'])->name('profile.update');
                 Route::post('profile/test-send', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'testConnection'])->name('profile.test-send');
+                Route::post('profile/test-welcome', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'testWelcomeMessage'])->name('profile.test-welcome');
             });
         });
     });

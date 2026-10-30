@@ -75,9 +75,20 @@
 
             {{-- Right CTA --}}
             <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0 border-top border-lg-0">
-                <a href="{{ tfc_route('become-a-seller') }}" class="btn btn-tfc-primary w-100 w-lg-auto">
-                    <i class="bi bi-person-plus-fill me-1.5"></i>Become a Direct Seller
-                </a>
+                @if (auth()->check() && auth()->user()->isTfcMember())
+                    <a href="{{ route('tfc.preview.member.dashboard') }}" class="btn btn-sm btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3 py-2">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Portal ({{ auth()->user()->directSellingMember->tfc_member_id }})</span>
+                    </a>
+                @else
+                    <a href="{{ route('tfc.preview.member.login') }}" class="btn btn-sm btn-outline-dark fw-medium d-inline-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span>Member Login</span>
+                    </a>
+                    <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary w-100 w-lg-auto py-2">
+                        <i class="bi bi-person-plus-fill me-1.5"></i>Join TFC
+                    </a>
+                @endif
             </div>
         </div>
     </div>
