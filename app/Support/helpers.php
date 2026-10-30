@@ -616,3 +616,23 @@ if (! function_exists('tfc_vanriti_product_url')) {
     }
 }
 
+if (! function_exists('tfc_asset')) {
+    function tfc_asset(string $path): string
+    {
+        $isHttps = request()->isSecure() || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || str_starts_with(config('app.url', ''), 'https');
+        $scheme = $isHttps ? 'https://' : 'http://';
+        $host = request()->getHost() ?: parse_url(config('app.url', 'http://localhost'), PHP_URL_HOST);
+        $port = request()->getPort();
+        $portStr = ($port && !in_array($port, [80, 443])) ? ':' . $port : '';
+        $base = $scheme . $host . $portStr;
+
+        $basePath = request()->getBasePath();
+        if ($basePath) {
+            $base .= $basePath;
+        }
+
+        return $base . '/' . ltrim($path, '/');
+    }
+}
+
+

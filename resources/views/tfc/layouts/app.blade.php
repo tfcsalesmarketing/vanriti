@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- TFC Brand Styling -->
-    <link rel="stylesheet" href="{{ asset('css/tfc-style.css') }}?v={{ file_exists(public_path('css/tfc-style.css')) ? filemtime(public_path('css/tfc-style.css')) : 1 }}">
+    <link rel="stylesheet" href="{{ tfc_asset('css/tfc-style.css') }}?v={{ file_exists(public_path('css/tfc-style.css')) ? filemtime(public_path('css/tfc-style.css')) : 1 }}">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ tfc_logo_url() }}">
