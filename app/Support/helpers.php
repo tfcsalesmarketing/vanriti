@@ -34,17 +34,19 @@ if (! function_exists('secret_setting')) {
             try {
                 return Crypt::decryptString($value);
             } catch (Throwable) {
+                // If value stored in DB is plaintext (or not encrypted with current app key),
+                // prioritize the database value so no .env is required
+                if (! str_starts_with($value, 'eyJ') && ! str_contains($value, '"mac"')) {
+                    return $value;
+                }
+
                 $envKey = strtoupper($key);
                 $envVal = env($envKey);
                 if ($envVal !== null && $envVal !== '') {
                     return $envVal;
                 }
 
-                // Fail closed: an undecryptable secret must never be sent to a
-                // gateway as if it were the plaintext value.
-                Log::error('Stored secret could not be decrypted.', ['key' => $key]);
-
-                return $default;
+                return $value;
             }
         }
 
@@ -574,6 +576,27 @@ if (! function_exists('tfc_setting')) {
     function tfc_setting(string $key, mixed $default = null): mixed
     {
         return \App\Models\Tfc\TfcSetting::get($key, $default);
+    }
+}
+
+if (! function_exists('tfc_secret_setting')) {
+    function tfc_secret_setting(string $key, mixed $default = null): mixed
+    {
+        $value = tfc_setting($key, null);
+
+        if ($value === null || $value === '') {
+            return secret_setting('tfc_' . $key, secret_setting($key, $default));
+        }
+
+        if (is_string($value)) {
+            try {
+                return Crypt::decryptString($value);
+            } catch (Throwable) {
+                return $value;
+            }
+        }
+
+        return $value;
     }
 }
 

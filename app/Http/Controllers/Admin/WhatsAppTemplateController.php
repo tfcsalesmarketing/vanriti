@@ -25,7 +25,9 @@ class WhatsAppTemplateController extends Controller
         $categoryFilter = $request->query('category', 'all');
         $search = trim((string) $request->query('search', ''));
 
-        $query = WhatsAppTemplate::query();
+        $query = WhatsAppTemplate::where(function ($q) {
+            $q->where('channel', 'vanriti')->orWhereNull('channel');
+        });
 
         if ($statusFilter !== 'all') {
             $query->where('status', strtoupper($statusFilter));
@@ -44,7 +46,9 @@ class WhatsAppTemplateController extends Controller
 
         $templates = $query->orderByDesc('id')->paginate(12)->withQueryString();
 
-        $allTemplates = WhatsAppTemplate::all();
+        $allTemplates = WhatsAppTemplate::where(function ($q) {
+            $q->where('channel', 'vanriti')->orWhereNull('channel');
+        })->get();
 
         return view('admin.whatsapp.templates.index', [
             'templates' => $templates,
@@ -118,10 +122,12 @@ class WhatsAppTemplateController extends Controller
                 [
                     'name' => $name,
                     'language' => $lang,
+                    'channel' => 'vanriti',
                 ],
                 [
                     'meta_template_id' => $item['id'] ?? null,
                     'category' => strtoupper($item['category'] ?? 'MARKETING'),
+                    'channel' => 'vanriti',
                     'status' => strtoupper($item['status'] ?? 'PENDING'),
                     'header_type' => $headerType,
                     'header_text' => $headerText,

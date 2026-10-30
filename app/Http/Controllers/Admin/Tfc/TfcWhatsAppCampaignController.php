@@ -63,7 +63,7 @@ class TfcWhatsAppCampaignController extends Controller
             'registered_customers' => User::whereNotNull('phone')->where('phone', '!=', '')->count(),
         ];
 
-        $approvedTemplates = WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get();
+        $approvedTemplates = WhatsAppTemplate::where('channel', 'tfc')->where('status', 'APPROVED')->orderBy('name')->get();
 
         return view('admin.tfc.whatsapp.campaigns.create', compact('estimates', 'approvedTemplates'));
     }

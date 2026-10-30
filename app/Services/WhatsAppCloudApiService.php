@@ -17,11 +17,11 @@ class WhatsAppCloudApiService
         $clone = clone $this;
         if ($channel === 'tfc') {
             $tfcPhoneId = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_phone_number_id', '') : '');
-            $tfcToken = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_access_token', '') : '');
+            $tfcToken = (string) (function_exists('tfc_secret_setting') ? tfc_secret_setting('whatsapp_access_token', '') : '');
             $tfcWaba = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_waba_id', '') : '');
 
             $clone->overridePhoneNumberId = $tfcPhoneId ?: (string) setting('tfc_whatsapp_phone_number_id', '');
-            $clone->overrideAccessToken = $tfcToken ?: (string) secret_setting('tfc_whatsapp_access_token', '');
+            $clone->overrideAccessToken = $tfcToken ?: (string) secret_setting('tfc_whatsapp_access_token', secret_setting('whatsapp_access_token', ''));
             $clone->overrideWabaId = $tfcWaba ?: (string) setting('tfc_whatsapp_waba_id', '');
         }
         return $clone;
@@ -32,7 +32,14 @@ class WhatsAppCloudApiService
         if (! empty($this->overrideAccessToken)) {
             return $this->overrideAccessToken;
         }
-        return (string) (secret_setting('whatsapp_access_token', '') ?: env('WHATSAPP_ACCESS_TOKEN', ''));
+
+        // Direct database lookup from settings table
+        $dbToken = (string) secret_setting('whatsapp_access_token', '');
+        if (! empty($dbToken)) {
+            return $dbToken;
+        }
+
+        return (string) env('WHATSAPP_ACCESS_TOKEN', '');
     }
 
     protected function headers(): array
@@ -49,7 +56,9 @@ class WhatsAppCloudApiService
         if (! empty($this->overridePhoneNumberId)) {
             return $this->overridePhoneNumberId;
         }
-        return (string) (setting('whatsapp_phone_number_id', '') ?: env('WHATSAPP_PHONE_NUMBER_ID', ''));
+
+        $dbPhoneId = (string) setting('whatsapp_phone_number_id', '');
+        return ! empty($dbPhoneId) ? $dbPhoneId : (string) env('WHATSAPP_PHONE_NUMBER_ID', '');
     }
 
     public function wabaId(): string
@@ -57,7 +66,51 @@ class WhatsAppCloudApiService
         if (! empty($this->overrideWabaId)) {
             return $this->overrideWabaId;
         }
-        return (string) (setting('whatsapp_waba_id', '') ?: env('WHATSAPP_WABA_ID', ''));
+
+        // If this instance is scoped to a specific channel/phone number (e.g. TFC)
+        if (! empty($this->overridePhoneNumberId)) {
+            // Attempt to dynamically resolve the WABA ID linked to this phone number from Meta
+            $discoveredWaba = $this->fetchWabaIdForPhoneNumber($this->overridePhoneNumberId);
+            if (! empty($discoveredWaba)) {
+                $this->overrideWabaId = $discoveredWaba;
+                if (class_exists(\App\Models\Tfc\TfcSetting::class)) {
+                    \App\Models\Tfc\TfcSetting::set('whatsapp_waba_id', $discoveredWaba);
+                }
+                return $discoveredWaba;
+            }
+            return '';
+        }
+
+        $dbWaba = (string) setting('whatsapp_waba_id', '');
+        return ! empty($dbWaba) ? $dbWaba : (string) env('WHATSAPP_WABA_ID', '');
+    }
+
+    /**
+     * Dynamically fetch the WABA ID linked to a phone number ID via Meta Graph API.
+     */
+    public function fetchWabaIdForPhoneNumber(string $phoneNumberId): ?string
+    {
+        $token = $this->accessToken();
+        if (empty($token) || empty($phoneNumberId)) {
+            return null;
+        }
+
+        try {
+            $response = Http::withHeaders($this->headers())
+                ->timeout(8)
+                ->get($this->baseUrl . '/' . $phoneNumberId, [
+                    'fields' => 'whatsapp_business_account',
+                ]);
+
+            if ($response->successful()) {
+                $waba = $response->json('whatsapp_business_account.id');
+                return ! empty($waba) ? (string) $waba : null;
+            }
+        } catch (\Throwable $e) {
+            Log::info('Could not auto-fetch WABA ID from phone number ID', ['error' => $e->getMessage()]);
+        }
+
+        return null;
     }
 
     public function isConfigured(): bool

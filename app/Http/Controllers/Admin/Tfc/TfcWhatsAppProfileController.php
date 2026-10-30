@@ -35,7 +35,7 @@ class TfcWhatsAppProfileController extends Controller
         $settings = [
             'phone_number_id' => tfc_setting('whatsapp_phone_number_id', '') ?: setting('tfc_whatsapp_phone_number_id', setting('whatsapp_phone_number_id', '')),
             'waba_id' => tfc_setting('whatsapp_waba_id', '') ?: setting('tfc_whatsapp_waba_id', setting('whatsapp_waba_id', '')),
-            'has_access_token' => ! empty(tfc_setting('whatsapp_access_token', '') ?: secret_setting('tfc_whatsapp_access_token', secret_setting('whatsapp_access_token', ''))),
+            'has_access_token' => ! empty(tfc_secret_setting('whatsapp_access_token', '')),
             'whatsapp_phone_number' => tfc_setting('whatsapp_phone_number', '+91 98765 43210'),
             'widget_enabled' => (bool) tfc_setting('whatsapp_widget_enabled', true),
             'widget_greeting' => tfc_setting('whatsapp_widget_greeting', 'Hello! Welcome to TFC Sales & Marketing. Have questions about our products or direct selling? Chat with us!'),

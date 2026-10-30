@@ -28,7 +28,7 @@ class TfcWhatsAppTemplateController extends Controller
         $status = $request->query('status', 'all');
         $search = trim((string) $request->query('search', ''));
 
-        $query = WhatsAppTemplate::orderBy('name');
+        $query = WhatsAppTemplate::where('channel', 'tfc')->orderBy('name');
 
         if ($status !== 'all') {
             $query->where('status', strtoupper($status));
@@ -44,10 +44,10 @@ class TfcWhatsAppTemplateController extends Controller
         $templates = $query->paginate(20)->withQueryString();
 
         $stats = [
-            'total' => WhatsAppTemplate::count(),
-            'approved' => WhatsAppTemplate::where('status', 'APPROVED')->count(),
-            'pending' => WhatsAppTemplate::where('status', 'PENDING')->count(),
-            'rejected' => WhatsAppTemplate::where('status', 'REJECTED')->count(),
+            'total' => WhatsAppTemplate::where('channel', 'tfc')->count(),
+            'approved' => WhatsAppTemplate::where('channel', 'tfc')->where('status', 'APPROVED')->count(),
+            'pending' => WhatsAppTemplate::where('channel', 'tfc')->where('status', 'PENDING')->count(),
+            'rejected' => WhatsAppTemplate::where('channel', 'tfc')->where('status', 'REJECTED')->count(),
         ];
 
         return view('admin.tfc.whatsapp.templates.index', compact('templates', 'stats', 'status', 'search'));
@@ -62,6 +62,11 @@ class TfcWhatsAppTemplateController extends Controller
 
         if (! $api->isConfigured()) {
             return back()->with('error', 'WhatsApp Cloud API is not configured. Please enter your WABA ID and Access Token in TFC WhatsApp Settings.');
+        }
+
+        $wabaId = $api->wabaId();
+        if (empty($wabaId)) {
+            return back()->with('error', 'WhatsApp Business Account (WABA) ID is not configured for TFC. Please enter your TFC WABA ID in TFC WhatsApp Settings.');
         }
 
         $result = $api->getMessageTemplates();
@@ -103,10 +108,11 @@ class TfcWhatsAppTemplateController extends Controller
             }
 
             WhatsAppTemplate::updateOrCreate(
-                ['name' => $name, 'language' => $lang],
+                ['name' => $name, 'language' => $lang, 'channel' => 'tfc'],
                 [
                     'meta_template_id' => $metaTmpl['id'] ?? null,
                     'category' => $metaTmpl['category'] ?? 'MARKETING',
+                    'channel' => 'tfc',
                     'status' => strtoupper($metaTmpl['status'] ?? 'PENDING'),
                     'header_type' => $headerType,
                     'header_text' => $headerText,
@@ -121,6 +127,6 @@ class TfcWhatsAppTemplateController extends Controller
             $syncedCount++;
         }
 
-        return back()->with('success', "Successfully synced {$syncedCount} templates from Meta Cloud API!");
+        return back()->with('success', "Successfully synced {$syncedCount} TFC templates from Meta Cloud API!");
     }
 }

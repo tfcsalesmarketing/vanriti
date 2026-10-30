@@ -131,7 +131,7 @@ class TfcWhatsAppInboxController extends Controller
             ->orderBy('category')
             ->orderBy('shortcut')
             ->get();
-        $approvedTemplates = WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get();
+        $approvedTemplates = WhatsAppTemplate::where('channel', 'tfc')->where('status', 'APPROVED')->orderBy('name')->get();
 
         $unreadCount = WhatsAppConversation::where('channel', 'tfc')->where('unread_count', '>', 0)->count();
 
