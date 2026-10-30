@@ -19,8 +19,26 @@
                     </div>
 
                     <div class="card-body p-4 p-md-4">
-                        {{-- Flash Alerts --}}
-                        @if (session('success'))
+                        {{-- Celebratory Registration Success Card --}}
+                        @if (session('registered_member_id'))
+                            <div class="p-3 mb-3 rounded-3 border-0 shadow-sm" style="background: #E8F5E9; border-left: 5px solid #2E7D32 !important;">
+                                <div class="d-flex align-items-start gap-2.5">
+                                    <span class="fs-4">🎉</span>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-success mb-1" style="font-size: 0.95rem;">
+                                            Welcome to TFC Sales &amp; Marketing, {{ session('registered_member_name') }}!
+                                        </div>
+                                        <div class="small text-dark mb-2" style="font-size: 0.85rem; line-height: 1.45;">
+                                            Your Member ID is <strong class="badge bg-success font-monospace px-2 py-1">{{ session('registered_member_id') }}</strong>.<br>
+                                            A verification link has also been sent to your WhatsApp.
+                                        </div>
+                                        <div class="small text-muted" style="font-size: 0.78rem;">
+                                            <i class="bi bi-info-circle-fill text-primary"></i> Click the link received on WhatsApp, or enter your temporary password (<code>TFC@123456</code>) below to verify and complete your profile.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif (session('success'))
                             <div class="alert alert-success alert-dismissible fade show d-flex align-items-start gap-2 small mb-3 py-2.5" role="alert">
                                 <i class="bi bi-check-circle-fill text-success fs-6 mt-0.5"></i>
                                 <div class="flex-grow-1">{{ session('success') }}</div>

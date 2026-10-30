@@ -24,14 +24,26 @@ class TfcNotificationService
      */
     public function generateEncryptedVerificationToken(string $memberId, string $mobile): string
     {
-        // 32-character clean alphanumeric token (NO '+', NO '/', NO '=', fits Meta's button URL length limit)
-        $token = \Illuminate\Support\Str::random(32);
-
-        \Illuminate\Support\Facades\Cache::put('tfc_vtoken_' . $token, [
+        // Self-contained AES-256 encrypted payload (Stateless across all servers & environments)
+        // Produces the exact 'eyJpdiI6...' token format approved in Meta templates
+        $payload = json_encode([
             'member_id' => $memberId,
             'mobile' => $mobile,
             'timestamp' => now()->timestamp,
-        ], now()->addDays(3));
+        ]);
+
+        $token = Crypt::encryptString($payload);
+
+        // Also cache for fast lookups if supported
+        try {
+            Cache::put('tfc_vtoken_' . $token, [
+                'member_id' => $memberId,
+                'mobile' => $mobile,
+                'timestamp' => now()->timestamp,
+            ], now()->addDays(3));
+        } catch (\Throwable $e) {
+            // Non-blocking
+        }
 
         return $token;
     }
@@ -43,13 +55,7 @@ class TfcNotificationService
      */
     public function decryptVerificationToken(string $token): ?array
     {
-        // 1. Check clean 32-char token from cache
-        $cached = \Illuminate\Support\Facades\Cache::get('tfc_vtoken_' . $token);
-        if (is_array($cached) && ! empty($cached['member_id']) && ! empty($cached['mobile'])) {
-            return $cached;
-        }
-
-        // 2. Fallback to AES-256 decrypted payload if passed
+        // 1. Primary: Standard AES-256 decryption (Stateless, works on localhost & live tfcsalesmarketing.com)
         try {
             $decrypted = Crypt::decryptString($token);
             $data = json_decode($decrypted, true);
@@ -58,22 +64,31 @@ class TfcNotificationService
                 return $data;
             }
         } catch (\Throwable $e) {
-            // Not encrypted
+            // Not encrypted or different format
+        }
+
+        // 2. Fallback: Check clean 32-char token from cache
+        try {
+            $cached = Cache::get('tfc_vtoken_' . $token);
+            if (is_array($cached) && ! empty($cached['member_id']) && ! empty($cached['mobile'])) {
+                return $cached;
+            }
+        } catch (\Throwable $e) {
+            // Cache miss
         }
 
         return null;
     }
 
     /**
-     * Generate encrypted mobile verification URL.
+     * Generate encrypted mobile verification URL for tfcsalesmarketing.com.
      */
     public function generateVerificationUrl(DirectSellingMember $member): string
     {
         $token = $this->generateEncryptedVerificationToken($member->tfc_member_id, $member->mobile);
+        $tfcDomain = config('tfc.domain', 'tfcsalesmarketing.com');
 
-        return function_exists('tfc_route')
-            ? tfc_route('member.verify-mobile', ['token' => $token])
-            : route('tfc.preview.member.verify-mobile', ['token' => $token]);
+        return "https://{$tfcDomain}/member/verify-mobile?token=" . urlencode($token);
     }
 
     /**
@@ -96,9 +111,9 @@ class TfcNotificationService
      */
     public function generateReferralUrl(DirectSellingMember $member): string
     {
-        return function_exists('tfc_route')
-            ? tfc_route('member.register') . '?ref=' . urlencode($member->tfc_member_id)
-            : route('tfc.preview.member.register', ['ref' => $member->tfc_member_id]);
+        $domain = config('tfc.domain', 'tfcsalesmarketing.com');
+
+        return "https://{$domain}/member/register?ref=" . urlencode($member->tfc_member_id);
     }
 
     /**
@@ -250,8 +265,9 @@ class TfcNotificationService
      */
     public function sendWelcomeNotification(DirectSellingMember $member, string $defaultPassword = 'TFC@123456'): array
     {
+        $domain = config('tfc.domain', 'tfcsalesmarketing.com');
         $verifyUrl = $this->generateVerificationUrl($member);
-        $loginUrl = function_exists('tfc_route') ? tfc_route('member.login') : route('tfc.preview.member.login');
+        $loginUrl = "https://{$domain}/member/login";
         $referralUrl = $this->generateReferralUrl($member);
 
         $sponsorId = $member->sponsor ? $member->sponsor->tfc_member_id : 'N/A';

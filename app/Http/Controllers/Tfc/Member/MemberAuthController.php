@@ -335,22 +335,19 @@ class MemberAuthController extends Controller
                 return $member;
             });
 
-            // Generate encrypted token for mobile number verification
-            $token = $this->notificationService->generateEncryptedVerificationToken($newMember->tfc_member_id, $newMember->mobile);
-
-            // Dispatch welcome notification via WhatsApp (includes profile verification link)
+            // Dispatch ONLY welcome notification via WhatsApp (contains verification link button)
             $this->notificationService->sendWelcomeNotification($newMember, $defaultPassword);
 
-            // Dispatch 6-digit WhatsApp OTP code immediately
-            $this->notificationService->sendMobileVerificationOtp($newMember->mobile, $newMember->full_name, $newMember->tfc_member_id);
+            // Redirect user to Member Login page with prefilled Member ID and celebratory welcome banner
+            $loginUrl = function_exists('tfc_route')
+                ? tfc_route('member.login')
+                : route('tfc.preview.member.login');
 
-            // Redirect to mobile verification page with encrypted token
-            $verifyUrl = function_exists('tfc_route')
-                ? tfc_route('member.verify-mobile', ['token' => $token])
-                : route('tfc.preview.member.verify-mobile', ['token' => $token]);
-
-            return redirect()->to($verifyUrl)
-                ->with('success', "🎉 Welcome to TFC Sales & Marketing, {$newMember->full_name}! Your Member ID is {$newMember->tfc_member_id}. A verification link has also been sent to your WhatsApp. Please enter the OTP sent to +91 {$newMember->mobile} to set your password.");
+            return redirect()->to($loginUrl)
+                ->with('success', "🎉 Welcome to TFC Sales & Marketing, {$newMember->full_name}! Your Member ID is {$newMember->tfc_member_id}. A verification link has also been sent to your WhatsApp.")
+                ->with('registered_member_id', $newMember->tfc_member_id)
+                ->with('registered_member_name', $newMember->full_name)
+                ->with('prefill_login', $newMember->tfc_member_id);
 
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             return back()->withInput()->with('error', 'A concurrency conflict occurred for this placement slot. Please re-verify placement position.');
