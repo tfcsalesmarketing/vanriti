@@ -52,7 +52,7 @@ class WhatsAppInboxController extends Controller
 
         if ($filter === 'unread') {
             $query->where('unread_count', '>', 0);
-        } elseif ($filter === 'window_open') {
+        } elseif ($filter === 'window_open' || $filter === 'active_window') {
             $query->where('window_expires_at', '>', now());
         } elseif ($filter === 'checkout_active') {
             $query->whereHas('activeCheckoutSession');
@@ -66,8 +66,11 @@ class WhatsAppInboxController extends Controller
 
         $conversations = $query->paginate(30)->withQueryString();
 
-        // Selected conversation
-        $selectedId = $request->input('conversation_id');
+        // Selected conversation (accept conversation_id or conversation query param or route param)
+        $selectedId = $request->input('conversation_id') 
+            ?? $request->input('conversation') 
+            ?? $request->route('conversation') 
+            ?? $request->route('conversation_id');
         $activeConversation = null;
 
         if ($request->filled('user_id')) {

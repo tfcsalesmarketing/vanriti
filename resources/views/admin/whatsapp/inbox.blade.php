@@ -559,7 +559,7 @@
                     @php
                         $isActive = $activeConversation && $activeConversation->id === $convo->id;
                     @endphp
-                    <a href="{{ route('admin.whatsapp.inbox', ['conversation' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
+                    <a href="{{ route('admin.whatsapp.inbox', ['conversation_id' => $convo->id, 'filter' => $filter, 'search' => $search]) }}"
                        class="wa-convo-item {{ $isActive ? 'active' : '' }}"
                        data-convo-id="{{ $convo->id }}">
                         <div class="wa-avatar" style="background: #107548;">

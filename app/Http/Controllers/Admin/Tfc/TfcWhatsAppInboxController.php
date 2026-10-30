@@ -46,6 +46,8 @@ class TfcWhatsAppInboxController extends Controller
 
         if ($filter === 'unread') {
             $query->where('unread_count', '>', 0);
+        } elseif ($filter === 'active_window' || $filter === 'window_open') {
+            $query->where('window_expires_at', '>', now());
         } elseif ($filter === 'inquiry') {
             $query->whereNotNull('tfc_inquiry_id');
         } elseif ($filter === 'grievance') {
@@ -66,8 +68,11 @@ class TfcWhatsAppInboxController extends Controller
 
         $conversations = $query->paginate(30)->withQueryString();
 
-        // Selected conversation
-        $selectedId = $request->input('conversation_id');
+        // Selected conversation (accept conversation_id or conversation query param or route param)
+        $selectedId = $request->input('conversation_id') 
+            ?? $request->input('conversation') 
+            ?? $request->route('conversation') 
+            ?? $request->route('conversation_id');
         $activeConversation = null;
 
         if ($request->filled('inquiry_id')) {
