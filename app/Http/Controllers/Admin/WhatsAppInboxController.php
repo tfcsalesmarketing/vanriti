@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Models\WhatsAppCheckoutSession;
 use App\Models\WhatsAppConversation;
 use App\Models\WhatsAppMessage;
+use App\Models\WhatsAppQuickReply;
+use App\Models\WhatsAppTemplate;
 use App\Services\WhatsAppChatService;
 use App\Services\WhatsAppCloudApiService;
 use Illuminate\Http\JsonResponse;
@@ -110,10 +112,25 @@ class WhatsAppInboxController extends Controller
             $q->where('channel', 'vanriti')->orWhereNull('channel');
         };
         $totalUnread = WhatsAppConversation::where($vanritiScope)->sum('unread_count');
+        $unreadCount = WhatsAppConversation::where($vanritiScope)->where('unread_count', '>', 0)->count();
         $activeWindowsCount = WhatsAppConversation::where($vanritiScope)->where('window_expires_at', '>', now())->count();
         $isConfigured = $this->apiService->isConfigured();
         $admins = Admin::orderBy('name')->get(['id', 'name', 'email']);
-        $approvedTemplates = \App\Models\WhatsAppTemplate::approved()->orderBy('name')->get();
+        $approvedTemplates = WhatsAppTemplate::approved()->orderBy('name')->get();
+        $quickReplies = WhatsAppQuickReply::where('is_active', true)
+            ->where(function ($q) {
+                $q->where('channel', 'vanriti')->orWhereNull('channel');
+            })
+            ->orderBy('category')
+            ->orderBy('shortcut')
+            ->get();
+
+        $stats = [
+            'total' => WhatsAppConversation::where($vanritiScope)->count(),
+            'unread' => $unreadCount,
+            'resolved' => WhatsAppConversation::where($vanritiScope)->where('status', 'resolved')->count(),
+            'active_windows' => $activeWindowsCount,
+        ];
 
         return view('admin.whatsapp.inbox', compact(
             'conversations',
@@ -121,12 +138,15 @@ class WhatsAppInboxController extends Controller
             'messages',
             'customerContext',
             'totalUnread',
+            'unreadCount',
             'activeWindowsCount',
             'isConfigured',
             'search',
             'filter',
             'admins',
-            'approvedTemplates'
+            'approvedTemplates',
+            'quickReplies',
+            'stats'
         ));
     }
 

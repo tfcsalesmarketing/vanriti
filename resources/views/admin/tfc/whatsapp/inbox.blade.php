@@ -1001,7 +1001,7 @@
 @endif
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce }}">
 const activeConvId = {{ $activeConversation ? $activeConversation->id : 'null' }};
 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -1012,15 +1012,43 @@ function scrollToBottom() {
         stream.scrollTop = stream.scrollHeight;
     }
 }
-window.addEventListener('DOMContentLoaded', scrollToBottom);
 
 // Handle Enter to send
 function handleComposerKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
         e.preventDefault();
         sendChatMessage();
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    scrollToBottom();
+
+    // Attach robust Enter-to-send listener on message input
+    const msgInput = document.getElementById('waMessageInput');
+    if (msgInput) {
+        msgInput.addEventListener('keydown', function(e) {
+            if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+
+        msgInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    }
+
+    // Attach submit listener on composer form
+    const compForm = document.getElementById('waComposerForm');
+    if (compForm) {
+        compForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendChatMessage();
+        });
+    }
+});
 
 // Insert quick reply into textarea
 function insertQuickReply(text) {
