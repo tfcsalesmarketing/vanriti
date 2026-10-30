@@ -235,7 +235,13 @@ class OrderController extends Controller
             $cleanPhone = '91' . $cleanPhone;
         }
 
-        $conversation = $cleanPhone ? \App\Models\WhatsAppConversation::where('phone', $cleanPhone)->first() : null;
+        $conversation = $cleanPhone
+            ? \App\Models\WhatsAppConversation::where('phone', $cleanPhone)
+                ->where(function ($q) {
+                    $q->where('channel', 'vanriti')->orWhereNull('channel');
+                })
+                ->first()
+            : null;
         $approvedTemplates = \App\Models\WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get();
 
         return view('admin.orders.show', compact('order', 'conversation', 'approvedTemplates', 'phone', 'cleanPhone'));
@@ -485,7 +491,7 @@ class OrderController extends Controller
         $trackingNumber = $shipment?->awb_number ?: ($shipment?->tracking_number ?: $order->order_number);
         $orderUrl = route('account.order', $order);
 
-        $conversation = $chatService->getOrCreateConversation($phone, $name);
+        $conversation = $chatService->getOrCreateConversation($phone, $name, null, 'vanriti');
         $admin = auth('admin')->user();
 
         if ($data['send_type'] === 'custom_text') {
