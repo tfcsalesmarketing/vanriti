@@ -243,11 +243,11 @@
 
 {{-- 5. Why TFC Section (6 Pillars of Responsible Direct Selling) --}}
 <section class="tfc-why-section">
-    <div class="container py-3">
+    <div class="container">
         <div class="text-center mb-5">
             <div class="tfc-section-eyebrow">Ethical Foundation</div>
             <h2 class="tfc-section-title">Why Partner with TFC Sales &amp; Marketing</h2>
-            <p class="text-muted mx-auto" style="max-width: 680px;">
+            <p class="tfc-section-subtitle mx-auto">
                 We are committed to building a sustainable, customer-first direct-selling ecosystem founded on authentic products, statutory transparency, and long-term relationships.
             </p>
         </div>
@@ -255,44 +255,87 @@
         <div class="row g-4">
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="tfc-why-card">
-                    <div class="tfc-why-icon"><i class="bi bi-box2-heart"></i></div>
-                    <h5>Product-Led Awareness</h5>
-                    <p>Every commercial activity starts and ends with genuine herbal formulations that deliver practical wellness value to households.</p>
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-box2-heart"></i></div>
+                        <span class="tfc-why-number">01</span>
+                    </div>
+                    <h5 class="tfc-why-title">Product-Led Awareness</h5>
+                    <p class="tfc-why-text">Every commercial activity starts and ends with genuine herbal formulations that deliver practical wellness value to households.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="tfc-why-card">
-                    <div class="tfc-why-icon"><i class="bi bi-shield-check"></i></div>
-                    <h5>Transparent Business Practices</h5>
-                    <p>Complete commercial clarity with zero enrollment fees, zero mandatory purchases, and transparent retail margin structures.</p>
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-shield-check"></i></div>
+                        <span class="tfc-why-number">02</span>
+                    </div>
+                    <h5 class="tfc-why-title">Transparent Business Practices</h5>
+                    <p class="tfc-why-text">Complete commercial clarity with zero enrollment fees, zero mandatory purchases, and transparent retail margin structures.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="tfc-why-card">
-                    <div class="tfc-why-icon"><i class="bi bi-people"></i></div>
-                    <h5>Lasting Customer Relationships</h5>
-                    <p>Direct selling grounded in honest product guidance, personal recommendation, and ongoing consumer satisfaction.</p>
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-people"></i></div>
+                        <span class="tfc-why-number">03</span>
+                    </div>
+                    <h5 class="tfc-why-title">Lasting Customer Relationships</h5>
+                    <p class="tfc-why-text">Direct selling grounded in honest product guidance, personal recommendation, and ongoing consumer satisfaction.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="tfc-why-card">
-                    <div class="tfc-why-icon"><i class="bi bi-book"></i></div>
-                    <h5>Continuous Product Education</h5>
-                    <p>Comprehensive training on VANRITI botanical formulations, ingredient sourcing, proper usage directions, and safety guidelines.</p>
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-book"></i></div>
+                        <span class="tfc-why-number">04</span>
+                    </div>
+                    <h5 class="tfc-why-title">Continuous Product Education</h5>
+                    <p class="tfc-why-text">Comprehensive training on VANRITI botanical formulations, ingredient sourcing, proper usage directions, and safety guidelines.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="tfc-why-card">
-                    <div class="tfc-why-icon"><i class="bi bi-journal-check"></i></div>
-                    <h5>Responsible Direct Selling</h5>
-                    <p>Strict adherence to the Consumer Protection (Direct Selling) Rules, 2021 &amp; 2023 Amendment. Zero recruitment-derived earnings.</p>
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-journal-check"></i></div>
+                        <span class="tfc-why-number">05</span>
+                    </div>
+                    <h5 class="tfc-why-title">Responsible Direct Selling</h5>
+                    <p class="tfc-why-text">Strict adherence to the Consumer Protection (Direct Selling) Rules, 2021 &amp; 2023 Amendment. Zero recruitment-derived earnings.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="tfc-why-card">
-                    <div class="tfc-why-icon"><i class="bi bi-headset"></i></div>
-                    <h5>Dedicated Consumer Support</h5>
-                    <p>Active support infrastructure offering structured grievance redressal, prompt assistance, and transparent tracking.</p>
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-headset"></i></div>
+                        <span class="tfc-why-number">06</span>
+                    </div>
+                    <h5 class="tfc-why-title">Dedicated Consumer Support</h5>
+                    <p class="tfc-why-text">Active support infrastructure offering structured grievance redressal, prompt assistance, and transparent tracking.</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Bottom Statutory & Transparency Reassurance Strip --}}
+        <div class="tfc-why-trust-bar">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-lg-8">
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                        <span class="tfc-why-trust-badge">
+                            <i class="bi bi-patch-check-fill"></i> Statutory Guarantee
+                        </span>
+                        <strong class="text-dark small">Consumer Protection (Direct Selling) Rules, 2021 &amp; 2023 Compliant</strong>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Zero joining fees. Zero mandatory kit purchases. Earnings are strictly generated through actual customer product consumption, never from mere recruitment.
+                    </p>
+                </div>
+                <div class="col-12 col-lg-4 text-lg-end">
+                    <a href="{{ tfc_route('direct-selling') }}" class="btn btn-outline-dark btn-sm fw-semibold me-2">
+                        <i class="bi bi-info-circle me-1"></i> Business Model
+                    </a>
+                    <a href="{{ tfc_route('incentive-program') }}" class="btn btn-tfc-primary btn-sm fw-semibold">
+                        <i class="bi bi-award me-1"></i> Incentive Plan
+                    </a>
                 </div>
             </div>
         </div>

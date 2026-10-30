@@ -293,52 +293,70 @@
 
         <div class="row g-4">
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light">
-                    <div class="tfc-why-icon mb-3"><i class="bi bi-box2-heart"></i></div>
-                    <h5 class="fw-bold mb-2">1. Product-Focused Business</h5>
-                    <p class="text-muted small mb-0">Every transaction is anchored in authentic botanical formulations designed for real, daily consumer use.</p>
+                <div class="tfc-why-card">
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-box2-heart"></i></div>
+                        <span class="tfc-why-number">01</span>
+                    </div>
+                    <h5 class="tfc-why-title">Product-Focused Business</h5>
+                    <p class="tfc-why-text">Every transaction is anchored in authentic botanical formulations designed for real, daily consumer use.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light">
-                    <div class="tfc-why-icon mb-3"><i class="bi bi-file-earmark-lock"></i></div>
-                    <h5 class="fw-bold mb-2">2. Transparent Policies</h5>
-                    <p class="text-muted small mb-0">Clear, documented distributor terms with zero hidden fees, zero recruitment incentives, and straightforward retail margins.</p>
+                <div class="tfc-why-card">
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-file-earmark-lock"></i></div>
+                        <span class="tfc-why-number">02</span>
+                    </div>
+                    <h5 class="tfc-why-title">Transparent Policies</h5>
+                    <p class="tfc-why-text">Clear, documented distributor terms with zero hidden fees, zero recruitment incentives, and straightforward retail margins.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light">
-                    <div class="tfc-why-icon mb-3"><i class="bi bi-people"></i></div>
-                    <h5 class="fw-bold mb-2">3. Genuine Relationships</h5>
-                    <p class="text-muted small mb-0">We prioritize long-term customer satisfaction and honest product recommendations over transactional high-pressure sales.</p>
+                <div class="tfc-why-card">
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-people"></i></div>
+                        <span class="tfc-why-number">03</span>
+                    </div>
+                    <h5 class="tfc-why-title">Genuine Relationships</h5>
+                    <p class="tfc-why-text">We prioritize long-term customer satisfaction and honest product recommendations over transactional high-pressure sales.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light">
-                    <div class="tfc-why-icon mb-3"><i class="bi bi-mortarboard"></i></div>
-                    <h5 class="fw-bold mb-2">4. Comprehensive Product Education</h5>
-                    <p class="text-muted small mb-0">Ongoing educational resources covering herbal properties, safe application methods, precautions, and authentic benefits.</p>
+                <div class="tfc-why-card">
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-mortarboard"></i></div>
+                        <span class="tfc-why-number">04</span>
+                    </div>
+                    <h5 class="tfc-why-title">Comprehensive Product Education</h5>
+                    <p class="tfc-why-text">Ongoing educational resources covering herbal properties, safe application methods, precautions, and authentic benefits.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light">
-                    <div class="tfc-why-icon mb-3"><i class="bi bi-journal-check"></i></div>
-                    <h5 class="fw-bold mb-2">5. Responsible Direct Selling</h5>
-                    <p class="text-muted small mb-0">Full compliance with Indian Consumer Protection regulations. Pyramids and money circulation schemes are strictly prohibited.</p>
+                <div class="tfc-why-card">
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-journal-check"></i></div>
+                        <span class="tfc-why-number">05</span>
+                    </div>
+                    <h5 class="tfc-why-title">Responsible Direct Selling</h5>
+                    <p class="tfc-why-text">Full compliance with Indian Consumer Protection regulations. Pyramids and money circulation schemes are strictly prohibited.</p>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light">
-                    <div class="tfc-why-icon mb-3"><i class="bi bi-headset"></i></div>
-                    <h5 class="fw-bold mb-2">6. Dedicated Grievance Support</h5>
-                    <p class="text-muted small mb-0">Statutory redressal officer desk with 48-hour mandatory ticket acknowledgment and transparent 30-day resolution tracking.</p>
+                <div class="tfc-why-card">
+                    <div class="tfc-why-header">
+                        <div class="tfc-why-icon"><i class="bi bi-headset"></i></div>
+                        <span class="tfc-why-number">06</span>
+                    </div>
+                    <h5 class="tfc-why-title">Dedicated Grievance Support</h5>
+                    <p class="tfc-why-text">Statutory redressal officer desk with 48-hour mandatory ticket acknowledgment and transparent 30-day resolution tracking.</p>
                 </div>
             </div>
-            <div class="col-12 col-md-12 col-lg-12">
-                <div class="p-4 bg-white rounded-3 shadow-sm border border-light text-center">
-                    <div class="tfc-why-icon mx-auto mb-3"><i class="bi bi-info-circle"></i></div>
-                    <h5 class="fw-bold mb-2">7. Clear Business Information</h5>
-                    <p class="text-muted small mb-0 mx-auto" style="max-width: 780px;">
+            <div class="col-12">
+                <div class="tfc-why-card text-center align-items-center">
+                    <div class="tfc-why-icon mb-3"><i class="bi bi-info-circle"></i></div>
+                    <h5 class="tfc-why-title">Clear Business Information</h5>
+                    <p class="tfc-why-text mx-auto" style="max-width: 780px;">
                         Transparent disclosures regarding Product Credits, product retail prices, order tracking, and terms. No unrealistic promises or unverified testimonials.
                     </p>
                 </div>

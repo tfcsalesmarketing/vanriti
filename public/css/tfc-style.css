@@ -283,41 +283,6 @@ body {
     width: 1.2rem;
     height: 1.2rem;
 }
-    border-radius: var(--tfc-radius-lg);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-    padding: 1.25rem;
-    color: var(--tfc-text-dark);
-    max-width: 360px;
-    margin: 0 auto;
-}
-.tfc-hero-main-img {
-    height: 190px;
-    width: 100%;
-    object-fit: contain;
-    background: #FFFFFF;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-.tfc-hero-floating-card {
-    position: absolute;
-    bottom: -15px;
-    right: 0;
-    background: #FFFFFF;
-    border-radius: 12px;
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-    padding: 0.85rem 1rem;
-    max-width: 230px;
-    border: 1px solid var(--tfc-border);
-}
-.tfc-hero-trust-tag {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    padding: 0.6rem 0.9rem;
-    font-size: 0.8rem;
-    color: #E2E8F0;
-    margin-top: 1.5rem;
-}
 
 /* ==========================================================================
    Section Headers & Common Card Styles
@@ -511,8 +476,146 @@ body {
 }
 
 /* ==========================================================================
-   Why TFC & Trust Principles
+   Why Partner with TFC Section (6 Ethical Direct-Selling Pillars)
    ========================================================================== */
+.tfc-why-section {
+    background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+    padding: 5rem 0 5.5rem;
+    position: relative;
+    border-top: 1px solid #EDF2F7;
+    border-bottom: 1px solid #EDF2F7;
+}
+
+.tfc-why-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 2.25rem 2rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 4px 20px -2px rgba(10, 29, 55, 0.04), 0 1px 3px rgba(10, 29, 55, 0.02);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.3s ease;
+    overflow: hidden;
+}
+
+/* Subtle gold top-border indicator that reveals on hover */
+.tfc-why-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--tfc-gold) 0%, #F59E0B 100%);
+    opacity: 0;
+    transform: scaleX(0.2);
+    transform-origin: left center;
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tfc-why-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 35px -6px rgba(10, 29, 55, 0.10), 0 8px 16px -4px rgba(212, 155, 36, 0.06);
+    border-color: rgba(212, 155, 36, 0.45);
+}
+
+.tfc-why-card:hover::before {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.tfc-why-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.35rem;
+}
+
+.tfc-why-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #FEF7EA 0%, #FDE68A 100%);
+    border: 1px solid rgba(212, 155, 36, 0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: var(--tfc-navy);
+    box-shadow: 0 4px 12px rgba(212, 155, 36, 0.15);
+    transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tfc-why-card:hover .tfc-why-icon {
+    transform: scale(1.08) rotate(2deg);
+    background: linear-gradient(135deg, var(--tfc-navy) 0%, var(--tfc-navy-light) 100%);
+    color: var(--tfc-gold);
+    border-color: var(--tfc-navy);
+    box-shadow: 0 6px 18px rgba(10, 29, 55, 0.22);
+}
+
+.tfc-why-number {
+    font-size: 0.785rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #94A3B8;
+    background: #F1F5F9;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.tfc-why-card:hover .tfc-why-number {
+    background: var(--tfc-gold-light);
+    color: var(--tfc-gold-hover);
+}
+
+.tfc-why-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--tfc-navy);
+    margin-bottom: 0.65rem;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+}
+
+.tfc-why-text {
+    font-size: 0.925rem;
+    color: #475569;
+    line-height: 1.65;
+    margin-bottom: 0;
+    flex-grow: 1;
+}
+
+.tfc-why-trust-bar {
+    margin-top: 3rem;
+    background: #FFFFFF;
+    border: 1px solid rgba(212, 155, 36, 0.28);
+    border-radius: 14px;
+    padding: 1.35rem 2rem;
+    box-shadow: 0 4px 20px rgba(10, 29, 55, 0.04);
+}
+
+.tfc-why-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #065F46;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    padding: 0.35rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* Backward-compatible pillar aliases */
 .tfc-pillar-card {
     background: #FFFFFF;
     border: 1px solid var(--tfc-border);
