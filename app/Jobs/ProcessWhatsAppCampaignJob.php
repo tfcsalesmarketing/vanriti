@@ -30,6 +30,10 @@ class ProcessWhatsAppCampaignJob implements ShouldQueue
             return;
         }
 
+        if (($campaign->channel ?? 'vanriti') === 'tfc') {
+            $apiService = $apiService->forChannel('tfc');
+        }
+
         $campaign->update(['status' => 'processing']);
 
         $pendingRecipients = $campaign->recipients()->where('status', 'pending')->get();
@@ -84,12 +88,14 @@ class ProcessWhatsAppCampaignJob implements ShouldQueue
                     // Record in conversation stream so it shows in chat with customer
                     try {
                         $cleanPhone = ltrim($recipient->phone, '+');
+                        $channel = $campaign->channel ?: 'vanriti';
                         $conversation = \App\Models\WhatsAppConversation::firstOrCreate(
-                            ['phone' => $cleanPhone],
+                            ['phone' => $cleanPhone, 'channel' => $channel],
                             [
                                 'contact_name' => $recipient->customer_name,
                                 'user_id' => $recipient->user_id,
                                 'status' => 'active',
+                                'channel' => $channel,
                             ]
                         );
 

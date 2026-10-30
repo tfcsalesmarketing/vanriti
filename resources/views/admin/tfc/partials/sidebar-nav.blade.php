@@ -82,7 +82,56 @@
         </a>
     </li>
 
+    {{-- WhatsApp Direct Selling Suite --}}
+    @php
+        $unreadTfcWaCount = \App\Models\WhatsAppConversation::where('channel', 'tfc')->where('unread_count', '>', 0)->count();
+    @endphp
+    <li class="nav-heading mt-3 text-uppercase text-muted fw-bold" style="font-size: 0.7rem; padding: 0.5rem 1rem 0.25rem;">
+        WhatsApp CMS &amp; CRM
+    </li>
+
+    {{-- Live Chat Inbox --}}
+    <li class="nav-item">
+        <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('admin.tfc.whatsapp.inbox*') ? 'active' : '' }}" href="{{ route('admin.tfc.whatsapp.inbox') }}">
+            <span class="d-flex align-items-center gap-2"><i class="bi bi-whatsapp text-success"></i><span>WhatsApp Inbox</span></span>
+            @if ($unreadTfcWaCount > 0)
+                <span class="badge bg-success rounded-pill">{{ $unreadTfcWaCount }}</span>
+            @endif
+        </a>
+    </li>
+
+    {{-- Broadcast Campaigns --}}
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.tfc.whatsapp.campaigns.*') ? 'active' : '' }}" href="{{ route('admin.tfc.whatsapp.campaigns.index') }}">
+            <i class="bi bi-broadcast"></i><span>Seller Campaigns</span>
+        </a>
+    </li>
+
+    {{-- Chatbot & Quick Replies --}}
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.tfc.whatsapp.bot.*') ? 'active' : '' }}" href="{{ route('admin.tfc.whatsapp.bot.index') }}">
+            <i class="bi bi-robot"></i><span>Chatbot &amp; Replies</span>
+        </a>
+    </li>
+
+    {{-- Meta Templates --}}
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.tfc.whatsapp.templates.*') ? 'active' : '' }}" href="{{ route('admin.tfc.whatsapp.templates.index') }}">
+            <i class="bi bi-file-earmark-code"></i><span>Meta Templates</span>
+        </a>
+    </li>
+
+    {{-- WhatsApp Cloud API & Profile --}}
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.tfc.whatsapp.profile*') ? 'active' : '' }}" href="{{ route('admin.tfc.whatsapp.profile') }}">
+            <i class="bi bi-gear-wide-connected"></i><span>WhatsApp API &amp; Widget</span>
+        </a>
+    </li>
+
     {{-- TFC Settings & Statutory Disclosures --}}
+    <li class="nav-heading mt-3 text-uppercase text-muted fw-bold" style="font-size: 0.7rem; padding: 0.5rem 1rem 0.25rem;">
+        Administration
+    </li>
     <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.tfc.settings.*') ? 'active' : '' }}" href="{{ route('admin.tfc.settings.index') }}">
             <i class="bi bi-sliders"></i><span>TFC Settings</span>

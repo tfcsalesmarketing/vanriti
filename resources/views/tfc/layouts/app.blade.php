@@ -46,6 +46,35 @@
 
     @include('tfc.layouts.footer')
 
+    {{-- Floating WhatsApp Chat Widget --}}
+    @php
+        $whatsappWidgetEnabled = (bool) tfc_setting('whatsapp_widget_enabled', true);
+        $whatsappNumber = tfc_setting('whatsapp_phone_number') ?: tfc_setting('contact_phone', '919876543210');
+        $whatsappCleanNumber = preg_replace('/[^0-9]/', '', (string) $whatsappNumber);
+        $whatsappGreeting = tfc_setting('whatsapp_widget_greeting', 'Need help with direct selling or products? Chat with us on WhatsApp!');
+        $whatsappDefaultMsg = tfc_setting('whatsapp_widget_default_msg', 'Hello TFC Sales & Marketing, I am interested in learning more about VANRITI botanical products and the TFC direct selling business.');
+        $whatsappLink = 'https://wa.me/' . $whatsappCleanNumber . '?text=' . rawurlencode((string) $whatsappDefaultMsg);
+    @endphp
+
+    @if ($whatsappWidgetEnabled && ! empty($whatsappCleanNumber))
+        <div class="tfc-whatsapp-widget" id="tfcWhatsappWidget">
+            <div class="tfc-whatsapp-tooltip" id="tfcWhatsappTooltip">
+                <div class="tfc-whatsapp-tooltip-header">
+                    <span class="tfc-whatsapp-dot"></span>
+                    <strong>TFC Support Team</strong>
+                    <button type="button" class="btn-close btn-close-white ms-auto" style="font-size: 0.65rem;" onclick="document.getElementById('tfcWhatsappTooltip').style.display='none';" aria-label="Close"></button>
+                </div>
+                <div class="tfc-whatsapp-tooltip-body">
+                    {{ $whatsappGreeting }}
+                </div>
+            </div>
+            <a href="{{ $whatsappLink }}" target="_blank" rel="noopener noreferrer" class="tfc-whatsapp-btn" title="Chat on WhatsApp" aria-label="Chat with TFC Sales & Marketing on WhatsApp">
+                <i class="bi bi-whatsapp"></i>
+                <span class="tfc-whatsapp-ping"></span>
+            </a>
+        </div>
+    @endif
+
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')

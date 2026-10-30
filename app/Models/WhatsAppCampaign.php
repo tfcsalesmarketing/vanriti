@@ -15,6 +15,7 @@ class WhatsAppCampaign extends Model
 
     protected $fillable = [
         'name',
+        'channel',
         'template_name',
         'template_lang',
         'target_segment',

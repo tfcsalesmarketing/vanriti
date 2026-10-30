@@ -1012,3 +1012,128 @@ body {
     position: relative;
     padding: 1rem 0;
 }
+
+/* ==========================================================================
+   TFC Floating WhatsApp Chat Widget
+   ========================================================================== */
+.tfc-whatsapp-widget {
+    position: fixed;
+    bottom: 26px;
+    right: 26px;
+    z-index: 1080;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-family: inherit;
+}
+
+.tfc-whatsapp-btn {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    background: #25D366;
+    color: #FFFFFF !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 4px 18px rgba(37, 211, 102, 0.45);
+    text-decoration: none !important;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+.tfc-whatsapp-btn:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.55);
+}
+
+.tfc-whatsapp-ping {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #25D366;
+    opacity: 0.7;
+    animation: tfc-wa-pulse 2.2s infinite ease-out;
+    pointer-events: none;
+    z-index: -1;
+}
+
+@keyframes tfc-wa-pulse {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.75;
+    }
+    70% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+.tfc-whatsapp-tooltip {
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(10, 29, 55, 0.16);
+    border: 1px solid rgba(10, 29, 55, 0.08);
+    margin-bottom: 12px;
+    width: 280px;
+    overflow: hidden;
+    animation: tfc-wa-slide 0.3s ease-out;
+}
+
+@keyframes tfc-wa-slide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tfc-whatsapp-tooltip-header {
+    background: var(--tfc-navy);
+    color: #FFFFFF;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tfc-whatsapp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #25D366;
+    display: inline-block;
+}
+
+.tfc-whatsapp-tooltip-body {
+    padding: 0.85rem 0.95rem;
+    font-size: 0.825rem;
+    color: var(--tfc-text-body);
+    line-height: 1.45;
+}
+
+@media (max-width: 576px) {
+    .tfc-whatsapp-widget {
+        bottom: 18px;
+        right: 18px;
+    }
+    .tfc-whatsapp-btn {
+        width: 52px;
+        height: 52px;
+        font-size: 1.7rem;
+    }
+    .tfc-whatsapp-tooltip {
+        width: 250px;
+    }
+}
+

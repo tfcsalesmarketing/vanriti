@@ -13,6 +13,7 @@ class WhatsAppBotRule extends Model
 
     protected $fillable = [
         'name',
+        'channel',
         'keywords',
         'match_type',
         'action_type',

@@ -33,9 +33,12 @@
                     </div>
                     <div class="col-sm-6">
                         <label class="text-muted small">Phone Number</label>
-                        <div>
+                        <div class="d-flex align-items-center gap-2">
                             <a href="tel:{{ $inquiry->phone }}" class="fw-semibold text-decoration-none">
                                 <i class="bi bi-telephone me-1"></i>{{ $inquiry->phone }}
+                            </a>
+                            <a href="{{ route('admin.tfc.whatsapp.inbox', ['inquiry_id' => $inquiry->id]) }}" class="btn btn-xs btn-outline-success py-0 px-2" style="font-size: 0.72rem;">
+                                <i class="bi bi-whatsapp me-1"></i>WhatsApp
                             </a>
                         </div>
                     </div>

@@ -15,6 +15,7 @@ class WhatsAppQuickReply extends Model
         'shortcut',
         'title',
         'category',
+        'channel',
         'content',
         'usage_count',
         'is_active',

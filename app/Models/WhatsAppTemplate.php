@@ -15,6 +15,7 @@ class WhatsAppTemplate extends Model
         'meta_template_id',
         'name',
         'category',
+        'channel',
         'status',
         'language',
         'header_type',

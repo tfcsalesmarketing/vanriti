@@ -19,6 +19,9 @@ class WhatsAppConversation extends Model
         'wa_id',
         'contact_name',
         'user_id',
+        'channel',
+        'tfc_inquiry_id',
+        'tfc_grievance_id',
         'unread_count',
         'last_message_at',
         'last_message_preview',
@@ -50,6 +53,16 @@ class WhatsAppConversation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tfcInquiry(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Tfc\TfcInquiry::class, 'tfc_inquiry_id');
+    }
+
+    public function tfcGrievance(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Tfc\TfcGrievanceTicket::class, 'tfc_grievance_id');
     }
 
     public function assignedAgent(): BelongsTo
@@ -107,8 +120,14 @@ class WhatsAppConversation extends Model
             ->update(['status' => 'read', 'read_at' => now()]);
     }
 
-    public static function findOrCreateForPhone(string $phone, ?string $contactName = null, ?string $waId = null): self
-    {
+    public static function findOrCreateForPhone(
+        string $phone,
+        ?string $contactName = null,
+        ?string $waId = null,
+        string $channel = 'vanriti',
+        ?int $tfcInquiryId = null,
+        ?int $tfcGrievanceId = null
+    ): self {
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
         if (strlen($cleanPhone) === 10) {
             $cleanPhone = '91' . $cleanPhone;
@@ -125,6 +144,9 @@ class WhatsAppConversation extends Model
                 'wa_id' => $waId ?: $cleanPhone,
                 'contact_name' => $contactName ?: ($user?->name ?: 'Customer ' . substr($cleanPhone, -4)),
                 'user_id' => $user?->id,
+                'channel' => $channel,
+                'tfc_inquiry_id' => $tfcInquiryId,
+                'tfc_grievance_id' => $tfcGrievanceId,
                 'status' => 'active',
                 'unread_count' => 0,
             ]);
@@ -136,6 +158,15 @@ class WhatsAppConversation extends Model
             }
             if ($waId && empty($conversation->wa_id)) {
                 $updates['wa_id'] = $waId;
+            }
+            if ($channel === 'tfc' && $conversation->channel !== 'tfc') {
+                $updates['channel'] = 'tfc';
+            }
+            if ($tfcInquiryId && empty($conversation->tfc_inquiry_id)) {
+                $updates['tfc_inquiry_id'] = $tfcInquiryId;
+            }
+            if ($tfcGrievanceId && empty($conversation->tfc_grievance_id)) {
+                $updates['tfc_grievance_id'] = $tfcGrievanceId;
             }
             if (! $conversation->user_id) {
                 $user = User::where('phone', $cleanPhone)->orWhere('phone', substr($cleanPhone, 2))->first();

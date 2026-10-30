@@ -8,9 +8,30 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppCloudApiService
 {
     protected string $baseUrl = 'https://graph.facebook.com/v21.0';
+    protected ?string $overridePhoneNumberId = null;
+    protected ?string $overrideAccessToken = null;
+    protected ?string $overrideWabaId = null;
+
+    public function forChannel(string $channel): self
+    {
+        $clone = clone $this;
+        if ($channel === 'tfc') {
+            $tfcPhoneId = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_phone_number_id', '') : '');
+            $tfcToken = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_access_token', '') : '');
+            $tfcWaba = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_waba_id', '') : '');
+
+            $clone->overridePhoneNumberId = $tfcPhoneId ?: (string) setting('tfc_whatsapp_phone_number_id', '');
+            $clone->overrideAccessToken = $tfcToken ?: (string) secret_setting('tfc_whatsapp_access_token', '');
+            $clone->overrideWabaId = $tfcWaba ?: (string) setting('tfc_whatsapp_waba_id', '');
+        }
+        return $clone;
+    }
 
     public function accessToken(): string
     {
+        if (! empty($this->overrideAccessToken)) {
+            return $this->overrideAccessToken;
+        }
         return (string) (secret_setting('whatsapp_access_token', '') ?: env('WHATSAPP_ACCESS_TOKEN', ''));
     }
 
@@ -25,11 +46,17 @@ class WhatsAppCloudApiService
 
     public function phoneNumberId(): string
     {
+        if (! empty($this->overridePhoneNumberId)) {
+            return $this->overridePhoneNumberId;
+        }
         return (string) (setting('whatsapp_phone_number_id', '') ?: env('WHATSAPP_PHONE_NUMBER_ID', ''));
     }
 
     public function wabaId(): string
     {
+        if (! empty($this->overrideWabaId)) {
+            return $this->overrideWabaId;
+        }
         return (string) (setting('whatsapp_waba_id', '') ?: env('WHATSAPP_WABA_ID', ''));
     }
 

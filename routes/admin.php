@@ -393,6 +393,51 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('grievances', [\App\Http\Controllers\Admin\Tfc\TfcGrievanceController::class, 'index'])->name('grievances.index');
             Route::get('grievances/{ticket}', [\App\Http\Controllers\Admin\Tfc\TfcGrievanceController::class, 'show'])->name('grievances.show');
             Route::put('grievances/{ticket}', [\App\Http\Controllers\Admin\Tfc\TfcGrievanceController::class, 'update'])->name('grievances.update');
+
+            // ================================================================
+            // TFC WhatsApp CMS & Direct Selling CRM
+            // ================================================================
+            Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+                // Live Chat Inbox
+                Route::get('inbox', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'index'])->name('inbox');
+                Route::get('inbox/{conversation}/poll', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'poll'])->name('inbox.poll');
+                Route::get('inbox-poll-conversations', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'pollConversations'])->name('inbox.poll-conversations');
+                Route::get('media/{message}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'streamMedia'])->name('media');
+                Route::post('inbox/{conversation}/send', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'sendText'])->name('inbox.send');
+                Route::post('inbox/{conversation}/send-media', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'sendMedia'])->name('inbox.send-media');
+                Route::post('inbox/{conversation}/send-template', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'sendTemplate'])->name('inbox.send-template');
+                Route::post('inbox/{conversation}/read', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'markRead'])->name('inbox.read');
+                Route::post('inbox/{conversation}/status', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'updateStatus'])->name('inbox.status');
+                Route::post('inbox/{conversation}/assign', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'assign'])->name('inbox.assign');
+                Route::post('inbox/{conversation}/note', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppInboxController::class, 'addNote'])->name('inbox.note');
+
+                // Broadcast Campaigns
+                Route::get('campaigns', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppCampaignController::class, 'index'])->name('campaigns.index');
+                Route::get('campaigns/create', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppCampaignController::class, 'create'])->name('campaigns.create');
+                Route::post('campaigns', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppCampaignController::class, 'store'])->name('campaigns.store');
+                Route::get('campaigns/{campaign}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppCampaignController::class, 'show'])->name('campaigns.show');
+                Route::post('campaigns/{campaign}/cancel', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppCampaignController::class, 'cancel'])->name('campaigns.cancel');
+
+                // Chatbot & Quick Replies
+                Route::get('bot', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'index'])->name('bot.index');
+                Route::post('bot/rules', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'storeRule'])->name('bot.rules.store');
+                Route::put('bot/rules/{rule}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'updateRule'])->name('bot.rules.update');
+                Route::delete('bot/rules/{rule}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'destroyRule'])->name('bot.rules.destroy');
+                Route::post('bot/rules/{rule}/toggle', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'toggleRule'])->name('bot.rules.toggle');
+
+                Route::post('bot/quick-replies', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'storeQuickReply'])->name('bot.quick-replies.store');
+                Route::put('bot/quick-replies/{reply}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'updateQuickReply'])->name('bot.quick-replies.update');
+                Route::delete('bot/quick-replies/{reply}', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppBotController::class, 'destroyQuickReply'])->name('bot.quick-replies.destroy');
+
+                // Meta Message Templates
+                Route::get('templates', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppTemplateController::class, 'index'])->name('templates.index');
+                Route::post('templates/sync', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppTemplateController::class, 'sync'])->name('templates.sync');
+
+                // Cloud API Profile & Settings
+                Route::get('profile', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'index'])->name('profile');
+                Route::post('profile', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'update'])->name('profile.update');
+                Route::post('profile/test-send', [\App\Http\Controllers\Admin\Tfc\TfcWhatsAppProfileController::class, 'testConnection'])->name('profile.test-send');
+            });
         });
     });
 });
