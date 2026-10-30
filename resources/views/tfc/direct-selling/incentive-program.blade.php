@@ -136,108 +136,8 @@
     </div>
 </section>
 
-{{-- Section 3: Activation Packages --}}
+{{-- Section 3: Direct Sponsor Incentive (10%) --}}
 <section class="py-5" style="background-color: var(--tfc-bg-soft); border-top: 1px solid var(--tfc-border); border-bottom: 1px solid var(--tfc-border);">
-    <div class="container py-3">
-        <div class="text-center mb-5">
-            <div class="tfc-section-eyebrow">Product-Based Activation</div>
-            <h2 class="tfc-section-title">Activation Packages</h2>
-            <p class="text-muted mx-auto" style="max-width: 650px;">
-                Registration is completely free. Activation is achieved through the genuine purchase of eligible VANRITI wellness products.
-            </p>
-        </div>
-
-        <div class="row g-4 justify-content-center">
-            <div class="col-12 col-md-4">
-                <div class="card tfc-card h-100 text-center p-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Starter Level</div>
-                    <h4 class="fw-bold text-dark mb-3">Quarter Sale</h4>
-                    <div class="p-3 bg-light rounded-3 mb-3">
-                        <span class="display-6 fw-bold text-dark">&#8377;2,000</span>
-                        <div class="small text-muted mt-1">Product Purchase Value</div>
-                    </div>
-                    <ul class="list-unstyled text-muted small mb-4 d-flex flex-column gap-2 text-start">
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Eligible VANRITI Herbal Products</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Free Account Activation</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Daily Cap: <strong>&#8377;2,000</strong></span>
-                        </li>
-                    </ul>
-                    <a href="{{ tfc_route('become-a-seller') }}" class="btn btn-outline-dark mt-auto">Choose Quarter</a>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-                <div class="card tfc-card h-100 text-center p-4 border-warning shadow-sm position-relative">
-                    <span class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle px-3 py-1 fw-bold">Popular Choice</span>
-                    <div class="text-warning small text-uppercase fw-bold mb-1">Intermediate Level</div>
-                    <h4 class="fw-bold text-dark mb-3">Half Sale</h4>
-                    <div class="p-3 bg-warning bg-opacity-10 rounded-3 mb-3">
-                        <span class="display-6 fw-bold text-dark">&#8377;5,000</span>
-                        <div class="small text-muted mt-1">Product Purchase Value</div>
-                    </div>
-                    <ul class="list-unstyled text-muted small mb-4 d-flex flex-column gap-2 text-start">
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Comprehensive Wellness Range</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Free Account Activation</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Daily Cap: <strong>&#8377;5,000</strong></span>
-                        </li>
-                    </ul>
-                    <a href="{{ tfc_route('become-a-seller') }}" class="btn btn-tfc-primary mt-auto">Choose Half Sale</a>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-                <div class="card tfc-card h-100 text-center p-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Advanced Level</div>
-                    <h4 class="fw-bold text-dark mb-3">Full Sale</h4>
-                    <div class="p-3 bg-light rounded-3 mb-3">
-                        <span class="display-6 fw-bold text-dark">&#8377;10,000</span>
-                        <div class="small text-muted mt-1">Product Purchase Value</div>
-                    </div>
-                    <ul class="list-unstyled text-muted small mb-4 d-flex flex-column gap-2 text-start">
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Complete Botanical Collection</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Free Account Activation</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-lg text-success"></i>
-                            <span>Daily Cap: <strong>&#8377;10,000</strong></span>
-                        </li>
-                    </ul>
-                    <a href="{{ tfc_route('become-a-seller') }}" class="btn btn-outline-dark mt-auto">Choose Full Sale</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="text-center mt-4">
-            <small class="text-muted">
-                <i class="bi bi-shield-check text-success me-1"></i>Product purchases are not merely an entry fee. Members receive 100% genuine products with complete consumer protections.
-            </small>
-        </div>
-    </div>
-</section>
-
-{{-- Section 4: Direct Sponsor Incentive (10%) --}}
-<section class="py-5" style="background-color: #FFFFFF;">
     <div class="container py-3">
         <div class="row align-items-center g-5">
             <div class="col-12 col-lg-6">
@@ -429,7 +329,7 @@
                     <table class="table table-hover align-middle mb-0 text-center">
                         <thead class="table-dark" style="background-color: var(--tfc-navy);">
                             <tr>
-                                <th class="py-3 text-start ps-4">Activation Package</th>
+                                <th class="py-3 text-start ps-4">Business Tier</th>
                                 <th class="py-3 text-end pe-4">Proposed Daily Cap</th>
                             </tr>
                         </thead>
@@ -605,12 +505,12 @@
             <div class="accordion-item mb-2 border rounded-3 overflow-hidden shadow-sm">
                 <h2 class="accordion-header" id="incH3">
                     <button class="accordion-button collapsed fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#incC3" aria-expanded="false" aria-controls="incC3">
-                        3. What are the activation packages?
+                        3. Do I need to purchase a starter package to register?
                     </button>
                 </h2>
                 <div id="incC3" class="accordion-collapse collapse" aria-labelledby="incH3" data-bs-parent="#incentiveFaqAccordion">
                     <div class="accordion-body text-muted small">
-                        Activation is based on real product purchases: Quarter Sale (&#8377;2,000), Half Sale (&#8377;5,000), and Full Sale (&#8377;10,000). Members receive full-value genuine wellness products.
+                        No. Registration as an independent direct seller is 100% free with zero joining fee. Members voluntarily purchase genuine wellness products for personal consumption or to fulfill real customer orders.
                     </div>
                 </div>
             </div>
