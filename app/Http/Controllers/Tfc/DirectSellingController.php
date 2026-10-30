@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Tfc;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Tfc\TfcInquiry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,11 +13,42 @@ use Illuminate\View\View;
 class DirectSellingController extends Controller
 {
     /**
-     * The TFC Direct Selling Opportunity.
+     * Page 1: Direct Selling with TFC.
+     * Comprehensive educational guide on ethical direct selling with VANRITI products.
+     */
+    public function directSelling(): View
+    {
+        $rootCategories = Category::active()
+            ->roots()
+            ->with(['children'])
+            ->orderBy('sort_order')
+            ->get();
+
+        $showcaseProducts = Product::active()
+            ->with(['images', 'categories'])
+            ->whereHas('images')
+            ->latest()
+            ->take(4)
+            ->get();
+
+        return view('tfc.direct-selling.index', compact('rootCategories', 'showcaseProducts'));
+    }
+
+    /**
+     * Page 2: TFC Incentive & Rewards Program.
+     * Full business plan explaining Product Credit (PC), activation packages, binary matching, and rules.
+     */
+    public function incentiveProgram(): View
+    {
+        return view('tfc.direct-selling.incentive-program');
+    }
+
+    /**
+     * The TFC Direct Selling Opportunity (Backward compatibility alias).
      */
     public function opportunity(): View
     {
-        return view('tfc.direct-selling.opportunity');
+        return $this->incentiveProgram();
     }
 
     /**
@@ -23,7 +56,7 @@ class DirectSellingController extends Controller
      */
     public function howItWorks(): View
     {
-        return view('tfc.direct-selling.how-it-works');
+        return $this->directSelling();
     }
 
     /**

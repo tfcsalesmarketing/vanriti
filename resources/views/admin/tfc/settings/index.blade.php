@@ -25,6 +25,9 @@
             <button class="nav-link fw-semibold" id="contact-tab" data-bs-toggle="pill" data-bs-target="#tab-contact" type="button" role="tab">Contact &amp; Support</button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="plan-tab" data-bs-toggle="pill" data-bs-target="#tab-plan" type="button" role="tab">Direct Selling &amp; Incentive Plan</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link fw-semibold" id="social-tab" data-bs-toggle="pill" data-bs-target="#tab-social" type="button" role="tab">Social Media</button>
         </li>
     </ul>
@@ -165,6 +168,77 @@
                         <div class="col-12">
                             <label class="form-label fw-semibold">Corporate Office Address</label>
                             <textarea name="office_address" class="form-control" rows="3">{{ tfc_setting('office_address', 'TFC Sales & Marketing Corporate Office, India') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tab: Direct Selling & Incentive Plan Settings --}}
+        <div class="tab-pane fade" id="tab-plan" role="tabpanel">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0">Direct Selling Page Headlines</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Page Headline Title</label>
+                            <input type="text" name="direct_selling_headline" class="form-control" value="{{ tfc_setting('direct_selling_headline', 'More Than Products. A Business Built on Relationships.') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Hero Supporting Subtitle</label>
+                            <input type="text" name="direct_selling_subtitle" class="form-control" value="{{ tfc_setting('direct_selling_subtitle', 'Discover a More Personal Way to Experience Wellness.') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0">Incentive &amp; Business Plan Settings</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Incentive Page Headline</label>
+                            <input type="text" name="incentive_headline" class="form-control" value="{{ tfc_setting('incentive_headline', 'Recognising Genuine Sales. Encouraging Consistent Growth.') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Daily Settlement Cutoff</label>
+                            <input type="text" name="plan_settlement_cutoff" class="form-control" value="{{ tfc_setting('plan_settlement_cutoff', '11:50 PM IST') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Direct Sponsor Rate (%)</label>
+                            <input type="text" name="plan_direct_sponsor_rate" class="form-control" value="{{ tfc_setting('plan_direct_sponsor_rate', '10') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Binary Matching Rate (%)</label>
+                            <input type="text" name="plan_binary_matching_rate" class="form-control" value="{{ tfc_setting('plan_binary_matching_rate', '15') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Booster Rate (%)</label>
+                            <input type="text" name="plan_booster_rate" class="form-control" value="{{ tfc_setting('plan_booster_rate', '2') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Prime Booster Rate (%)</label>
+                            <input type="text" name="plan_prime_booster_rate" class="form-control" value="{{ tfc_setting('plan_prime_booster_rate', '3') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Rewards Allocation (%)</label>
+                            <input type="text" name="plan_rewards_rate" class="form-control" value="{{ tfc_setting('plan_rewards_rate', '10') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Processing Fee (%)</label>
+                            <input type="text" name="plan_processing_fee" class="form-control" value="{{ tfc_setting('plan_processing_fee', '2') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Proposed TDS (%)</label>
+                            <input type="text" name="plan_tds_fee" class="form-control" value="{{ tfc_setting('plan_tds_fee', '2') }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Income &amp; Financial Disclaimer Note</label>
+                            <textarea name="plan_income_disclaimer" class="form-control" rows="3">{{ tfc_setting('plan_income_disclaimer', 'Participation in direct selling does not guarantee earnings. Actual incentives, where earned, depend strictly upon qualifying business activity, customer demand, individual effort, and approved incentive rules.') }}</textarea>
                         </div>
                     </div>
                 </div>

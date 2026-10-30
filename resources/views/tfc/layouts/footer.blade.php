@@ -67,10 +67,10 @@
                 <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">TFC Navigation</h6>
                 <ul class="tfc-footer-links">
                     <li><a href="{{ tfc_route('home') }}">Home</a></li>
-                    <li><a href="{{ tfc_route('about') }}">About TFC</a></li>
-                    <li><a href="{{ tfc_route('brand') }}">VANRITI Brand</a></li>
+                    <li><a href="{{ tfc_route('direct-selling') }}">Direct Selling Guide</a></li>
+                    <li><a href="{{ tfc_route('incentive-program') }}">Incentive Program</a></li>
                     <li><a href="{{ tfc_route('products') }}">Products Catalogue</a></li>
-                    <li><a href="{{ tfc_route('how-it-works') }}">How It Works</a></li>
+                    <li><a href="{{ tfc_route('brand') }}">VANRITI Brand</a></li>
                     <li><a href="{{ tfc_route('become-a-seller') }}">Become a Direct Seller</a></li>
                 </ul>
             </div>

@@ -697,3 +697,42 @@ body {
         font-size: 1rem;
     }
 }
+
+/* ==========================================================================
+   Page Utilities & Accordion Enhancements
+   ========================================================================== */
+.hover-shadow {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(10, 29, 55, 0.08) !important;
+}
+.transition {
+    transition: all 0.25s ease;
+}
+
+.tfc-accordion .accordion-button {
+    font-size: 0.95rem;
+    padding: 1.1rem 1.25rem;
+    background-color: #FFFFFF;
+    color: var(--tfc-navy);
+}
+.tfc-accordion .accordion-button:not(.collapsed) {
+    background-color: #F8FAFC;
+    color: var(--tfc-navy);
+    box-shadow: none;
+    border-bottom: 1px solid var(--tfc-border);
+}
+.tfc-accordion .accordion-button:focus {
+    box-shadow: 0 0 0 3px rgba(212, 155, 36, 0.2);
+}
+.tfc-accordion .accordion-body {
+    padding: 1.25rem;
+    background-color: #FFFFFF;
+}
+
+.tfc-binary-diagram {
+    position: relative;
+    padding: 1rem 0;
+}

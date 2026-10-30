@@ -16,8 +16,10 @@ Route::get('/about-us', [HomeController::class, 'about'])->name('about');
 Route::get('/vanriti-brand', [HomeController::class, 'brand'])->name('brand');
 Route::get('/faqs', [HomeController::class, 'faqs'])->name('faqs');
 
-// 2. Direct Selling & Opportunity Modules
-Route::get('/opportunity', [DirectSellingController::class, 'opportunity'])->name('opportunity');
+// 2. Direct Selling & Incentive Business Plan Modules
+Route::get('/direct-selling', [DirectSellingController::class, 'directSelling'])->name('direct-selling');
+Route::get('/incentive-program', [DirectSellingController::class, 'incentiveProgram'])->name('incentive-program');
+Route::get('/opportunity', [DirectSellingController::class, 'incentiveProgram'])->name('opportunity');
 Route::get('/how-it-works', [DirectSellingController::class, 'howItWorks'])->name('how-it-works');
 Route::get('/become-a-seller', [DirectSellingController::class, 'apply'])->name('become-a-seller');
 Route::post('/become-a-seller', [DirectSellingController::class, 'submitApplication'])->name('become-a-seller.submit')->middleware('throttle:10,1');
