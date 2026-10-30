@@ -625,7 +625,7 @@
                             </div>
                             <div class="text-muted" style="font-size: 0.72rem;">
                                 <i class="bi bi-telephone me-1"></i>+{{ $activeConversation->phone }}
-                                @if ($activeConversation->isWindowActive())
+                                @if ($activeConversation->isWindowOpen())
                                     <span class="text-success ms-2">● 24h Window Active</span>
                                 @else
                                     <span class="text-muted ms-2">○ Template Required</span>

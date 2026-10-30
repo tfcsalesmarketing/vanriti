@@ -94,6 +94,11 @@ class WhatsAppConversation extends Model
         return $this->window_expires_at && $this->window_expires_at->isFuture();
     }
 
+    public function isWindowActive(): bool
+    {
+        return $this->isWindowOpen();
+    }
+
     public function windowRemainingFormatted(): string
     {
         if (! $this->isWindowOpen()) {
