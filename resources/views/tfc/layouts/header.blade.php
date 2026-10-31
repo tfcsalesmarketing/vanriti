@@ -7,8 +7,8 @@
     <div class="container d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <span class="d-inline-flex align-items-center">
-                <i class="bi bi-shield-check text-warning me-1.5"></i>
-                <span class="fw-semibold text-white">Official Direct-Selling Partner for VANRITI</span>
+                <i class="bi bi-stars text-warning me-1.5"></i>
+                <span class="fw-semibold text-white">Empowering Entrepreneurs Across India</span>
             </span>
             <span class="tfc-topbar-divider">|</span>
             <span class="text-warning fw-semibold" style="letter-spacing: 0.5px;">{{ tfc_setting('company_tagline', 'CONNECTING PRODUCTS. CREATING POSSIBILITIES.') }}</span>
@@ -26,8 +26,12 @@
                 </a>
             @endif
             <span class="tfc-topbar-divider">|</span>
-            <a href="{{ tfc_route('grievance') }}" class="text-warning fw-semibold d-inline-flex align-items-center">
-                <i class="bi bi-ticket-detailed me-1"></i>Consumer Grievance
+            <a href="{{ tfc_route('how-it-works') }}" class="text-white-50 d-inline-flex align-items-center hover-gold">
+                <i class="bi bi-info-circle text-warning me-1"></i>Distributor Guide
+            </a>
+            <span class="tfc-topbar-divider">|</span>
+            <a href="{{ tfc_route('contact') }}" class="text-white-50 d-inline-flex align-items-center hover-gold">
+                <i class="bi bi-headset text-warning me-1"></i>Support Desk
             </a>
         </div>
     </div>
@@ -62,14 +66,13 @@
                         </a>
                     </li>
                 @empty
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('home') }}">Home</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('about') }}">About TFC</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('brand') }}">VANRITI Brand</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('products') }}">Products</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('opportunity') }}">Opportunity</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('how-it-works') }}">How It Works</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('grievance') }}">Grievance</a></li>
-                    <li class="nav-item"><a class="nav-link tfc-nav-link" href="{{ tfc_route('contact') }}">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('/') || request()->is('tfc') ? 'active' : '' }}" href="{{ tfc_route('home') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('*about*') ? 'active' : '' }}" href="{{ tfc_route('about') }}">About TFC</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('*products*') || request()->is('*category*') ? 'active' : '' }}" href="{{ tfc_route('products') }}">Products</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('*opportunity*') || request()->is('*incentive*') ? 'active' : '' }}" href="{{ tfc_route('opportunity') }}">Opportunity</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('*brand*') || request()->is('*standards*') ? 'active' : '' }}" href="{{ tfc_route('brand') }}">Product Standards</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('*how-it-works*') ? 'active' : '' }}" href="{{ tfc_route('how-it-works') }}">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link tfc-nav-link {{ request()->is('*contact*') ? 'active' : '' }}" href="{{ tfc_route('contact') }}">Contact</a></li>
                 @endforelse
             </ul>
 

@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'TFC Sales & Marketing | ' . tfc_setting('company_tagline', 'Connecting Products. Creating Possibilities.'))</title>
-    <meta name="description" content="@yield('meta_description', 'TFC Sales & Marketing is an ethical direct-selling entity connecting genuine Ayurvedic and wellness products with independent entrepreneurs across India.')">
+    <meta name="description" content="@yield('meta_description', 'TFC Sales & Marketing is a premier direct-selling enterprise empowering independent entrepreneurs across India with high-performance wellness, personal care, and lifestyle formulations.')">
     <link rel="canonical" href="{{ canonical_url() }}">
 
     <!-- Google Fonts -->
@@ -84,8 +84,8 @@
         $whatsappWidgetEnabled = (bool) tfc_setting('whatsapp_widget_enabled', true);
         $whatsappNumber = tfc_setting('whatsapp_phone_number') ?: tfc_setting('contact_phone', '919876543210');
         $whatsappCleanNumber = preg_replace('/[^0-9]/', '', (string) $whatsappNumber);
-        $whatsappGreeting = tfc_setting('whatsapp_widget_greeting', 'Need help with direct selling or products? Chat with us on WhatsApp!');
-        $whatsappDefaultMsg = tfc_setting('whatsapp_widget_default_msg', 'Hello TFC Sales & Marketing, I am interested in learning more about VANRITI botanical products and the TFC direct selling business.');
+        $whatsappGreeting = tfc_setting('whatsapp_widget_greeting', 'Need help with our direct selling business or products? Chat with us on WhatsApp!');
+        $whatsappDefaultMsg = tfc_setting('whatsapp_widget_default_msg', 'Hello TFC Sales & Marketing, I am interested in learning more about TFC products and the direct selling business opportunity.');
         $whatsappLink = 'https://wa.me/' . $whatsappCleanNumber . '?text=' . rawurlencode((string) $whatsappDefaultMsg);
     @endphp
 

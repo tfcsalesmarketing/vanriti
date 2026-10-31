@@ -5,9 +5,9 @@
 @section('content')
 <section class="tfc-page-header">
     <div class="container text-center">
-        <span class="tfc-badge-gold mb-2 d-inline-block">VANRITI Wellness</span>
+        <span class="tfc-badge-gold mb-2 d-inline-block">Curated Formulations</span>
         <h1 class="display-5 fw-bold text-white mb-2">Our Product Catalogue</h1>
-        <p class="text-white-50 lead mb-0">Certified Ayurvedic Formulations &bull; Authentic Quality</p>
+        <p class="text-white-50 lead mb-0">High-Performance Botanical Care &bull; Authentic Quality</p>
     </div>
 </section>
 

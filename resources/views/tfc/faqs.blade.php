@@ -35,7 +35,7 @@
                 </h2>
                 <div id="faqCollapse2" class="accordion-collapse collapse" data-bs-parent="#tfcFaqAccordion">
                     <div class="accordion-body text-muted">
-                        Direct sellers earn lawful retail commissions strictly derived from the sale of genuine VANRITI consumer wellness products to real retail customers. We strictly prohibit pyramid schemes, head-hunting bounties, or recruitment-based incentives.
+                        Direct sellers earn retail margins and team matching incentives strictly derived from the sale and consumption of genuine wellness and personal care products. Earnings are tied directly to actual product sales volume and leadership mentoring.
                     </div>
                 </div>
             </div>
@@ -43,12 +43,12 @@
             <div class="accordion-item mb-3 border rounded shadow-sm">
                 <h2 class="accordion-header" id="faqHeading3">
                     <button class="accordion-button collapsed fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse3">
-                        3. What is the cooling-off period policy?
+                        3. What is the return and refund policy?
                     </button>
                 </h2>
                 <div id="faqCollapse3" class="accordion-collapse collapse" data-bs-parent="#tfcFaqAccordion">
                     <div class="accordion-body text-muted">
-                        In accordance with direct selling rules, customers and sellers enjoy a statutory cooling-off period during which unused products in marketable condition can be returned for a full or prescribed refund. (Specific commercial buy-back terms are detailed in the official policy section).
+                        Customers and sellers enjoy an official satisfaction guarantee and cooling-off period during which unused products in original packaging can be returned for a refund in accordance with company policy.
                     </div>
                 </div>
             </div>
@@ -61,7 +61,7 @@
                 </h2>
                 <div id="faqCollapse4" class="accordion-collapse collapse" data-bs-parent="#tfcFaqAccordion">
                     <div class="accordion-body text-muted">
-                        You can explore products on this website and purchase them securely through the official <a href="{{ config('tfc.vanriti_store_url', 'https://vanriti.com') }}" target="_blank" class="fw-semibold text-primary">VANRITI Store</a>, or order directly through an authorized independent TFC direct seller.
+                        You can explore our product catalogue directly on this website and order online for doorstep delivery across India, or connect with an authorized independent TFC direct seller in your region.
                     </div>
                 </div>
             </div>

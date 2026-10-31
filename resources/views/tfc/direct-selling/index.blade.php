@@ -1,7 +1,7 @@
 @extends('tfc.layouts.app')
 
 @section('title', tfc_setting('direct_selling_meta_title', 'Discover Direct Selling with TFC Sales & Marketing | ' . tfc_setting('company_name', 'TFC Sales & Marketing')))
-@section('meta_description', 'Discover transparent, product-led direct selling with TFC Sales & Marketing. Learn how independent direct sellers recommend genuine VANRITI Ayurvedic formulations with zero joining fee.')
+@section('meta_description', 'Discover transparent, product-led direct selling with TFC Sales & Marketing. Learn how independent direct sellers recommend genuine wellness formulations with zero joining fee.')
 
 @section('content')
 {{-- Section 1: Hero --}}
@@ -10,21 +10,21 @@
         <div class="row align-items-center g-5">
             <div class="col-12 col-lg-7">
                 <span class="badge tfc-badge-gold mb-3">
-                    <i class="bi bi-shield-check me-1"></i>Official Direct-Selling Enterprise &bull; Zero Registration Fee
+                    <i class="bi bi-stars me-1"></i>Official Direct-Selling Enterprise &bull; Zero Registration Fee
                 </span>
                 <h1 class="display-4 fw-bold mb-3" style="letter-spacing: -0.02em; line-height: 1.2;">
                     More Than Products. <br>
                     <span style="color: var(--tfc-gold);">A Business Built on Relationships.</span>
                 </h1>
                 <p class="lead text-white-50 mb-3" style="max-width: 620px;">
-                    Discover a More Personal Way to Experience Wellness.
+                    Discover a More Rewarding Way to Experience Wellness and Entrepreneurship.
                 </p>
                 <p class="text-white-50 mb-4" style="max-width: 620px; line-height: 1.7;">
-                    TFC Sales &amp; Marketing connects customers and independent direct sellers with <strong>VANRITI</strong>'s range of herbal, wellness, and personal care products through a transparent, product-focused direct-selling approach.
+                    TFC Sales &amp; Marketing connects consumers and independent direct sellers with a curated portfolio of herbal, wellness, and personal care products through an empowering, product-centered direct-selling approach.
                 </p>
                 <div class="d-flex flex-wrap gap-3">
                     <a href="{{ tfc_route('products') }}" class="btn btn-tfc-primary btn-lg">
-                        <i class="bi bi-grid-fill me-2"></i>Explore VANRITI Products
+                        <i class="bi bi-grid-fill me-2"></i>Explore Products
                     </a>
                     <a href="{{ tfc_route('incentive-program') }}" class="btn btn-outline-light btn-lg">
                         <i class="bi bi-journal-text me-2"></i>Explore the TFC Opportunity
@@ -49,7 +49,7 @@
                         </li>
                         <li class="d-flex align-items-center gap-2">
                             <i class="bi bi-check2-circle text-warning fs-5"></i>
-                            <span><strong>Authentic Formulations:</strong> Lab-tested botanical care crafted by VANRITI.</span>
+                            <span><strong>Authentic Formulations:</strong> Lab-tested botanical care crafted to high standards.</span>
                         </li>
                         <li class="d-flex align-items-center gap-2">
                             <i class="bi bi-check2-circle text-warning fs-5"></i>
@@ -144,7 +144,7 @@
                     <span class="tfc-step-badge">Step 2</span>
                     <h5 class="fw-bold mb-2">Explore Products</h5>
                     <p class="text-muted small mb-0">
-                        Explore authentic VANRITI products, complete botanical ingredient disclosures, laboratory testing reports, safety precautions, and usage guidelines.
+                        Explore authentic TFC formulations, complete botanical ingredient disclosures, laboratory testing reports, safety precautions, and usage guidelines.
                     </p>
                 </div>
             </div>
@@ -184,13 +184,13 @@
     </div>
 </section>
 
-{{-- Section 4: Meet VANRITI (Live Catalog Integration) --}}
+{{-- Section 4: Live Product Catalogue Integration --}}
 <section class="py-5" style="background-color: #FFFFFF;">
     <div class="container py-3">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4">
             <div>
-                <div class="tfc-section-eyebrow">Our Botanical Heritage</div>
-                <h2 class="tfc-section-title mb-0">Meet VANRITI</h2>
+                <div class="tfc-section-eyebrow">Our Botanical Formulations</div>
+                <h2 class="tfc-section-title mb-0">Product Showcase</h2>
                 <p class="text-muted small mb-0 mt-1">Authentic Ayurvedic, Herbal &amp; Natural Personal Care Formulations</p>
             </div>
             <a href="{{ tfc_route('products') }}" class="btn btn-tfc-outline mt-3 mt-md-0">
@@ -268,7 +268,7 @@
                                         View Details
                                     </a>
                                     <a href="{{ tfc_vanriti_product_url($product->slug) }}" target="_blank" rel="noopener" class="btn btn-sm btn-tfc-primary">
-                                        Buy on VANRITI <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                        Order Online <i class="bi bi-box-arrow-up-right ms-1"></i>
                                     </a>
                                 </div>
                             </div>
@@ -531,12 +531,12 @@
             <div class="accordion-item mb-3 border rounded-3 overflow-hidden shadow-sm">
                 <h2 class="accordion-header" id="headingThree">
                     <button class="accordion-button collapsed fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                        3. How is TFC associated with VANRITI?
+                        3. What categories of products does TFC offer?
                     </button>
                 </h2>
                 <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#dsFaqAccordion">
                     <div class="accordion-body text-muted small" style="line-height: 1.7;">
-                        TFC Sales &amp; Marketing operates in official commercial partnership with <strong>VANRITI</strong>. VANRITI formulates, manufactures, and quality-tests the herbal formulations, while TFC manages the direct-selling and independent entrepreneur distribution network.
+                        TFC Sales &amp; Marketing curates high-performance botanical wellness, nutrition, skin vitality, and daily personal care formulations. All products are manufactured in certified facilities with strict quality and safety compliance.
                     </div>
                 </div>
             </div>
@@ -575,7 +575,7 @@
                 </h2>
                 <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#dsFaqAccordion">
                     <div class="accordion-body text-muted small" style="line-height: 1.7;">
-                        Yes! As an authorized independent direct seller, you present VANRITI's products, explain directions for use and herbal benefits, and facilitate orders for your retail customers.
+                        Yes! As an authorized independent direct seller, you present TFC's products, explain directions for use and herbal benefits, and facilitate orders for your retail customers.
                     </div>
                 </div>
             </div>
@@ -609,12 +609,12 @@
             <div class="accordion-item mb-3 border rounded-3 overflow-hidden shadow-sm">
                 <h2 class="accordion-header" id="headingNine">
                     <button class="accordion-button collapsed fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">
-                        9. Where can I purchase VANRITI products?
+                        9. Where can customers purchase products?
                     </button>
                 </h2>
                 <div id="collapseNine" class="accordion-collapse collapse" aria-labelledby="headingNine" data-bs-parent="#dsFaqAccordion">
                     <div class="accordion-body text-muted small" style="line-height: 1.7;">
-                        You can explore products on this website and purchase directly through an authorized TFC direct seller or through the official VANRITI retail storefront at <a href="{{ config('tfc.vanriti_store_url', 'https://vanriti.com') }}" target="_blank" class="text-warning">vanriti.com</a>.
+                        You can explore products on this website and purchase directly through an authorized TFC direct seller or order online for direct doorstep dispatch across India.
                     </div>
                 </div>
             </div>

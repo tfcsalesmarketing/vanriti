@@ -256,9 +256,9 @@
 
             <div class="text-uppercase text-secondary fw-bold px-3 pt-3 pb-1" style="font-size: 0.68rem; letter-spacing: 0.8px;">Business &amp; Support</div>
 
-            <a href="{{ route('shop.index') }}" target="_blank" class="member-nav-link">
+            <a href="{{ tfc_route('products') }}" target="_blank" class="member-nav-link">
                 <i class="bi bi-bag-check"></i>
-                <span>VANRITI Store <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 0.75rem;"></i></span>
+                <span>Product Catalogue <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 0.75rem;"></i></span>
             </a>
 
             <a href="{{ route('tfc.preview.grievance') }}" target="_blank" class="member-nav-link">

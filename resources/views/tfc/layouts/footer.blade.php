@@ -2,7 +2,7 @@
     $footerCol1 = \App\Models\Tfc\TfcMenu::active()->where('location', 'footer_col1')->get();
     $footerCol2 = \App\Models\Tfc\TfcMenu::active()->where('location', 'footer_col2')->get();
     
-    // Only fetch published legal pages to ensure draft policies are not displayed in the public footer
+    // Fetch published legal pages if any
     $publishedPageSlugs = \App\Models\Tfc\TfcPage::where('status', 'published')->pluck('slug')->toArray();
     $footerLegal = \App\Models\Tfc\TfcMenu::active()
         ->where('location', 'footer_legal')
@@ -20,7 +20,7 @@
 
 <footer class="tfc-footer">
     <div class="container">
-        <div class="row g-4 g-lg-5 mb-5">
+        <div class="row g-4 g-lg-5 mb-4">
             {{-- Col 1: Corporate Brand & Profile --}}
             <div class="col-12 col-md-6 col-lg-4">
                 <a href="{{ tfc_route('home') }}" class="d-inline-block mb-3">
@@ -30,7 +30,7 @@
                     {{ tfc_setting('company_tagline', 'CONNECTING PRODUCTS. CREATING POSSIBILITIES.') }}
                 </p>
                 <p class="small text-white-50 mb-3" style="line-height: 1.6;">
-                    TFC Sales &amp; Marketing is an Indian direct-selling enterprise operating in official partnership with <strong>VANRITI</strong>. We are committed to ethical commerce, genuine botanical formulations, transparent retail margins, and consumer protection.
+                    TFC Sales &amp; Marketing is a premier direct-selling enterprise dedicated to championing wellness, entrepreneurial freedom, and holistic personal care. We deliver science-backed botanical formulations directly to households through an empowered network of independent business leaders.
                 </p>
 
                 <div class="small text-white-50 mb-3">
@@ -46,7 +46,7 @@
                     @endif
                 </div>
 
-                <div class="d-flex align-items-center gap-3 pt-2">
+                <div class="d-flex align-items-center gap-3 pt-1">
                     @if (tfc_setting('facebook_url') && !str_contains(tfc_setting('facebook_url'), 'facebook.com#'))
                         <a href="{{ tfc_setting('facebook_url') }}" target="_blank" rel="noopener" class="text-white-50 hover-gold fs-5" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
                     @endif
@@ -64,40 +64,34 @@
 
             {{-- Col 2: Navigation Links --}}
             <div class="col-6 col-md-3 col-lg-2">
-                <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">TFC Navigation</h6>
+                <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">TFC Enterprise</h6>
                 <ul class="tfc-footer-links">
                     <li><a href="{{ tfc_route('home') }}">Home</a></li>
-                    <li><a href="{{ tfc_route('direct-selling') }}">Direct Selling Guide</a></li>
-                    <li><a href="{{ tfc_route('incentive-program') }}">Incentive Program</a></li>
-                    <li><a href="{{ tfc_route('products') }}">Products Catalogue</a></li>
-                    <li><a href="{{ tfc_route('brand') }}">VANRITI Brand</a></li>
-                    <li><a href="{{ tfc_route('become-a-seller') }}">Become a Direct Seller</a></li>
+                    <li><a href="{{ tfc_route('about') }}">About TFC</a></li>
+                    <li><a href="{{ tfc_route('products') }}">Product Showcase</a></li>
+                    <li><a href="{{ tfc_route('opportunity') }}">Opportunity</a></li>
+                    <li><a href="{{ tfc_route('incentive-program') }}">Incentive Plan</a></li>
+                    <li><a href="{{ tfc_route('brand') }}">Product Standards</a></li>
+                    <li><a href="{{ tfc_route('become-a-seller') }}">Join As Partner</a></li>
                 </ul>
             </div>
 
             {{-- Col 3: Support & Grievance --}}
             <div class="col-6 col-md-3 col-lg-3">
-                <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">Consumer Support</h6>
+                <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">Member &amp; Support</h6>
                 <ul class="tfc-footer-links">
-                    <li><a href="{{ tfc_route('grievance') }}"><i class="bi bi-shield-check text-warning me-1"></i>Lodge a Grievance</a></li>
-                    <li><a href="{{ tfc_route('grievance.track') }}"><i class="bi bi-search text-warning me-1"></i>Track Grievance Ticket</a></li>
-                    <li><a href="{{ tfc_route('contact') }}">Contact &amp; Inquiries</a></li>
+                    <li><a href="{{ route('tfc.preview.member.login') }}"><i class="bi bi-person-circle text-warning me-1"></i>Distributor Portal</a></li>
+                    <li><a href="{{ tfc_route('how-it-works') }}">How It Works</a></li>
                     <li><a href="{{ tfc_route('faqs') }}">Frequently Asked Questions</a></li>
-                    <li><a href="{{ tfc_route('opportunity') }}">Opportunity Overview</a></li>
+                    <li><a href="{{ tfc_route('contact') }}">Contact &amp; Inquiries</a></li>
+                    <li><a href="{{ tfc_route('grievance') }}">Customer Care &amp; Grievance</a></li>
+                    <li><a href="{{ tfc_route('grievance.track') }}">Track Support Ticket</a></li>
                 </ul>
-                <div class="mt-3 p-2 rounded bg-black bg-opacity-25 border border-white border-opacity-10">
-                    <small class="text-warning d-block fw-semibold" style="font-size: 0.76rem;">
-                        <i class="bi bi-clock-history me-1"></i>Rule 7 Statutory Timelines
-                    </small>
-                    <small class="text-white-50 d-block" style="font-size: 0.72rem; line-height: 1.4;">
-                        48-Hour Acknowledgment &bull; 30-Day Transparent Resolution
-                    </small>
-                </div>
             </div>
 
-            {{-- Col 4: Statutory Disclosures & Legal --}}
+            {{-- Col 4: Corporate Governance & Policies --}}
             <div class="col-12 col-md-12 col-lg-3">
-                <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">Statutory &amp; Policies</h6>
+                <h6 class="text-white fw-bold mb-3 pb-2 border-bottom border-white border-opacity-10">Corporate Policies</h6>
                 @if ($footerLegal->isNotEmpty())
                     <ul class="tfc-footer-links mb-3">
                         @foreach ($footerLegal as $item)
@@ -112,44 +106,30 @@
                         @endforeach
                     </ul>
                 @else
-                    <div class="p-3 rounded bg-white bg-opacity-10 border border-white border-opacity-10 mb-3">
-                        <small class="text-white-50 d-block" style="font-size: 0.75rem; line-height: 1.5;">
-                            <strong class="text-warning d-block mb-1"><i class="bi bi-journal-medical me-1"></i>Statutory Policies in Review</strong>
-                            Statutory disclosures, cooling-off terms, and direct-selling codes of conduct are undergoing corporate verification and will be published upon regulatory confirmation.
-                        </small>
-                    </div>
+                    <ul class="tfc-footer-links mb-3">
+                        <li><a href="{{ tfc_route('policy', 'terms-of-service') }}">Terms of Service</a></li>
+                        <li><a href="{{ tfc_route('policy', 'privacy-policy') }}">Privacy Policy</a></li>
+                        <li><a href="{{ tfc_route('policy', 'code-of-ethics') }}">Distributor Code of Ethics</a></li>
+                        <li><a href="{{ tfc_route('policy', 'returns-and-refunds') }}">Return &amp; Refund Policy</a></li>
+                        <li><a href="{{ tfc_route('policy', 'compensation-plan') }}">Incentive Guidelines</a></li>
+                    </ul>
                 @endif
 
-                <div class="p-2 rounded bg-black bg-opacity-25 border border-white border-opacity-10 text-white-50" style="font-size: 0.72rem;">
-                    <span class="text-warning fw-semibold d-block mb-1">Direct-Selling Compliance</span>
-                    Consumer Protection (Direct Selling) Rules, 2021 &amp; 2023 Amendment. Zero recruitment fees.
+                <div class="p-3 rounded bg-black bg-opacity-25 border border-white border-opacity-10 text-white-50" style="font-size: 0.74rem;">
+                    <span class="text-warning fw-semibold d-block mb-1"><i class="bi bi-patch-check-fill me-1"></i>Direct-Selling Excellence</span>
+                    Transparent retail margins, pure botanical formulations, and zero joining fees for independent distributors.
                 </div>
             </div>
         </div>
 
-        {{-- Mandatory Statutory Declaration Box --}}
-        <div class="p-3 rounded bg-black bg-opacity-30 border border-white border-opacity-10 mb-4">
-            <div class="row align-items-center">
-                <div class="col-12 col-md-9 mb-2 mb-md-0">
-                    <small class="text-white-50 d-block" style="font-size: 0.8rem; line-height: 1.5;">
-                        <strong class="text-warning">Statutory Notice:</strong> Direct selling involves the sale of genuine consumer products. TFC Sales &amp; Marketing strictly prohibits pyramid or money circulation schemes, does not charge any registration, enrollment, or training fees, and does not promise guaranteed income. Earnings are strictly derived from legitimate sales to consumers.
-                    </small>
-                </div>
-                <div class="col-12 col-md-3 text-md-end">
-                    <a href="{{ tfc_route('grievance') }}" class="btn btn-sm btn-outline-warning text-nowrap">
-                        <i class="bi bi-shield-check me-1"></i>Grievance Redressal
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        {{-- Footer Bottom Copyright & Partnership --}}
-        <div class="tfc-footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-            <div>
+        {{-- Footer Bottom Copyright --}}
+        <div class="tfc-footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 pt-3 border-top border-white border-opacity-10">
+            <div class="text-white-50 small">
                 &copy; {{ date('Y') }} {{ tfc_setting('company_name', 'TFC Sales & Marketing') }}. All rights reserved.
             </div>
-            <div class="text-white-50 small">
-                In Official Direct-Selling Partnership with <a href="{{ config('tfc.vanriti_store_url', 'https://vanriti.com') }}" target="_blank" rel="noopener" class="text-warning text-decoration-none fw-semibold">VANRITI</a>
+            <div class="text-white-50 small d-flex align-items-center gap-2">
+                <i class="bi bi-shield-lock text-warning"></i>
+                <span>Certified Formulations &bull; Pan-India Logistics &bull; Empowered Commerce</span>
             </div>
         </div>
     </div>

@@ -17,7 +17,7 @@
                     <span style="color: var(--tfc-gold);">Encouraging Consistent Growth.</span>
                 </h1>
                 <p class="lead text-white-50 mb-4" style="max-width: 650px; line-height: 1.7;">
-                    The TFC Incentive &amp; Rewards Program is designed around eligible product purchases and authentic commercial activity. We reward independent direct sellers for introducing and retailing certified VANRITI botanical formulations to consumers.
+                    The TFC Incentive &amp; Rewards Program is designed around eligible product purchases and authentic commercial activity. We reward independent direct sellers for introducing and retailing certified wellness and botanical formulations to consumers.
                 </p>
 
                 {{-- Prominent Mandatory Disclosure --}}
@@ -72,7 +72,7 @@
             <div class="tfc-section-eyebrow">Volume Measurement</div>
             <h2 class="tfc-section-title">Understanding Product Credit (PC)</h2>
             <p class="text-muted mx-auto" style="max-width: 680px;">
-                Product Credit (PC) is the standard business-volume metric assigned to eligible VANRITI products for incentive calculations.
+                Product Credit (PC) is the standard business-volume metric assigned to eligible TFC products for incentive calculations.
             </p>
         </div>
 
@@ -484,7 +484,7 @@
                 </h2>
                 <div id="incC1" class="accordion-collapse collapse show" aria-labelledby="incH1" data-bs-parent="#incentiveFaqAccordion">
                     <div class="accordion-body text-muted small">
-                        Product Credit (PC) is an internal business-volume measurement assigned to eligible VANRITI products to calculate organizational sales and incentive allocations.
+                        Product Credit (PC) is an internal business-volume measurement assigned to eligible products in our catalogue to calculate organizational sales and incentive allocations.
                     </div>
                 </div>
             </div>
@@ -683,7 +683,7 @@
         </p>
         <div class="d-flex flex-wrap justify-content-center gap-3">
             <a href="{{ tfc_route('products') }}" class="btn btn-tfc-primary btn-lg">
-                <i class="bi bi-grid-fill me-2"></i>Discover VANRITI Products
+                <i class="bi bi-grid-fill me-2"></i>Discover Our Products
             </a>
             <a href="{{ tfc_route('direct-selling') }}" class="btn btn-outline-light btn-lg">
                 <i class="bi bi-book me-2"></i>Learn About Direct Selling

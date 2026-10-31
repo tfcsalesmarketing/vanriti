@@ -42,7 +42,7 @@
                 <div>
                     <h4 class="fw-bold text-dark mb-2">Recommend Genuine Wellness Formulations</h4>
                     <p class="text-muted">
-                        Introduce friends, family, and community members to certified VANRITI herbal wellness formulations. Explain genuine ingredients, certified lab test results, and truthful usage directions.
+                        Introduce friends, family, and community members to certified botanical wellness formulations. Explain genuine ingredients, certified lab test results, and truthful usage directions.
                     </p>
                 </div>
             </div>

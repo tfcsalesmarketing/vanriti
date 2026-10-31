@@ -1,7 +1,7 @@
 @extends('tfc.layouts.app')
 
 @section('title', $product->name . ' | TFC Sales & Marketing')
-@section('meta_description', $product->short_description ?: 'Explore ' . $product->name . ' by VANRITI, marketed by TFC Sales & Marketing.')
+@section('meta_description', $product->short_description ?: 'Explore ' . $product->name . ' from TFC Sales & Marketing. Certified quality botanical formulation.')
 
 @section('content')
 <div class="container py-4">
@@ -89,14 +89,14 @@
                 </p>
             @endif
 
-            {{-- Official Purchase Link to VANRITI Storefront --}}
+            {{-- Direct Order & Delivery --}}
             <div class="p-4 rounded-4 mb-4 border" style="background: linear-gradient(135deg, #0A1D37, #132D54); color: #FFFFFF;">
-                <h6 class="text-warning fw-bold mb-2"><i class="bi bi-bag-check-fill me-2"></i>Official Store Checkout</h6>
+                <h6 class="text-warning fw-bold mb-2"><i class="bi bi-bag-check-fill me-2"></i>Order &amp; Delivery</h6>
                 <p class="text-white-50 small mb-3">
-                    As an ethical direct-selling entity, orders, customer accounts, and secure online payments are fulfilled directly by the master VANRITI platform.
+                    Fast, secure online fulfillment with nationwide doorstep delivery, authentic batch quality verification, and dedicated customer care.
                 </p>
                 <a href="{{ tfc_vanriti_product_url($product->slug) }}" target="_blank" class="btn btn-tfc-primary btn-lg w-100 fw-bold shadow">
-                    <i class="bi bi-cart3 me-2"></i>Buy on Official VANRITI Store <i class="bi bi-arrow-up-right small ms-1"></i>
+                    <i class="bi bi-cart3 me-2"></i>Order Product Now <i class="bi bi-arrow-up-right small ms-1"></i>
                 </a>
             </div>
 

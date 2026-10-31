@@ -7,7 +7,7 @@
     <div class="container text-center">
         <span class="tfc-badge-gold mb-2 d-inline-block">Zero Entry Fee</span>
         <h1 class="display-5 fw-bold text-white mb-2">Become a Direct Seller</h1>
-        <p class="text-white-50 lead mb-0">Join an ethical wellness network backed by VANRITI</p>
+        <p class="text-white-50 lead mb-0">Join a thriving direct-selling wellness network powered by TFC</p>
     </div>
 </section>
 

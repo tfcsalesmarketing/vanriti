@@ -527,7 +527,7 @@
                             <div class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center gap-2 rounded-3 border-info mt-1">
                                 <i class="bi bi-info-circle-fill text-primary flex-shrink-0"></i>
                                 <div>
-                                    <strong>Existing VANRITI Customer Found:</strong> ${escapeHtml(data.name)}. Your account will be upgraded to Direct Seller with your existing credentials.
+                                    <strong>Existing Customer Account Found:</strong> ${escapeHtml(data.name)}. Your account will be upgraded to Independent Direct Seller with your existing credentials.
                                 </div>
                             </div>`;
                         if (data.name && !fullNameInput.value) fullNameInput.value = data.name;

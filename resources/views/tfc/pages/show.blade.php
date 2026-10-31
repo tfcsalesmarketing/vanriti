@@ -48,7 +48,7 @@
                         <ul class="text-muted small mb-0 ps-3">
                             <li>TFC operates with <strong>Zero Registration Fee</strong> and prohibits pyramid schemes.</li>
                             <li>Grievances may be lodged 24/7 via the <a href="{{ tfc_route('grievance') }}" class="fw-semibold">Grievance Redressal Portal</a> (48h acknowledgment guarantee).</li>
-                            <li>All orders and customer accounts are fulfilled directly by the master VANRITI platform.</li>
+                            <li>All orders and customer accounts are processed through authorized digital channels with nationwide express fulfillment.</li>
                         </ul>
                     </div>
                     <div>
