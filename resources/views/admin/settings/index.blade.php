@@ -250,6 +250,20 @@
                                     @php $renderSettingField($setting); @endphp
                                 </div>
                             @endforeach
+
+                            <div class="col-12 mt-3">
+                                <div class="alert alert-light border small mb-0 p-3 rounded-3">
+                                    <div class="fw-semibold mb-1 text-dark"><i class="bi bi-broadcast me-1 text-primary"></i>Razorpay Webhook Callback URL</div>
+                                    <span class="text-muted" style="font-size:0.75rem;">Add this Webhook URL in your Razorpay Dashboard (Settings &rarr; Webhooks) so orders are instantly captured even if mobile shoppers close the tab after paying via UPI (GPay/PhonePe/Paytm):</span>
+                                    <div class="d-flex align-items-center gap-2 mt-1.5">
+                                        <code class="bg-white px-2 py-1 rounded border w-100 font-monospace small" id="razorpay-webhook-url">{{ url('/razorpay/webhook') }}</code>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('razorpay-webhook-url').textContent); if(window.vrToast) window.vrToast('Copied to clipboard!');" title="Copy Webhook URL"><i class="bi bi-clipboard"></i></button>
+                                    </div>
+                                    <small class="text-muted d-block mt-2" style="font-size:0.72rem; line-height:1.4;">
+                                        <strong>Setup Instructions:</strong> In Razorpay Dashboard &rarr; <em>Settings</em> &rarr; <em>Webhooks</em> &rarr; <em>Add New Webhook</em>, paste the URL above, enter any secret you choose, and select Active Events: <code>payment.captured</code> and <code>payment.failed</code>. Then paste that exact secret into the <strong>Razorpay Webhook Secret</strong> field above and click <em>Save All Settings</em>.
+                                    </small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
