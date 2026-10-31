@@ -4,104 +4,85 @@
 @section('meta_description', 'TFC Sales & Marketing is a premier direct-selling enterprise in India offering high-performance wellness and personal care formulations with an equitable, rewarding business model.')
 
 @section('content')
-{{-- 1. Hero Image Banner Slider (Responsive Picture Tags) --}}
-@if ($banners->isNotEmpty())
-<section class="tfc-hero-slider">
-    <div id="tfcHeroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="5000">
-        @if ($banners->count() > 1)
-            <div class="carousel-indicators">
-                @foreach ($banners as $i => $banner)
-                    <button type="button" data-bs-target="#tfcHeroCarousel" data-bs-slide-to="{{ $i }}" class="{{ $i === 0 ? 'active' : '' }}" aria-current="{{ $i === 0 ? 'true' : 'false' }}" aria-label="Slide {{ $i + 1 }}"></button>
-                @endforeach
-            </div>
-        @endif
+<main id="main-content">
 
-        <div class="carousel-inner">
-            @foreach ($banners as $i => $banner)
-                @php
-                    $desktopImage = image_url($banner->image);
-                    $mobileImage = $banner->mobile_image ? image_url($banner->mobile_image) : null;
-                    $bannerAlt = $banner->title ?: (tfc_setting('company_name', 'TFC Sales & Marketing') . ' Banner ' . ($i + 1));
-                    $bannerTarget = $banner->link ? (str_starts_with($banner->link, 'http') ? $banner->link : tfc_route(ltrim($banner->link, '/'))) : null;
-                @endphp
-                <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
-                    @if ($bannerTarget)
-                        <a href="{{ $bannerTarget }}" class="d-block w-100">
-                            <picture>
-                                @if ($mobileImage)
-                                    <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
-                                @endif
-                                <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="tfc-hero-banner-img d-block w-100" @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
-                            </picture>
-                        </a>
-                    @else
+{{-- 1. Hero Slider (Clean Responsive Carousel with frosted glass controls like Eduse) --}}
+@if ($banners->isNotEmpty())
+<section id="home" class="hero-slider" aria-roledescription="carousel" aria-label="Featured banners">
+    <div class="slides" id="tfcSliderTrack">
+        @foreach ($banners as $i => $banner)
+            @php
+                $desktopImage = image_url($banner->image);
+                $mobileImage = $banner->mobile_image ? image_url($banner->mobile_image) : null;
+                $bannerAlt = $banner->title ?: (tfc_setting('company_name', 'TFC Sales & Marketing') . ' promotional banner');
+                $bannerTarget = $banner->link ? (str_starts_with($banner->link, 'http') ? $banner->link : tfc_route(ltrim($banner->link, '/'))) : null;
+            @endphp
+            <div class="slide {{ $i === 0 ? 'active' : '' }}">
+                @if ($bannerTarget)
+                    <a href="{{ $bannerTarget }}" class="d-block w-100 h-100">
                         <picture>
                             @if ($mobileImage)
                                 <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
                             @endif
-                            <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="tfc-hero-banner-img d-block w-100" @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                            <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" width="1920" height="840" decoding="async" @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
                         </picture>
-                    @endif
-                </div>
+                    </a>
+                @else
+                    <picture>
+                        @if ($mobileImage)
+                            <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
+                        @endif
+                        <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" width="1920" height="840" decoding="async" @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                    </picture>
+                @endif
+            </div>
+        @endforeach
+    </div>
+
+    @if ($banners->count() > 1)
+        <button type="button" class="nav-slider-btn prev" id="sliderPrevBtn" aria-label="Previous slide">
+            <i class="ri-arrow-left-s-line" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="nav-slider-btn next" id="sliderNextBtn" aria-label="Next slide">
+            <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+        </button>
+        <div class="dots" id="sliderDots" role="tablist" aria-label="Slide navigation">
+            @foreach ($banners as $i => $banner)
+                <button type="button" class="dot {{ $i === 0 ? 'active' : '' }}" data-slide="{{ $i }}" aria-label="Slide {{ $i + 1 }}"></button>
             @endforeach
         </div>
-
-        @if ($banners->count() > 1)
-            <button class="carousel-control-prev" type="button" data-bs-target="#tfcHeroCarousel" data-bs-slide="prev" aria-label="Previous Slide">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#tfcHeroCarousel" data-bs-slide="next" aria-label="Next Slide">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
-        @endif
-    </div>
+    @endif
 </section>
 @else
-{{-- Fallback Hero Section when no banners are configured --}}
-<section class="py-5" style="background: linear-gradient(135deg, #061224 0%, #0A1D37 60%, #132D54 100%); color: #FFFFFF;">
+{{-- Clean Hero Section fallback --}}
+<section class="tfc-hero-clean-banner py-5" style="background: linear-gradient(135deg, #070F1C 0%, #0A1D37 60%, #132D54 100%); color: #FFFFFF;">
     <div class="container py-5">
         <div class="row align-items-center g-5">
             <div class="col-12 col-lg-7">
-                <span class="badge tfc-badge-gold mb-3">
-                    <i class="bi bi-stars me-1"></i>Premier Direct Selling Enterprise
+                <span class="section-tag" style="background: rgba(212, 155, 36, 0.2); color: var(--tfc-gold);">
+                    <i class="ri-sparkling-fill me-1"></i> DIRECT SELLING ENTERPRISE
                 </span>
                 <h1 class="display-4 fw-bold mb-3" style="letter-spacing: -0.02em; line-height: 1.2;">
                     Empowering Entrepreneurs. <br>
                     <span style="color: var(--tfc-gold);">Transforming Lifestyles.</span>
                 </h1>
-                <p class="lead text-white-50 mb-4" style="max-width: 600px;">
-                    Experience high-performance wellness formulations and build an independent direct selling business backed by world-class products, transparent rewards, and proven leadership mentorship.
+                <p class="lead text-white-50 mb-4" style="max-width: 600px; line-height: 1.8;">
+                    Experience high-performance botanical wellness formulations and build an independent direct selling enterprise backed by transparent rewards and proven leadership mentorship.
                 </p>
                 <div class="d-flex flex-wrap gap-3">
-                    <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary btn-lg">
-                        <i class="bi bi-person-plus-fill me-2"></i>Join TFC Network
+                    <a href="{{ route('tfc.preview.member.register') }}" class="about-cta" style="background: var(--tfc-gold); color: #000; font-weight: 700;">
+                        Join TFC Today <i class="ri-arrow-right-line" aria-hidden="true"></i>
                     </a>
-                    <a href="{{ tfc_route('products') }}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-grid-fill me-2"></i>Explore Products
+                    <a href="{{ tfc_route('products') }}" class="btn btn-outline-light rounded-3 px-4 py-3 fw-semibold">
+                        <i class="ri-grid-line me-1"></i> Browse Products
                     </a>
                 </div>
             </div>
-            <div class="col-12 col-lg-5">
-                <div class="p-4 p-md-5 rounded-4 shadow-lg text-center" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px);">
-                    <img src="{{ tfc_logo_url() }}" alt="TFC Logo" class="img-fluid rounded mb-4" style="max-height: 80px; background: #FFFFFF; padding: 10px 18px;">
-                    <h5 class="fw-bold text-white mb-2">Build Your Independent Enterprise</h5>
-                    <p class="text-white-50 small mb-4">Zero enrollment barrier. Equal opportunity. Unlimited growth.</p>
-                    <div class="row g-2 text-start text-white-50 small">
-                        <div class="col-6 d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i> Authentic Care
-                        </div>
-                        <div class="col-6 d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i> Binary Rewards
-                        </div>
-                        <div class="col-6 d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i> Weekly Payouts
-                        </div>
-                        <div class="col-6 d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i> Executive Mentorship
-                        </div>
-                    </div>
+            <div class="col-12 col-lg-5 text-center">
+                <div class="p-5 rounded-4 shadow-lg" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px);">
+                    <img src="{{ tfc_logo_url() }}" alt="TFC Logo" class="img-fluid rounded mb-3" style="max-height: 75px; background: #fff; padding: 8px 16px;">
+                    <h4 class="fw-bold text-white mb-2">Build Your Future</h4>
+                    <p class="text-white-50 small mb-0">Join India's fastest-growing ethical direct selling community.</p>
                 </div>
             </div>
         </div>
@@ -109,187 +90,144 @@
 </section>
 @endif
 
-{{-- 2. Enterprise Core Pillars (Replaces defensive disclaimers) --}}
-<section class="py-5" style="background-color: var(--tfc-bg-soft); border-bottom: 1px solid var(--tfc-border);">
-    <div class="container">
-        <div class="row g-4">
-            <div class="col-12 col-md-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light d-flex flex-column">
-                    <div class="tfc-feature-icon"><i class="bi bi-flower1"></i></div>
-                    <h5 class="fw-bold mb-2 text-dark">Premium Botanical Formulations</h5>
-                    <p class="text-muted small mb-0 flex-grow-1">
-                        High-potency botanical extracts and clean wellness essentials formulated for noticeable vitality, personal care, and daily consumer wellness.
-                    </p>
+{{-- 2. About Section (Eduse Marketing Signature Two-Column Split Layout) --}}
+<section id="about" class="about-section py-5">
+    <div class="about-container">
+        {{-- Visual with curved container, decorative organic blob, and floating stat badges --}}
+        <div class="about-visual">
+            <span class="about-blob" aria-hidden="true"></span>
+            <div class="about-image-wrap">
+                <img src="https://eduse-uploadedfiles.s3.ap-south-1.amazonaws.com/edusemarketing/static/kfjghjdshfiuehdsvnmd.webp" alt="TFC Team and Business Opportunity" width="1200" height="800" loading="lazy" decoding="async">
+            </div>
+            <div class="about-stat-card about-stat-card--1">
+                <strong>100+</strong>
+                <span>Active Formulations</span>
+            </div>
+            <div class="about-stat-card about-stat-card--2">
+                <strong>PAN India</strong>
+                <span>Logistics Network</span>
+            </div>
+        </div>
+
+        {{-- About Content --}}
+        <div class="about-content">
+            <span class="section-tag">ABOUT TFC</span>
+            <h2>India's Fast Growing Direct Selling Opportunity</h2>
+            <p class="about-lead">
+                {{ tfc_setting('company_name', 'TFC Sales & Marketing') }} is creating powerful business opportunities for leaders, entrepreneurs, and dreamers across India through an ethical, product-centered business model.
+            </p>
+            <ul class="about-highlights">
+                <li><i class="ri-checkbox-circle-fill text-warning" aria-hidden="true"></i> Transparent, trusted direct-selling business model</li>
+                <li><i class="ri-checkbox-circle-fill text-warning" aria-hidden="true"></i> High-performance wellness &amp; lifestyle formulations</li>
+                <li><i class="ri-checkbox-circle-fill text-warning" aria-hidden="true"></i> Hands-on training, executive mentorship &amp; leadership support</li>
+            </ul>
+            <div class="about-features">
+                <div class="about-feature-item">
+                    <span class="about-feature-icon"><i class="ri-team-fill" aria-hidden="true"></i></span>
+                    <div>
+                        <h4>Strong Distributor Network</h4>
+                        <p>Nationwide community of motivated direct sellers and leaders</p>
+                    </div>
+                </div>
+                <div class="about-feature-item">
+                    <span class="about-feature-icon"><i class="ri-money-rupee-circle-fill" aria-hidden="true"></i></span>
+                    <div>
+                        <h4>High-Yield Binary Rewards</h4>
+                        <p>Balanced binary compensation plan designed for sustainable long-term prosperity</p>
+                    </div>
+                </div>
+                <div class="about-feature-item">
+                    <span class="about-feature-icon"><i class="ri-line-chart-fill" aria-hidden="true"></i></span>
+                    <div>
+                        <h4>Executive Growth &amp; Mentorship</h4>
+                        <p>Digital portal, live webinars, and proven team-building systems</p>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-md-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light d-flex flex-column">
-                    <div class="tfc-feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
-                    <h5 class="fw-bold mb-2 text-dark">Rewarding Binary Synergy</h5>
-                    <p class="text-muted small mb-0 flex-grow-1">
-                        An equitable dual-team incentive architecture offering retail margins, binary matching bonuses, leadership rank rewards, and sustainable business volume.
-                    </p>
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="p-4 bg-white rounded-3 shadow-sm h-100 border border-light d-flex flex-column">
-                    <div class="tfc-feature-icon"><i class="bi bi-mortarboard"></i></div>
-                    <h5 class="fw-bold mb-2 text-dark">Executive Training &amp; Mentorship</h5>
-                    <p class="text-muted small mb-0 flex-grow-1">
-                        Comprehensive distributor enablement including digital back-office tools, product webinars, and hands-on leadership coaching to accelerate your success.
-                    </p>
-                </div>
-            </div>
+            <a href="{{ tfc_route('about') }}" class="about-cta">
+                Why Choose TFC <i class="ri-arrow-right-line" aria-hidden="true"></i>
+            </a>
         </div>
     </div>
 </section>
 
-{{-- 3. Product Categories Section (Live from Database) --}}
+{{-- 3. Product Categories Section (Eduse Signature Circular Row) --}}
 @if ($categories->isNotEmpty())
-<section class="py-5" style="background-color: #FFFFFF;">
-    <div class="container py-3">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4">
-            <div>
-                <div class="tfc-section-eyebrow">Explore Collections</div>
-                <h2 class="tfc-section-title mb-1">Curated Wellness &amp; Lifestyle Categories</h2>
-                <p class="text-muted small mb-0" style="max-width: 620px;">
-                    Discover pure botanical formulations, targeted wellness supplements, and personal care solutions designed for modern living.
-                </p>
-            </div>
-            <a href="{{ tfc_route('products') }}" class="btn btn-tfc-outline mt-3 mt-md-0">
-                All Products <i class="bi bi-arrow-right ms-1"></i>
-            </a>
-        </div>
-
-        <div class="row g-4">
+<section id="brands" class="brands-section" aria-labelledby="brands-heading">
+    <div class="brands-inner">
+        <span class="section-tag">OUR DISCIPLINES</span>
+        <h2 id="brands-heading">Our Product Categories</h2>
+        <div class="brands-row">
             @foreach ($categories as $cat)
-                @php
-                    $prodCount = $cat->total_products_count ?? $cat->products_count ?? 0;
-                    $colClass = $categories->count() >= 4 ? 'col-12 col-sm-6 col-lg-3' : 'col-12 col-md-6 col-lg-4';
-                @endphp
-                <div class="{{ $colClass }}">
-                    <div class="tfc-category-card">
-                        <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-img-wrap" aria-label="{{ $cat->name }}">
-                            @if ($cat->image)
-                                <img src="{{ image_url($cat->image) }}" alt="{{ $cat->name }}" class="tfc-category-img" loading="lazy">
-                            @else
-                                <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-light text-muted p-4 text-center">
-                                    <i class="bi bi-flower1 display-3 text-warning opacity-75 mb-2"></i>
-                                    <span class="small fw-semibold text-secondary">Botanical Care</span>
-                                </div>
-                            @endif
-                            <div class="tfc-category-overlay"></div>
-                            <span class="tfc-category-tag-discipline">
-                                <i class="bi bi-stars me-1"></i> Premium Line
-                            </span>
-                            <span class="tfc-category-count-badge">
-                                <i class="bi bi-box-seam text-warning"></i> {{ $prodCount }} {{ \Illuminate\Support\Str::plural('Product', $prodCount) }}
-                            </span>
-                        </a>
-
-                        <div class="tfc-category-body">
-                            <h5 class="tfc-category-title">
-                                <a href="{{ tfc_route('category', $cat->slug) }}">
-                                    {{ $cat->name }}
-                                </a>
-                            </h5>
-                            @if ($cat->description)
-                                <p class="tfc-category-desc" title="{{ $cat->description }}">
-                                    {{ $cat->description }}
-                                </p>
-                            @else
-                                <p class="tfc-category-desc">
-                                    High-potency botanical care crafted to support daily vitality and radiant health.
-                                </p>
-                            @endif
-
-                            <div class="tfc-category-subs">
-                                @if ($cat->children->isNotEmpty())
-                                    @foreach ($cat->children->take(3) as $child)
-                                        <a href="{{ tfc_route('category', $child->slug) }}" class="tfc-category-sub-pill">
-                                            {{ $child->name }}
-                                        </a>
-                                    @endforeach
-                                @else
-                                    <span class="badge bg-light text-muted border px-2 py-1" style="font-weight: 500; font-size: 0.74rem;">
-                                        <i class="bi bi-patch-check text-success me-1"></i> Quality Tested Formulations
-                                    </span>
-                                @endif
-                            </div>
-
-                            <div class="tfc-category-footer">
-                                <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-link">
-                                    Explore Range <i class="bi bi-arrow-right"></i>
-                                </a>
-                                <a href="{{ tfc_route('category', $cat->slug) }}" class="tfc-category-circle-btn" aria-label="Explore {{ $cat->name }}">
-                                    <i class="bi bi-arrow-up-right"></i>
-                                </a>
-                            </div>
-                        </div>
+                <a href="{{ tfc_route('category', $cat->slug) }}" class="brand-card">
+                    <div class="brand-circle">
+                        @if ($cat->image)
+                            <img class="brand-logo" src="{{ image_url($cat->image) }}" alt="{{ $cat->name }}" width="120" height="120" loading="lazy" decoding="async">
+                        @else
+                            <i class="ri-leaf-line display-5 text-warning"></i>
+                        @endif
                     </div>
-                </div>
+                    <span class="brand-label">{{ $cat->name }}</span>
+                </a>
             @endforeach
         </div>
     </div>
 </section>
 @endif
 
-{{-- 4. Featured Products Catalogue (Live from Database) --}}
-<section class="py-5" style="background-color: var(--tfc-bg-soft); border-top: 1px solid var(--tfc-border);">
-    <div class="container py-3">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4">
-            <div>
-                <div class="tfc-section-eyebrow">High-Performance Formulations</div>
-                <h2 class="tfc-section-title mb-0">Featured Products</h2>
-            </div>
-            <a href="{{ tfc_route('products') }}" class="btn btn-tfc-outline mt-3 mt-md-0">
-                Explore Complete Catalogue <i class="bi bi-arrow-right ms-1"></i>
-            </a>
+{{-- 4. Featured Products Section (Clean Product Cards like Eduse) --}}
+<section id="products" class="products-section">
+    <div class="container py-2">
+        <div class="section-heading text-center mb-4">
+            <span class="section-tag">WELLNESS FORMULATIONS</span>
+            <h2>Featured Products</h2>
+            <p class="why-intro">
+                High-potency botanical care and personal wellness essentials crafted for noticeable everyday vitality.
+            </p>
         </div>
 
         <div class="row g-3 g-md-4">
             @forelse ($featuredProducts as $product)
-                <div class="col-6 col-md-6 col-lg-3">
-                    <div class="card tfc-card h-100">
-                        <div class="position-relative overflow-hidden bg-white text-center">
-                            @php
-                                $img = $product->getPrimaryImage()?->image_path;
-                                $discount = $product->discountPercent();
-                            @endphp
-                            <a href="{{ tfc_route('products.show', $product->slug) }}" class="d-block">
+                @php
+                    $img = $product->getPrimaryImage()?->image_path;
+                    $discount = $product->discountPercent();
+                @endphp
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card tfc-clean-product-card h-100">
+                        <div class="tfc-clean-product-img-wrap">
+                            <a href="{{ tfc_route('products.show', $product->slug) }}">
                                 @if ($img)
-                                    <img src="{{ image_url($img) }}" alt="{{ $product->name }}" class="tfc-product-img" loading="lazy">
+                                    <img src="{{ image_url($img) }}" alt="{{ $product->name }}" class="tfc-clean-product-img" loading="lazy">
                                 @else
-                                    <div class="tfc-product-img bg-light d-flex align-items-center justify-content-center text-muted">
-                                        <i class="bi bi-image fs-1"></i>
+                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+                                        <i class="ri-image-line fs-1"></i>
                                     </div>
                                 @endif
                             </a>
-
                             @if ($discount > 0)
-                                <span class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1 shadow-sm" style="font-size: 0.72rem; font-weight: 600;">
+                                <span class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill" style="font-size: 0.72rem; font-weight: 600;">
                                     {{ round($discount) }}% OFF
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3 p-md-4">
-                            <div class="small text-muted mb-1 text-truncate" style="font-size: 0.78rem;">
-                                {{ $product->primaryCategory()?->name ?? 'Wellness & Care' }}
-                            </div>
-                            <h6 class="tfc-product-title mb-2">
-                                <a href="{{ tfc_route('products.show', $product->slug) }}">
+                            <span class="small text-muted mb-1 text-truncate" style="font-size: 0.75rem;">
+                                {{ $product->primaryCategory()?->name ?? 'Wellness Care' }}
+                            </span>
+                            <h6 class="fw-bold mb-2 text-dark" style="font-size: 0.92rem; line-height: 1.4;">
+                                <a href="{{ tfc_route('products.show', $product->slug) }}" class="text-dark text-decoration-none hover-primary">
                                     {{ $product->name }}
                                 </a>
                             </h6>
                             <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div>
-                                    <span class="tfc-price">{{ format_price($product->selling_price) }}</span>
+                                    <span class="fw-bold text-dark fs-6">{{ format_price($product->selling_price) }}</span>
                                     @if ($product->mrp && $product->mrp > $product->selling_price)
-                                        <span class="tfc-mrp">{{ format_price($product->mrp) }}</span>
+                                        <small class="text-muted text-decoration-line-through ms-1">{{ format_price($product->mrp) }}</small>
                                     @endif
                                 </div>
-                                <a href="{{ tfc_route('products.show', $product->slug) }}" class="btn btn-sm btn-tfc-primary">
-                                    Details
+                                <a href="{{ tfc_route('products.show', $product->slug) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 fw-semibold">
+                                    View
                                 </a>
                             </div>
                         </div>
@@ -297,291 +235,139 @@
                 </div>
             @empty
                 <div class="col-12 text-center py-5">
-                    <p class="text-muted">Products currently updating. Please explore our full catalogue.</p>
-                    <a href="{{ tfc_route('products') }}" class="btn btn-tfc-navy">View Catalogue</a>
+                    <p class="text-muted">Formulations currently updating.</p>
                 </div>
             @endforelse
         </div>
 
-        <div class="text-center mt-5">
-            <a href="{{ tfc_route('products') }}" class="btn btn-tfc-navy btn-lg">
-                <i class="bi bi-grid-3x3-gap me-2"></i>Explore Complete Catalogue ({{ \App\Models\Product::active()->count() }} Formulations)
+        <div class="products-section__footer mt-5 text-center">
+            <a href="{{ tfc_route('products') }}" class="products-all-btn">
+                <span>View Complete Catalogue</span>
+                <i class="ri-arrow-right-line" aria-hidden="true"></i>
             </a>
         </div>
     </div>
 </section>
 
-{{-- 5. The TFC Direct Selling Advantage (6 Inspiring Pillars) --}}
-<section class="tfc-why-section">
-    <div class="container">
-        <div class="text-center mb-5">
-            <div class="tfc-section-eyebrow">The Business Advantage</div>
-            <h2 class="tfc-section-title">Why Partner with TFC Sales &amp; Marketing</h2>
-            <p class="tfc-section-subtitle mx-auto">
-                We provide independent entrepreneurs with an empowering platform, high-demand wellness formulations, and a scalable compensation plan built for long-term prosperity.
+{{-- 5. Why Choose Us (Eduse Signature 4-Card Grid with 01, 02, 03, 04 numbers) --}}
+<section id="why-choose-us" class="why-section">
+    <div class="why-inner">
+        <div class="section-heading">
+            <span class="section-tag">WHY CHOOSE US</span>
+            <h2>Build Your Future With {{ tfc_setting('company_name', 'TFC Sales & Marketing') }}</h2>
+            <p class="why-intro">
+                Join a direct-selling company built on trust, training, and real entrepreneurial opportunity — designed to help you succeed step by step.
             </p>
         </div>
-
-        <div class="row g-4">
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="tfc-why-card">
-                    <div class="tfc-why-header">
-                        <div class="tfc-why-icon"><i class="bi bi-box2-heart"></i></div>
-                        <span class="tfc-why-number">01</span>
-                    </div>
-                    <h5 class="tfc-why-title">High-Demand Product Portfolio</h5>
-                    <p class="tfc-why-text">Every commercial interaction is anchored by daily consumable wellness, hair care, and skincare formulations that customers love, trust, and regularly re-order.</p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="tfc-why-card">
-                    <div class="tfc-why-header">
-                        <div class="tfc-why-icon"><i class="bi bi-diagram-3"></i></div>
-                        <span class="tfc-why-number">02</span>
-                    </div>
-                    <h5 class="tfc-why-title">Equitable Binary Synergy</h5>
-                    <p class="tfc-why-text">Our dual-team binary business model harnesses collective team momentum, enabling distributors to benefit from depth volume, pair matching, and executive rank bonuses.</p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="tfc-why-card">
-                    <div class="tfc-why-header">
-                        <div class="tfc-why-icon"><i class="bi bi-cash-stack"></i></div>
-                        <span class="tfc-why-number">03</span>
-                    </div>
-                    <h5 class="tfc-why-title">Retail Profits &amp; Direct Margins</h5>
-                    <p class="tfc-why-text">Enjoy generous upfront retail margins when sharing products with customers, complemented by recurring organizational performance incentives.</p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="tfc-why-card">
-                    <div class="tfc-why-header">
-                        <div class="tfc-why-icon"><i class="bi bi-laptop"></i></div>
-                        <span class="tfc-why-number">04</span>
-                    </div>
-                    <h5 class="tfc-why-title">Digital Back-Office &amp; Tools</h5>
-                    <p class="tfc-why-text">Access a dedicated digital member portal featuring real-time binary tree visualization, team tracking, automated commission statements, and instant KYC management.</p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="tfc-why-card">
-                    <div class="tfc-why-header">
-                        <div class="tfc-why-icon"><i class="bi bi-award"></i></div>
-                        <span class="tfc-why-number">05</span>
-                    </div>
-                    <h5 class="tfc-why-title">Leadership Academy &amp; Mentorship</h5>
-                    <p class="tfc-why-text">Continuous learning through professional product training, business strategy webinars, and executive guidance from top industry leaders.</p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="tfc-why-card">
-                    <div class="tfc-why-header">
-                        <div class="tfc-why-icon"><i class="bi bi-truck"></i></div>
-                        <span class="tfc-why-number">06</span>
-                    </div>
-                    <h5 class="tfc-why-title">Seamless Nationwide Logistics</h5>
-                    <p class="tfc-why-text">Robust Pan-India warehouse and dispatch network ensuring rapid, reliable delivery directly to your retail customers' doorsteps.</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Inspiring Action Strip (Replacing defensive compliance box) --}}
-        <div class="tfc-why-trust-bar">
-            <div class="row align-items-center g-3">
-                <div class="col-12 col-lg-8">
-                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
-                        <span class="tfc-why-trust-badge">
-                            <i class="bi bi-trophy-fill"></i> Financial Freedom
-                        </span>
-                        <strong class="text-dark">Build a Scalable Business on Your Own Terms</strong>
-                    </div>
-                    <p class="text-muted small mb-0">
-                        Zero joining fee. No forced inventory kits. Your earnings grow directly with your genuine customer retail reach and leadership leadership excellence.
-                    </p>
-                </div>
-                <div class="col-12 col-lg-4 text-lg-end">
-                    <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary btn-sm fw-semibold me-2">
-                        <i class="bi bi-person-plus-fill me-1"></i> Register Free
-                    </a>
-                    <a href="{{ tfc_route('incentive-program') }}" class="btn btn-outline-dark btn-sm fw-semibold">
-                        <i class="bi bi-award me-1"></i> Compensation Plan
-                    </a>
-                </div>
-            </div>
+        <div class="why-grid">
+            <article class="why-card">
+                <span class="why-card-num" aria-hidden="true">01</span>
+                <div class="why-card-icon"><i class="ri-shield-check-fill" aria-hidden="true"></i></div>
+                <h3>Trusted Enterprise</h3>
+                <p>Transparent binary business plan with long-term vision, zero joining fees, and sustainable growth.</p>
+            </article>
+            <article class="why-card">
+                <span class="why-card-num" aria-hidden="true">02</span>
+                <div class="why-card-icon"><i class="ri-graduation-cap-fill" aria-hidden="true"></i></div>
+                <h3>Training &amp; Support</h3>
+                <p>Comprehensive executive mentorship, digital back-office tools, and ongoing leadership webinars.</p>
+            </article>
+            <article class="why-card">
+                <span class="why-card-num" aria-hidden="true">03</span>
+                <div class="why-card-icon"><i class="ri-global-fill" aria-hidden="true"></i></div>
+                <h3>Nationwide Network</h3>
+                <p>Expanding rapidly across India with reliable door-to-door logistics and Pan-India customer fulfillment.</p>
+            </article>
+            <article class="why-card">
+                <span class="why-card-num" aria-hidden="true">04</span>
+                <div class="why-card-icon"><i class="ri-vip-crown-2-fill" aria-hidden="true"></i></div>
+                <h3>Leadership Rewards</h3>
+                <p>Generous retail margins, binary matching bonuses, leadership rank awards, and lifestyle recognition.</p>
+            </article>
         </div>
     </div>
 </section>
 
-{{-- 6. Formulation Excellence & Product Quality --}}
-<section class="py-5" style="background: linear-gradient(135deg, #0A1D37, #132D54); color: #FFFFFF;">
-    <div class="container py-4">
-        <div class="row align-items-center g-5">
-            <div class="col-12 col-lg-6">
-                <span class="badge tfc-badge-gold mb-3">Formulation Excellence</span>
-                <h2 class="display-6 fw-bold mb-4">
-                    Pure Botanical Formulations. <br>
-                    <span style="color: var(--tfc-gold);">Crafted with Scientific Rigor.</span>
-                </h2>
-                <p class="text-white-50 mb-4" style="line-height: 1.7;">
-                    At TFC Sales &amp; Marketing, our product philosophy combines ancient botanical wisdom with contemporary laboratory precision. Every formulation is crafted using concentrated herbal bio-actives, transparent ingredient declarations, and strict batch hygiene protocols to deliver proven wellness results.
-                </p>
-                <div class="row g-3 mb-4">
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-warning fs-5"></i>
-                            <span class="fw-semibold">100% Botanical Actives</span>
-                        </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-warning fs-5"></i>
-                            <span class="fw-semibold">No Harsh Synthetics</span>
-                        </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-warning fs-5"></i>
-                            <span class="fw-semibold">GMP &amp; ISO Quality Standards</span>
-                        </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-warning fs-5"></i>
-                            <span class="fw-semibold">Pan-India Express Dispatch</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex flex-wrap gap-3">
-                    <a href="{{ tfc_route('products') }}" class="btn btn-tfc-primary">
-                        Explore Formulations <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                    <a href="{{ tfc_route('brand') }}" class="btn btn-outline-light">
-                        Product Standards &bull; Learn More
-                    </a>
-                </div>
-            </div>
-            <div class="col-12 col-lg-6">
-                <div class="p-4 p-md-5 rounded-4 shadow" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);">
-                    <div class="row g-3 text-center">
-                        <div class="col-6">
-                            <div class="p-3 bg-white bg-opacity-10 rounded-3 h-100">
-                                <h3 class="fw-bold text-warning mb-1">100+</h3>
-                                <small class="text-white-50">Active Formulations</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-3 bg-white bg-opacity-10 rounded-3 h-100">
-                                <h3 class="fw-bold text-warning mb-1">100%</h3>
-                                <small class="text-white-50">Standardized Extracts</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-3 bg-white bg-opacity-10 rounded-3 h-100">
-                                <h3 class="fw-bold text-warning mb-1">Pan-India</h3>
-                                <small class="text-white-50">Direct Delivery</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-3 bg-white bg-opacity-10 rounded-3 h-100">
-                                <h3 class="fw-bold text-warning mb-1">Certified</h3>
-                                <small class="text-white-50">Batch Purity</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-3 border-top border-white border-opacity-10 text-center">
-                        <small class="text-white-50" style="font-size: 0.8rem;">
-                            <i class="bi bi-shield-check me-1 text-warning"></i>Rigorous laboratory testing for stability, safety, and therapeutic consistency.
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- 7. How Direct Selling Works (4-Step Entrepreneur Journey) --}}
-<section class="py-5" style="background-color: var(--tfc-bg-soft);">
-    <div class="container py-4 text-center">
-        <div class="tfc-section-eyebrow">Simple &bull; Lucrative &bull; Scalable</div>
-        <h2 class="tfc-section-title mb-2">How It Works with TFC Sales &amp; Marketing</h2>
-        <p class="text-muted mx-auto mb-5" style="max-width: 650px;">
-            A proven path designed to help you launch, build, and scale a lucrative direct-selling business with complete confidence.
-        </p>
-
-        <div class="row g-4 text-start">
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="tfc-step-card">
-                    <span class="tfc-step-badge">Step 1</span>
-                    <h5>Register for Free</h5>
-                    <p>
-                        Sign up with your verified sponsor referral, receive your unique TFC Member ID, and gain immediate access to your distributor portal.
-                    </p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="tfc-step-card">
-                    <span class="tfc-step-badge">Step 2</span>
-                    <h5>Experience Products</h5>
-                    <p>
-                        Discover our botanical wellness formulations, explore ingredients and usage benefits, and identify the solutions you are passionate about.
-                    </p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="tfc-step-card">
-                    <span class="tfc-step-badge">Step 3</span>
-                    <h5>Share &amp; Retail</h5>
-                    <p>
-                        Recommend genuine formulations to your network, fulfill customer orders through our Pan-India delivery, and earn immediate retail margins.
-                    </p>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="tfc-step-card">
-                    <span class="tfc-step-badge">Step 4</span>
-                    <h5>Build Your Team</h5>
-                    <p>
-                        Coach and empower new leaders on your Left and Right binary teams, accumulating organizational volume and qualifying for executive bonuses.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-5">
-            <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary btn-lg shadow-sm">
-                <i class="bi bi-rocket-takeoff me-2"></i>Launch Your Business Today
-            </a>
-        </div>
-    </div>
-</section>
-
-{{-- 8. High-Converting Call to Action Banner (Replaces Rule 7 Banner) --}}
+{{-- 6. Call to Action Banner --}}
 <section class="py-5" style="background-color: #FFFFFF;">
-    <div class="container">
-        <div class="tfc-grievance-banner" style="background: linear-gradient(135deg, #0A1D37, #132D54); color: #FFFFFF; border: none; padding: 2.5rem; border-radius: 16px;">
-            <div class="d-flex align-items-center gap-4">
-                <div class="tfc-grievance-icon d-none d-sm-flex" style="background: rgba(212, 155, 36, 0.2); color: var(--tfc-gold);">
-                    <i class="bi bi-trophy"></i>
-                </div>
-                <div>
-                    <span class="badge tfc-badge-gold mb-2 px-2.5 py-1" style="font-size: 0.74rem;">
-                        Entrepreneurial Freedom
+    <div class="container py-4">
+        <div class="p-4 p-md-5 rounded-4 shadow-sm text-center text-md-start" style="background: linear-gradient(135deg, #070F1C 0%, #0A1D37 60%, #132D54 100%); color: #FFFFFF; border-radius: 24px !important;">
+            <div class="row align-items-center g-4">
+                <div class="col-12 col-md-8">
+                    <span class="section-tag" style="background: rgba(212, 155, 36, 0.2); color: var(--tfc-gold);">
+                        START YOUR JOURNEY
                     </span>
-                    <h3 class="fw-bold mb-2 text-white">Ready to Build Your Legacy with TFC?</h3>
-                    <p class="text-white-50 mb-0 small" style="max-width: 650px; line-height: 1.6;">
-                        Step into financial independence with an ethical, product-centered direct selling company. Gain access to premium formulations, automated business tracking, and a community of supportive leaders.
+                    <h2 class="display-6 fw-bold text-white mb-3" style="letter-spacing: -0.01em;">Ready to Build Your Legacy with TFC?</h2>
+                    <p class="text-white-50 mb-0 lead fs-6" style="max-width: 600px; line-height: 1.7;">
+                        Take the first step toward financial independence. Register as an independent direct seller today with zero entry fees and access our complete product portfolio and business training.
                     </p>
                 </div>
-            </div>
-            <div class="d-flex flex-column flex-sm-row gap-2 text-nowrap mt-3 mt-lg-0">
-                <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary btn-lg">
-                    <i class="bi bi-person-plus-fill me-1"></i>Join Now Free
-                </a>
-                <a href="{{ tfc_route('contact') }}" class="btn btn-outline-light btn-lg">
-                    <i class="bi bi-chat-dots me-1"></i>Talk with Us
-                </a>
+                <div class="col-12 col-md-4 text-md-end">
+                    <div class="d-flex flex-column flex-sm-row justify-content-md-end gap-2">
+                        <a href="{{ route('tfc.preview.member.register') }}" class="about-cta" style="background: var(--tfc-gold); color: #000; font-weight: 700;">
+                            Register Free <i class="ri-arrow-right-line" aria-hidden="true"></i>
+                        </a>
+                        <a href="{{ tfc_route('contact') }}" class="btn btn-outline-light rounded-3 px-4 py-3 fw-semibold">
+                            Contact Us
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
+
+</main>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const track = document.getElementById('tfcSliderTrack');
+    const slides = document.querySelectorAll('#tfcSliderTrack .slide');
+    const prevBtn = document.getElementById('sliderPrevBtn');
+    const nextBtn = document.getElementById('sliderNextBtn');
+    const dots = document.querySelectorAll('#sliderDots .dot');
+    
+    if (!track || slides.length <= 1) return;
+    
+    let currentIndex = 0;
+    const totalSlides = slides.length;
+    let autoPlayInterval = null;
+    
+    function goToSlide(index) {
+        if (index < 0) index = totalSlides - 1;
+        if (index >= totalSlides) index = 0;
+        currentIndex = index;
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === currentIndex);
+        });
+    }
+    
+    if (prevBtn) prevBtn.addEventListener('click', () => { goToSlide(currentIndex - 1); resetAutoplay(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { goToSlide(currentIndex + 1); resetAutoplay(); });
+    
+    dots.forEach((dot) => {
+        dot.addEventListener('click', function() {
+            const idx = parseInt(this.getAttribute('data-slide'));
+            goToSlide(idx);
+            resetAutoplay();
+        });
+    });
+    
+    function startAutoplay() {
+        autoPlayInterval = setInterval(() => {
+            goToSlide(currentIndex + 1);
+        }, 5000);
+    }
+    
+    function resetAutoplay() {
+        if (autoPlayInterval) clearInterval(autoPlayInterval);
+        startAutoplay();
+    }
+    
+    startAutoplay();
+});
+</script>
+@endpush

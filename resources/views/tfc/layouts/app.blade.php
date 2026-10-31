@@ -9,14 +9,15 @@
     <meta name="description" content="@yield('meta_description', 'TFC Sales & Marketing is a premier direct-selling enterprise empowering independent entrepreneurs across India with high-performance wellness, personal care, and lifestyle formulations.')">
     <link rel="canonical" href="{{ canonical_url() }}">
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Poppins (Clean & Modern Aesthetic like Eduse Marketing) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap 5 & Bootstrap Icons -->
+    <!-- Bootstrap 5, Bootstrap Icons & Remixicon -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 
     <!-- TFC Brand Styling -->
     <link rel="stylesheet" href="{{ tfc_asset('css/tfc-style.css') }}?v={{ file_exists(public_path('css/tfc-style.css')) ? filemtime(public_path('css/tfc-style.css')) : 1 }}">
