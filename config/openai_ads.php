@@ -13,9 +13,15 @@ return [
     |
     */
 
-    'enabled' => (bool) env('OPENAI_ADS_ENABLED', false),
+    'enabled' => (bool) env('OPENAI_ADS_ENABLED', true),
 
-    'pixel_id' => env('OPENAI_PIXEL_ID', ''),
+    'pixel_id' => env('OPENAI_PIXEL_ID', 'BBWekc1tuk8CcLkcNrLBzk'),
+
+    'source_id' => env('OPENAI_SOURCE_ID', 'cds_6ae63e02f93c819795162116d99676e4'),
+
+    'event_setting_name' => env('OPENAI_EVENT_SETTING_NAME', 'VANRITI Purchases'),
+
+    'event_type' => 'order_created',
 
     'capi_key' => env('OPENAI_CAPI_KEY', ''),
 

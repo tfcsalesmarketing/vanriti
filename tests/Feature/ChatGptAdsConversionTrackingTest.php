@@ -721,10 +721,8 @@ class ChatGptAdsConversionTrackingTest extends TestCase
         $this->assertArrayHasKey('user', $payloadGranted);
         $grantedUser = $payloadGranted['user'];
         $this->assertSame('obref_browser_cookie_value', $grantedUser['obref']);
-        $this->assertSame(hash('sha256', 'customer@example.com'), $grantedUser['email_sha256']);
-        // Phone numbers must NEVER be present even with consent
-        $this->assertArrayNotHasKey('phone', $grantedUser);
-        $this->assertArrayNotHasKey('phone_sha256', $grantedUser);
+        $this->assertSame([hash('sha256', 'customer@example.com')], $grantedUser['emails_sha256']);
+        $this->assertSame([hash('sha256', '919876543210')], $grantedUser['phone_numbers_sha256']);
     }
 
     /**
@@ -791,7 +789,8 @@ class ChatGptAdsConversionTrackingTest extends TestCase
         // 2. User fields
         $userData = (array) $payload['user'];
         $this->assertSame('unchanged_browser_reference_123', $userData['obref']);
-        $this->assertSame(hash('sha256', 'sharma.priya@example.com'), $userData['email_sha256']);
+        $this->assertSame([hash('sha256', 'sharma.priya@example.com')], $userData['emails_sha256']);
+        $this->assertSame([hash('sha256', '919876543210')], $userData['phone_numbers_sha256']);
 
         // 3. Data fields
         $this->assertSame('contents', $payload['data']['type']);
@@ -811,9 +810,9 @@ class ChatGptAdsConversionTrackingTest extends TestCase
         $this->assertArrayNotHasKey('event_time', $payload, 'OpenAI uses "timestamp_ms", not "event_time"');
         $this->assertArrayNotHasKey('user_data', $payload, 'OpenAI uses "user", not "user_data"');
         $this->assertArrayNotHasKey('custom_data', $payload, 'OpenAI uses "data", not "custom_data"');
-        $this->assertArrayNotHasKey('emails_sha256', $userData, 'OpenAI uses singular "email_sha256"');
-        $this->assertArrayNotHasKey('phone', $userData, 'Phone is not in documented OpenAI user schema');
-        $this->assertArrayNotHasKey('phone_sha256', $userData, 'Phone SHA-256 is not in documented OpenAI user schema');
+        $this->assertArrayNotHasKey('email_sha256', $userData, 'OpenAI uses array "emails_sha256"');
+        $this->assertArrayNotHasKey('phone', $userData, 'Plaintext phone is forbidden');
+        $this->assertArrayNotHasKey('phone_sha256', $userData, 'OpenAI uses array "phone_numbers_sha256"');
         $this->assertArrayNotHasKey('order_id', $payload['data'], 'order_id must not be present in data');
         $this->assertArrayNotHasKey('order_id', $item, 'order_id must not be present in contents item');
     }
@@ -956,9 +955,9 @@ class ChatGptAdsConversionTrackingTest extends TestCase
         $this->assertSame('valid', $response->json('validation_status'));
 
         // Verify outgoing request headers and token
-        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($capi) {
             return $request->url() === 'https://bzr.openai.com/v1/events?pid=px_test_validation_789'
-                && $request->hasHeader('Authorization', 'Bearer key_sec_validation_token_xyz')
+                && $request->hasHeader('Authorization', 'Bearer ' . $capi->capiKey())
                 && $request['validate_only'] === true
                 && $request['events'][0]['type'] === 'order_created'
                 && $request['events'][0]['data']['amount'] === 150000;
@@ -972,20 +971,20 @@ class ChatGptAdsConversionTrackingTest extends TestCase
     {
         $capi = app(OpenAiCapiService::class);
 
-        // Order where customer has no email address attached
-        $userWithoutEmail = User::factory()->create(['email' => '']);
+        // Order where customer has neither email nor phone number attached
+        $userWithoutIdentifiers = User::factory()->create(['email' => '', 'phone' => '']);
 
         $order = Order::create([
             'order_number' => 'VR-NO-USER-01',
-            'user_id' => $userWithoutEmail->id,
+            'user_id' => $userWithoutIdentifiers->id,
             'billing_name' => 'Guest Visitor',
-            'billing_mobile' => '9876543210',
+            'billing_mobile' => '',
             'billing_address_line1' => 'Street',
             'billing_city' => 'Bengaluru',
             'billing_state' => 'Karnataka',
             'billing_pincode' => '560038',
             'shipping_name' => 'Guest Visitor',
-            'shipping_mobile' => '9876543210',
+            'shipping_mobile' => '',
             'shipping_address_line1' => 'Street',
             'shipping_city' => 'Bengaluru',
             'shipping_state' => 'Karnataka',

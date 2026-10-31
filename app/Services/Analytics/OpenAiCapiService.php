@@ -71,6 +71,9 @@ class OpenAiCapiService
             'requirements' => $requirements,
             'missing' => $missing,
             'pixel_id' => $this->pixelId(),
+            'source_id' => $this->sourceId(),
+            'event_setting' => $this->eventSettingName(),
+            'event_type' => $this->eventType(),
             'key_present' => $keyPresent,
         ];
     }
@@ -88,6 +91,21 @@ class OpenAiCapiService
     public function pixelId(): string
     {
         return trim((string) (setting('openai_pixel_id') ?: config('openai_ads.pixel_id', '')));
+    }
+
+    public function sourceId(): string
+    {
+        return trim((string) (setting('openai_source_id') ?: config('openai_ads.source_id', '')));
+    }
+
+    public function eventSettingName(): string
+    {
+        return trim((string) (setting('openai_event_setting_name') ?: config('openai_ads.event_setting_name', 'VANRITI Purchases')));
+    }
+
+    public function eventType(): string
+    {
+        return trim((string) config('openai_ads.event_type', 'order_created'));
     }
 
     public function capiKey(): string
@@ -189,8 +207,14 @@ class OpenAiCapiService
 
             $orderUser = $order->user;
             $email = $orderUser?->email;
-            if (is_string($email) && $email !== '') {
-                $user['email_sha256'] = hash('sha256', strtolower(trim($email)));
+            if (is_string($email) && trim($email) !== '') {
+                $user['emails_sha256'] = [hash('sha256', strtolower(trim($email)))];
+            }
+
+            $rawPhone = (string) ($order->billing_mobile ?: ($order->shipping_mobile ?: ($orderUser?->phone ?? '')));
+            $normalizedPhone = $this->normalizePhone($rawPhone);
+            if ($normalizedPhone !== null && $normalizedPhone !== '') {
+                $user['phone_numbers_sha256'] = [hash('sha256', $normalizedPhone)];
             }
         }
 
@@ -305,7 +329,7 @@ class OpenAiCapiService
 
         $validateOnly = array_key_exists('validate_only', $context)
             ? (bool) $context['validate_only']
-            : (bool) config('openai_ads.validate_only', false);
+            : (bool) config('openai_ads.validate_only', true);
 
         $body = [
             'validate_only' => $validateOnly,
@@ -314,6 +338,7 @@ class OpenAiCapiService
 
         $response = Http::asJson()
             ->withToken($this->capiKey())
+            ->withOptions(['allow_redirects' => false])
             ->connectTimeout((int) config('openai_ads.connect_timeout', 3))
             ->timeout((int) config('openai_ads.timeout', 5))
             ->post($this->endpoint(), $body);
@@ -330,6 +355,33 @@ class OpenAiCapiService
         ]);
 
         return $response;
+    }
+
+    /**
+     * Normalize phone number to OpenAI digits-only standard (including country code, no + or leading 0).
+     */
+    public function normalizePhone(string $raw): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $raw) ?? '';
+        if ($digits === '') {
+            return null;
+        }
+
+        $digits = ltrim($digits, '0');
+        if ($digits === '') {
+            return null;
+        }
+
+        // Standard Indian mobile handling (10 digits -> prefix 91)
+        if (strlen($digits) === 10) {
+            $digits = '91'.$digits;
+        } elseif (strlen($digits) === 12 && str_starts_with($digits, '91')) {
+            // Already includes 91 country code
+        } elseif (strlen($digits) < 8 || strlen($digits) > 15) {
+            return null;
+        }
+
+        return $digits;
     }
 
     protected function responseError(Response $response): string
