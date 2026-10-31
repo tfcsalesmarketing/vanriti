@@ -19,6 +19,7 @@ use App\Services\Analytics\AnalyticsCommandCenterService;
 use App\Services\Analytics\ChatGptAdsAttributionService;
 use App\Services\Analytics\ChatGptAdsReportingService;
 use App\Services\Analytics\ConversionService;
+use App\Services\Analytics\Exceptions\OpenAiTimestampException;
 use App\Services\Analytics\OpenAiCapiService;
 use App\Services\Analytics\OpenAiEcommercePayloadService;
 use App\Services\Payments\PaymentService;
@@ -771,7 +772,7 @@ class ChatGptAdsConversionTrackingTest extends TestCase
             'total_price' => 1499.00,
         ]);
 
-        $fixedTime = 1793505600000;
+        $fixedTime = (int) round(microtime(true) * 1000);
         $payload = $capi->buildPayload($order, [
             'consent_granted' => true,
             'obref' => 'unchanged_browser_reference_123',
@@ -1007,16 +1008,16 @@ class ChatGptAdsConversionTrackingTest extends TestCase
     }
 
     /**
-     * 25: Check 6 — timestamps are actual Unix milliseconds within the past 7 days.
+     * 25: Valid recent timestamp is preserved from the original order event.
      */
-    public function test_timestamp_ms_meets_openai_restrictions(): void
+    public function test_timestamp_valid_recent_is_preserved(): void
     {
         $capi = app(OpenAiCapiService::class);
 
-        $now = now();
+        $orderTime = now()->subHours(2);
         $user = User::factory()->create();
         $order = Order::create([
-            'order_number' => 'VR-TIMESTAMP-01',
+            'order_number' => 'VR-TIME-VALID',
             'user_id' => $user->id,
             'billing_name' => 'Tester',
             'billing_mobile' => '9876543210',
@@ -1036,19 +1037,204 @@ class ChatGptAdsConversionTrackingTest extends TestCase
             'payment_method' => 'cod',
             'payment_status' => 'pending',
             'order_status' => 'pending',
-            'created_at' => $now->copy()->subHours(2),
         ]);
+        $order->created_at = $orderTime;
+        $order->save();
 
         $payload = $capi->buildPayload($order);
 
-        $this->assertIsInt($payload['timestamp_ms']);
-        // Must be in milliseconds (13 digits for current epoch)
-        $this->assertGreaterThan(1700000000000, $payload['timestamp_ms']);
+        $expectedMs = (int) ($orderTime->getTimestamp() * 1000);
+        $this->assertSame($expectedMs, $payload['timestamp_ms']);
+    }
 
-        // Check 7-day window restriction
-        $nowMs = (int) round(microtime(true) * 1000);
-        $sevenDaysAgoMs = $nowMs - (7 * 86400 * 1000);
-        $this->assertGreaterThanOrEqual($sevenDaysAgoMs, $payload['timestamp_ms']);
-        $this->assertLessThanOrEqual($nowMs + 5000, $payload['timestamp_ms']);
+    /**
+     * 26: Timestamp exactly at the seven-day boundary is accepted.
+     */
+    public function test_timestamp_exactly_at_seven_day_boundary_is_accepted(): void
+    {
+        $capi = app(OpenAiCapiService::class);
+
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'VR-TIME-BOUNDARY',
+            'user_id' => $user->id,
+            'billing_name' => 'Tester',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Tester',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 500.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 500.00,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        $referenceNow = 1793505600000;
+        $boundaryMs = $referenceNow - OpenAiCapiService::MAX_TIMESTAMP_AGE_MS; // Exactly 7 days prior
+
+        $payload = $capi->buildPayload($order, [
+            'reference_now_ms' => $referenceNow,
+            'timestamp_ms' => $boundaryMs,
+        ]);
+
+        $this->assertSame($boundaryMs, $payload['timestamp_ms']);
+    }
+
+    /**
+     * 27: Timestamp older than seven days is rejected, marked expired, and never retried.
+     */
+    public function test_timestamp_older_than_seven_days_is_rejected_and_marked_expired(): void
+    {
+        config([
+            'openai_ads.enabled' => true,
+            'openai_ads.pixel_id' => 'px_time_test',
+            'openai_ads.capi_key' => 'key_time_test',
+        ]);
+
+        $capi = app(OpenAiCapiService::class);
+
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'VR-TIME-EXPIRED',
+            'user_id' => $user->id,
+            'billing_name' => 'Tester',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Tester',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 500.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 500.00,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        $referenceNow = 1793505600000;
+        $expiredMs = $referenceNow - OpenAiCapiService::MAX_TIMESTAMP_AGE_MS - 1000; // 7 days + 1 second ago
+
+        // 1. Calling buildPayload throws OpenAiTimestampException (isExpired)
+        try {
+            $capi->buildPayload($order, [
+                'reference_now_ms' => $referenceNow,
+                'timestamp_ms' => $expiredMs,
+            ]);
+            $this->fail('Expected OpenAiTimestampException was not thrown');
+        } catch (OpenAiTimestampException $e) {
+            $this->assertTrue($e->isExpired());
+            $this->assertStringContainsString('Conversion expired', $e->getMessage());
+        }
+
+        // 2. deliver() marks ledger as expired and records terminal state
+        $capi->deliver($order, [
+            'reference_now_ms' => $referenceNow,
+            'timestamp_ms' => $expiredMs,
+        ]);
+
+        $ledger = AnalyticsConversion::where('event_type', 'order_created')->where('order_number', $order->order_number)->firstOrFail();
+        $this->assertSame('expired', $ledger->openai_state);
+        $this->assertNull($ledger->openai_sent_at);
+        $this->assertSame(1, $ledger->openai_attempts);
+
+        // 3. Ensure rejected events cannot be retried indefinitely
+        // Calling deliver again must immediately return without incrementing attempts or attempting delivery
+        $capi->deliver($order, [
+            'reference_now_ms' => $referenceNow,
+            'timestamp_ms' => $expiredMs,
+        ]);
+
+        $freshLedger = $ledger->fresh();
+        $this->assertSame('expired', $freshLedger->openai_state);
+        $this->assertSame(1, $freshLedger->openai_attempts, 'Attempts must not increment once in terminal expired state');
+    }
+
+    /**
+     * 28: Timestamp more than ten minutes in the future is rejected, marked rejected, and never retried.
+     */
+    public function test_timestamp_more_than_ten_minutes_in_future_is_rejected(): void
+    {
+        config([
+            'openai_ads.enabled' => true,
+            'openai_ads.pixel_id' => 'px_time_test',
+            'openai_ads.capi_key' => 'key_time_test',
+        ]);
+
+        $capi = app(OpenAiCapiService::class);
+
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'VR-TIME-FUTURE',
+            'user_id' => $user->id,
+            'billing_name' => 'Tester',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Tester',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 500.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 500.00,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        $referenceNow = 1793505600000;
+        $futureMs = $referenceNow + OpenAiCapiService::MAX_FUTURE_SKEW_MS + 5000; // 10 minutes + 5 seconds future
+
+        // 1. Calling buildPayload throws OpenAiTimestampException (isFuture)
+        try {
+            $capi->buildPayload($order, [
+                'reference_now_ms' => $referenceNow,
+                'timestamp_ms' => $futureMs,
+            ]);
+            $this->fail('Expected OpenAiTimestampException was not thrown');
+        } catch (OpenAiTimestampException $e) {
+            $this->assertTrue($e->isFuture());
+            $this->assertStringContainsString('Conversion rejected', $e->getMessage());
+        }
+
+        // 2. deliver() marks ledger as rejected and records terminal state
+        $capi->deliver($order, [
+            'reference_now_ms' => $referenceNow,
+            'timestamp_ms' => $futureMs,
+        ]);
+
+        $ledger = AnalyticsConversion::where('event_type', 'order_created')->where('order_number', $order->order_number)->firstOrFail();
+        $this->assertSame('rejected', $ledger->openai_state);
+        $this->assertNull($ledger->openai_sent_at);
+        $this->assertSame(1, $ledger->openai_attempts);
+
+        // 3. Ensure rejected events cannot be retried indefinitely
+        $capi->deliver($order, [
+            'reference_now_ms' => $referenceNow,
+            'timestamp_ms' => $futureMs,
+        ]);
+
+        $freshLedger = $ledger->fresh();
+        $this->assertSame('rejected', $freshLedger->openai_state);
+        $this->assertSame(1, $freshLedger->openai_attempts, 'Attempts must not increment once in terminal rejected state');
     }
 }

@@ -6,6 +6,7 @@ use App\Consent\ConsentService;
 use App\Consent\Enums\ConsentCategory;
 use App\Models\AnalyticsConversion;
 use App\Models\Order;
+use App\Services\Analytics\Exceptions\OpenAiTimestampException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,15 @@ use Illuminate\Support\Facades\Log;
  */
 class OpenAiCapiService
 {
+    /**
+     * OpenAI conversion attribution window: conversions must have occurred within the past 7 days.
+     */
+    public const MAX_TIMESTAMP_AGE_MS = 604800000; // 7 * 86,400 * 1,000 ms
+
+    /**
+     * Permitted future clock skew tolerance: at most 10 minutes in the future.
+     */
+    public const MAX_FUTURE_SKEW_MS = 600000; // 10 * 60 * 1,000 ms
     public function __construct(
         protected EcommerceDataService $ecommerce,
         protected OpenAiEcommercePayloadService $payloadService,
@@ -93,6 +103,48 @@ class OpenAiCapiService
     }
 
     /**
+     * Resolve and strictly validate the event timestamp in Unix milliseconds.
+     *
+     * Rules:
+     * - Preserve the original order event timestamp when it falls within OpenAI's permitted 7-day window.
+     * - Reject events older than seven days as expired (throws OpenAiTimestampException['expired']).
+     * - Reject events more than ten minutes in the future (throws OpenAiTimestampException['future']).
+     * - Never silently turn an old conversion into a new conversion by assigning the current time.
+     *
+     * @throws OpenAiTimestampException
+     */
+    public function resolveTimestampMs(Order $order, array $context = []): int
+    {
+        $nowMs = (int) ($context['reference_now_ms'] ?? round(microtime(true) * 1000));
+        $sevenDaysAgoMs = $nowMs - self::MAX_TIMESTAMP_AGE_MS;
+        $futureLimitMs = $nowMs + self::MAX_FUTURE_SKEW_MS;
+
+        if (isset($context['timestamp_ms'])) {
+            $timestampMs = (int) $context['timestamp_ms'];
+        } elseif ($order->created_at) {
+            $timestampMs = (int) ($order->created_at->getTimestamp() * 1000);
+        } else {
+            $timestampMs = $nowMs;
+        }
+
+        if ($timestampMs < $sevenDaysAgoMs) {
+            throw new OpenAiTimestampException(
+                "OpenAI CAPI: Event timestamp ({$timestampMs}) is older than 7 days (boundary: {$sevenDaysAgoMs}). Conversion expired.",
+                'expired'
+            );
+        }
+
+        if ($timestampMs > $futureLimitMs) {
+            throw new OpenAiTimestampException(
+                "OpenAI CAPI: Event timestamp ({$timestampMs}) is more than 10 minutes in the future (boundary: {$futureLimitMs}). Conversion rejected.",
+                'future'
+            );
+        }
+
+        return $timestampMs;
+    }
+
+    /**
      * Build the standard OpenAI conversion event payload.
      *
      * Official schema:
@@ -143,21 +195,7 @@ class OpenAiCapiService
         }
 
         $data = $this->payloadService->orderCreated($order);
-
-        $nowMs = (int) round(microtime(true) * 1000);
-        $sevenDaysAgoMs = $nowMs - (7 * 86400 * 1000);
-
-        if (isset($context['timestamp_ms'])) {
-            $timestampMs = (int) $context['timestamp_ms'];
-        } elseif ($order->created_at) {
-            $orderCreatedMs = (int) ($order->created_at->getTimestamp() * 1000);
-            $timestampMs = ($orderCreatedMs >= $sevenDaysAgoMs && $orderCreatedMs <= $nowMs)
-                ? $orderCreatedMs
-                : $nowMs;
-        } else {
-            $timestampMs = $nowMs;
-        }
-
+        $timestampMs = $this->resolveTimestampMs($order, $context);
         $sourceUrl = (string) ($context['source_url'] ?? route('checkout.success', $order));
 
         $event = [
@@ -209,7 +247,9 @@ class OpenAiCapiService
             );
         }
 
-        if ($ledger->openai_state === 'sent' || (int) $ledger->openai_attempts >= $this->maxAttempts()) {
+        // Terminal states check: once sent, expired, or rejected, do not retry
+        if (in_array($ledger->openai_state, ['sent', 'expired', 'rejected'], true)
+            || (int) $ledger->openai_attempts >= $this->maxAttempts()) {
             return;
         }
 
@@ -221,6 +261,22 @@ class OpenAiCapiService
                 'openai_sent_at' => now(),
                 'openai_attempts' => (int) $ledger->openai_attempts + 1,
                 'openai_event_id' => $this->eventId($order),
+            ]);
+        } catch (OpenAiTimestampException $e) {
+            $terminalState = $e->isExpired() ? 'expired' : 'rejected';
+
+            // Mark as terminal expired/rejected state so it cannot be retried indefinitely
+            $ledger->update([
+                'openai_state' => $terminalState,
+                'openai_sent_at' => null,
+                'openai_attempts' => (int) $ledger->openai_attempts + 1,
+                'openai_event_id' => $this->eventId($order),
+            ]);
+
+            Log::warning("OpenAI CAPI: order_created delivery {$terminalState} due to timestamp restriction", [
+                'order' => $order->order_number,
+                'event_id' => $this->eventId($order),
+                'reason' => $e->getMessage(),
             ]);
         } catch (\Throwable $e) {
             $attempts = (int) $ledger->openai_attempts + 1;

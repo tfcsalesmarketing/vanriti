@@ -21,7 +21,7 @@ return [
 
     'endpoint' => env('OPENAI_CAPI_ENDPOINT', 'https://bzr.openai.com/v1/events'),
 
-    'validate_only' => (bool) env('OPENAI_CAPI_VALIDATE_ONLY', false),
+    'validate_only' => (bool) env('OPENAI_CAPI_VALIDATE_ONLY', true),
 
     'timeout' => (int) env('OPENAI_CAPI_TIMEOUT', 5),
 
