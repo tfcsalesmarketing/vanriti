@@ -94,6 +94,26 @@ class OpenAiCapiService
 
     /**
      * Build the standard OpenAI conversion event payload.
+     *
+     * Official schema:
+     * {
+     *   "id": "unique_event_id",
+     *   "type": "order_created",
+     *   "timestamp_ms": 1793505600000,
+     *   "oppref": "original_oppref",
+     *   "source_url": "https://vanriti.com/checkout/success",
+     *   "action_source": "web",
+     *   "user": {
+     *     "obref": "optional_unchanged_browser_reference",
+     *     "email_sha256": "optional_lowercase_sha256_hash"
+     *   },
+     *   "data": {
+     *     "type": "contents",
+     *     "amount": 149900,
+     *     "currency": "INR",
+     *     "contents": []
+     *   }
+     * }
      */
     public function buildPayload(Order $order, array $context = []): array
     {
@@ -103,42 +123,62 @@ class OpenAiCapiService
             ? (bool) $context['consent_granted']
             : $this->consentService->resolve()->allows(ConsentCategory::Advertising);
 
-        $userData = [];
+        $user = [];
 
         // Forward original oppref click reference when available
         $oppref = $order->oppref ?? ($context['oppref'] ?? null);
-        if (is_string($oppref) && $oppref !== '') {
-            $userData['oppref'] = $oppref;
-        }
 
-        // Only include browser reference (__obref) and user identifiers when measurement/advertising consent is granted
+        // Only include browser reference (obref) and user identifiers when measurement/advertising consent is granted
         if ($consentGranted) {
             $obref = trim((string) ($context['obref'] ?? request()->cookie('__obref', '')));
             if ($obref !== '') {
-                $userData['obref'] = $obref;
+                $user['obref'] = $obref;
             }
 
-            $user = $order->user;
-            $email = $user?->email;
+            $orderUser = $order->user;
+            $email = $orderUser?->email;
             if (is_string($email) && $email !== '') {
-                $userData['email'] = hash('sha256', strtolower(trim($email)));
-            }
-
-            $phone = $this->normalizePhone((string) ($order->billing_mobile ?: ($user?->phone ?? '')));
-            if ($phone !== null) {
-                $userData['phone'] = hash('sha256', $phone);
+                $user['email_sha256'] = hash('sha256', strtolower(trim($email)));
             }
         }
 
-        $customData = $this->payloadService->orderCreated($order);
+        $data = $this->payloadService->orderCreated($order);
 
-        return [
-            'event_name' => 'order_created',
-            'event_id' => $this->eventId($order),
-            'event_time' => (int) ($context['event_time'] ?? now()->getTimestamp()),
-            'user_data' => $userData,
-            'custom_data' => $customData,
+        $nowMs = (int) round(microtime(true) * 1000);
+        $sevenDaysAgoMs = $nowMs - (7 * 86400 * 1000);
+
+        if (isset($context['timestamp_ms'])) {
+            $timestampMs = (int) $context['timestamp_ms'];
+        } elseif ($order->created_at) {
+            $orderCreatedMs = (int) ($order->created_at->getTimestamp() * 1000);
+            $timestampMs = ($orderCreatedMs >= $sevenDaysAgoMs && $orderCreatedMs <= $nowMs)
+                ? $orderCreatedMs
+                : $nowMs;
+        } else {
+            $timestampMs = $nowMs;
+        }
+
+        $sourceUrl = (string) ($context['source_url'] ?? route('checkout.success', $order));
+
+        $event = [
+            'id' => $this->eventId($order),
+            'type' => 'order_created',
+            'timestamp_ms' => $timestampMs,
+            'source_url' => $sourceUrl,
+            'action_source' => 'web',
+            'data' => $data,
         ];
+
+        // Omit the user property entirely when no permitted identifiers are available
+        if (! empty($user)) {
+            $event['user'] = $user;
+        }
+
+        if (is_string($oppref) && $oppref !== '') {
+            $event['oppref'] = $oppref;
+        }
+
+        return $event;
     }
 
     /**
@@ -228,38 +268,12 @@ class OpenAiCapiService
 
         Log::info('OpenAI CAPI: order_created delivered', [
             'order' => $order->order_number,
-            'event_id' => $payload['event_id'],
+            'event_id' => $payload['id'],
             'validate_only' => $validateOnly,
             'status' => $response->status(),
         ]);
 
         return $response;
-    }
-
-    /**
-     * Normalize an Indian phone number to E.164 digits for SHA-256 hashing.
-     */
-    protected function normalizePhone(string $raw): ?string
-    {
-        $digits = preg_replace('/\D+/', '', $raw) ?? '';
-
-        if ($digits === '') {
-            return null;
-        }
-
-        $digits = ltrim($digits, '0');
-
-        if ($digits === '') {
-            return null;
-        }
-
-        if (strlen($digits) === 10) {
-            $digits = '91'.$digits;
-        } elseif (! (str_starts_with($digits, '91') && strlen($digits) === 12)) {
-            return null;
-        }
-
-        return $digits;
     }
 
     protected function responseError(Response $response): string

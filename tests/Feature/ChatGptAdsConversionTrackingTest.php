@@ -705,10 +705,10 @@ class ChatGptAdsConversionTrackingTest extends TestCase
             'obref' => 'obref_browser_cookie_value',
         ]);
 
-        $this->assertSame('consent-oppref-123', $payloadDenied['user_data']['oppref']);
-        $this->assertArrayNotHasKey('obref', $payloadDenied['user_data']);
-        $this->assertArrayNotHasKey('email', $payloadDenied['user_data']);
-        $this->assertArrayNotHasKey('phone', $payloadDenied['user_data']);
+        // oppref remains at root level unchanged
+        $this->assertSame('consent-oppref-123', $payloadDenied['oppref']);
+        // Check 5: user property must be completely omitted when no permitted identifiers are available
+        $this->assertArrayNotHasKey('user', $payloadDenied, 'User property must be omitted entirely when no permitted identifiers are present');
 
         // When consent is granted
         $payloadGranted = $capi->buildPayload($order, [
@@ -716,9 +716,339 @@ class ChatGptAdsConversionTrackingTest extends TestCase
             'obref' => 'obref_browser_cookie_value',
         ]);
 
-        $this->assertSame('consent-oppref-123', $payloadGranted['user_data']['oppref']);
-        $this->assertSame('obref_browser_cookie_value', $payloadGranted['user_data']['obref']);
-        $this->assertArrayHasKey('email', $payloadGranted['user_data']);
-        $this->assertArrayHasKey('phone', $payloadGranted['user_data']);
+        $this->assertSame('consent-oppref-123', $payloadGranted['oppref']);
+        $this->assertArrayHasKey('user', $payloadGranted);
+        $grantedUser = $payloadGranted['user'];
+        $this->assertSame('obref_browser_cookie_value', $grantedUser['obref']);
+        $this->assertSame(hash('sha256', 'customer@example.com'), $grantedUser['email_sha256']);
+        // Phone numbers must NEVER be present even with consent
+        $this->assertArrayNotHasKey('phone', $grantedUser);
+        $this->assertArrayNotHasKey('phone_sha256', $grantedUser);
+    }
+
+    /**
+     * 21: Payload schema strictly matches official OpenAI CAPI specification.
+     */
+    public function test_openai_capi_payload_schema_and_forbidden_fields(): void
+    {
+        $capi = app(OpenAiCapiService::class);
+
+        $user = User::factory()->create([
+            'email' => 'sharma.priya@example.com',
+            'phone' => '+919876543210',
+        ]);
+
+        $order = Order::create([
+            'order_number' => 'VR-SCHEMA-CHECK',
+            'user_id' => $user->id,
+            'billing_name' => 'Priya Sharma',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Flat 101',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Priya Sharma',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Flat 101',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 1499.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 1499.00,
+            'payment_method' => 'razorpay',
+            'payment_status' => 'paid',
+            'order_status' => 'confirmed',
+            'oppref' => 'official-oppref-token-xyz',
+        ]);
+
+        $order->items()->create([
+            'product_name' => 'Signature Anarkali Suit',
+            'sku' => 'SUIT-ANAR-01',
+            'quantity' => 1,
+            'unit_price' => 1499.00,
+            'mrp' => 1499.00,
+            'total_price' => 1499.00,
+        ]);
+
+        $fixedTime = 1793505600000;
+        $payload = $capi->buildPayload($order, [
+            'consent_granted' => true,
+            'obref' => 'unchanged_browser_reference_123',
+            'timestamp_ms' => $fixedTime,
+            'source_url' => 'https://vanriti.com/checkout/success',
+        ]);
+
+        // 1. Required Envelope Fields
+        $this->assertSame($capi->eventId($order), $payload['id']);
+        $this->assertSame('order_created', $payload['type']);
+        $this->assertSame($fixedTime, $payload['timestamp_ms']);
+        $this->assertSame('official-oppref-token-xyz', $payload['oppref']);
+        $this->assertSame('https://vanriti.com/checkout/success', $payload['source_url']);
+        $this->assertSame('web', $payload['action_source']);
+
+        // 2. User fields
+        $userData = (array) $payload['user'];
+        $this->assertSame('unchanged_browser_reference_123', $userData['obref']);
+        $this->assertSame(hash('sha256', 'sharma.priya@example.com'), $userData['email_sha256']);
+
+        // 3. Data fields
+        $this->assertSame('contents', $payload['data']['type']);
+        $this->assertSame(149900, $payload['data']['amount']);
+        $this->assertSame('INR', $payload['data']['currency']);
+        $this->assertCount(1, $payload['data']['contents']);
+
+        $item = $payload['data']['contents'][0];
+        $this->assertSame('SUIT-ANAR-01', $item['id']);
+        $this->assertSame('Signature Anarkali Suit', $item['name']);
+        $this->assertSame(1, $item['quantity']);
+        $this->assertSame(149900, $item['amount']);
+
+        // 4. Strictly FORBIDDEN fields (assertions against legacy Meta or undocumented structures)
+        $this->assertArrayNotHasKey('event_name', $payload, 'OpenAI uses "type", not "event_name"');
+        $this->assertArrayNotHasKey('event_id', $payload, 'OpenAI uses "id", not "event_id"');
+        $this->assertArrayNotHasKey('event_time', $payload, 'OpenAI uses "timestamp_ms", not "event_time"');
+        $this->assertArrayNotHasKey('user_data', $payload, 'OpenAI uses "user", not "user_data"');
+        $this->assertArrayNotHasKey('custom_data', $payload, 'OpenAI uses "data", not "custom_data"');
+        $this->assertArrayNotHasKey('emails_sha256', $userData, 'OpenAI uses singular "email_sha256"');
+        $this->assertArrayNotHasKey('phone', $userData, 'Phone is not in documented OpenAI user schema');
+        $this->assertArrayNotHasKey('phone_sha256', $userData, 'Phone SHA-256 is not in documented OpenAI user schema');
+        $this->assertArrayNotHasKey('order_id', $payload['data'], 'order_id must not be present in data');
+        $this->assertArrayNotHasKey('order_id', $item, 'order_id must not be present in contents item');
+    }
+
+    /**
+     * 22: INR amounts in paise and per-unit item amounts (not line total).
+     */
+    public function test_inr_amounts_in_paise_and_per_unit_item_pricing(): void
+    {
+        $payloadService = app(OpenAiEcommercePayloadService::class);
+
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'VR-PAISE-CHECK',
+            'user_id' => $user->id,
+            'billing_name' => 'Priya',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Priya',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 2998.50,
+            'amount_due' => 0.00,
+            'amount_paid' => 2998.50,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        // 3 units at ₹999.50 each (unit price = 99950 paise, line total = 299850 paise)
+        $order->items()->create([
+            'product_name' => 'Embroidered Dupatta',
+            'sku' => 'DUPATTA-EMB-01',
+            'quantity' => 3,
+            'unit_price' => 999.50,
+            'mrp' => 999.50,
+            'total_price' => 2998.50,
+        ]);
+
+        $data = $payloadService->orderCreated($order);
+
+        // Event-level amount is the entire event value in minor units (paise)
+        $this->assertSame(299850, $data['amount']);
+        $this->assertSame('INR', $data['currency']);
+        $this->assertCount(1, $data['contents']);
+
+        $item = $data['contents'][0];
+        $this->assertSame('DUPATTA-EMB-01', $item['id']);
+        $this->assertSame('Embroidered Dupatta', $item['name']);
+        $this->assertSame(3, $item['quantity']);
+        // Item-level amount is the SINGLE-UNIT price in paise, NOT the line total
+        $this->assertSame(99950, $item['amount']);
+    }
+
+    /**
+     * 23: Validate-only mode executes against OpenAI CAPI with validate_only flag.
+     */
+    public function test_openai_validate_only_mode(): void
+    {
+        Http::fake([
+            'https://bzr.openai.com/v1/events*' => function (\Illuminate\Http\Client\Request $request) {
+                $body = $request->data();
+
+                // Validate request envelope
+                if (! isset($body['validate_only']) || $body['validate_only'] !== true) {
+                    return Http::response(['error' => ['message' => 'validate_only must be true']], 400);
+                }
+
+                if (! isset($body['events']) || ! is_array($body['events']) || count($body['events']) !== 1) {
+                    return Http::response(['error' => ['message' => 'events array required']], 400);
+                }
+
+                $event = $body['events'][0];
+                if (! isset($event['id'], $event['type'], $event['timestamp_ms'], $event['data'])) {
+                    return Http::response(['error' => ['message' => 'Missing required event fields']], 400);
+                }
+
+                return Http::response([
+                    'success' => true,
+                    'events_received' => 1,
+                    'validation_status' => 'valid',
+                    'warnings' => [],
+                ], 200);
+            },
+        ]);
+
+        config([
+            'openai_ads.enabled' => true,
+            'openai_ads.pixel_id' => 'px_test_validation_789',
+            'openai_ads.capi_key' => 'key_sec_validation_token_xyz',
+            'openai_ads.validate_only' => true,
+        ]);
+
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'VR-VALIDATE-ONLY-01',
+            'user_id' => $user->id,
+            'billing_name' => 'Tester',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Tester',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 1500.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 1500.00,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+            'oppref' => 'val-oppref-123',
+        ]);
+
+        $order->items()->create([
+            'product_name' => 'Test Item',
+            'sku' => 'SKU-VAL',
+            'quantity' => 1,
+            'unit_price' => 1500.00,
+            'mrp' => 1500.00,
+            'total_price' => 1500.00,
+        ]);
+
+        $capi = app(OpenAiCapiService::class);
+        $response = $capi->sendOrder($order, ['validate_only' => true]);
+
+        $this->assertSame(200, $response->status());
+        $this->assertTrue($response->json('success'));
+        $this->assertSame(1, $response->json('events_received'));
+        $this->assertSame('valid', $response->json('validation_status'));
+
+        // Verify outgoing request headers and token
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return $request->url() === 'https://bzr.openai.com/v1/events?pid=px_test_validation_789'
+                && $request->hasHeader('Authorization', 'Bearer key_sec_validation_token_xyz')
+                && $request['validate_only'] === true
+                && $request['events'][0]['type'] === 'order_created'
+                && $request['events'][0]['data']['amount'] === 150000;
+        });
+    }
+
+    /**
+     * 24: Check 5 — user property is omitted entirely when no permitted identifiers are available.
+     */
+    public function test_user_property_omitted_entirely_when_no_identifiers(): void
+    {
+        $capi = app(OpenAiCapiService::class);
+
+        // Order where customer has no email address attached
+        $userWithoutEmail = User::factory()->create(['email' => '']);
+
+        $order = Order::create([
+            'order_number' => 'VR-NO-USER-01',
+            'user_id' => $userWithoutEmail->id,
+            'billing_name' => 'Guest Visitor',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Guest Visitor',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 1000.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 1000.00,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        $payload = $capi->buildPayload($order, [
+            'consent_granted' => true,
+            'obref' => null,
+        ]);
+
+        // When no email and no obref, 'user' must be absent, not an empty object {}
+        $this->assertArrayNotHasKey('user', $payload, 'Event payload must omit "user" key entirely when no identifiers exist');
+    }
+
+    /**
+     * 25: Check 6 — timestamps are actual Unix milliseconds within the past 7 days.
+     */
+    public function test_timestamp_ms_meets_openai_restrictions(): void
+    {
+        $capi = app(OpenAiCapiService::class);
+
+        $now = now();
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'VR-TIMESTAMP-01',
+            'user_id' => $user->id,
+            'billing_name' => 'Tester',
+            'billing_mobile' => '9876543210',
+            'billing_address_line1' => 'Street',
+            'billing_city' => 'Bengaluru',
+            'billing_state' => 'Karnataka',
+            'billing_pincode' => '560038',
+            'shipping_name' => 'Tester',
+            'shipping_mobile' => '9876543210',
+            'shipping_address_line1' => 'Street',
+            'shipping_city' => 'Bengaluru',
+            'shipping_state' => 'Karnataka',
+            'shipping_pincode' => '560038',
+            'grand_total' => 500.00,
+            'amount_due' => 0.00,
+            'amount_paid' => 500.00,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+            'created_at' => $now->copy()->subHours(2),
+        ]);
+
+        $payload = $capi->buildPayload($order);
+
+        $this->assertIsInt($payload['timestamp_ms']);
+        // Must be in milliseconds (13 digits for current epoch)
+        $this->assertGreaterThan(1700000000000, $payload['timestamp_ms']);
+
+        // Check 7-day window restriction
+        $nowMs = (int) round(microtime(true) * 1000);
+        $sevenDaysAgoMs = $nowMs - (7 * 86400 * 1000);
+        $this->assertGreaterThanOrEqual($sevenDaysAgoMs, $payload['timestamp_ms']);
+        $this->assertLessThanOrEqual($nowMs + 5000, $payload['timestamp_ms']);
     }
 }

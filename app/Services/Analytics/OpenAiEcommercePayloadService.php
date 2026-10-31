@@ -141,7 +141,6 @@ class OpenAiEcommercePayloadService
             'type' => 'contents',
             'amount' => $this->toPaise((float) $order->grand_total),
             'currency' => self::CURRENCY,
-            'order_id' => (string) $order->order_number,
             'contents' => $contents,
         ];
     }
