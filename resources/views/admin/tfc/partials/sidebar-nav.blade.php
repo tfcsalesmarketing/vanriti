@@ -9,7 +9,6 @@
     $membersActive = request()->routeIs('admin.tfc.members.*', 'admin.tfc.kyc.*');
     $crmActive = request()->routeIs('admin.tfc.inquiries.*', 'admin.tfc.grievances.*');
     $waActive = request()->routeIs('admin.tfc.whatsapp.*');
-    $cmsActive = request()->routeIs('admin.tfc.pages.*', 'admin.tfc.blogs.*', 'admin.tfc.banners.*', 'admin.tfc.menus.*', 'admin.tfc.products.*');
     $settingsActive = request()->routeIs('admin.tfc.settings.*');
 @endphp
 
@@ -195,65 +194,12 @@
         </div>
     </li>
 
-    {{-- 4. Content & Website CMS --}}
-    <li class="nav-item">
-        <a class="nav-link sidebar-group-toggle {{ $cmsActive ? 'active-parent' : '' }}"
-           data-bs-toggle="collapse"
-           href="#collapseTfcCms"
-           role="button"
-           aria-expanded="{{ $cmsActive ? 'true' : 'false' }}"
-           aria-controls="collapseTfcCms">
-            <i class="bi bi-window-stack"></i>
-            <span>Content &amp; Website</span>
-            <i class="bi bi-chevron-right chevron-icon"></i>
-        </a>
-        <div class="collapse {{ $cmsActive ? 'show' : '' }}" id="collapseTfcCms">
-            <ul class="sidebar-submenu">
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.tfc.products.*') ? 'active' : '' }}" 
-                       href="{{ route('admin.tfc.products.index') }}">
-                        <i class="bi bi-box-seam"></i>
-                        <span>Live Synced Products</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.tfc.pages.*') ? 'active' : '' }}" 
-                       href="{{ route('admin.tfc.pages.index') }}">
-                        <i class="bi bi-file-earmark-richtext"></i>
-                        <span>Pages &amp; Statutory</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.tfc.blogs.*') ? 'active' : '' }}" 
-                       href="{{ route('admin.tfc.blogs.index') }}">
-                        <i class="bi bi-newspaper"></i>
-                        <span>Blogs &amp; News</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.tfc.banners.*') ? 'active' : '' }}" 
-                       href="{{ route('admin.tfc.banners.index') }}">
-                        <i class="bi bi-images"></i>
-                        <span>Hero &amp; Sliders</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.tfc.menus.*') ? 'active' : '' }}" 
-                       href="{{ route('admin.tfc.menus.index') }}">
-                        <i class="bi bi-menu-button-wide"></i>
-                        <span>Navigation Menus</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </li>
-
-    {{-- 5. Administration & Statutory Disclosures --}}
+    {{-- 4. Corporate & Statutory Settings --}}
     <li class="nav-item">
         <a class="nav-link {{ $settingsActive ? 'active' : '' }}" 
            href="{{ route('admin.tfc.settings.index') }}">
-            <i class="bi bi-shield-check" style="color: #D49B24;"></i>
-            <span>Statutory Disclosures</span>
+            <i class="bi bi-gear" style="color: #D49B24;"></i>
+            <span>Corporate Settings</span>
         </a>
     </li>
 </ul>

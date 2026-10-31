@@ -365,9 +365,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('tfc')->name('tfc.')->middleware('permission:manage-tfc')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\Tfc\TfcDashboardController::class, 'index'])->name('dashboard');
             
-            // Live Synced Catalogue View
-            Route::get('products', [\App\Http\Controllers\Admin\Tfc\TfcProductController::class, 'index'])->name('products.index');
-            
             // TFC Corporate Settings & Statutory Disclosures
             Route::get('settings', [\App\Http\Controllers\Admin\Tfc\TfcSettingController::class, 'index'])->name('settings.index');
             Route::post('settings', [\App\Http\Controllers\Admin\Tfc\TfcSettingController::class, 'update'])->name('settings.update');
@@ -382,18 +379,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('kyc/{id}', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'show'])->name('kyc.show');
             Route::post('kyc/{id}/approve', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'approve'])->name('kyc.approve');
             Route::post('kyc/{id}/reject', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'reject'])->name('kyc.reject');
-            
-            // TFC Pages & Statutory Documents
-            Route::resource('pages', \App\Http\Controllers\Admin\Tfc\TfcPageController::class);
-            
-            // TFC Blogs & Updates
-            Route::resource('blogs', \App\Http\Controllers\Admin\Tfc\TfcBlogController::class);
-            
-            // TFC Banners & CTAs
-            Route::resource('banners', \App\Http\Controllers\Admin\Tfc\TfcBannerController::class);
-            
-            // TFC Navigation Menus
-            Route::resource('menus', \App\Http\Controllers\Admin\Tfc\TfcMenuController::class);
             
             // TFC Inquiries & Prospective Seller Applications
             Route::get('inquiries', [\App\Http\Controllers\Admin\Tfc\TfcInquiryController::class, 'index'])->name('inquiries.index');

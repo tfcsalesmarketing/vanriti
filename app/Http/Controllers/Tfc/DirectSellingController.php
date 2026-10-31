@@ -13,8 +13,7 @@ use Illuminate\View\View;
 class DirectSellingController extends Controller
 {
     /**
-     * Page 1: Direct Selling with TFC.
-     * Comprehensive educational guide on ethical direct selling with VANRITI products.
+     * About Direct Selling with TFC.
      */
     public function directSelling(): View
     {
@@ -35,32 +34,38 @@ class DirectSellingController extends Controller
     }
 
     /**
-     * Page 2: TFC Incentive & Rewards Program.
-     * Full business plan explaining Product Credit (PC), activation packages, binary matching, and rules.
+     * Binary Business Plan & Incentive Program.
+     */
+    public function businessPlan(): View
+    {
+        return view('tfc.direct-selling.business-plan');
+    }
+
+    /**
+     * Compatibility aliases.
      */
     public function incentiveProgram(): View
     {
-        return view('tfc.direct-selling.incentive-program');
+        return $this->businessPlan();
     }
 
-    /**
-     * The TFC Direct Selling Opportunity (Backward compatibility alias).
-     */
     public function opportunity(): View
     {
-        return $this->incentiveProgram();
+        return $this->businessPlan();
     }
 
-    /**
-     * How Direct Selling Works with TFC.
-     */
     public function howItWorks(): View
     {
         return $this->directSelling();
     }
 
+    public function benefits(): View
+    {
+        return $this->businessPlan();
+    }
+
     /**
-     * Seller Application Page.
+     * Prospective Seller Application Page.
      */
     public function apply(): View
     {
@@ -78,30 +83,16 @@ class DirectSellingController extends Controller
             'phone' => ['required', 'string', 'max:20'],
             'city' => ['required', 'string', 'max:100'],
             'state' => ['required', 'string', 'max:100'],
-            'message' => ['nullable', 'string', 'max:2000'],
+            'message' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        TfcInquiry::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'subject' => 'Direct Seller Prospective Application',
-            'message' => $validated['message'] ?? 'Prospective application submitted via website.',
-            'type' => 'seller_application',
-            'city' => $validated['city'],
-            'state' => $validated['state'],
-            'status' => 'new',
-            'ip_address' => $request->ip(),
-        ]);
+        $validated['type'] = 'seller_application';
+        $validated['status'] = 'new';
+        $validated['ip_address'] = $request->ip();
 
-        return back()->with('success', 'Thank you for your interest! Your application has been received. Our team will review your details and contact you shortly.');
-    }
+        TfcInquiry::create($validated);
 
-    /**
-     * Direct Seller Benefits & Values.
-     */
-    public function benefits(): View
-    {
-        return view('tfc.direct-selling.benefits');
+        return redirect()->route('tfc.preview.member.register')
+            ->with('success', 'Thank you for your interest! You can also complete your instant free direct seller registration right now below.');
     }
 }

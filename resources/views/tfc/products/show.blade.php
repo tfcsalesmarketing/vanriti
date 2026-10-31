@@ -89,27 +89,44 @@
                 </p>
             @endif
 
-            {{-- Direct Order & Delivery --}}
-            <div class="p-4 rounded-4 mb-4 border" style="background: linear-gradient(135deg, #0A1D37, #132D54); color: #FFFFFF;">
-                <h6 class="text-warning fw-bold mb-2"><i class="bi bi-bag-check-fill me-2"></i>Order &amp; Delivery</h6>
-                <p class="text-white-50 small mb-3">
-                    Fast, secure online fulfillment with nationwide doorstep delivery, authentic batch quality verification, and dedicated customer care.
+            {{-- Direct Selling Order & Purchase Options --}}
+            @php
+                $waNum = tfc_setting('whatsapp_phone_number') ?: tfc_setting('contact_phone', '919876543210');
+                $waClean = preg_replace('/[^0-9]/', '', (string) $waNum);
+                $waMsg = 'Hello TFC Sales & Marketing, I would like to purchase "' . $product->name . '" (SKU: ' . ($product->sku ?? $product->id) . '). Please connect me with an authorized direct seller or assist with my order.';
+                $waOrderUrl = 'https://wa.me/' . $waClean . '?text=' . rawurlencode($waMsg);
+            @endphp
+
+            <div class="p-4 rounded-4 mb-4 border shadow-sm" style="background: #FFFFFF; border-radius: 18px;">
+                <h6 class="text-dark fw-bold mb-2 d-flex align-items-center gap-2">
+                    <i class="ri-shopping-bag-3-fill text-warning fs-5"></i>
+                    <span>Purchase &amp; Delivery</span>
+                </h6>
+                <p class="text-muted small mb-3" style="line-height: 1.6;">
+                    TFC products are sold exclusively through authorized Independent Direct Sellers and corporate direct fulfillment. Enjoy 100% authentic batch verification and nationwide doorstep logistics.
                 </p>
-                <a href="{{ tfc_vanriti_product_url($product->slug) }}" target="_blank" class="btn btn-tfc-primary btn-lg w-100 fw-bold shadow">
-                    <i class="bi bi-cart3 me-2"></i>Order Product Now <i class="bi bi-arrow-up-right small ms-1"></i>
-                </a>
+                <div class="d-grid gap-2">
+                    <a href="{{ $waOrderUrl }}" target="_blank" rel="noopener" class="btn btn-success btn-lg fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                        <i class="ri-whatsapp-fill fs-5"></i>
+                        <span>Order via WhatsApp / Find Seller</span>
+                    </a>
+                    <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-outline-dark fw-semibold py-2 d-flex align-items-center justify-content-center gap-2">
+                        <i class="ri-user-star-line text-warning"></i>
+                        <span>Become a Direct Seller for Member Benefits</span>
+                    </a>
+                </div>
             </div>
 
-            {{-- Direct Selling Consultation Option --}}
+            {{-- Support from Independent Distributor --}}
             <div class="p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between mb-4">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-people-fill text-primary fs-4"></i>
                     <div>
-                        <div class="fw-semibold small text-dark">Have an Independent TFC Direct Seller?</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">Support your local distributor with personalized product advice.</div>
+                        <div class="fw-semibold small text-dark">Have an Independent TFC Sponsor?</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">Support your sponsor by quoting their Member ID when ordering.</div>
                     </div>
                 </div>
-                <a href="{{ tfc_route('contact') }}" class="btn btn-sm btn-outline-dark text-nowrap">Connect</a>
+                <a href="{{ tfc_route('contact') }}" class="btn btn-sm btn-outline-dark text-nowrap">Contact</a>
             </div>
 
             {{-- Specifications Tabs --}}

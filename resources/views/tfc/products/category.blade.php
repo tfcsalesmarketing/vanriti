@@ -3,12 +3,12 @@
 @section('title', $category->name . ' | TFC Sales & Marketing')
 
 @section('content')
-<section class="tfc-page-header">
-    <div class="container text-center">
-        <span class="tfc-badge-gold mb-2 d-inline-block">Wellness Category</span>
-        <h1 class="display-5 fw-bold text-white mb-2">{{ $category->name }}</h1>
+<section class="tfc-page-header py-5" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border-bottom: 1px solid rgba(0,0,0,0.06);">
+    <div class="container text-center py-2">
+        <span class="badge bg-warning text-dark fw-bold mb-2 px-3 py-1.5" style="font-size: 0.8rem; letter-spacing: 0.5px;">WELLNESS CATEGORY</span>
+        <h1 class="display-5 fw-bold text-dark mb-2">{{ $category->name }}</h1>
         @if ($category->description)
-            <p class="text-white-50 lead mb-0" style="max-width: 650px; margin: 0 auto;">{{ $category->description }}</p>
+            <p class="text-muted lead mb-0" style="max-width: 650px; margin: 0 auto;">{{ $category->description }}</p>
         @endif
     </div>
 </section>

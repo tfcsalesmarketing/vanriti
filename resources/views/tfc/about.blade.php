@@ -4,11 +4,11 @@
 @section('meta_description', 'Discover the story, vision, and leadership values of TFC Sales & Marketing — a premier Indian direct-selling enterprise empowering individuals through wellness and entrepreneurship.')
 
 @section('content')
-<section class="tfc-page-header">
-    <div class="container text-center">
-        <span class="tfc-badge-gold mb-2 d-inline-block">Corporate Profile</span>
-        <h1 class="display-5 fw-bold text-white mb-2">About TFC Sales &amp; Marketing</h1>
-        <p class="text-white-50 lead mb-0">{{ tfc_setting('company_tagline', 'Connecting Products. Creating Possibilities.') }}</p>
+<section class="tfc-page-header py-5" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border-bottom: 1px solid rgba(0,0,0,0.06);">
+    <div class="container text-center py-2">
+        <span class="badge bg-warning text-dark fw-bold mb-2 px-3 py-1.5" style="font-size: 0.8rem; letter-spacing: 0.5px;">CORPORATE PROFILE</span>
+        <h1 class="display-5 fw-bold text-dark mb-2">About TFC Sales &amp; Marketing</h1>
+        <p class="text-muted lead mb-0">{{ tfc_setting('company_tagline', 'Connecting Products. Creating Possibilities.') }}</p>
     </div>
 </section>
 

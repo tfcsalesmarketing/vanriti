@@ -3,11 +3,11 @@
 @section('title', 'Frequently Asked Questions | TFC Sales & Marketing')
 
 @section('content')
-<section class="tfc-page-header">
-    <div class="container text-center">
-        <span class="tfc-badge-gold mb-2 d-inline-block">Support &amp; Answers</span>
-        <h1 class="display-5 fw-bold text-white mb-2">Frequently Asked Questions</h1>
-        <p class="text-white-50 lead mb-0">Clear answers about direct selling with TFC, consumer rights, and products.</p>
+<section class="tfc-page-header py-5" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border-bottom: 1px solid rgba(0,0,0,0.06);">
+    <div class="container text-center py-2">
+        <span class="badge bg-warning text-dark fw-bold mb-2 px-3 py-1.5" style="font-size: 0.8rem; letter-spacing: 0.5px;">HELP &amp; SUPPORT</span>
+        <h1 class="display-5 fw-bold text-dark mb-2">Frequently Asked Questions</h1>
+        <p class="text-muted lead mb-0">Clear answers about direct selling with TFC, products, and distributor opportunities.</p>
     </div>
 </section>
 

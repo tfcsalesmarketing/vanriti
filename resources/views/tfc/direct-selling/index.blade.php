@@ -5,59 +5,59 @@
 
 @section('content')
 {{-- Section 1: Hero --}}
-<section class="py-5" style="background: linear-gradient(135deg, #061224 0%, #0A1D37 60%, #132D54 100%); color: #FFFFFF;">
+<section class="py-5" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border-bottom: 1px solid rgba(0,0,0,0.06);">
     <div class="container py-4">
         <div class="row align-items-center g-5">
             <div class="col-12 col-lg-7">
-                <span class="badge tfc-badge-gold mb-3">
-                    <i class="bi bi-stars me-1"></i>Official Direct-Selling Enterprise &bull; Zero Registration Fee
+                <span class="badge bg-warning text-dark fw-bold mb-3 px-3 py-1.5" style="font-size: 0.8rem;">
+                    <i class="bi bi-stars me-1"></i>Direct-Selling Enterprise &bull; Zero Registration Fee
                 </span>
-                <h1 class="display-4 fw-bold mb-3" style="letter-spacing: -0.02em; line-height: 1.2;">
+                <h1 class="display-4 fw-bold mb-3 text-dark" style="letter-spacing: -0.02em; line-height: 1.2;">
                     More Than Products. <br>
                     <span style="color: var(--tfc-gold);">A Business Built on Relationships.</span>
                 </h1>
-                <p class="lead text-white-50 mb-3" style="max-width: 620px;">
+                <p class="lead text-muted mb-3" style="max-width: 620px;">
                     Discover a More Rewarding Way to Experience Wellness and Entrepreneurship.
                 </p>
-                <p class="text-white-50 mb-4" style="max-width: 620px; line-height: 1.7;">
+                <p class="text-muted mb-4" style="max-width: 620px; line-height: 1.7;">
                     TFC Sales &amp; Marketing connects consumers and independent direct sellers with a curated portfolio of herbal, wellness, and personal care products through an empowering, product-centered direct-selling approach.
                 </p>
                 <div class="d-flex flex-wrap gap-3">
-                    <a href="{{ tfc_route('products') }}" class="btn btn-tfc-primary btn-lg">
+                    <a href="{{ tfc_route('products') }}" class="btn btn-tfc-primary btn-lg shadow-sm">
                         <i class="bi bi-grid-fill me-2"></i>Explore Products
                     </a>
-                    <a href="{{ tfc_route('incentive-program') }}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-journal-text me-2"></i>Explore the TFC Opportunity
+                    <a href="{{ tfc_route('business-plan') }}" class="btn btn-outline-dark btn-lg">
+                        <i class="bi bi-journal-text me-2"></i>Explore the Business Plan
                     </a>
                 </div>
             </div>
             <div class="col-12 col-lg-5">
-                <div class="p-4 rounded-4 shadow-lg" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px);">
+                <div class="p-4 rounded-4 shadow-sm bg-white border">
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <div class="p-3 rounded-circle bg-warning bg-opacity-20 text-warning fs-3">
                             <i class="bi bi-people-fill"></i>
                         </div>
                         <div>
-                            <h6 class="text-white fw-bold mb-0">Ethical Direct Selling</h6>
-                            <small class="text-white-50">Consumer Protection (Direct Selling) Rules, 2021</small>
+                            <h6 class="text-dark fw-bold mb-0">Ethical Direct Selling</h6>
+                            <small class="text-muted">Empowering Entrepreneurs Across India</small>
                         </div>
                     </div>
-                    <ul class="list-unstyled text-white-50 small mb-0 d-flex flex-column gap-2">
+                    <ul class="list-unstyled text-muted small mb-0 d-flex flex-column gap-2">
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i>
+                            <i class="bi bi-check2-circle text-success fs-5"></i>
                             <span><strong>Zero Registration Fee:</strong> Free enrollment without forced purchases.</span>
                         </li>
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i>
+                            <i class="bi bi-check2-circle text-success fs-5"></i>
                             <span><strong>Authentic Formulations:</strong> Lab-tested botanical care crafted to high standards.</span>
                         </li>
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i>
+                            <i class="bi bi-check2-circle text-success fs-5"></i>
                             <span><strong>Direct Customer Delivery:</strong> Fast, trackable PAN-India fulfillment.</span>
                         </li>
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle text-warning fs-5"></i>
-                            <span><strong>Rule 7 Redressal:</strong> 48-hour complaint acknowledgment guarantee.</span>
+                            <i class="bi bi-check2-circle text-success fs-5"></i>
+                            <span><strong>Support &amp; Mentorship:</strong> Complete webinars and leadership training.</span>
                         </li>
                     </ul>
                 </div>
@@ -264,11 +264,8 @@
                                     @endif
                                 </div>
                                 <div class="d-grid gap-1">
-                                    <a href="{{ tfc_route('products.show', $product->slug) }}" class="btn btn-sm btn-outline-dark">
-                                        View Details
-                                    </a>
-                                    <a href="{{ tfc_vanriti_product_url($product->slug) }}" target="_blank" rel="noopener" class="btn btn-sm btn-tfc-primary">
-                                        Order Online <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                    <a href="{{ tfc_route('products.show', $product->slug) }}" class="btn btn-sm btn-tfc-primary">
+                                        View Product <i class="bi bi-arrow-right ms-1"></i>
                                     </a>
                                 </div>
                             </div>

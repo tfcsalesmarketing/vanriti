@@ -1,7 +1,3 @@
-@php
-    $headerMenus = \App\Models\Tfc\TfcMenu::active()->where('location', 'header')->get();
-@endphp
-
 <header class="header-wrapper">
     {{-- Top Marquee Announcement Bar (Eduse Signature Style) --}}
     <div class="top-marquee" role="region" aria-label="Announcements">
@@ -36,25 +32,12 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link tfc-nav-link dropdown-toggle {{ request()->is('*about*') || request()->is('*standards*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link tfc-nav-link dropdown-toggle {{ request()->is('*about*') || request()->is('*direct-selling*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             ABOUT US <i class="ri-arrow-down-s-line dropdown-icon ms-1" style="font-size: 14px;"></i>
                         </a>
                         <ul class="dropdown-menu border-0 shadow-lg p-2 rounded-4">
                             <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('about') }}"><i class="ri-building-line text-warning me-2"></i>About Company</a></li>
-                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('direct-selling') }}"><i class="ri-community-line text-warning me-2"></i>About Direct Selling</a></li>
-                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('brand') }}"><i class="ri-award-line text-warning me-2"></i>Product Standards</a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link tfc-nav-link dropdown-toggle {{ request()->is('*opportunity*') || request()->is('*incentive*') || request()->is('*how-it-works*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            OPPORTUNITY <i class="ri-arrow-down-s-line dropdown-icon ms-1" style="font-size: 14px;"></i>
-                        </a>
-                        <ul class="dropdown-menu border-0 shadow-lg p-2 rounded-4">
-                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('opportunity') }}"><i class="ri-line-chart-line text-warning me-2"></i>Business Plan</a></li>
-                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('incentive-program') }}"><i class="ri-money-rupee-circle-line text-warning me-2"></i>Incentive Program</a></li>
-                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('how-it-works') }}"><i class="ri-guide-line text-warning me-2"></i>How It Works</a></li>
-                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('become-a-seller') }}"><i class="ri-user-add-line text-warning me-2"></i>Become a Direct Seller</a></li>
+                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('direct-selling') }}"><i class="ri-community-line text-warning me-2"></i>Direct Selling Model</a></li>
                         </ul>
                     </li>
 
@@ -64,9 +47,20 @@
                         </a>
                     </li>
 
+                    <li class="nav-item dropdown">
+                        <a class="nav-link tfc-nav-link dropdown-toggle {{ request()->is('*opportunity*') || request()->is('*business-plan*') || request()->is('*how-it-works*') || request()->is('*become-a-seller*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            OPPORTUNITY <i class="ri-arrow-down-s-line dropdown-icon ms-1" style="font-size: 14px;"></i>
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg p-2 rounded-4">
+                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('business-plan') }}"><i class="ri-line-chart-line text-warning me-2"></i>Business Plan</a></li>
+                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('how-it-works') }}"><i class="ri-guide-line text-warning me-2"></i>How It Works</a></li>
+                            <li><a class="dropdown-item py-2 px-3 rounded-3" href="{{ tfc_route('become-a-seller') }}"><i class="ri-user-add-line text-warning me-2"></i>Become a Direct Seller</a></li>
+                        </ul>
+                    </li>
+
                     <li class="nav-item">
-                        <a class="nav-link tfc-nav-link {{ request()->is('*faqs*') ? 'active' : '' }}" href="{{ tfc_route('faqs') }}">
-                            FAQS
+                        <a class="nav-link tfc-nav-link {{ request()->is('*downloads*') ? 'active' : '' }}" href="{{ tfc_route('downloads') }}">
+                            DOWNLOADS
                         </a>
                     </li>
 
@@ -91,7 +85,7 @@
                         </a>
                         <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary btn-sm px-3 py-2 fw-semibold rounded-3 shadow-sm d-inline-flex align-items-center gap-1">
                             <i class="ri-user-star-line"></i>
-                            <span>Signup</span>
+                            <span>Sign Up</span>
                         </a>
                     @endif
                 </div>

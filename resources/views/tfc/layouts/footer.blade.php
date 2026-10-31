@@ -5,7 +5,7 @@
 @endphp
 
 <footer id="contact" class="footer-section">
-    {{-- Ambient Glowing Background Orbs & Grid Pattern (Eduse Style) --}}
+    {{-- Ambient Glowing Background Orbs & Subtle Grid Pattern --}}
     <div class="footer-bg" aria-hidden="true">
         <span class="footer-orb footer-orb--1"></span>
         <span class="footer-orb footer-orb--2"></span>
@@ -21,47 +21,44 @@
                 <h3>Company</h3>
                 <a href="{{ tfc_route('home') }}">Home</a>
                 <a href="{{ tfc_route('about') }}">About Us</a>
-                <a href="{{ tfc_route('direct-selling') }}">About Direct Selling</a>
-                <a href="{{ tfc_route('brand') }}">Product Standards</a>
-                <a href="{{ tfc_route('products') }}">Our Products</a>
+                <a href="{{ tfc_route('direct-selling') }}">Direct Selling Model</a>
+                <a href="{{ tfc_route('business-plan') }}">Business Plan</a>
+                <a href="{{ tfc_route('downloads') }}">Downloads</a>
                 <a href="{{ tfc_route('faqs') }}">FAQs</a>
                 <a href="{{ tfc_route('contact') }}">Contact Us</a>
             </div>
 
-            {{-- Col 2: Policies --}}
+            {{-- Col 2: Products --}}
             <div class="footer-column">
-                <h3>Policies</h3>
-                <a href="{{ tfc_route('policy', 'return-and-refund-policy') }}">Refund &amp; Return</a>
-                <a href="{{ tfc_route('policy', 'terms-of-service') }}">Terms &amp; Conditions</a>
-                <a href="{{ tfc_route('policy', 'privacy-policy') }}">Privacy Policy</a>
-                <a href="{{ tfc_route('policy', 'direct-seller-code-of-ethics') }}">Code of Conduct</a>
-                <a href="{{ tfc_route('policy', 'compensation-plan-policy') }}">Incentive Guidelines</a>
-                <a href="{{ tfc_route('policy', 'disclaimer') }}">Disclaimer</a>
+                <h3>Product Lines</h3>
+                <a href="{{ tfc_route('products') }}">All Formulations</a>
+                <a href="{{ tfc_route('products') }}?category=wellness">Wellness Essentials</a>
+                <a href="{{ tfc_route('products') }}?category=personal-care">Personal Care</a>
+                <a href="{{ tfc_route('products') }}?category=lifestyle">Lifestyle Products</a>
+                <a href="{{ tfc_route('products') }}">Quality Standards</a>
             </div>
 
             {{-- Col 3: Direct Seller --}}
             <div class="footer-column">
                 <h3>Direct Seller</h3>
-                <a href="{{ route('tfc.preview.member.login') }}">Distributor Portal</a>
-                <a href="{{ tfc_route('how-it-works') }}">How It Works</a>
-                <a href="{{ tfc_route('grievance') }}">Grievance Desk</a>
-                <a href="{{ tfc_route('grievance.track') }}">Track Ticket</a>
-                <a href="{{ tfc_route('become-a-seller') }}">Join Network</a>
+                <a href="{{ route('tfc.preview.member.login') }}">Member Portal Login</a>
                 <a href="{{ route('tfc.preview.member.register') }}">Become A Direct Seller</a>
+                <a href="{{ tfc_route('how-it-works') }}">How It Works</a>
+                <a href="{{ tfc_route('grievance') }}">Consumer Grievance</a>
+                <a href="{{ tfc_route('grievance.track') }}">Track Grievance Ticket</a>
             </div>
 
-            {{-- Col 4: Opportunity --}}
+            {{-- Col 4: Policies --}}
             <div class="footer-column">
-                <h3>Opportunity</h3>
-                <a href="{{ tfc_route('opportunity') }}">Binary Business Plan</a>
-                <a href="{{ tfc_route('incentive-program') }}">Incentive Program</a>
-                <a href="{{ tfc_route('how-it-works') }}">Dual Team Synergy</a>
-                <a href="{{ tfc_route('opportunity') }}">Retail Margins</a>
-                <a href="{{ tfc_route('incentive-program') }}">Leadership Ranks</a>
-                <a href="{{ tfc_route('about') }}">Executive Mentorship</a>
+                <h3>Policies</h3>
+                <a href="{{ tfc_route('policy', 'terms-of-service') }}">Terms &amp; Conditions</a>
+                <a href="{{ tfc_route('policy', 'privacy-policy') }}">Privacy Policy</a>
+                <a href="{{ tfc_route('policy', 'return-and-refund-policy') }}">Return &amp; Refund Policy</a>
+                <a href="{{ tfc_route('policy', 'direct-seller-code-of-ethics') }}">Code of Ethics</a>
+                <a href="{{ tfc_route('policy', 'disclaimer') }}">Disclaimer</a>
             </div>
 
-            {{-- Col 5: Brand & Contact Info --}}
+            {{-- Col 5: Corporate Contact Info --}}
             <div class="footer-column footer-contact">
                 <h3 class="footer-brand">{{ tfc_setting('company_name', 'TFC Sales & Marketing') }}</h3>
                 <p class="footer-tagline-text">
@@ -100,7 +97,7 @@
                 &copy; {{ date('Y') }} <strong>{{ tfc_setting('company_name', 'TFC Sales & Marketing') }}</strong>. All Rights Reserved.
             </p>
             <p>
-                Premier Direct Selling Enterprise &bull; Certified Formulations &bull; Pan-India Distribution
+                India's Trusted Direct Selling Enterprise &bull; Quality Consumer Formulations &bull; Pan-India Distribution
             </p>
         </div>
     </div>

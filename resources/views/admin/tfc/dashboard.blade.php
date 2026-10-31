@@ -1,153 +1,135 @@
 @extends('admin.layouts.app')
 
-@section('title', 'TFC Sales & Marketing Dashboard')
+@section('title', 'TFC Sales & Marketing Operations Dashboard')
 
 @section('content')
-{{-- Statutory Safeguards Alert Header (Conditional) --}}
-@php
-    $missingDisclosures = [];
-    if (empty(tfc_setting('cin_or_llpin'))) $missingDisclosures[] = 'CIN / LLPIN';
-    if (empty(tfc_setting('registered_office'))) $missingDisclosures[] = 'Registered Office';
-    if (empty(tfc_setting('grievance_officer_name'))) $missingDisclosures[] = 'Grievance Officer';
-    if (empty(tfc_setting('nodal_officer_name'))) $missingDisclosures[] = 'Nodal Officer';
-    $showStatutoryNotice = ! empty($missingDisclosures) || ($stats['draft_pages'] ?? 0) > 0;
-@endphp
-
-@if ($showStatutoryNotice)
-    <div class="alert alert-warning border-warning alert-dismissible fade show d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 shadow-sm" role="alert">
-        <div class="d-flex align-items-center gap-3 pe-3">
-            <i class="bi bi-shield-exclamation fs-3 text-warning"></i>
-            <div>
-                <div class="fw-bold text-dark d-flex align-items-center gap-2">
-                    <span>Statutory Direct-Selling Disclosure Notice</span>
-                    @if (! empty($missingDisclosures))
-                        <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size: 0.7rem;">
-                            {{ count($missingDisclosures) }} pending field{{ count($missingDisclosures) > 1 ? 's' : '' }}
-                        </span>
-                    @endif
-                </div>
-                <div class="small text-muted mt-1">
-                    Per Consumer Protection (Direct Selling) Rules 2021 &amp; 2023 Amendment: Mandatory administrative disclosures
-                    @if (! empty($missingDisclosures))
-                        (<em>{{ implode(', ', $missingDisclosures) }}</em>)
-                    @endif
-                    remain pending confirmation.
-                </div>
-            </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('admin.tfc.settings.index') }}" class="btn btn-sm btn-warning text-dark fw-semibold text-nowrap">
-                <i class="bi bi-gear-fill me-1"></i>Configure Disclosures
-            </a>
-            <button type="button" class="btn-close position-static" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="fw-bold mb-1" style="color: #0A1D37;">TFC Direct Selling Operations</h4>
+        <p class="text-muted small mb-0">Overview of independent members, KYC submissions, and incoming inquiries.</p>
     </div>
-@endif
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.tfc.members.index') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-people me-1"></i> View All Members
+        </a>
+        <a href="{{ route('admin.tfc.kyc.index') }}" class="btn btn-sm btn-outline-warning text-dark">
+            <i class="bi bi-shield-check me-1"></i> KYC Review Desk
+            @if ($stats['pending_kyc'] > 0)
+                <span class="badge bg-warning text-dark ms-1">{{ $stats['pending_kyc'] }}</span>
+            @endif
+        </a>
+    </div>
+</div>
 
 {{-- KPI Metrics Cards --}}
 <div class="row g-3 mb-4">
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card stat-card h-100">
+        <div class="card stat-card h-100 p-3 border-0 shadow-sm" style="background: #FFFFFF; border-radius: 12px;">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="stat-label">Live Synced Products</span>
-                <span class="stat-icon" style="background:#ECFDF5; color:#047857;"><i class="bi bi-box-seam"></i></span>
+                <span class="text-muted small fw-semibold text-uppercase">Total Members</span>
+                <span class="p-2 rounded-3" style="background: rgba(30, 58, 138, 0.1); color: #1E3A8A;"><i class="bi bi-person-badge fs-5"></i></span>
             </div>
-            <div class="stat-value">{{ $stats['total_synced_products'] }}</div>
-            <div class="text-muted small mt-1 d-flex align-items-center gap-1">
-                <i class="bi bi-check-circle-fill text-success"></i>
-                <span>Directly from VANRITI catalogue</span>
+            <div class="fs-3 fw-bold text-dark">{{ $stats['total_members'] }}</div>
+            <div class="text-muted small mt-1">
+                <span>Registered Direct Sellers</span>
             </div>
         </div>
     </div>
 
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card stat-card h-100">
+        <div class="card stat-card h-100 p-3 border-0 shadow-sm" style="background: #FFFFFF; border-radius: 12px;">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="stat-label">Statutory &amp; CMS Pages</span>
-                <span class="stat-icon" style="background:#FFFBEB; color:#B45309;"><i class="bi bi-file-earmark-richtext"></i></span>
+                <span class="text-muted small fw-semibold text-uppercase">Active Members</span>
+                <span class="p-2 rounded-3" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><i class="bi bi-check2-circle fs-5"></i></span>
             </div>
-            <div class="stat-value">{{ $stats['total_pages'] }}</div>
-            <div class="text-muted small mt-1 d-flex align-items-center gap-1">
-                <span class="badge bg-warning-subtle text-warning border border-warning-subtle">{{ $stats['draft_pages'] }} in Draft</span>
-                <span>Safeguarded</span>
+            <div class="fs-3 fw-bold text-success">{{ $stats['active_members'] }}</div>
+            <div class="text-muted small mt-1">
+                <span>Active direct selling accounts</span>
             </div>
         </div>
     </div>
 
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card stat-card h-100">
+        <div class="card stat-card h-100 p-3 border-0 shadow-sm" style="background: #FFFFFF; border-radius: 12px;">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="stat-label">Seller Inquiries</span>
-                <span class="stat-icon" style="background:#EEF4FF; color:#3538CD;"><i class="bi bi-people"></i></span>
+                <span class="text-muted small fw-semibold text-uppercase">Pending KYC</span>
+                <span class="p-2 rounded-3" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;"><i class="bi bi-shield-exclamation fs-5"></i></span>
             </div>
-            <div class="stat-value">{{ $stats['new_inquiries'] }}</div>
-            <div class="text-muted small mt-1 d-flex align-items-center gap-1">
-                <i class="bi bi-bell-fill text-primary"></i>
-                <span>Pending review</span>
+            <div class="fs-3 fw-bold text-warning">{{ $stats['pending_kyc'] }}</div>
+            <div class="text-muted small mt-1">
+                <span>Awaiting document review</span>
             </div>
         </div>
     </div>
 
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card stat-card h-100">
+        <div class="card stat-card h-100 p-3 border-0 shadow-sm" style="background: #FFFFFF; border-radius: 12px;">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="stat-label">Grievances (Rule 7)</span>
-                <span class="stat-icon" style="background:#FEF2F2; color:#B91C1C;"><i class="bi bi-shield-exclamation"></i></span>
+                <span class="text-muted small fw-semibold text-uppercase">WhatsApp Inquiries</span>
+                <span class="p-2 rounded-3" style="background: rgba(37, 211, 102, 0.1); color: #25D366;"><i class="bi bi-whatsapp fs-5"></i></span>
             </div>
-            <div class="stat-value text-danger">{{ $stats['pending_grievances'] }}</div>
-            <div class="text-muted small mt-1 d-flex align-items-center gap-1">
-                <i class="bi bi-clock-history text-danger"></i>
-                <span>48h ack / 30d resolution rule</span>
+            <div class="fs-3 fw-bold text-dark">{{ $stats['tfc_wa_conversations'] }}</div>
+            <div class="text-muted small mt-1">
+                <span>Direct Seller inquiries &amp; chat</span>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    {{-- Recent Inquiries & Direct-Seller Applications --}}
-    <div class="col-12 col-lg-6">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
-                <h6 class="card-title mb-0 fw-bold">Recent Inquiries &amp; Applications</h6>
-                <a href="{{ route('admin.tfc.inquiries.index') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+<div class="row g-4 mb-4">
+    {{-- Recent Members --}}
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between border-0">
+                <h6 class="card-title mb-0 fw-bold" style="color: #0A1D37;">Recent Registered Members</h6>
+                <a href="{{ route('admin.tfc.members.index') }}" class="btn btn-sm btn-outline-secondary">View All</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
-                        <thead class="table-light">
+                        <thead class="table-light small">
                             <tr>
-                                <th>Applicant</th>
-                                <th>Type</th>
-                                <th>City / State</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th>Member ID</th>
+                                <th>Name / Mobile</th>
+                                <th>Sponsor</th>
+                                <th>Leg</th>
+                                <th>KYC</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse ($recentInquiries as $item)
+                        <tbody class="small">
+                            @forelse ($recentMembers as $mem)
                                 <tr>
-                                    <td>
-                                        <div class="fw-semibold small">{{ $item->name }}</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;">{{ $item->phone }}</div>
+                                    <td class="font-monospace fw-bold text-primary">
+                                        <a href="{{ route('admin.tfc.members.show', $mem->id) }}" class="text-decoration-none">
+                                            {{ $mem->tfc_member_id }}
+                                        </a>
                                     </td>
                                     <td>
-                                        <span class="badge {{ $item->type === 'seller_application' ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-secondary' }}">
-                                            {{ $item->type === 'seller_application' ? 'Seller App' : 'General' }}
+                                        <div class="fw-semibold text-dark">{{ $mem->full_name }}</div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">{{ $mem->mobile }}</div>
+                                    </td>
+                                    <td>
+                                        @if ($mem->sponsor)
+                                            <div class="small">{{ $mem->sponsor->full_name }}</div>
+                                            <div class="text-muted font-monospace" style="font-size: 0.70rem;">{{ $mem->sponsor->tfc_member_id }}</div>
+                                        @else
+                                            <span class="text-muted">Direct</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ $mem->placement_position === 'orange' ? 'bg-warning text-dark' : ($mem->placement_position === 'blue' ? 'bg-primary' : 'bg-secondary') }}">
+                                            {{ ucfirst($mem->placement_position ?? 'Root') }}
                                         </span>
                                     </td>
-                                    <td class="small">{{ $item->city ?: '—' }}, {{ $item->state ?: '—' }}</td>
                                     <td>
-                                        <span class="badge {{ $item->status === 'new' ? 'bg-danger' : ($item->status === 'in_progress' ? 'bg-warning text-dark' : 'bg-success') }}">
-                                            {{ ucfirst($item->status) }}
+                                        <span class="badge {{ $mem->kyc_status === 'approved' ? 'bg-success' : ($mem->kyc_status === 'rejected' ? 'bg-danger' : 'bg-warning text-dark') }}">
+                                            {{ ucfirst($mem->kyc_status) }}
                                         </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('admin.tfc.inquiries.show', $item) }}" class="btn btn-sm btn-light">View</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted small">No inquiries received yet.</td>
+                                    <td colspan="5" class="text-center py-4 text-muted small">No members registered yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -157,46 +139,45 @@
         </div>
     </div>
 
-    {{-- Recent Consumer Grievance Tickets (Rule 7) --}}
-    <div class="col-12 col-lg-6">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
-                <h6 class="card-title mb-0 fw-bold">Consumer Grievance Tickets</h6>
-                <a href="{{ route('admin.tfc.grievances.index') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+    {{-- Pending KYC Review Desk --}}
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between border-0">
+                <h6 class="card-title mb-0 fw-bold" style="color: #0A1D37;">Pending KYC Verifications</h6>
+                <a href="{{ route('admin.tfc.kyc.index') }}" class="btn btn-sm btn-outline-warning text-dark">Review Desk</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
-                        <thead class="table-light">
+                        <thead class="table-light small">
                             <tr>
-                                <th>Ticket #</th>
-                                <th>Consumer</th>
-                                <th>Category</th>
-                                <th>Status</th>
+                                <th>Member</th>
+                                <th>Documents</th>
+                                <th>Submitted</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse ($recentGrievances as $ticket)
+                        <tbody class="small">
+                            @forelse ($pendingKycs as $kyc)
                                 <tr>
-                                    <td class="fw-bold small text-primary">{{ $ticket->ticket_number }}</td>
                                     <td>
-                                        <div class="small fw-semibold">{{ $ticket->consumer_name }}</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;">{{ $ticket->phone }}</div>
-                                    </td>
-                                    <td class="small">{{ ucwords(str_replace('_', ' ', $ticket->category)) }}</td>
-                                    <td>
-                                        <span class="badge {{ $ticket->status === 'resolved' ? 'bg-success' : ($ticket->status === 'under_investigation' ? 'bg-warning text-dark' : 'bg-info text-dark') }}">
-                                            {{ ucfirst(str_replace('_', ' ', $ticket->status)) }}
-                                        </span>
+                                        <div class="fw-semibold text-dark">{{ $kyc->member?->full_name }}</div>
+                                        <div class="text-muted font-monospace" style="font-size: 0.72rem;">{{ $kyc->member?->tfc_member_id }}</div>
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin.tfc.grievances.show', $ticket) }}" class="btn btn-sm btn-light">Details</a>
+                                        <div class="small">PAN: {{ $kyc->pan_number ?: '—' }}</div>
+                                        <div class="text-muted" style="font-size: 0.70rem;">Aadhaar: {{ $kyc->aadhaar_masked ?: '—' }}</div>
+                                    </td>
+                                    <td class="text-muted" style="font-size: 0.75rem;">
+                                        {{ $kyc->submitted_at ? $kyc->submitted_at->diffForHumans() : '—' }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('admin.tfc.kyc.show', $kyc->id) }}" class="btn btn-xs btn-primary py-1 px-2" style="font-size: 0.72rem;">Review</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted small">No grievances filed.</td>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No pending KYC applications. All caught up!</td>
                                 </tr>
                             @endforelse
                         </tbody>
