@@ -32,7 +32,8 @@ class MemberDashboardController extends Controller
 
         // Recent 5 direct referrals
         $recentDirects = DirectSellingMember::where('sponsor_id', $member->id)
-            ->latest('joined_at')
+            ->with('user')
+            ->latest('created_at')
             ->take(5)
             ->get();
 
