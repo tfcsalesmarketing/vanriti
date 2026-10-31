@@ -285,8 +285,10 @@ class CheckoutController extends Controller
 
             // COD conversion is recorded when the order is successfully placed.
             $this->conversionService->recordPurchase($order);
+            $this->conversionService->recordOpenAiOrderCreated($order);
 
             $this->dispatchMetaCapiPurchase($order, $request);
+            $this->dispatchOpenAiCapiOrder($order, $request);
 
             $this->notifyCustomer($order, 'orderPlaced');
 
@@ -631,8 +633,10 @@ class CheckoutController extends Controller
                 // conversion point. Repeated/concurrent verify calls resolve
                 // to the same ledger row.
                 $this->conversionService->recordPurchase($order->refresh());
+                $this->conversionService->recordOpenAiOrderCreated($order->refresh());
 
                 $this->dispatchMetaCapiPurchase($order, $request);
+                $this->dispatchOpenAiCapiOrder($order, $request);
 
                 $this->notifyCustomer($order, 'paymentSuccessful');
 
@@ -691,9 +695,47 @@ class CheckoutController extends Controller
             ? $this->metaCapiService->eventId($order)
             : null;
 
+        $openAiPixelId = trim((string) (setting('openai_pixel_id') ?: config('openai_ads.pixel_id', '')));
+        $openAiEventPayload = null;
+        $openAiEventId = null;
+
+        if ($openAiPixelId !== '' && $this->ecommerceDataService->purchaseEligible($order)) {
+            $openAiLedger = \App\Models\AnalyticsConversion::query()
+                ->where('event_type', 'order_created')
+                ->where('order_number', $order->order_number)
+                ->first();
+
+            // Durable server-side one-time delivery check
+            if ($openAiLedger && $openAiLedger->openai_browser_rendered_at === null) {
+                $openAiLedger->update(['openai_browser_rendered_at' => now()]);
+                $openAiService = app(\App\Services\Analytics\OpenAiCapiService::class);
+                $openAiEventId = $openAiService->eventId($order);
+                $openAiEventPayload = app(\App\Services\Analytics\OpenAiEcommercePayloadService::class)->orderCreated($order);
+            }
+        }
+
         return view('storefront.checkout.success', compact(
-            'order', 'shippingInfoPayload', 'paymentInfoPayload', 'purchasePayload', 'metaEventId'
+            'order', 'shippingInfoPayload', 'paymentInfoPayload', 'purchasePayload', 'metaEventId',
+            'openAiPixelId', 'openAiEventPayload', 'openAiEventId'
         ));
+    }
+
+    /**
+     * Queue server-side OpenAI order_created delivery for an eligible conversion.
+     */
+    protected function dispatchOpenAiCapiOrder(Order $order, Request $request): void
+    {
+        $openai = app(\App\Services\Analytics\OpenAiCapiService::class);
+        if (! $openai->isConfigured()) {
+            return;
+        }
+
+        \App\Jobs\SendOpenAiCapiOrder::dispatch(
+            $order,
+            $order->oppref ?? $request->query('oppref'),
+            $request->cookies->get('__obref'),
+            app(\App\Consent\ConsentService::class)->resolve()->allows(\App\Consent\Enums\ConsentCategory::Advertising)
+        );
     }
 
     /**

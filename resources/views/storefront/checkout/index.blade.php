@@ -966,6 +966,17 @@ function verifyPayment(response, orderId) {
     @if ($_metaInitiatePayload && setting('meta_pixel_id'))
     window.vrMeta.track('InitiateCheckout', {!! json_encode($_metaInitiatePayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     @endif
+    @php
+        $_openAiPixelId = trim((string) (setting('openai_pixel_id') ?: config('openai_ads.pixel_id', '')));
+        $_openAiCheckoutPayload = $_openAiPixelId !== '' && isset($cart)
+            ? app(\App\Services\Analytics\OpenAiEcommercePayloadService::class)->checkoutStarted($cart)
+            : null;
+    @endphp
+    @if ($_openAiCheckoutPayload)
+    if (window.vrOpenAi) {
+        window.vrOpenAi.fire('checkout_started', {!! json_encode($_openAiCheckoutPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+    }
+    @endif
     </script>
     @endpush
 @endif

@@ -197,6 +197,71 @@
         })();
         </script>
     @endif
+    @php
+        $_openAiPixelId = trim((string) (setting('openai_pixel_id') ?: config('openai_ads.pixel_id', '')));
+    @endphp
+    @if ($_openAiPixelId !== '')
+        <script nonce="{{ $cspNonce }}">
+        !function(w,d,s,u){if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;
+        var js=d.createElement(s);js.async=!0;js.src=u;var f=d.getElementsByTagName(s)[0];
+        f.parentNode.insertBefore(js,f);}(window,document,'script','https://bzrcdn.openai.com/sdk/oaiq.min.js');
+        oaiq("init", { pixelId: "{{ $_openAiPixelId }}" });
+        oaiq("measure", "page_viewed");
+        </script>
+        <script nonce="{{ $cspNonce }}">
+        window.vrOpenAi = (function () {
+            function fire(event, payload, opts) {
+                try {
+                    if (typeof window.oaiq !== 'function') {
+                        return false;
+                    }
+                    window.oaiq("measure", event, payload || {}, opts || {});
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function trackAddToCartFromGa4(analytics) {
+                if (!analytics) return false;
+                var ecommerce = analytics.ecommerce ? analytics.ecommerce : analytics;
+                if (!ecommerce || !Array.isArray(ecommerce.items) || ecommerce.items.length === 0) {
+                    return false;
+                }
+                var item = ecommerce.items[0];
+                if (!item || item.item_id === undefined || item.item_id === null || item.item_id === '') {
+                    return false;
+                }
+                var quantity = Math.max(1, parseInt(item.quantity, 10) || 1);
+                var unitPrice = parseFloat(item.price) || 0;
+                var unitPaise = Math.round(unitPrice * 100);
+                var totalPaise = Math.round((ecommerce.value !== undefined ? parseFloat(ecommerce.value) : unitPrice * quantity) * 100);
+
+                var payload = {
+                    type: "contents",
+                    amount: totalPaise,
+                    currency: ecommerce.currency || "INR",
+                    contents: [
+                        {
+                            id: String(item.item_id),
+                            name: String(item.item_name || ''),
+                            quantity: quantity,
+                            amount: unitPaise
+                        }
+                    ]
+                };
+
+                return fire("items_added", payload);
+            }
+
+            return {
+                fire: fire,
+                track: fire,
+                trackAddToCartFromGa4: trackAddToCartFromGa4
+            };
+        })();
+        </script>
+    @endif
     @endunless
 </head>
 <body class="has-mobile-bar">

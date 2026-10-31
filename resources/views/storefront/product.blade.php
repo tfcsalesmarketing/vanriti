@@ -885,7 +885,26 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     window.vrMeta.track('ViewContent', {!! json_encode($_metaViewContent, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
     window.vrPdpAddToCartMeta = function (analytics) {
         window.vrMeta.trackAddToCartFromGa4(analytics);
+        if (window.vrOpenAi) {
+            window.vrOpenAi.trackAddToCartFromGa4(analytics);
+        }
     };
+    </script>
+    @endpush
+@endif
+
+@php
+    $_openAiPixelId = trim((string) (setting('openai_pixel_id') ?: config('openai_ads.pixel_id', '')));
+    $_openAiViewPayload = $_openAiPixelId !== ''
+        ? app(\App\Services\Analytics\OpenAiEcommercePayloadService::class)->contentsViewed($product, $firstInStockVariant)
+        : null;
+@endphp
+@if ($_openAiViewPayload)
+    @push('scripts')
+    <script nonce="{{ $cspNonce }}">
+    if (window.vrOpenAi) {
+        window.vrOpenAi.fire('contents_viewed', {!! json_encode($_openAiViewPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!});
+    }
     </script>
     @endpush
 @endif

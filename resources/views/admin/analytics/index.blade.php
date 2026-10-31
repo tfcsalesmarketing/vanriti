@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $sections = ['overview', 'traffic', 'product', 'revenue', 'diagnostics'];
+    $sections = ['overview', 'traffic', 'product', 'revenue', 'chatgpt', 'diagnostics'];
     $currentSection = in_array((string) request()->query('section', 'overview'), $sections, true)
         ? (string) request()->query('section', 'overview')
         : 'overview';
@@ -53,6 +53,10 @@
 
 <div id="analytics-revenue" class="{{ $currentSection === 'revenue' ? '' : 'd-none' }}">
     @include('admin.analytics.partials._revenue')
+</div>
+
+<div id="analytics-chatgpt" class="{{ $currentSection === 'chatgpt' ? '' : 'd-none' }}">
+    @include('admin.analytics.partials._chatgpt')
 </div>
 
 <div id="analytics-diagnostics" class="{{ $currentSection === 'diagnostics' ? '' : 'd-none' }}">
@@ -200,6 +204,87 @@
                     scales: {
                         y0: { beginAtZero: true, position: 'left', grid: { color: '#f0ede6' } },
                         y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+    }
+
+    const chatGptCanvas = document.getElementById('chatGptTrendChart');
+    if (chatGptCanvas && window.Chart) {
+        const chatGptSeries = @json($report['chatgpt']['series'] ?? []);
+        if (chatGptSeries.length) {
+            new Chart(chatGptCanvas, {
+                type: 'line',
+                data: {
+                    labels: chatGptSeries.map(function (row) { return row.label || row.date.slice(5); }),
+                    datasets: [
+                        {
+                            label: 'Visits',
+                            data: chatGptSeries.map(function (row) { return row.visits; }),
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            yAxisID: 'yVisits',
+                            pointRadius: chatGptSeries.length > 60 ? 0 : 3
+                        },
+                        {
+                            label: 'Orders',
+                            data: chatGptSeries.map(function (row) { return row.orders; }),
+                            borderColor: '#198754',
+                            backgroundColor: 'rgba(25, 135, 84, 0.15)',
+                            fill: false,
+                            tension: 0.35,
+                            yAxisID: 'yVisits',
+                            pointRadius: chatGptSeries.length > 60 ? 0 : 3
+                        },
+                        {
+                            label: 'Paid Revenue (₹)',
+                            data: chatGptSeries.map(function (row) { return row.revenue; }),
+                            borderColor: '#263D25',
+                            backgroundColor: 'rgba(38, 61, 37, 0.05)',
+                            borderDash: [4, 4],
+                            fill: false,
+                            tension: 0.35,
+                            yAxisID: 'yRevenue',
+                            pointRadius: chatGptSeries.length > 60 ? 0 : 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    if (ctx.dataset.label.includes('Revenue')) {
+                                        return 'Paid Revenue: ₹' + ctx.parsed.y.toLocaleString('en-IN');
+                                    }
+                                    return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        yVisits: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#f0ede6' },
+                            title: { display: true, text: 'Visits & Orders' }
+                        },
+                        yRevenue: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'Revenue (₹)' }
+                        }
                     }
                 }
             });

@@ -180,6 +180,8 @@ class OrderService
             );
             $taxSplit = $this->gstService->splitTax($taxAmount, $intraState);
 
+            $attribution = app(\App\Services\Analytics\ChatGptAdsAttributionService::class)->resolve();
+
             $order = Order::create([
                 'user_id' => $user->id,
                 'coupon_id' => $coupon?->id,
@@ -213,6 +215,10 @@ class OrderService
                 'payment_status' => $this->initialPaymentStatus($orderData['payment_method']),
                 'order_status' => 'pending',
                 'internal_notes' => $orderData['notes'] ?? null,
+                'oppref' => $orderData['oppref'] ?? ($attribution['oppref'] ?? null),
+                'attribution_source' => $orderData['attribution_source'] ?? ($attribution['source'] ?? null),
+                'attribution_campaign' => $orderData['attribution_campaign'] ?? ($attribution['campaign'] ?? null),
+                'attribution_medium' => $orderData['attribution_medium'] ?? ($attribution['medium'] ?? null),
             ]);
 
             $order->update(['order_number' => generate_order_number($order->id)]);

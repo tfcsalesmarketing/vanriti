@@ -43,6 +43,8 @@ class AnalyticsEventRecorder
             return;
         }
 
+        $chatgpt = app(ChatGptAdsAttributionService::class)->capture($request);
+
         $path = $request->path();
         $landing = session('analytics.landing');
         if ($landing === null) {
@@ -57,19 +59,37 @@ class AnalyticsEventRecorder
             $referrerHost = is_string($host) && $host !== '' ? $host : null;
         }
 
+        $source = $request->query('utm_source');
+        $medium = $request->query('utm_medium');
+        $campaign = $request->query('utm_campaign');
+
+        if ($chatgpt && $request->has('oppref')) {
+            $source = $source ?: 'chatgpt';
+            $medium = $medium ?: 'cpc';
+        }
+
+        $source = $source ?: $referrerHost;
+        $medium = $medium ?: ($referrerHost !== null ? 'referral' : 'direct');
+
+        $payload = [
+            'path' => $path,
+            'method' => $request->method(),
+        ];
+
+        if ($chatgpt && ! empty($chatgpt['oppref'])) {
+            $payload['oppref'] = $chatgpt['oppref'];
+        }
+
         $this->record(AnalyticsEvent::PAGE_VIEW, [
             'sku' => null,
             'product_id' => null,
             'quantity' => null,
-            'source' => $request->query('utm_source') ?: $referrerHost,
-            'medium' => $request->query('utm_medium') ?: ($referrerHost !== null ? 'referral' : 'direct'),
-            'campaign' => $request->query('utm_campaign'),
+            'source' => $source,
+            'medium' => $medium,
+            'campaign' => $campaign,
             'device_type' => $this->deviceType($request->userAgent()),
             'landing_path' => $landing,
-            'payload' => [
-                'path' => $path,
-                'method' => $request->method(),
-            ],
+            'payload' => $payload,
         ], $request);
     }
 

@@ -161,6 +161,7 @@ class AnalyticsCommandCenterService
         $traffic = $this->section('traffic', fn () => $this->traffic($bounds), $this->emptyTraffic());
         $paymentStarted = $this->section('payment_started', fn () => ['count' => $this->paymentStarted($bounds)], ['count' => 0]);
         $compare = $this->section('compare', fn () => $this->compare($bounds), $this->emptyCompare());
+        $chatgpt = $this->section('chatgpt', fn () => app(ChatGptAdsReportingService::class)->report($bounds), $this->emptyChatGpt());
 
         $alerts = $this->alerts($tracking);
 
@@ -182,6 +183,7 @@ class AnalyticsCommandCenterService
             'traffic' => $traffic,
             'payment_started' => $paymentStarted,
             'compare' => $compare,
+            'chatgpt' => $chatgpt,
             'alerts' => $alerts,
         ];
     }
@@ -1533,6 +1535,49 @@ class AnalyticsCommandCenterService
             'events' => $this->emptyEvents(),
             'visitors' => $this->emptyVisitors(),
             'payment_started' => 0,
+        ];
+    }
+
+    protected function emptyChatGpt(): array
+    {
+        return [
+            'platform' => ['available' => false, 'reason' => 'Temporarily unavailable.', 'metrics' => null],
+            'summary' => [
+                'impressions' => null,
+                'ad_clicks' => null,
+                'website_visits' => 0,
+                'ctr' => null,
+                'spend' => null,
+                'cpc' => null,
+                'conversions' => 0,
+                'conversion_rate' => 0.0,
+                'cost_per_acquisition' => null,
+                'paid_revenue' => 0.0,
+                'roas' => null,
+            ],
+            'behavior' => [
+                'visits' => 0,
+                'product_views' => 0,
+                'add_to_carts' => 0,
+                'checkout_starts' => 0,
+            ],
+            'orders' => [
+                'orders_created' => 0,
+                'paid_orders' => 0,
+                'paid_revenue' => 0.0,
+                'cod_orders' => 0,
+                'cod_order_value' => 0.0,
+                'prepaid_orders' => 0,
+                'prepaid_order_value' => 0.0,
+                'prepaid_paid_revenue' => 0.0,
+                'cod_collected_revenue' => 0.0,
+                'cancelled_orders' => 0,
+                'refunded_orders' => 0,
+                'capi' => ['sent' => 0, 'failed' => 0, 'pending' => 0],
+            ],
+            'campaigns' => [],
+            'products' => [],
+            'series' => [],
         ];
     }
 }

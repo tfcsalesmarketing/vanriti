@@ -69,6 +69,10 @@ class Order extends Model
         'tracking_url',
         'internal_notes',
         'cancelled_at',
+        'oppref',
+        'attribution_source',
+        'attribution_campaign',
+        'attribution_medium',
     ];
 
     public function whatsAppCheckoutSession(): HasOne

@@ -369,17 +369,25 @@ class OrderController extends Controller
                 $payment->update([
                     'status' => 'paid',
                     'paid_at' => $payment->paid_at ?? now(),
-                    'amount' => $amount,
+                    'amount' => $amount > 0 ? $amount : $order->grand_total,
                 ]);
             } else {
-                Payment::create([
+                $payment = Payment::create([
                     'order_id' => $order->id,
                     'method' => 'manual',
-                    'amount' => $amount,
+                    'amount' => $amount > 0 ? $amount : $order->grand_total,
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
             }
+
+            $totalPaid = (float) $order->payments()->where('status', 'paid')->sum('amount');
+            $outstanding = (float) $order->grand_total - $totalPaid;
+
+            $order->update([
+                'amount_paid' => $totalPaid,
+                'amount_due' => max(0, $outstanding),
+            ]);
         } elseif ($payment) {
             $payment->update([
                 'status' => $newStatus,

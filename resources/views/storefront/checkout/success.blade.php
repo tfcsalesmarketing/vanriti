@@ -151,3 +151,15 @@
     </script>
     @endpush
 @endif
+
+@if (!empty($openAiPixelId) && !empty($openAiEventPayload))
+    @push('scripts')
+    <script nonce="{{ $cspNonce }}">
+    if (window.vrOpenAi) {
+        window.vrOpenAi.fire('order_created', {!! json_encode($openAiEventPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, { event_id: {!! json_encode($openAiEventId) !!} });
+    } else if (typeof window.oaiq === 'function') {
+        window.oaiq('measure', 'order_created', {!! json_encode($openAiEventPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}, { event_id: {!! json_encode($openAiEventId) !!} });
+    }
+    </script>
+    @endpush
+@endif

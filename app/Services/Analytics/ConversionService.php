@@ -17,6 +17,7 @@ class ConversionService
 {
     public function __construct(
         protected EcommerceDataService $ecommerce,
+        protected OpenAiEcommercePayloadService $openAiPayload,
     ) {}
 
     /**
@@ -34,6 +35,23 @@ class ConversionService
             'purchase',
             $order->order_number,
             $this->ecommerce->purchase($order),
+        );
+    }
+
+    /**
+     * Record the canonical OpenAI order_created conversion for an order if eligible.
+     */
+    public function recordOpenAiOrderCreated(Order $order): ?AnalyticsConversion
+    {
+        if (! $this->ecommerce->purchaseEligible($order)) {
+            return null;
+        }
+
+        return $this->record(
+            'order_created',
+            $order->order_number,
+            $this->openAiPayload->orderCreated($order),
+            $order->attribution_source ?: 'chatgpt_ads',
         );
     }
 

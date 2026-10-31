@@ -14,6 +14,11 @@ class AnalyticsConversion extends Model
         'meta_state',
         'meta_sent_at',
         'meta_attempts',
+        'openai_state',
+        'openai_sent_at',
+        'openai_attempts',
+        'openai_event_id',
+        'openai_browser_rendered_at',
     ];
 
     protected function casts(): array
@@ -22,6 +27,9 @@ class AnalyticsConversion extends Model
             'payload' => 'array',
             'meta_sent_at' => 'datetime',
             'meta_attempts' => 'integer',
+            'openai_sent_at' => 'datetime',
+            'openai_attempts' => 'integer',
+            'openai_browser_rendered_at' => 'datetime',
         ];
     }
 }

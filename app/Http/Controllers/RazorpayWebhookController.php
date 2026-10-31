@@ -114,10 +114,18 @@ class RazorpayWebhookController extends Controller
 
         // Idempotent by UNIQUE(event_type, order_number); a replay is a no-op.
         $this->conversionService->recordPurchase($order);
+        $this->conversionService->recordOpenAiOrderCreated($order);
 
         if ($this->metaCapiService->isConfigured()) {
             $this->metaCapiService->deliver($order, [
                 'event_source_url' => route('checkout.success', $order),
+            ]);
+        }
+
+        $openai = app(\App\Services\Analytics\OpenAiCapiService::class);
+        if ($openai->isConfigured()) {
+            $openai->deliver($order, [
+                'oppref' => $order->oppref,
             ]);
         }
 

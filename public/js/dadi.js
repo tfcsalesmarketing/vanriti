@@ -742,6 +742,9 @@
                     if (window.vrMeta) {
                         window.vrMeta.trackAddToCartFromGa4(data.analytics);
                     }
+                    if (window.vrOpenAi) {
+                        window.vrOpenAi.trackAddToCartFromGa4(data.analytics);
+                    }
                 }
 
                 if (buyNow && data.redirect) {

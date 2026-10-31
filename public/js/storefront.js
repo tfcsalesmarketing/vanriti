@@ -632,6 +632,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (window.vrMeta) {
                             window.vrMeta.trackAddToCartFromGa4(data.analytics);
                         }
+                        if (window.vrOpenAi) {
+                            window.vrOpenAi.trackAddToCartFromGa4(data.analytics);
+                        }
                     }
                     if (data.redirect_only) {
                         window.location.href = data.redirect;
