@@ -16,7 +16,7 @@
 @endphp
 
 <div class="modal fade vr-modal-backdrop" id="vrLoginModal" tabindex="-1" role="dialog" aria-labelledby="vrLoginModalTitle" aria-modal="true" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
         <div class="modal-content vr-login-dialog">
 
             {{-- Close Button --}}
@@ -119,8 +119,7 @@
                                            placeholder="10-digit mobile number"
                                            autocomplete="tel"
                                            inputmode="numeric"
-                                           maxlength="10"
-                                           autofocus>
+                                           maxlength="10">
                                     <div class="vr-field-trailing-icon">
                                         <i class="ri-whatsapp-line"></i>
                                     </div>

@@ -466,6 +466,38 @@
                 }
             }
         });
+
+        // Mobile keyboard auto-scroll into view protection
+        ['vrLoginModalOtpPhone', 'vrLoginModalOtpCode', 'vrLoginModalCustomerName'].forEach(function (id) {
+            var el = byId(id);
+            if (!el) return;
+            el.addEventListener('focus', function () {
+                if (window.innerWidth < 768) {
+                    setTimeout(function () {
+                        var formCol = first('.vr-modal-form-col');
+                        if (formCol) {
+                            var elRect = el.getBoundingClientRect();
+                            var colRect = formCol.getBoundingClientRect();
+                            if (elRect.top < colRect.top || elRect.bottom > colRect.bottom) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
+                    }, 280);
+                }
+            });
+        });
+
+        // Desktop gentle autofocus after modal settles (avoids mobile keyboard jump during fade)
+        if (modalEl) {
+            modalEl.addEventListener('shown.bs.modal', function () {
+                if (window.innerWidth >= 768) {
+                    var ph = byId('vrLoginModalOtpPhone');
+                    if (ph && !ph.closest('.vr-step-container').classList.contains('d-none')) {
+                        ph.focus();
+                    }
+                }
+            });
+        }
     }
 
     if (document.readyState === 'loading') {
