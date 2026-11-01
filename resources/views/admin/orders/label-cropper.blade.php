@@ -74,7 +74,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none;
+        touch-action: none;
     }
     .form-range::-webkit-slider-thumb {
         background: #263D25;
@@ -129,7 +129,7 @@
                 </span>
             </div>
             <div class="text-muted small mt-1">
-                Crop &amp; convert Meesho, Flipkart, and Amazon A4 shipping labels into standard 4″ × 6″ thermal printer stickers. Removes invoices automatically.
+                Crop &amp; convert Meesho, Flipkart, and Amazon A4 shipping labels into clean 4″ × 6″ thermal stickers without invoices or blank margins.
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -142,7 +142,7 @@
         </div>
     </div>
 
-    {{-- Accessible File Input (Strictly DOM-present, no display:none) --}}
+    {{-- Accessible File Input (Strictly DOM-present) --}}
     <input type="file" id="pdfFileInput" accept="application/pdf" multiple class="visually-hidden-file-input">
 
     {{-- Step 1: Upload Dropzone Card --}}
@@ -174,6 +174,9 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-success fw-semibold" id="btnAutoTrimTop">
+                <i class="bi bi-magic me-1"></i>Auto-Trim White Space
+            </button>
             <label for="pdfFileInput" class="btn btn-sm btn-outline-secondary" style="cursor: pointer;">
                 <i class="bi bi-arrow-repeat me-1"></i>Upload Different PDF
             </label>
@@ -196,11 +199,11 @@
                         </div>
                         <span class="badge bg-light text-muted border">Quick Crop</span>
                     </div>
-                    <p class="text-muted small mb-2">Select the platform from which you downloaded the label:</p>
+                    <p class="text-muted small mb-2">Select your platform preset for instant tight cropping:</p>
 
                     <div class="vstack gap-2" id="presetsContainer">
                         @foreach ($presets as $key => $preset)
-                        <div class="preset-pill {{ $key === 'meesho_90' ? 'active' : '' }}" data-preset="{{ $key }}" id="presetPill_{{ $key }}">
+                        <div class="preset-pill {{ $key === 'flipkart_tight' ? 'active' : '' }}" data-preset="{{ $key }}" id="presetPill_{{ $key }}">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <span class="fw-bold text-dark small">{{ $preset['name'] }}</span>
                                 <span class="badge {{ $preset['badge_class'] }} border" style="font-size: 0.65rem;">{{ $preset['badge'] }}</span>
@@ -248,31 +251,31 @@
                         <div class="col-6">
                             <label class="form-label small fw-semibold mb-1" for="rotationSelect">Rotation</label>
                             <select class="form-select form-select-sm" id="rotationSelect">
-                                <option value="0">0° (Portrait / Original)</option>
-                                <option value="90" selected>90° Clockwise</option>
+                                <option value="0" selected>0° (Upright Portrait)</option>
+                                <option value="90">90° Clockwise</option>
                                 <option value="180">180° Inverted</option>
                                 <option value="270">270° (90° CCW)</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small fw-semibold mb-1" for="safeMarginInput">Safe Margin (Edge)</label>
+                            <label class="form-label small fw-semibold mb-1" for="safeMarginInput">Safe Margin (Border)</label>
                             <select class="form-select form-select-sm" id="safeMarginInput">
-                                <option value="0">0 mm (Edge-to-Edge)</option>
-                                <option value="2" selected>2 mm (Recommended)</option>
-                                <option value="4">4 mm (Safe Margin)</option>
-                                <option value="6">6 mm (Wide Margin)</option>
+                                <option value="0" selected>0 mm (No White Space)</option>
+                                <option value="1">1 mm (Minimal)</option>
+                                <option value="2">2 mm (Standard)</option>
+                                <option value="4">4 mm (Safe Padding)</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label small fw-semibold mb-1" for="scaleModeSelect">Fitting Mode</label>
+                        <label class="form-label small fw-semibold mb-1" for="scaleModeSelect">Scale &amp; Fit Format</label>
                         <select class="form-select form-select-sm" id="scaleModeSelect">
-                            <option value="fit" selected>Fit to Thermal Label (Preserve Aspect Ratio)</option>
-                            <option value="fill">Fill Entire 4x6 Label (Stretch)</option>
+                            <option value="fill" selected>Fit Entire 4×6″ Standard Thermal Format (Zero Blank Space)</option>
+                            <option value="fit">Fit Proportionally</option>
                         </select>
                         <div class="form-text text-muted text-xs" style="font-size: 0.72rem;">
-                            "Fit" maintains original barcode proportions so thermal handheld scanners read barcodes instantly.
+                            "Fit Entire 4×6″" automatically scales all shipping labels to 100% of the 4×6″ thermal sticker area with zero white space.
                         </div>
                     </div>
                 </div>
@@ -282,10 +285,10 @@
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="fw-bold text-dark d-flex align-items-center gap-2">
                             <span class="stepper-badge">3</span>
-                            <span>Fine-Tune Crop Margins</span>
+                            <span>Crop Margins (Zero Blank)</span>
                         </div>
-                        <button class="btn btn-sm btn-link text-decoration-none p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#cropSlidersCollapse">
-                            <i class="bi bi-sliders me-1"></i>Toggle
+                        <button type="button" class="btn btn-sm btn-outline-success py-1 px-2 fw-semibold" id="btnAutoTrimSide">
+                            <i class="bi bi-magic me-1"></i>Auto-Trim
                         </button>
                     </div>
 
@@ -293,34 +296,34 @@
                         <div class="vstack gap-2 pt-1">
                             <div>
                                 <div class="d-flex justify-content-between small mb-1">
-                                    <span class="text-muted">Cut Top (Invoice / Header):</span>
-                                    <span class="fw-bold" id="cropTopVal">0%</span>
+                                    <span class="text-muted">Cut Top:</span>
+                                    <span class="fw-bold text-dark" id="cropTopVal">3%</span>
                                 </div>
-                                <input type="range" class="form-range" id="cropTopSlider" min="0" max="90" value="0">
+                                <input type="range" class="form-range" id="cropTopSlider" min="0" max="90" value="3">
                             </div>
 
                             <div>
                                 <div class="d-flex justify-content-between small mb-1">
                                     <span class="text-muted text-danger fw-semibold">Cut Bottom (Tax Invoice):</span>
-                                    <span class="fw-bold text-danger" id="cropBottomVal">52%</span>
+                                    <span class="fw-bold text-danger" id="cropBottomVal">55%</span>
                                 </div>
-                                <input type="range" class="form-range" id="cropBottomSlider" min="0" max="90" value="52">
+                                <input type="range" class="form-range" id="cropBottomSlider" min="0" max="90" value="55">
                             </div>
 
                             <div class="row g-2">
                                 <div class="col-6">
                                     <div class="d-flex justify-content-between small mb-1">
                                         <span class="text-muted">Cut Left:</span>
-                                        <span class="fw-bold" id="cropLeftVal">0%</span>
+                                        <span class="fw-bold text-dark" id="cropLeftVal">31%</span>
                                     </div>
-                                    <input type="range" class="form-range" id="cropLeftSlider" min="0" max="60" value="0">
+                                    <input type="range" class="form-range" id="cropLeftSlider" min="0" max="80" value="31">
                                 </div>
                                 <div class="col-6">
                                     <div class="d-flex justify-content-between small mb-1">
                                         <span class="text-muted">Cut Right:</span>
-                                        <span class="fw-bold" id="cropRightVal">0%</span>
+                                        <span class="fw-bold text-dark" id="cropRightVal">31%</span>
                                     </div>
-                                    <input type="range" class="form-range" id="cropRightSlider" min="0" max="60" value="0">
+                                    <input type="range" class="form-range" id="cropRightSlider" min="0" max="80" value="31">
                                 </div>
                             </div>
                         </div>
@@ -337,6 +340,9 @@
                             <span class="badge bg-success px-2 py-1 fs-6">
                                 <i class="bi bi-check2-circle me-1"></i><span id="labelCountBadge">1 Label Ready</span>
                             </span>
+                            <button type="button" class="btn btn-sm btn-outline-success fw-semibold" id="btnAutoTrimAction">
+                                <i class="bi bi-magic me-1"></i>Auto-Trim White Space
+                            </button>
                             <div class="vr mx-1"></div>
                             {{-- Multi-page Navigation --}}
                             <div class="btn-group btn-group-sm" role="group">
@@ -363,12 +369,14 @@
 
                 {{-- Dual Previews --}}
                 <div class="row g-3">
-                    {{-- Preview A: Source PDF Sheet with Crop Boundary Box --}}
+                    {{-- Preview A: Source PDF Sheet with Interactive Draggable Crop Box --}}
                     <div class="col-md-6">
                         <div class="label-cropper-card p-3 h-100">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fw-bold small text-dark"><i class="bi bi-file-earmark-text text-primary me-1"></i>Original Marketplace PDF</span>
-                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.65rem;">Red = Stripped Invoice</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.65rem;">
+                                    <i class="bi bi-arrows-move me-1"></i>Draggable Crop Handles
+                                </span>
                             </div>
                             <div class="preview-box-wrapper" style="background: #1e293b;">
                                 <div style="position: relative; display: inline-block;">
@@ -377,7 +385,7 @@
                                 </div>
                             </div>
                             <div class="text-muted text-center text-xs mt-2" style="font-size: 0.72rem;">
-                                Green outline shows the kept shipping label. Red mask shows the discarded invoice.
+                                💡 <strong>Tip:</strong> Click &amp; drag the green border lines or corner circles directly on the PDF above to eliminate any white space!
                             </div>
                         </div>
                     </div>
@@ -395,7 +403,7 @@
                                 </div>
                             </div>
                             <div class="text-muted text-center text-xs mt-2" style="font-size: 0.72rem;">
-                                Live preview of what prints on your physical thermal roll printer.
+                                Live preview: Notice how the label fills the entire thermal sticker with <strong>zero blank margin</strong>.
                             </div>
                         </div>
                     </div>
@@ -433,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const paperSizesConfig = @json($paperSizes);
 
     // State
-    let activePreset = 'meesho_90';
+    let activePreset = 'flipkart_tight';
     let currentPdfFile = null;
     let currentPdfBytes = null;
     let pdfJsDoc = null;
@@ -443,6 +451,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let cachedMasterCanvas = null;
     let cachedMasterPageIndex = -1;
     let activeRenderTask = null;
+
+    // Draggable crop overlay state
+    let dragMode = null; // 'top', 'bottom', 'left', 'right', 'nw', 'ne', 'sw', 'se', 'move'
+    let dragStartMouse = { x: 0, y: 0 };
+    let dragStartCrop = { top: 0, bottom: 0, left: 0, right: 0 };
 
     // DOM Elements
     const dropzoneCard = document.getElementById('dropzoneCard');
@@ -485,7 +498,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnDownloadBtn = document.getElementById('btnDownloadBtn');
     const btnPrintBtn = document.getElementById('btnPrintBtn');
 
-    // 1. FILE PICKER & DROPZONE (Strictly via addEventListener for CSP compliance)
+    const btnAutoTrimTop = document.getElementById('btnAutoTrimTop');
+    const btnAutoTrimSide = document.getElementById('btnAutoTrimSide');
+    const btnAutoTrimAction = document.getElementById('btnAutoTrimAction');
+
+    // 1. FILE PICKER & DROPZONE
     dropzone.addEventListener('click', function (e) {
         if (e.target.id !== 'btnBrowseFile' && !e.target.closest('#btnBrowseFile')) {
             pdfFileInput.click();
@@ -524,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btnClearFile.addEventListener('click', resetWorkspace);
 
-    // 2. PRESET SELECTION (Attached via addEventListener)
+    // 2. PRESET SELECTION
     document.querySelectorAll('.preset-pill').forEach(function (pill) {
         pill.addEventListener('click', function () {
             const key = pill.getAttribute('data-preset');
@@ -532,7 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // 3. DROPDOWNS & SLIDERS (Attached via addEventListener)
+    // 3. DROPDOWNS & SLIDERS
     paperSizeSelect.addEventListener('change', function () {
         onPaperSizeChange(true);
     });
@@ -567,6 +584,244 @@ document.addEventListener('DOMContentLoaded', function () {
     btnNextPage.addEventListener('click', function () { changePage(1); });
     btnDownloadBtn.addEventListener('click', downloadCroppedPdf);
     btnPrintBtn.addEventListener('click', printThermalDirectly);
+
+    // Auto-Trim Buttons
+    [btnAutoTrimTop, btnAutoTrimSide, btnAutoTrimAction].forEach(function (btn) {
+        if (btn) btn.addEventListener('click', autoTrimLabel);
+    });
+
+    // 4. INTERACTIVE CANVAS DRAGGING
+    function getCropRectPx(w, h) {
+        const cropTopPct = parseFloat(cropTopSlider.value) / 100;
+        const cropBottomPct = parseFloat(cropBottomSlider.value) / 100;
+        const cropLeftPct = parseFloat(cropLeftSlider.value) / 100;
+        const cropRightPct = parseFloat(cropRightSlider.value) / 100;
+
+        const left = w * cropLeftPct;
+        const top = h * cropTopPct;
+        const right = w * (1 - cropRightPct);
+        const bottom = h * (1 - cropBottomPct);
+        return { left, top, right, bottom, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+    }
+
+    function getDragHandleAtPoint(x, y, rect) {
+        const tol = 14; // pixel hit target tolerance
+        const { left, top, right, bottom } = rect;
+
+        // Corners
+        if (Math.abs(x - left) <= tol && Math.abs(y - top) <= tol) return 'nw';
+        if (Math.abs(x - right) <= tol && Math.abs(y - top) <= tol) return 'ne';
+        if (Math.abs(x - left) <= tol && Math.abs(y - bottom) <= tol) return 'sw';
+        if (Math.abs(x - right) <= tol && Math.abs(y - bottom) <= tol) return 'se';
+
+        // Edges
+        if (Math.abs(y - top) <= tol && x >= left - tol && x <= right + tol) return 'top';
+        if (Math.abs(y - bottom) <= tol && x >= left - tol && x <= right + tol) return 'bottom';
+        if (Math.abs(x - left) <= tol && y >= top - tol && y <= bottom + tol) return 'left';
+        if (Math.abs(x - right) <= tol && y >= top - tol && y <= bottom + tol) return 'right';
+
+        // Inside box
+        if (x > left && x < right && y > top && y < bottom) return 'move';
+
+        return null;
+    }
+
+    function getCursorForMode(mode) {
+        switch (mode) {
+            case 'top':
+            case 'bottom': return 'ns-resize';
+            case 'left':
+            case 'right': return 'ew-resize';
+            case 'nw':
+            case 'se': return 'nwse-resize';
+            case 'ne':
+            case 'sw': return 'nesw-resize';
+            case 'move': return 'move';
+            default: return 'crosshair';
+        }
+    }
+
+    sourceOverlayCanvas.addEventListener('pointerdown', function (e) {
+        const rect = sourceOverlayCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cropRect = getCropRectPx(sourceOverlayCanvas.width, sourceOverlayCanvas.height);
+        const handle = getDragHandleAtPoint(x, y, cropRect);
+
+        if (handle) {
+            dragMode = handle;
+            dragStartMouse = { x: e.clientX, y: e.clientY };
+            dragStartCrop = {
+                top: parseFloat(cropTopSlider.value),
+                bottom: parseFloat(cropBottomSlider.value),
+                left: parseFloat(cropLeftSlider.value),
+                right: parseFloat(cropRightSlider.value)
+            };
+            sourceOverlayCanvas.setPointerCapture(e.pointerId);
+        }
+    });
+
+    sourceOverlayCanvas.addEventListener('pointermove', function (e) {
+        const rect = sourceOverlayCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (!dragMode) {
+            const cropRect = getCropRectPx(sourceOverlayCanvas.width, sourceOverlayCanvas.height);
+            const handle = getDragHandleAtPoint(x, y, cropRect);
+            sourceOverlayCanvas.style.cursor = getCursorForMode(handle);
+            return;
+        }
+
+        const dx = e.clientX - dragStartMouse.x;
+        const dy = e.clientY - dragStartMouse.y;
+        const w = sourceOverlayCanvas.width;
+        const h = sourceOverlayCanvas.height;
+
+        const dxPct = (dx / w) * 100;
+        const dyPct = (dy / h) * 100;
+
+        let newTop = dragStartCrop.top;
+        let newBottom = dragStartCrop.bottom;
+        let newLeft = dragStartCrop.left;
+        let newRight = dragStartCrop.right;
+
+        if (dragMode === 'top' || dragMode === 'nw' || dragMode === 'ne') {
+            newTop = Math.max(0, Math.min(85, dragStartCrop.top + dyPct));
+        }
+        if (dragMode === 'bottom' || dragMode === 'sw' || dragMode === 'se') {
+            newBottom = Math.max(0, Math.min(85, dragStartCrop.bottom - dyPct));
+        }
+        if (dragMode === 'left' || dragMode === 'nw' || dragMode === 'sw') {
+            newLeft = Math.max(0, Math.min(85, dragStartCrop.left + dxPct));
+        }
+        if (dragMode === 'right' || dragMode === 'ne' || dragMode === 'se') {
+            newRight = Math.max(0, Math.min(85, dragStartCrop.right - dxPct));
+        }
+        if (dragMode === 'move') {
+            const boxWPct = 100 - dragStartCrop.left - dragStartCrop.right;
+            const boxHPct = 100 - dragStartCrop.top - dragStartCrop.bottom;
+
+            newLeft = Math.max(0, Math.min(100 - boxWPct, dragStartCrop.left + dxPct));
+            newRight = Math.max(0, 100 - newLeft - boxWPct);
+
+            newTop = Math.max(0, Math.min(100 - boxHPct, dragStartCrop.top + dyPct));
+            newBottom = Math.max(0, 100 - newTop - boxHPct);
+        }
+
+        cropTopSlider.value = Math.round(newTop);
+        cropBottomSlider.value = Math.round(newBottom);
+        cropLeftSlider.value = Math.round(newLeft);
+        cropRightSlider.value = Math.round(newRight);
+
+        updateSliderDisplayValues();
+        document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+        const customPill = document.getElementById('presetPill_custom');
+        if (customPill) customPill.classList.add('active');
+
+        updateOverlaysAndThermal();
+    });
+
+    sourceOverlayCanvas.addEventListener('pointerup', function (e) {
+        if (dragMode) {
+            dragMode = null;
+            try { sourceOverlayCanvas.releasePointerCapture(e.pointerId); } catch (e) {}
+        }
+    });
+
+    // 5. AUTO-TRIM ALGORITHM: Detects the solid black borders of the shipping label
+    function autoTrimLabel() {
+        if (!cachedMasterCanvas) return;
+
+        const ctx = cachedMasterCanvas.getContext('2d');
+        const w = cachedMasterCanvas.width;
+        const h = cachedMasterCanvas.height;
+
+        // Scan the top 47% of the page (where shipping labels live, ignoring bottom invoice)
+        const scanH = Math.floor(h * 0.47);
+        const imgData = ctx.getImageData(0, 0, w, scanH);
+        const data = imgData.data;
+
+        let minY = scanH, maxY = 0;
+
+        // Check darkness
+        function isDark(r, g, b, a) {
+            if (a < 80) return false;
+            const luminance = (r * 299 + g * 587 + b * 114) / 1000;
+            return luminance < 170;
+        }
+
+        // 1. Detect vertical bounds
+        for (let y = 0; y < scanH; y++) {
+            let darkCount = 0;
+            for (let x = 0; x < w; x++) {
+                const idx = (y * w + x) * 4;
+                if (isDark(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])) {
+                    darkCount++;
+                }
+            }
+            if (darkCount > 25) {
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+
+        // 2. Detect horizontal bounds within the vertical range
+        let minX = w, maxX = 0;
+        if (minY < maxY) {
+            for (let x = 0; x < w; x++) {
+                let darkCount = 0;
+                for (let y = minY; y <= maxY; y++) {
+                    const idx = (y * w + x) * 4;
+                    if (isDark(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])) {
+                        darkCount++;
+                    }
+                }
+                if (darkCount > 15) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                }
+            }
+        }
+
+        if (minX < maxX && minY < maxY && (maxX - minX) > 80 && (maxY - minY) > 80) {
+            // Tight crop: add 1-2px safety margin so border strokes aren't cut
+            minX = Math.max(0, minX - 2);
+            maxX = Math.min(w, maxX + 2);
+            minY = Math.max(0, minY - 2);
+            maxY = Math.min(h, maxY + 2);
+
+            const topPct = Math.max(0, Math.round((minY / h) * 100));
+            const bottomPct = Math.max(0, Math.round(((h - maxY) / h) * 100));
+            const leftPct = Math.max(0, Math.round((minX / w) * 100));
+            const rightPct = Math.max(0, Math.round(((w - maxX) / w) * 100));
+
+            cropTopSlider.value = topPct;
+            cropBottomSlider.value = bottomPct;
+            cropLeftSlider.value = leftPct;
+            cropRightSlider.value = rightPct;
+            safeMarginInput.value = '0'; // 0mm edge-to-edge for zero blank space!
+
+            // Auto-detect orientation: if width > height (like Meesho), rotate 90°
+            const labelW = maxX - minX;
+            const labelH = maxY - minY;
+            if (labelW > labelH * 1.15) {
+                rotationSelect.value = '90';
+            } else {
+                rotationSelect.value = '0';
+            }
+
+            updateSliderDisplayValues();
+            document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+            const customPill = document.getElementById('presetPill_custom');
+            if (customPill) customPill.classList.add('active');
+
+            updateOverlaysAndThermal();
+        } else {
+            // Fallback to Flipkart tight crop preset
+            applyPreset('flipkart_tight');
+        }
+    }
 
     function resetWorkspace() {
         currentPdfFile = null;
@@ -604,8 +859,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fileNameDisplay.textContent = pdfFiles.length === 1 ? pdfFiles[0].name : `${pdfFiles.length} PDF files selected (Batch)`;
         fileMetaDisplay.innerHTML = '<span class="spinner-border spinner-border-sm text-primary me-1" role="status"></span>Reading PDF pages...';
-        dropzoneCard.classList.add('d-none'); // Hide the large upload box once file is loaded
-        fileInfoBar.classList.remove('d-none'); // Show compact file bar
+        dropzoneCard.classList.add('d-none');
+        fileInfoBar.classList.remove('d-none');
 
         try {
             const { PDFDocument } = PDFLib;
@@ -645,19 +900,20 @@ document.addEventListener('DOMContentLoaded', function () {
             workspaceSection.classList.remove('d-none');
             updatePageIndicator();
 
-            // Auto-detect preset if file name suggests Meesho, Flipkart, or Amazon
+            // Set default tight preset (Flipkart / Meesho)
             const lowerName = (pdfFiles[0].name || '').toLowerCase();
             if (lowerName.includes('meesho')) {
                 applyPreset('meesho_90');
-            } else if (lowerName.includes('flipkart') || lowerName.includes('fk')) {
-                applyPreset('flipkart_top');
             } else if (lowerName.includes('amazon') || lowerName.includes('easy-ship')) {
                 applyPreset('amazon_quad');
             } else {
-                applyPreset(activePreset);
+                applyPreset('flipkart_tight');
             }
 
             await renderCurrentPage();
+
+            // Run auto-trim on load to eliminate all white space automatically
+            setTimeout(autoTrimLabel, 80);
         } catch (err) {
             console.error('Failed to parse PDF:', err);
             alert('Error loading PDF: ' + err.message);
@@ -691,7 +947,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function onCropSliderChange() {
         updateSliderDisplayValues();
-        // Clear active pill state to indicate custom fine-tuning
         document.querySelectorAll('.preset-pill').forEach(function (pill) {
             pill.classList.remove('active');
         });
@@ -812,50 +1067,63 @@ document.addEventListener('DOMContentLoaded', function () {
         const ctx = sourceOverlayCanvas.getContext('2d');
         ctx.clearRect(0, 0, w, h);
 
-        const cropTopPct = parseFloat(cropTopSlider.value) / 100;
-        const cropBottomPct = parseFloat(cropBottomSlider.value) / 100;
-        const cropLeftPct = parseFloat(cropLeftSlider.value) / 100;
-        const cropRightPct = parseFloat(cropRightSlider.value) / 100;
-
-        const leftPx = w * cropLeftPct;
-        const topPx = h * cropTopPct;
-        const rightPx = w * (1 - cropRightPct);
-        const bottomPx = h * (1 - cropBottomPct);
-        const keptW = Math.max(0, rightPx - leftPx);
-        const keptH = Math.max(0, bottomPx - topPx);
+        const rect = getCropRectPx(w, h);
+        const { left, top, right, bottom, width: keptW, height: keptH } = rect;
 
         // Dark red semi-transparent overlay for discarded parts
         ctx.fillStyle = 'rgba(239, 68, 68, 0.42)';
 
         // Top discarded strip
-        if (topPx > 0) ctx.fillRect(0, 0, w, topPx);
+        if (top > 0) ctx.fillRect(0, 0, w, top);
         // Bottom discarded strip (tax invoice)
-        if (h - bottomPx > 0) ctx.fillRect(0, bottomPx, w, h - bottomPx);
+        if (h - bottom > 0) ctx.fillRect(0, bottom, w, h - bottom);
         // Left discarded strip
-        if (leftPx > 0) ctx.fillRect(0, topPx, leftPx, keptH);
+        if (left > 0) ctx.fillRect(0, top, left, keptH);
         // Right discarded strip
-        if (w - rightPx > 0) ctx.fillRect(rightPx, topPx, w - rightPx, keptH);
+        if (w - right > 0) ctx.fillRect(right, top, w - right, keptH);
 
         // Dashed green highlight box around kept shipping label
         ctx.strokeStyle = '#22c55e';
         ctx.lineWidth = 2.5;
         ctx.setLineDash([6, 3]);
-        ctx.strokeRect(leftPx, topPx, keptW, keptH);
+        ctx.strokeRect(left, top, keptW, keptH);
+        ctx.setLineDash([]); // reset
+
+        // Draw 8 interactive drag handles
+        ctx.fillStyle = '#22c55e';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+
+        const handleRadius = 5;
+        const midX = left + keptW / 2;
+        const midY = top + keptH / 2;
+
+        const handles = [
+            [left, top], [right, top], [left, bottom], [right, bottom], // 4 corners
+            [midX, top], [midX, bottom], [left, midY], [right, midY]    // 4 midpoints
+        ];
+
+        handles.forEach(([hx, hy]) => {
+            ctx.beginPath();
+            ctx.arc(hx, hy, handleRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        });
 
         // Badge: Kept Label
         ctx.fillStyle = '#15803d';
-        ctx.fillRect(leftPx + 4, topPx + 4, 115, 18);
+        ctx.fillRect(left + 4, top + 4, 115, 18);
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 10px sans-serif';
-        ctx.fillText('✂️ KEPT LABEL', leftPx + 8, topPx + 17);
+        ctx.fillText('✂️ KEPT LABEL', left + 8, top + 17);
 
         // Badge: Discarded Invoice
-        if (h - bottomPx > 28) {
+        if (h - bottom > 26) {
             ctx.fillStyle = '#b91c1c';
-            ctx.fillRect(8, bottomPx + 6, 145, 18);
+            ctx.fillRect(8, bottom + 6, 145, 18);
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 10px sans-serif';
-            ctx.fillText('🗑️ DISCARDED INVOICE', 12, bottomPx + 19);
+            ctx.fillText('🗑️ DISCARDED INVOICE', 12, bottom + 19);
         }
     }
 
@@ -909,21 +1177,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const contentW = isRotated90or270 ? sH : sW;
         const contentH = isRotated90or270 ? sW : sH;
 
-        let scaleX = availW / contentW;
-        let scaleY = availH / contentH;
-        let scale = scaleMode === 'fill' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
-
-        const drawnW = sW * scale;
-        const drawnH = sH * scale;
-
         tCtx.save();
         tCtx.translate(mockupW / 2, mockupH / 2);
         tCtx.rotate((rotationAngle * Math.PI) / 180);
 
-        tCtx.drawImage(cachedMasterCanvas, sX, sY, sW, sH, -drawnW / 2, -drawnH / 2, drawnW, drawnH);
+        if (scaleMode === 'fill') {
+            // Fill 4x6 exactly (Zero Blank Space)
+            const dW = isRotated90or270 ? availH : availW;
+            const dH = isRotated90or270 ? availW : availH;
+            tCtx.drawImage(cachedMasterCanvas, sX, sY, sW, sH, -dW / 2, -dH / 2, dW, dH);
+        } else {
+            const scale = Math.min(availW / contentW, availH / contentH);
+            const drawnW = sW * scale;
+            const drawnH = sH * scale;
+            tCtx.drawImage(cachedMasterCanvas, sX, sY, sW, sH, -drawnW / 2, -drawnH / 2, drawnW, drawnH);
+        }
         tCtx.restore();
 
-        // Subtle green guide line for safe printhead margin
+        // Subtle guide line if safe margin is configured
         if (marginPx > 0) {
             tCtx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
             tCtx.lineWidth = 1;
@@ -991,40 +1262,71 @@ document.addEventListener('DOMContentLoaded', function () {
             const contentW = isRotated90or270 ? cropHeight : cropWidth;
             const contentH = isRotated90or270 ? cropWidth : cropHeight;
 
-            let scaleX = availW / contentW;
-            let scaleY = availH / contentH;
-            let scale = scaleMode === 'fill' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
-
-            const w = cropWidth * scale;
-            const h = cropHeight * scale;
-
             let drawX = 0;
             let drawY = 0;
+            let effScaleX = 1;
+            let effScaleY = 1;
             let pdfRotationDegrees = 0;
 
-            if (rotationAngle === 0) {
-                pdfRotationDegrees = 0;
-                drawX = (targetWidthPt - w) / 2;
-                drawY = (targetHeightPt - h) / 2;
-            } else if (rotationAngle === 90) {
-                pdfRotationDegrees = 270;
-                drawX = (targetWidthPt - h) / 2;
-                drawY = (targetHeightPt + w) / 2;
-            } else if (rotationAngle === 180) {
-                pdfRotationDegrees = 180;
-                drawX = (targetWidthPt + w) / 2;
-                drawY = (targetHeightPt + h) / 2;
-            } else if (rotationAngle === 270) {
-                pdfRotationDegrees = 90;
-                drawX = (targetWidthPt + h) / 2;
-                drawY = (targetHeightPt - w) / 2;
+            if (scaleMode === 'fill') {
+                // Exact 4x6" standard thermal format fill (Zero Blank Space)
+                if (rotationAngle === 0) {
+                    pdfRotationDegrees = 0;
+                    effScaleX = availW / cropWidth;
+                    effScaleY = availH / cropHeight;
+                    drawX = safeMarginPt;
+                    drawY = safeMarginPt;
+                } else if (rotationAngle === 90) {
+                    pdfRotationDegrees = 270;
+                    effScaleX = availH / cropWidth;
+                    effScaleY = availW / cropHeight;
+                    drawX = safeMarginPt;
+                    drawY = safeMarginPt + availH;
+                } else if (rotationAngle === 180) {
+                    pdfRotationDegrees = 180;
+                    effScaleX = availW / cropWidth;
+                    effScaleY = availH / cropHeight;
+                    drawX = safeMarginPt + availW;
+                    drawY = safeMarginPt + availH;
+                } else if (rotationAngle === 270) {
+                    pdfRotationDegrees = 90;
+                    effScaleX = availH / cropWidth;
+                    effScaleY = availW / cropHeight;
+                    drawX = safeMarginPt + availW;
+                    drawY = safeMarginPt;
+                }
+            } else {
+                // Proportional fit
+                const uniformScale = Math.min(availW / contentW, availH / contentH);
+                effScaleX = uniformScale;
+                effScaleY = uniformScale;
+                const drawnW = cropWidth * uniformScale;
+                const drawnH = cropHeight * uniformScale;
+
+                if (rotationAngle === 0) {
+                    pdfRotationDegrees = 0;
+                    drawX = (targetWidthPt - drawnW) / 2;
+                    drawY = (targetHeightPt - drawnH) / 2;
+                } else if (rotationAngle === 90) {
+                    pdfRotationDegrees = 270;
+                    drawX = (targetWidthPt - drawnH) / 2;
+                    drawY = (targetHeightPt + drawnW) / 2;
+                } else if (rotationAngle === 180) {
+                    pdfRotationDegrees = 180;
+                    drawX = (targetWidthPt + drawnW) / 2;
+                    drawY = (targetHeightPt + drawnH) / 2;
+                } else if (rotationAngle === 270) {
+                    pdfRotationDegrees = 90;
+                    drawX = (targetWidthPt + drawnH) / 2;
+                    drawY = (targetHeightPt - drawnW) / 2;
+                }
             }
 
             targetPage.drawPage(embeddedPage, {
                 x: drawX,
                 y: drawY,
-                xScale: scale,
-                yScale: scale,
+                xScale: effScaleX,
+                yScale: effScaleY,
                 rotate: degrees(pdfRotationDegrees)
             });
         }
