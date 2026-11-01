@@ -4076,26 +4076,10 @@ img { max-width: 100%; height: auto; }
     }
 }
 
-/* Botanical Foliage Accents */
-.vr-drawer-foliage-top {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 180px;
-    height: 180px;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
-}
+/* Botanical Foliage Accents (Removed) */
+.vr-drawer-foliage-top,
 .vr-drawer-foliage-bottom {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 160px;
-    height: 160px;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
+    display: none !important;
 }
 
 /* Header */
