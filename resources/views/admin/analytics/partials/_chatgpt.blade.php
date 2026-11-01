@@ -68,6 +68,17 @@
             <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
         </div>
     </div>
+@elseif ($errorType === 'validation_error' || $statusCode === 400 || $statusCode === 422)
+    <div class="alert alert-warning border-warning-subtle bg-warning bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-warning bg-opacity-20 p-2 text-warning d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-dark">OpenAI Advertiser API: <span class="badge text-bg-warning text-dark">HTTP {{ $statusCode ?? 400 }} Parameter Error</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'Invalid request parameters sent to OpenAI Ads API.' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
+        </div>
+    </div>
 @elseif ($errorType === 'network_error')
     <div class="alert alert-secondary border-secondary-subtle bg-secondary bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
         <div class="rounded-circle bg-secondary bg-opacity-20 p-2 text-secondary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
@@ -79,7 +90,7 @@
             <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
         </div>
     </div>
-@else
+@elseif ($errorType === 'not_configured' || empty($statusCode))
     <div class="alert alert-light border shadow-xs d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
         <div class="rounded-circle bg-secondary bg-opacity-10 p-2 text-secondary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
             <i class="bi bi-info-circle-fill fs-5"></i>
@@ -87,6 +98,17 @@
         <div class="flex-grow-1 small">
             <div class="fw-semibold text-dark">OpenAI Advertiser API Status: <span class="badge text-bg-light border text-muted">Offline / Not Configured</span></div>
             <div class="text-muted">{{ $platform['reason'] ?? 'Platform metrics like ad spend and platform impressions require connection to the OpenAI Advertiser API. First-party website attribution, conversion tracking and order metrics are actively measured below.' }}</div>
+        </div>
+    </div>
+@else
+    <div class="alert alert-warning border-warning-subtle bg-warning bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-warning bg-opacity-20 p-2 text-warning d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-exclamation-circle-fill fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-dark">OpenAI Advertiser API: <span class="badge text-bg-warning text-dark">HTTP {{ $statusCode ?? 'Error' }}</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'An unexpected error occurred while communicating with the OpenAI Advertiser API.' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
         </div>
     </div>
 @endif

@@ -229,18 +229,24 @@ class ChatGptAdsReportingService
         $url = $this->endpoint('ad_account/insights');
 
         try {
+            $since = Carbon::parse($bounds['from'])->toDateString();
+            $until = Carbon::parse($bounds['to'])->toDateString();
+
+            // Official OpenAI Ads API specification:
+            // time_ranges parameter must be a JSON-encoded string containing a date_range object:
+            // e.g. [{"type":"date_range","since":"YYYY-MM-DD","until":"YYYY-MM-DD"}]
+            $timeRangesJson = json_encode([
+                [
+                    'type' => 'date_range',
+                    'since' => $since,
+                    'until' => $until,
+                ],
+            ]);
+
             $params = [
                 'aggregation_level' => 'ad_account',
-                'fields' => ['impressions', 'clicks', 'spend'],
-                'time_ranges' => [
-                    [
-                        'type' => 'date_range',
-                        'since' => $bounds['from'],
-                        'until' => $bounds['to'],
-                    ],
-                ],
-                'start_date' => $bounds['from'],
-                'end_date' => $bounds['to'],
+                'fields' => 'impressions,clicks,spend',
+                'time_ranges' => $timeRangesJson,
             ];
 
             // If an account ID is configured, include as an optional query param (never in URL path)
@@ -330,15 +336,16 @@ class ChatGptAdsReportingService
         $detailSuffix = $detail ? " Message: {$detail}" : '';
 
         $errorType = match ($status) {
+            400, 422 => 'validation_error',
             401 => 'auth_error',
             403 => 'permission_error',
             404 => 'not_found',
-            422 => 'validation_error',
             429 => 'rate_limited',
             default => ($status >= 500) ? 'server_error' : 'http_error',
         };
 
         $message = match ($status) {
+            400 => "Bad request (HTTP 400): OpenAI Ads API rejected the request parameters.{$detailSuffix}",
             401 => "Authentication failed (HTTP 401): Invalid, expired, or missing OpenAI Advertiser API key. Verify OPENAI_ADVERTISER_API_KEY in your environment or Settings.{$detailSuffix}",
             403 => "Access denied (HTTP 403): The API key lacks permission to access this ad account or reporting insights. Verify account permissions in OpenAI Ads Manager.{$detailSuffix}",
             404 => "Endpoint not found (HTTP 404): The requested OpenAI Ads resource ({$url}) was not found. Verify the API base URL and endpoint path (expected: /ad_account or /ad_account/insights). Ensure the account ID is not incorrectly appended to the path.{$detailSuffix}",

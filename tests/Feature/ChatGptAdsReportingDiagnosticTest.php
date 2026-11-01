@@ -136,15 +136,24 @@ class ChatGptAdsReportingDiagnosticTest extends TestCase
         Http::assertSent(function ($request) {
             $url = $request->url();
             $parsedUrl = parse_url($url, PHP_URL_PATH);
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $queryParams);
+
+            $timeRangesJson = $queryParams['time_ranges'] ?? '';
+            $decodedRanges = json_decode($timeRangesJson, true);
 
             return $parsedUrl === '/v1/ad_account/insights'
                 && !str_contains($url, '/accounts/act_99887766')
-                && $request->hasHeader('Authorization', 'Bearer test_advertiser_key_abc123');
+                && $request->hasHeader('Authorization', 'Bearer test_advertiser_key_abc123')
+                && is_array($decodedRanges)
+                && isset($decodedRanges[0]['type'])
+                && $decodedRanges[0]['type'] === 'date_range'
+                && $decodedRanges[0]['since'] === '2026-11-01'
+                && $decodedRanges[0]['until'] === '2026-11-02';
         });
     }
 
     /**
-     * Requirement 10: Differentiate 401, 403, 404, 422, 429, 500 and network errors.
+     * Requirement 10: Differentiate 400, 401, 403, 404, 422, 429, 500 and network errors.
      */
     public function test_error_handling_distinguishes_401_403_404_429_and_network_failures(): void
     {
@@ -152,30 +161,38 @@ class ChatGptAdsReportingDiagnosticTest extends TestCase
         $service = app(ChatGptAdsReportingService::class);
         $bounds = ['from' => '2026-11-01', 'to' => '2026-11-02'];
 
-        // Test 401, 403, 404, 429 via sequence
+        // Test 400, 401, 403, 404, 429 via sequence
         Http::fake([
             'https://api.ads.openai.com/v1/ad_account/insights*' => Http::sequence()
+                ->push(['error' => ['message' => "Invalid type for 'time_ranges[0]': expected a string, but got an object instead."]], 400)
                 ->push(['error' => ['message' => 'Incorrect API key provided.']], 401)
                 ->push(['error' => ['message' => 'User does not have access to this resource.']], 403)
                 ->push(['error' => ['message' => 'The requested endpoint was not found on this server.']], 404)
                 ->push(['error' => ['message' => 'Rate limit exceeded.']], 429),
         ]);
 
-        // 1. 401 Unauthorized
+        // 1. 400 Bad Request
+        $res400 = $service->platformMetrics($bounds);
+        $this->assertFalse($res400['available']);
+        $this->assertSame('validation_error', $res400['error_type']);
+        $this->assertSame(400, $res400['status']);
+        $this->assertStringContainsString('HTTP 400', $res400['reason']);
+
+        // 2. 401 Unauthorized
         $res401 = $service->platformMetrics($bounds);
         $this->assertFalse($res401['available']);
         $this->assertSame('auth_error', $res401['error_type']);
         $this->assertSame(401, $res401['status']);
         $this->assertStringContainsString('HTTP 401', $res401['reason']);
 
-        // 2. 403 Forbidden
+        // 3. 403 Forbidden
         $res403 = $service->platformMetrics($bounds);
         $this->assertFalse($res403['available']);
         $this->assertSame('permission_error', $res403['error_type']);
         $this->assertSame(403, $res403['status']);
         $this->assertStringContainsString('HTTP 403', $res403['reason']);
 
-        // 3. 404 Not Found
+        // 4. 404 Not Found
         $res404 = $service->platformMetrics($bounds);
         $this->assertFalse($res404['available']);
         $this->assertSame('not_found', $res404['error_type']);
@@ -183,14 +200,14 @@ class ChatGptAdsReportingDiagnosticTest extends TestCase
         $this->assertStringContainsString('HTTP 404', $res404['reason']);
         $this->assertStringContainsString('ad_account', $res404['reason']);
 
-        // 4. 429 Rate Limited
+        // 5. 429 Rate Limited
         $res429 = $service->platformMetrics($bounds);
         $this->assertFalse($res429['available']);
         $this->assertSame('rate_limited', $res429['error_type']);
         $this->assertSame(429, $res429['status']);
         $this->assertStringContainsString('HTTP 429', $res429['reason']);
 
-        // 5. Network Exception
+        // 6. Network Exception
         Http::fake([
             'https://api.ads.openai.com/v1/ad_account/insights*' => fn () => throw new ConnectionException('Connection timed out after 5000 milliseconds'),
         ]);

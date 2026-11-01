@@ -59,6 +59,7 @@
         ($chatgptPlatform['error_type'] ?? '') === 'auth_error' => ['badge' => 'text-bg-danger', 'label' => '401 UNAUTHORIZED'],
         ($chatgptPlatform['error_type'] ?? '') === 'permission_error' => ['badge' => 'text-bg-warning text-dark', 'label' => '403 FORBIDDEN'],
         ($chatgptPlatform['error_type'] ?? '') === 'not_found' => ['badge' => 'text-bg-danger', 'label' => '404 NOT FOUND'],
+        ($chatgptPlatform['error_type'] ?? '') === 'validation_error' => ['badge' => 'text-bg-warning text-dark', 'label' => 'HTTP ' . ($chatgptPlatform['status'] ?? 400)],
         ($chatgptPlatform['error_type'] ?? '') === 'network_error' => ['badge' => 'text-bg-secondary', 'label' => 'NETWORK ERROR'],
         $advertiserApiKeyPresent => ['badge' => 'text-bg-info', 'label' => 'CONFIGURED'],
         default => ['badge' => 'text-bg-secondary', 'label' => 'NOT CONFIGURED'],
