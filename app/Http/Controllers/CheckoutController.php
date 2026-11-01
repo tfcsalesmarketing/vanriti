@@ -85,6 +85,12 @@ class CheckoutController extends Controller
         $couponDiscount = $coupon['discount'];
         $couponCode = $coupon['code'];
 
+        $prepaidDiscountEnabled = (bool) setting('prepaid_discount_enabled', true);
+        $prepaidPercentage = $prepaidDiscountEnabled ? max(0.0, (float) setting('prepaid_discount_percentage', 2.0)) : 0.0;
+        $prepaidDiscountAmount = ($prepaidPercentage > 0 && $subtotal > 0)
+            ? round(($subtotal * $prepaidPercentage) / 100, 2)
+            : 0.0;
+
         $beginCheckoutPayload = $this->ecommerceDataService->beginCheckout($cart);
         $checkoutEcommerce = $this->ecommerceDataService->checkoutEcommerce($cart);
 
@@ -94,7 +100,8 @@ class CheckoutController extends Controller
         return view('storefront.checkout.index', compact(
             'cart', 'addresses', 'selectedAddress', 'subtotal',
             'availableMethods', 'shipping', 'couponDiscount', 'couponCode', 'user',
-            'beginCheckoutPayload', 'checkoutEcommerce'
+            'beginCheckoutPayload', 'checkoutEcommerce',
+            'prepaidDiscountEnabled', 'prepaidPercentage', 'prepaidDiscountAmount'
         ));
     }
 
@@ -189,6 +196,15 @@ class CheckoutController extends Controller
                 $resumed = true;
 
                 return $this->razorpayJsonResponse($existing, $cart);
+            }
+        } else {
+            // If customer previously opened Razorpay and switches to COD, clear
+            // in-flight order so stock is released cleanly.
+            if ($stored = session('razorpay_inflight')) {
+                if ($oldOrder = Order::find($stored['order_id'] ?? null)) {
+                    $this->cancelAbandonedRazorpayCheckout($oldOrder);
+                }
+                session()->forget('razorpay_inflight');
             }
         }
 

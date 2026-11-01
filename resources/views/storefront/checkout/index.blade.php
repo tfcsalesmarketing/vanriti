@@ -42,7 +42,23 @@
                 </a>
             </div>
         @else
-            <form action="{{ route('checkout.store') }}" method="POST" id="checkoutForm">
+            @php
+                $defaultPaymentMethod = old('payment_method');
+                if (! $defaultPaymentMethod) {
+                    $defaultPaymentMethod = (isset($availableMethods['razorpay']) && !empty($availableMethods['razorpay']['enabled']))
+                        ? 'razorpay'
+                        : (array_key_first(array_filter($availableMethods, fn($m) => !empty($m['enabled']))) ?? 'cod');
+                }
+                $initialIsPrepaid = ($defaultPaymentMethod === 'razorpay');
+                $initialPrepaidDiscount = ($initialIsPrepaid && ($prepaidPercentage ?? 0) > 0) ? ($prepaidDiscountAmount ?? 0) : 0.0;
+                $initialTotal = max(0, $subtotal - $couponDiscount - $initialPrepaidDiscount + $shipping['charge']);
+            @endphp
+            <form action="{{ route('checkout.store') }}" method="POST" id="checkoutForm"
+                  data-subtotal="{{ $subtotal }}"
+                  data-shipping="{{ $shipping['charge'] }}"
+                  data-prepaid-percentage="{{ $prepaidPercentage ?? 2 }}"
+                  data-prepaid-discount="{{ $prepaidDiscountAmount ?? 0 }}"
+                  data-coupon-discount="{{ $couponDiscount }}">
                 @csrf
                 <div class="row g-4">
                     <div class="col-lg-8">
@@ -230,25 +246,54 @@
 
                         {{-- Payment Method Section --}}
                         <div class="vr-guest-card p-3 p-sm-4 mb-3 mb-sm-4">
-                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
-                                <i class="ri-bank-card-line text-success"></i> 2. Payment Method
-                            </h5>
-                            <div class="d-flex flex-column gap-2">
+                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
+                                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="ri-bank-card-line text-success"></i> 2. Payment Method
+                                </h5>
+                                @if (($prepaidPercentage ?? 0) > 0)
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fw-semibold small">
+                                        <i class="ri-sparkling-fill text-warning me-1"></i>Extra {{ rtrim(rtrim(number_format($prepaidPercentage, 2), '0'), '.') }}% Instant Off on Prepaid
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="d-flex flex-column gap-2.5">
                                 @foreach ($availableMethods as $method => $details)
                                     @if ($details['enabled'])
-                                        <label class="vr-selection-card d-flex align-items-center gap-3 payment-option">
-                                            <input type="radio" name="payment_method" value="{{ $method }}" class="form-check-input"
-                                                    {{ old('payment_method', 'razorpay') === $method ? 'checked' : '' }}>
-                                            <div class="vr-header-icon-box" style="width:40px;height:40px;border-radius:12px;">
+                                        <label class="vr-selection-card d-flex align-items-start gap-3 payment-option position-relative {{ $defaultPaymentMethod === $method ? 'selected border-success' : '' }}" style="cursor:pointer; transition: all 0.2s ease;">
+                                            <input type="radio" name="payment_method" value="{{ $method }}" class="form-check-input mt-1 payment-radio"
+                                                    {{ $defaultPaymentMethod === $method ? 'checked' : '' }}>
+                                            <div class="vr-header-icon-box flex-shrink-0" style="width:42px;height:42px;border-radius:12px;background: {{ $method === 'razorpay' ? '#EBF7EE' : '#F3F4F6' }};">
                                                 @if ($method === 'cod')
-                                                    <i class="ri-hand-coin-line fs-4"></i>
+                                                    <i class="ri-hand-coin-line fs-4 text-muted"></i>
                                                 @else
-                                                    <i class="ri-bank-card-line fs-4"></i>
+                                                    <i class="ri-flashlight-fill fs-4 text-success"></i>
                                                 @endif
                                             </div>
-                                            <div>
-                                                <span class="fw-bold text-dark d-block">{{ $details['label'] }}</span>
-                                                <span class="small text-muted">{{ $details['description'] ?? '' }}</span>
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                                    <span class="fw-bold text-dark">{{ $details['label'] }}</span>
+                                                    @if (! empty($details['badge']))
+                                                        <span class="badge bg-success text-white fw-bold px-2 py-0.5 small shadow-sm" style="font-size:0.75rem; letter-spacing:0.3px;">
+                                                            <i class="ri-sparkling-fill text-warning me-0.5"></i>{{ $details['badge'] }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                <span class="small text-muted d-block">{{ $details['description'] ?? '' }}</span>
+                                                @if ($method === 'cod' && ! empty($details['hint']))
+                                                    <div class="small text-muted mt-2 p-2 rounded-2 bg-light border border-light-subtle d-flex align-items-center gap-1.5" style="font-size:0.8rem;">
+                                                        <i class="ri-lightbulb-line text-warning flex-shrink-0"></i>
+                                                        <span>{{ $details['hint'] }}</span>
+                                                    </div>
+                                                @endif
+                                                @if ($method === 'razorpay')
+                                                    <div class="d-flex align-items-center gap-1.5 mt-2 flex-wrap" style="font-size:0.75rem;">
+                                                        <span class="badge bg-white text-secondary border px-2 py-1"><i class="ri-qr-code-line text-success me-1"></i>UPI / QR</span>
+                                                        <span class="badge bg-white text-secondary border px-2 py-1"><i class="ri-google-play-line text-primary me-1"></i>GPay</span>
+                                                        <span class="badge bg-white text-secondary border px-2 py-1"><i class="ri-smartphone-line text-purple me-1"></i>PhonePe</span>
+                                                        <span class="badge bg-white text-secondary border px-2 py-1"><i class="ri-wallet-3-line text-info me-1"></i>Paytm</span>
+                                                        <span class="badge bg-white text-secondary border px-2 py-1"><i class="ri-bank-card-line text-dark me-1"></i>Cards / NetBanking</span>
+                                                    </div>
+                                                @endif
                                             </div>
                                         </label>
                                     @endif
@@ -336,6 +381,12 @@
                                 <span class="text-dark fw-semibold" id="vrCheckoutSubtotal">{{ format_price($subtotal) }}</span>
                             </div>
 
+                            {{-- Prepaid Instant Discount Row --}}
+                            <div class="d-flex justify-content-between small mb-2 text-success {{ $initialIsPrepaid && ($prepaidDiscountAmount ?? 0) > 0 ? '' : 'd-none' }}" id="vrCheckoutPrepaidRow">
+                                <span><i class="ri-flashlight-line me-1"></i>Prepaid Instant Discount ({{ rtrim(rtrim(number_format($prepaidPercentage ?? 2, 2), '0'), '.') }}% Off)</span>
+                                <span class="fw-semibold" id="vrCheckoutPrepaidDiscount">-{{ format_price($prepaidDiscountAmount ?? 0) }}</span>
+                            </div>
+
                             <div class="d-flex justify-content-between small mb-2 text-success {{ $couponDiscount > 0 ? '' : 'd-none' }}" id="vrCheckoutCouponRow">
                                 <span><i class="ri-price-tag-3-line me-1"></i>Discount (<span id="vrCheckoutCouponBadgeCode">{{ $couponCode }}</span>)</span>
                                 <span id="vrCheckoutCouponDiscount">-{{ format_price($couponDiscount) }}</span>
@@ -359,9 +410,17 @@
 
                             <hr class="my-3">
 
+                            {{-- Instant Savings Highlight Banner --}}
+                            <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2 {{ $initialIsPrepaid && ($prepaidDiscountAmount ?? 0) > 0 ? '' : 'd-none' }}" id="vrCheckoutPrepaidNotice" style="background:#EBF7EE; border:1px solid #C3E6CB; color:#1B5628;">
+                                <i class="ri-sparkling-fill fs-5 text-warning flex-shrink-0"></i>
+                                <div class="small leading-tight">
+                                    <strong>Prepaid Savings Applied:</strong> You are saving <strong id="vrCheckoutSavingsAmount">{{ format_price($prepaidDiscountAmount ?? 0) }}</strong> on this order!
+                                </div>
+                            </div>
+
                             <div class="d-flex justify-content-between fw-bold fs-5 mb-1">
                                 <span>Total</span>
-                                <span class="text-success" id="vrCheckoutTotal">{{ format_price(max(0, $subtotal - $couponDiscount + $shipping['charge'])) }}</span>
+                                <span class="text-success" id="vrCheckoutTotal">{{ format_price($initialTotal) }}</span>
                             </div>
                             <div class="small text-muted mb-3">Total payable is inclusive of GST.</div>
 
@@ -712,6 +771,91 @@ if (billingSame && billingFields) {
     billingSame.addEventListener('change', syncBillingInputs);
     syncBillingInputs();
 }
+
+// Payment Method selection & dynamic 2% prepaid discount recalculation
+(function () {
+    var form = document.getElementById('checkoutForm');
+    if (!form) return;
+
+    var subtotal = parseFloat(form.dataset.subtotal) || 0;
+    var shippingCharge = parseFloat(form.dataset.shipping) || 0;
+    var prepaidPercentage = parseFloat(form.dataset.prepaidPercentage) || 0;
+    var couponDiscount = parseFloat(form.dataset.couponDiscount) || 0;
+
+    var prepaidRow = document.getElementById('vrCheckoutPrepaidRow');
+    var prepaidDiscountEl = document.getElementById('vrCheckoutPrepaidDiscount');
+    var prepaidNotice = document.getElementById('vrCheckoutPrepaidNotice');
+    var savingsAmountEl = document.getElementById('vrCheckoutSavingsAmount');
+    var totalEl = document.getElementById('vrCheckoutTotal');
+    var subtotalAfterDiscountRow = document.getElementById('vrCheckoutSubtotalAfterDiscountRow');
+    var subtotalAfterDiscountEl = document.getElementById('vrCheckoutSubtotalAfterDiscount');
+
+    function formatInr(val) {
+        val = Math.max(0, Number(val) || 0);
+        return '₹ ' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function recalculate(discountOverride) {
+        if (typeof discountOverride !== 'undefined') {
+            couponDiscount = parseFloat(discountOverride) || 0;
+            form.dataset.couponDiscount = couponDiscount;
+        }
+
+        var checkedRadio = form.querySelector('input[name="payment_method"]:checked');
+        var method = checkedRadio ? checkedRadio.value : 'razorpay';
+        var isPrepaid = (method === 'razorpay');
+
+        var prepaidDisc = 0;
+        if (isPrepaid && prepaidPercentage > 0 && subtotal > 0) {
+            prepaidDisc = Math.round(((subtotal * prepaidPercentage) / 100) * 100) / 100;
+        }
+
+        if (prepaidRow) {
+            prepaidRow.classList.toggle('d-none', !isPrepaid || prepaidDisc <= 0);
+            if (prepaidDiscountEl) prepaidDiscountEl.textContent = '-' + formatInr(prepaidDisc);
+        }
+
+        if (prepaidNotice) {
+            prepaidNotice.classList.toggle('d-none', !isPrepaid || prepaidDisc <= 0);
+            if (savingsAmountEl) savingsAmountEl.textContent = formatInr(prepaidDisc);
+        }
+
+        if (subtotalAfterDiscountRow && subtotalAfterDiscountEl) {
+            var afterCoupon = Math.max(0, subtotal - couponDiscount);
+            subtotalAfterDiscountEl.textContent = formatInr(afterCoupon);
+        }
+
+        var grandTotal = Math.max(0, subtotal - couponDiscount - prepaidDisc + shippingCharge);
+        if (totalEl) {
+            totalEl.textContent = formatInr(grandTotal);
+        }
+
+        // Highlight selected card visually
+        document.querySelectorAll('.payment-option').forEach(function (card) {
+            var radio = card.querySelector('input[name="payment_method"]');
+            if (radio && radio.checked) {
+                card.classList.add('selected', 'border-success');
+            } else {
+                card.classList.remove('selected', 'border-success');
+            }
+        });
+    }
+
+    var paymentRadios = form.querySelectorAll('input[name="payment_method"]');
+    paymentRadios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            recalculate();
+        });
+    });
+
+    document.addEventListener('vr:coupon-updated', function (e) {
+        if (e.detail && typeof e.detail.discount !== 'undefined') {
+            recalculate(e.detail.discount);
+        }
+    });
+
+    window.recalculateCheckoutTotals = recalculate;
+})();
 
 // Razorpay integration
 var checkoutForm = document.getElementById('checkoutForm');

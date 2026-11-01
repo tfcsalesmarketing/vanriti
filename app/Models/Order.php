@@ -41,6 +41,7 @@ class Order extends Model
         'taxable_amount',
         'discount_amount',
         'coupon_discount',
+        'prepaid_discount',
         'coupon_code',
         'coupon_type',
         'coupon_value',
@@ -84,6 +85,13 @@ class Order extends Model
     {
         return [
             'is_billing_same' => 'boolean',
+            'subtotal' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'coupon_discount' => 'decimal:2',
+            'prepaid_discount' => 'decimal:2',
+            'grand_total' => 'decimal:2',
+            'amount_due' => 'decimal:2',
+            'amount_paid' => 'decimal:2',
             'cancelled_at' => 'datetime',
             'whatsapp_confirmation_sent_at' => 'datetime',
             'whatsapp_recovery_sent_at' => 'datetime',
@@ -91,6 +99,11 @@ class Order extends Model
             'whatsapp_delivered_sent_at' => 'datetime',
             'invoice_generated_at' => 'datetime',
         ];
+    }
+
+    public function hasPrepaidDiscount(): bool
+    {
+        return (float) $this->prepaid_discount > 0;
     }
 
     public function invoiceNumber(): string

@@ -1324,6 +1324,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 checkoutTotal.textContent = data.formatted_total;
             }
 
+            document.dispatchEvent(new CustomEvent('vr:coupon-updated', { detail: data }));
+            if (typeof window.recalculateCheckoutTotals === 'function') {
+                window.recalculateCheckoutTotals(data.discount);
+            }
+
             // Sync state of all coupon widgets on the page
             widgets.forEach(function (w) {
                 var cForm = w.querySelector('.vr-coupon-form');

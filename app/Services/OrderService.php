@@ -122,10 +122,24 @@ class OrderService
                 $couponDiscount = (float) $result['discount'];
             }
 
-            // Coupon is shared across items proportionally so the invoice
+            // Prepaid Discount (Instant 2% or configured percentage for online/prepaid payments)
+            $prepaidDiscountEnabled = (bool) setting('prepaid_discount_enabled', true);
+            $prepaidPercentage = $prepaidDiscountEnabled ? max(0.0, (float) setting('prepaid_discount_percentage', 2.0)) : 0.0;
+            $isPrepaid = in_array($orderData['payment_method'] ?? '', ['razorpay', 'upi', 'prepaid'], true);
+
+            $prepaidDiscount = 0.0;
+            if ($isPrepaid && $prepaidPercentage > 0 && $subtotal > 0) {
+                // Additional 2% discount on the order subtotal before coupon discount
+                $prepaidDiscount = round(($subtotal * $prepaidPercentage) / 100, 2);
+            }
+
+            $totalOrderDiscount = round($couponDiscount + $prepaidDiscount, 2);
+            $totalOrderDiscount = min($subtotal, $totalOrderDiscount);
+
+            // Discounts (coupon + prepaid) are shared across items proportionally so the invoice
             // reconciles: taxable + GST for each line equals its discounted total.
-            if ($subtotal > 0 && $couponDiscount > 0) {
-                $factor = max(0.0, ($subtotal - $couponDiscount) / $subtotal);
+            if ($subtotal > 0 && $totalOrderDiscount > 0) {
+                $factor = max(0.0, ($subtotal - $totalOrderDiscount) / $subtotal);
 
                 foreach ($rows as &$row) {
                     $row['net'] = round($row['total_price'] * $factor, 2);
@@ -133,7 +147,7 @@ class OrderService
                 unset($row);
 
                 $reducedSubtotal = round(array_sum(array_column($rows, 'net')), 2);
-                $drift = round((float) $subtotal - $couponDiscount - $reducedSubtotal, 2);
+                $drift = round((float) $subtotal - $totalOrderDiscount - $reducedSubtotal, 2);
 
                 if ($drift != 0.0 && $rows) {
                     $largest = collect($rows)->sortByDesc('total_price')->keys()->first();
@@ -168,7 +182,7 @@ class OrderService
 
             // Selling prices are GST-inclusive: the payable total is exactly
             // what the customer saw (no tax added on top).
-            $grandTotal = round(max(0, $subtotal + $shippingCharge - $couponDiscount), 2);
+            $grandTotal = round(max(0, $subtotal + $shippingCharge - $couponDiscount - $prepaidDiscount), 2);
 
             $minOrder = (float) (setting('min_order_amount', 1) ?: 1);
             if ($subtotal < $minOrder) {
@@ -197,6 +211,7 @@ class OrderService
                 'subtotal' => $subtotal,
                 'discount_amount' => round($discountAmount, 2),
                 'coupon_discount' => $couponDiscount,
+                'prepaid_discount' => $prepaidDiscount,
                 'shipping_charge' => $shippingCharge,
                 'shipping_method' => $orderData['shipping_method'] ?? 'standard',
                 'checkout_source' => $orderData['checkout_source'] ?? 'web',

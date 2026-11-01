@@ -71,6 +71,13 @@
                             <span class="fw-bold text-dark fs-6">{{ format_price($order->grand_total) }}</span>
                         </div>
 
+                        @if ((float) $order->prepaid_discount > 0)
+                            <div class="d-flex justify-content-between small mb-2 text-success">
+                                <span><i class="ri-flashlight-line me-1"></i>Prepaid Instant Discount</span>
+                                <span class="fw-semibold">- {{ format_price($order->prepaid_discount) }}</span>
+                            </div>
+                        @endif
+
                         <div class="d-flex justify-content-between small mb-2 text-muted">
                             <span>Payment Method</span>
                             <span class="fw-semibold text-dark text-capitalize">{{ str_replace('_', ' ', $order->payment_method) }}</span>

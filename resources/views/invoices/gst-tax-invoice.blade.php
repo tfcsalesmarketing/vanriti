@@ -41,7 +41,10 @@
         $itemsGrossSubtotal += $lineGross;
     }
 
-    $discountAmount = (float) ($order->discount_amount ?? 0);
+    $couponDiscount = (float) ($order->coupon_discount ?? 0);
+    $prepaidDiscount = (float) ($order->prepaid_discount ?? 0);
+    $orderDirectDiscounts = $couponDiscount + $prepaidDiscount;
+    $discountAmount = $orderDirectDiscounts > 0 ? $orderDirectDiscounts : (float) ($order->discount_amount ?? 0);
     // Invoice Grand Total strictly excludes delivery charges as requested
     $invoiceGrandTotal = max(0.0, $itemsGrossSubtotal - $discountAmount);
 
@@ -881,7 +884,18 @@
                                     <td>Subtotal ({{ $itemsTotalQuantity }} {{ $itemsTotalQuantity > 1 ? 'items' : 'item' }})</td>
                                     <td class="total-val">₹ {{ number_format($itemsGrossSubtotal, 2) }}</td>
                                 </tr>
-                                @if ($discountAmount > 0)
+                                @if ($prepaidDiscount > 0)
+                                    <tr>
+                                        <td style="color:#1B5628; font-weight:600;">Prepaid Instant Discount</td>
+                                        <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($prepaidDiscount, 2) }}</td>
+                                    </tr>
+                                @endif
+                                @if ($couponDiscount > 0)
+                                    <tr>
+                                        <td style="color:#1B5628; font-weight:600;">Coupon Discount {{ $order->coupon_code ? '('.$order->coupon_code.')' : '' }}</td>
+                                        <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($couponDiscount, 2) }}</td>
+                                    </tr>
+                                @elseif ($discountAmount > 0 && $prepaidDiscount <= 0)
                                     <tr>
                                         <td style="color:#1B5628; font-weight:600;">Discount</td>
                                         <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($discountAmount, 2) }}</td>

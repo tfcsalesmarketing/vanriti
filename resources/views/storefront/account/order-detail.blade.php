@@ -216,6 +216,12 @@
                                 <span class="text-success">- {{ format_price($order->coupon_discount) }}</span>
                             </div>
                         @endif
+                        @if ((float) $order->prepaid_discount > 0)
+                            <div class="d-flex justify-content-between text-success">
+                                <span><i class="ri-flashlight-line me-1"></i>Prepaid Instant Discount</span>
+                                <span class="fw-semibold">- {{ format_price($order->prepaid_discount) }}</span>
+                            </div>
+                        @endif
                         <div class="d-flex justify-content-between"><span class="text-muted">Taxable Value</span><span>{{ format_price($order->taxable_value) }}</span></div>
                         @if ($order->isIntraState())
                             <div class="d-flex justify-content-between"><span class="text-muted">CGST{{ $order->uniformGstRate() !== null ? ' ('.number_format($order->uniformGstRate() / 2, 1, '.', '').'%)' : '' }}</span><span>{{ format_price($order->cgst_amount) }}</span></div>

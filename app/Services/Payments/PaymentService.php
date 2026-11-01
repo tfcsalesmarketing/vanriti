@@ -22,20 +22,29 @@ class PaymentService
     {
         $methods = [];
 
-        if ((bool) setting('cod_enabled', true)) {
-            $methods['cod'] = [
-                'label' => 'Cash on Delivery',
-                'description' => 'Pay cash when your order is delivered.',
-                'enabled' => true,
-            ];
-        }
+        $prepaidDiscountEnabled = (bool) setting('prepaid_discount_enabled', true);
+        $prepaidPercentage = $prepaidDiscountEnabled ? (float) setting('prepaid_discount_percentage', 2.0) : 0.0;
 
         $razorpay = new RazorpayGateway;
         if ((bool) setting('online_payment_enabled', true)) {
             $methods['razorpay'] = [
-                'label' => 'Online Payment',
-                'description' => 'Pay securely via UPI, cards or net banking.',
+                'label' => 'Online Payment (UPI, Cards, NetBanking)',
+                'description' => $prepaidPercentage > 0
+                    ? 'Pay securely via UPI (GPay, PhonePe, Paytm), Cards or NetBanking & save an extra ' . rtrim(rtrim(number_format($prepaidPercentage, 2), '0'), '.') . '% instantly.'
+                    : 'Pay securely via UPI (GPay, PhonePe, Paytm), Cards or NetBanking.',
+                'badge' => $prepaidPercentage > 0 ? 'Extra ' . rtrim(rtrim(number_format($prepaidPercentage, 2), '0'), '.') . '% Instant Off' : null,
                 'enabled' => $razorpay->isEnabled(),
+            ];
+        }
+
+        if ((bool) setting('cod_enabled', true)) {
+            $methods['cod'] = [
+                'label' => 'Cash on Delivery (COD)',
+                'description' => 'Pay standard amount in cash upon delivery at your doorstep.',
+                'hint' => $prepaidPercentage > 0
+                    ? 'Tip: Switch to UPI / Online Payment to get an extra ' . rtrim(rtrim(number_format($prepaidPercentage, 2), '0'), '.') . '% instant discount on this order.'
+                    : null,
+                'enabled' => true,
             ];
         }
 

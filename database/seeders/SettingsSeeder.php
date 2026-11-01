@@ -44,6 +44,8 @@ class SettingsSeeder extends Seeder
 
             ['payment', 'cod_enabled', '1', 'Cash on Delivery Enabled', 'boolean'],
             ['payment', 'online_payment_enabled', '1', 'Online Payment Enabled', 'boolean'],
+            ['payment', 'prepaid_discount_enabled', '1', 'Prepaid / UPI Discount Enabled', 'boolean'],
+            ['payment', 'prepaid_discount_percentage', '2', 'Prepaid Discount Percentage (%)', 'number'],
             ['payment', 'razorpay_enabled', '0', 'Razorpay Enabled', 'boolean'],
             ['payment', 'razorpay_key_id', '', 'Razorpay Key ID', 'text'],
             ['payment', 'razorpay_key_secret', '', 'Razorpay Key Secret', 'password'],
