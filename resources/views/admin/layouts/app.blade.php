@@ -241,6 +241,9 @@
                     <a href="{{ route('admin.orders.index') }}" class="command-palette-item" data-keywords="orders shipmojo shipments sales">
                         <i class="bi bi-cart-check"></i><span>Orders</span><span class="item-meta">Manage & Ship</span>
                     </a>
+                    <a href="{{ route('admin.orders.label-cropper') }}" class="command-palette-item" data-keywords="label cropper thermal meesho flipkart amazon shipping barcode cut crop 4x6">
+                        <i class="bi bi-scissors"></i><span>Shipping Label Cropper</span><span class="item-meta">4x6 Thermal</span>
+                    </a>
                     @endif
                     @if (auth('admin')->user()->hasPermission('manage-products'))
                     <a href="{{ route('admin.products.index') }}" class="command-palette-item" data-keywords="products catalog items sku">

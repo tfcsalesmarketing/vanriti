@@ -106,9 +106,16 @@
             <ul class="sidebar-submenu">
                 @if ($admin->hasPermission(['view-orders', 'manage-orders']))
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
+                    <a class="nav-link {{ (request()->routeIs('admin.orders.*') && !request()->routeIs('admin.orders.label-cropper')) ? 'active' : '' }}"
                        href="{{ route('admin.orders.index') }}">
                         <i class="bi bi-receipt"></i><span>All Orders</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.orders.label-cropper') ? 'active' : '' }}"
+                       href="{{ route('admin.orders.label-cropper') }}">
+                        <i class="bi bi-scissors"></i><span>Label Cropper</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle ms-auto" style="font-size: 0.65rem; padding: 0.2em 0.5em;">Thermal</span>
                     </a>
                 </li>
                 @endif

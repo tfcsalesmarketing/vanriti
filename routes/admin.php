@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShipmentController;
+use App\Http\Controllers\Admin\ShippingLabelCropperController;
 use App\Http\Controllers\Admin\ShipMojoController;
 use App\Http\Controllers\Admin\WhatsAppBotController;
 use App\Http\Controllers\Admin\WhatsAppCampaignController;
@@ -97,6 +98,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('orders', function () {
             return redirect()->route('admin.orders.index')->with('warning', 'Please select one or more orders and use the action buttons to proceed.');
         })->middleware('permission:view-orders,manage-orders');
+        Route::get('orders/label-cropper', [ShippingLabelCropperController::class, 'index'])->name('orders.label-cropper')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/manifest', [OrderController::class, 'manifest'])->name('orders.manifest')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice')->middleware('permission:view-orders,manage-orders');
