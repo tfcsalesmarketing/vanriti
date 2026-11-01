@@ -5,7 +5,7 @@
         'traffic' => 'Traffic',
         'product' => 'Product',
         'revenue' => 'Revenue & Orders',
-        'chatgpt' => 'ChatGPT Ads',
+        'chatgpt' => 'OpenAI Ads',
         'diagnostics' => 'Tracking & Data',
     ];
     $baseQuery = request()->query();

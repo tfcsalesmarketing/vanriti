@@ -21,6 +21,32 @@
         default => 'Unproven',
     };
     $capiLastSent = $capi['last_sent_at'] ?? null;
+
+    $openAiCapi = $tracking['openai_capi'] ?? [];
+    $openAiCapiConfig = $openAiCapi['config'] ?? [];
+    $openAiCapiStatusKey = $openAiCapi['status'] ?? 'unknown';
+    $openAiCapiLabel = $openAiCapi['label'] ?? 'Unknown';
+    $openAiCapiBadge = match ($openAiCapiStatusKey) {
+        'active' => 'text-bg-success',
+        'active_validate_only' => 'text-bg-warning',
+        'ready' => 'text-bg-info',
+        'failed' => 'text-bg-danger',
+        'configured_not_receiving' => 'text-bg-warning',
+        'not_configured' => 'text-bg-secondary',
+        default => 'text-bg-info',
+    };
+    $openAiPixelConfigured = (bool) ($tracking['openai_pixel_configured'] ?? false);
+    $openAiPixel = (string) ($tracking['openai_pixel_id'] ?? '');
+    $openAiCapiDelivery = match ($openAiCapiStatusKey) {
+        'active' => 'Receiving (Live)',
+        'active_validate_only' => 'Receiving (Validate-Only)',
+        'ready' => 'Ready / Idle',
+        'failed' => 'Failing',
+        'configured_not_receiving' => 'Not receiving',
+        'not_configured' => 'Not delivering',
+        default => 'Unproven',
+    };
+    $openAiCapiLastSent = $openAiCapi['last_sent_at'] ?? null;
 @endphp
 
 @if (($tracking['error'] ?? false))
@@ -95,6 +121,58 @@
                                     &middot; {{ $state === 'null' ? 'null' : $state }}: {{ $cnt }}
                                 @endforeach
                                 &middot; failed (7 day): {{ $tracking['ledger_failures_7d'] }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="small">OpenAI Measurement Pixel (oaiq)</td>
+                            <td>
+                                @if ($openAiPixelConfigured)
+                                    <span class="badge text-bg-success">CONFIGURED</span>
+                                @else
+                                    <span class="badge text-bg-secondary">NOT CONFIGURED</span>
+                                @endif
+                            </td>
+                            <td class="small text-muted">{{ $openAiPixelConfigured ? 'Pixel ID '.$openAiPixel.' (ending in '.$tracking['openai_pixel_masked'].'); storefront browser tracking active on PDP, cart & checkout events.' : 'Not configured (OPENAI_PIXEL_ID).' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="small">OpenAI Conversions API (CAPI)</td>
+                            <td><span class="badge {{ $openAiCapiBadge }}">{{ strtoupper($openAiCapiLabel) }}</span></td>
+                            <td class="small text-muted">
+                                {{ $tracking['openai_capi_status_detail'] ?: ($openAiCapi['detail'] ?? '') }}
+                                <span class="d-block mt-2">
+                                    <span class="d-block"><strong>Configuration:</strong>
+                                        {{ ($openAiCapiConfig['configured'] ?? false) ? 'Configured' : 'Not configured' }}</span>
+                                    <span class="d-block"><strong>Target Pixel:</strong>
+                                        {{ $openAiPixel !== '' ? $openAiPixel : 'Not set' }}</span>
+                                    <span class="d-block"><strong>Mode:</strong>
+                                        {{ ($openAiCapi['validate_only'] ?? true) ? 'Validation-Only Mode (OPENAI_CAPI_VALIDATE_ONLY=true)' : 'Live Production Mode' }}</span>
+                                    <span class="d-block"><strong>Endpoint:</strong>
+                                        {{ config('openai_ads.endpoint', 'https://bzr.openai.com/v1/events') }}?pid={{ $openAiPixel }}</span>
+                                    <span class="d-block"><strong>Event Setting:</strong>
+                                        {{ config('openai_ads.event_setting_name', 'VANRITI Purchases') }} ({{ config('openai_ads.event_type', 'order_created') }})</span>
+                                    <span class="d-block"><strong>Delivery:</strong>
+                                        {{ $openAiCapiDelivery }}</span>
+                                    <span class="d-block"><strong>Last successful delivery:</strong>
+                                        {{ $openAiCapiLastSent ? \Carbon\Carbon::parse($openAiCapiLastSent)->toDayDateTimeString() : 'Never' }}</span>
+                                    <span class="d-block"><strong>Recent delivered events (7 days):</strong>
+                                        {{ (int) ($openAiCapi['delivered_7d'] ?? 0) }}</span>
+                                    <span class="d-block"><strong>Failed deliveries (7 days):</strong>
+                                        {{ (int) ($openAiCapi['failed_7d'] ?? 0) }}</span>
+                                    <span class="d-block"><strong>Awaiting delivery:</strong>
+                                        {{ (int) ($openAiCapi['awaiting_delivery'] ?? 0) }}</span>
+                                </span>
+                                <span class="d-block text-muted mt-1">Conversions API transmits server-side order_created conversions with minor unit (paise) amounts. Deduplicated against browser oaiq events via deterministic HMAC-SHA256 event ID.</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="small">OpenAI Conversion ledger (order_created)</td>
+                            <td><span class="badge text-bg-info">INFO</span></td>
+                            <td class="small text-muted">
+                                {{ $tracking['openai_ledger_total'] ?? 0 }} order_created record(s) in period
+                                @foreach (($tracking['openai_ledger_by_state'] ?? []) as $state => $cnt)
+                                    &middot; {{ $state === 'null' ? 'pending' : $state }}: {{ $cnt }}
+                                @endforeach
+                                &middot; failed (7 day): {{ $tracking['openai_ledger_failures_7d'] ?? 0 }}
                             </td>
                         </tr>
                         <tr>

@@ -4,6 +4,7 @@ namespace App\Services\Analytics;
 
 use App\Models\AnalyticsEvent;
 use App\Models\User;
+use App\Services\Analytics\OpenAiCapiService;
 use Closure;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
@@ -27,7 +28,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AnalyticsCommandCenterService
 {
-    public const VERSION = '20';
+    public const VERSION = '21';
 
     protected const CACHE_TTL = 300;
 
@@ -871,6 +872,32 @@ class AnalyticsCommandCenterService
             $ledgerByState[$row->meta_state ?? 'null'] = (int) $row->count;
         }
 
+        $openAiService = app(OpenAiCapiService::class);
+        $openAiPixelId = $openAiService->pixelId();
+        $openAiPixelConfigured = $openAiPixelId !== '';
+        $openAiPixelMasked = $openAiPixelConfigured ? (strlen($openAiPixelId) > 6 ? substr($openAiPixelId, -6) : $openAiPixelId) : '';
+        $openAiCapi = $this->openAiCapiStatus($bounds);
+
+        $openAiLedgerTotal = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->whereBetween('created_at', [$bounds['from'], $bounds['to']])
+            ->count();
+
+        $openAiLedgerFailed7d = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->where('created_at', '>', Carbon::now()->subDays(7))
+            ->where('openai_state', 'failed')
+            ->count();
+
+        $openAiConversions = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->whereBetween('created_at', [$bounds['from'], $bounds['to']]);
+
+        $openAiLedgerByState = [];
+        foreach ($openAiConversions->select('openai_state', DB::raw('COUNT(*) as count'))->groupBy('openai_state')->get() as $row) {
+            $openAiLedgerByState[$row->openai_state ?? 'null'] = (int) $row->count;
+        }
+
         $recorderByType = DB::table('analytics_events')
             ->whereBetween('occurred_at', [$bounds['from'], $bounds['to']])
             ->select('event_type', DB::raw('COUNT(*) as count'))
@@ -936,6 +963,16 @@ class AnalyticsCommandCenterService
             'capi_status' => $capi['status'],
             'capi_status_label' => $capi['label'],
             'capi_status_detail' => $capi['detail'],
+            'openai_pixel_id' => $openAiPixelId,
+            'openai_pixel_configured' => $openAiPixelConfigured,
+            'openai_pixel_masked' => $openAiPixelMasked,
+            'openai_capi' => $openAiCapi,
+            'openai_capi_status' => $openAiCapi['status'],
+            'openai_capi_status_label' => $openAiCapi['label'],
+            'openai_capi_status_detail' => $openAiCapi['detail'],
+            'openai_ledger_total' => $openAiLedgerTotal,
+            'openai_ledger_by_state' => $openAiLedgerByState,
+            'openai_ledger_failures_7d' => $openAiLedgerFailed7d,
             'products_without_sku' => $productsWithoutSku,
             'duplicate_skus' => $duplicateSkus,
             'orders_missing_item_sku' => $missingSkuOrders,
@@ -1094,6 +1131,125 @@ class AnalyticsCommandCenterService
         return implode('; ', $parts);
     }
 
+    /**
+     * Effective OpenAI CAPI delivery status. Configuration alone is never treated
+     * as proof of delivery: the state is derived from the conversion ledger's
+     * delivery evidence (openai_state / openai_sent_at in the last 7 days).
+     *
+     * States: not_configured | active | active_validate_only | failed | configured_not_receiving | ready | unknown.
+     */
+    protected function openAiCapiStatus(array $bounds): array
+    {
+        /** @var OpenAiCapiService $service */
+        $service = app(OpenAiCapiService::class);
+        $config = $service->configuration();
+        $configured = $config['configured'];
+        $validateOnly = (bool) config('openai_ads.validate_only', true);
+
+        $recent = Carbon::now()->subDays(7);
+
+        $allTime = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->count();
+
+        $delivered7d = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->where('openai_state', 'sent')
+            ->whereNotNull('openai_sent_at')
+            ->where('openai_sent_at', '>', $recent)
+            ->count();
+
+        $failed7d = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->where('openai_state', 'failed')
+            ->where('created_at', '>', $recent)
+            ->count();
+
+        $everDelivered = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->where('openai_state', 'sent')
+            ->whereNotNull('openai_sent_at')
+            ->count();
+
+        $lastSentAt = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->where('openai_state', 'sent')
+            ->whereNotNull('openai_sent_at')
+            ->max('openai_sent_at');
+
+        $awaiting = DB::table('analytics_conversions')
+            ->where('event_type', 'order_created')
+            ->where(function ($q) {
+                $q->whereNull('openai_state')->orWhere('openai_state', 'pending');
+            })
+            ->count();
+
+        if (! $configured) {
+            $status = 'not_configured';
+            $label = 'Not Configured';
+            $detail = 'Server-side OpenAI CAPI delivery is switched off: '
+                .lcfirst($this->describeMissingOpenAiRequirements($config))
+                .'. Browser Pixel tracking may still be active.';
+        } elseif ($delivered7d > 0) {
+            $status = $validateOnly ? 'active_validate_only' : 'active';
+            $label = $validateOnly ? 'Active (Validate-Only Mode)' : 'Active / Receiving (Live)';
+            $detail = 'Server-side CAPI delivery is configured and recent order_created events have been delivered to OpenAI ('
+                .$delivered7d.' in the last 7 days). Browser Pixel and CAPI share a deterministic event_id, so OpenAI can deduplicate the representations.'
+                .($validateOnly ? ' Note: Running in safe validation-only mode.' : '');
+        } elseif ($failed7d > 0) {
+            $status = 'failed';
+            $label = 'Failed';
+            $detail = 'Configured, but no delivery succeeded in the last 7 days ('.$failed7d.' failed ledger record(s)). Verify the Conversions API key and check queue worker logs.';
+        } elseif ($everDelivered > 0) {
+            $status = 'configured_not_receiving';
+            $label = 'Configured / Not Receiving';
+            $detail = 'Configured with past deliveries, but no order_created event was sent in the last 7 days.';
+        } elseif ($allTime > 0) {
+            $status = 'unknown';
+            $label = 'Awaiting Processing';
+            $detail = 'Configured, but no confirmed delivery yet: '.$awaiting.' conversion(s) pending processing.';
+        } else {
+            $status = 'ready';
+            $label = $validateOnly ? 'Ready (Validate-Only Mode)' : 'Ready (Live Production)';
+            $detail = 'OpenAI Conversions API is configured and ready to deliver. No order_created conversions have occurred yet.';
+        }
+
+        return [
+            'status' => $status,
+            'label' => $label,
+            'detail' => $detail,
+            'capi_enabled' => $configured,
+            'validate_only' => $validateOnly,
+            'config' => $config,
+            'delivered_7d' => $delivered7d,
+            'failed_7d' => $failed7d,
+            'ever_delivered' => $everDelivered,
+            'last_sent_at' => $lastSentAt,
+            'awaiting_delivery' => $awaiting,
+            'ledger_total_all_time' => $allTime,
+        ];
+    }
+
+    /**
+     * Human-readable, non-sensitive explanation of missing OpenAI configuration requirements.
+     */
+    protected function describeMissingOpenAiRequirements(array $config): string
+    {
+        $reasons = [
+            'env_enabled' => 'the OPENAI_ADS_ENABLED environment flag is not enabled',
+            'pixel_present' => 'no OpenAI Pixel ID is configured',
+            'key_present' => 'no OpenAI CAPI key is configured in OPENAI_CAPI_KEY',
+        ];
+
+        $parts = [];
+
+        foreach ($config['missing'] as $requirement) {
+            $parts[] = $reasons[$requirement] ?? 'the '.$requirement.' requirement is unmet';
+        }
+
+        return implode('; ', $parts);
+    }
+
     protected function trackedOrders(array $bounds): int
     {
         return DB::table('orders as o')
@@ -1149,6 +1305,35 @@ class AnalyticsCommandCenterService
                 $alerts[] = ['severity' => 'info', 'title' => 'Meta Conversions API status unknown', 'detail' => $tracking['capi_status_detail'] ?? 'CAPI status could not be determined.'];
         }
 
+        if ($tracking['openai_pixel_configured'] ?? false) {
+            $alerts[] = ['severity' => 'info', 'title' => 'OpenAI Measurement Pixel configured', 'detail' => 'Storefront browser pixel is configured (ID ending '.$tracking['openai_pixel_masked'].').'];
+        } else {
+            $alerts[] = ['severity' => 'warning', 'title' => 'OpenAI Measurement Pixel is not configured', 'detail' => 'No OpenAI Pixel ID is set in configuration; storefront OpenAI tracking will not fire.'];
+        }
+
+        switch ($tracking['openai_capi_status'] ?? 'not_configured') {
+            case 'active':
+                $alerts[] = ['severity' => 'info', 'title' => 'OpenAI Conversions API is active (Live Mode)', 'detail' => 'Delivering server-side order_created conversions to OpenAI in live production mode.'];
+                break;
+            case 'active_validate_only':
+                $alerts[] = ['severity' => 'warning', 'title' => 'OpenAI Conversions API in VALIDATION-ONLY mode', 'detail' => 'OPENAI_CAPI_VALIDATE_ONLY=true is active; real events are validated by OpenAI without recording live conversions.'];
+                break;
+            case 'ready':
+                $alerts[] = ['severity' => 'info', 'title' => 'OpenAI Conversions API is configured and ready', 'detail' => $tracking['openai_capi_status_detail'] ?? 'OpenAI CAPI is configured; standing by to deliver customer conversions.'];
+                break;
+            case 'failed':
+                $alerts[] = ['severity' => 'warning', 'title' => 'OpenAI Conversions API delivery failing', 'detail' => 'No server-side delivery succeeded in the last 7 days; check CAPI credentials and queue worker logs.'];
+                break;
+            case 'configured_not_receiving':
+                $alerts[] = ['severity' => 'info', 'title' => 'OpenAI Conversions API configured but not receiving', 'detail' => 'Configured, but no order_created event was sent in the last 7 days.'];
+                break;
+            case 'not_configured':
+                $alerts[] = ['severity' => 'info', 'title' => 'OpenAI Conversions API is not configured', 'detail' => $tracking['openai_capi_status_detail'] ?? 'Server-side CAPI delivery is not configured.'];
+                break;
+            default:
+                break;
+        }
+
         if ($tracking['gtm_configured']) {
             $alerts[] = ['severity' => 'info', 'title' => 'GTM container configured', 'detail' => 'GTM ('.$tracking['gtm_container_id'].') is configured in the application.'];
         } else {
@@ -1169,6 +1354,10 @@ class AnalyticsCommandCenterService
 
         if ($tracking['ledger_failures_7d'] > 0) {
             $alerts[] = ['severity' => 'warning', 'title' => 'Recent Meta delivery failures', 'detail' => $tracking['ledger_failures_7d'].' conversion ledger records failed in the last 7 days.'];
+        }
+
+        if (($tracking['openai_ledger_failures_7d'] ?? 0) > 0) {
+            $alerts[] = ['severity' => 'warning', 'title' => 'Recent OpenAI delivery failures', 'detail' => $tracking['openai_ledger_failures_7d'].' OpenAI conversion ledger records failed in the last 7 days.'];
         }
 
         if ($tracking['active_out_of_stock'] > 0) {
@@ -1472,6 +1661,25 @@ class AnalyticsCommandCenterService
             'capi_status' => 'unknown',
             'capi_status_label' => 'Unknown',
             'capi_status_detail' => '',
+            'openai_pixel_id' => '',
+            'openai_pixel_configured' => false,
+            'openai_pixel_masked' => '',
+            'openai_capi' => [
+                'status' => 'unknown',
+                'label' => 'Unknown',
+                'detail' => '',
+                'capi_enabled' => false,
+                'validate_only' => true,
+                'delivered_7d' => 0,
+                'failed_7d' => 0,
+                'ledger_total_all_time' => 0,
+            ],
+            'openai_capi_status' => 'unknown',
+            'openai_capi_status_label' => 'Unknown',
+            'openai_capi_status_detail' => '',
+            'openai_ledger_total' => 0,
+            'openai_ledger_by_state' => [],
+            'openai_ledger_failures_7d' => 0,
             'products_without_sku' => 0,
             'duplicate_skus' => 0,
             'orders_missing_item_sku' => 0,

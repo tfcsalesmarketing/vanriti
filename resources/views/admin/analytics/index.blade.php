@@ -4,10 +4,12 @@
 
 @section('content')
 @php
-    $sections = ['overview', 'traffic', 'product', 'revenue', 'chatgpt', 'diagnostics'];
-    $currentSection = in_array((string) request()->query('section', 'overview'), $sections, true)
-        ? (string) request()->query('section', 'overview')
-        : 'overview';
+    $sections = ['overview', 'traffic', 'product', 'revenue', 'chatgpt', 'openai', 'diagnostics'];
+    $rawSection = (string) request()->query('section', 'overview');
+    $currentSection = in_array($rawSection, $sections, true) ? $rawSection : 'overview';
+    if ($currentSection === 'openai') {
+        $currentSection = 'chatgpt';
+    }
 @endphp
 
 @include('admin.analytics.partials._toolbar')

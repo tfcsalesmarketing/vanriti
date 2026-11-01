@@ -1236,4 +1236,58 @@ class ChatGptAdsConversionTrackingTest extends TestCase
         $this->assertSame('rejected', $freshLedger->openai_state);
         $this->assertSame(1, $freshLedger->openai_attempts, 'Attempts must not increment once in terminal rejected state');
     }
+
+    /**
+     * Test OpenAI Ads and CAPI diagnostics are displayed in the Admin Analytics Center.
+     */
+    public function test_openai_ads_analytics_and_diagnostics_in_command_center(): void
+    {
+        config([
+            'openai_ads.enabled' => true,
+            'openai_ads.pixel_id' => 'BBWekc1tuk8CcLkcNrLBzk',
+            'openai_ads.capi_key' => 'test-capi-key-12345',
+            'openai_ads.validate_only' => false,
+        ]);
+
+        AnalyticsConversion::create([
+            'event_type' => 'order_created',
+            'order_number' => 'VAN-TEST-DIAG-01',
+            'channel' => 'chatgpt_ads',
+            'payload' => [],
+            'openai_state' => 'sent',
+            'openai_sent_at' => now(),
+            'openai_attempts' => 1,
+            'openai_event_id' => 'test_event_id_01',
+        ]);
+
+        $service = app(\App\Services\Analytics\AnalyticsCommandCenterService::class);
+        $report = $service->report(now()->subDays(7)->toDateString(), now()->toDateString());
+
+        $this->assertTrue($report['tracking']['openai_pixel_configured']);
+        $this->assertSame('active', $report['tracking']['openai_capi']['status']);
+        $this->assertSame(1, $report['tracking']['openai_capi']['delivered_7d']);
+        $this->assertSame(1, $report['tracking']['openai_ledger_total']);
+        $this->assertFalse($report['tracking']['openai_capi']['validate_only']);
+
+        $admin = $this->manager();
+
+        // 1. Diagnostics View
+        $diagResponse = $this->actingAs($admin, 'admin')->get(route('admin.analytics', ['section' => 'diagnostics']));
+        $diagResponse->assertOk();
+        $diagResponse->assertSee('OpenAI Measurement Pixel (oaiq)');
+        $diagResponse->assertSee('OpenAI Conversions API (CAPI)');
+        $diagResponse->assertSee('OpenAI Conversion ledger (order_created)');
+        $diagResponse->assertSee('Live Production Mode');
+
+        // 2. OpenAI Ads Dedicated View (using section=openai alias and section=chatgpt)
+        $openAiResponse = $this->actingAs($admin, 'admin')->get(route('admin.analytics', ['section' => 'openai']));
+        $openAiResponse->assertOk();
+        $openAiResponse->assertSee('OpenAI Ads');
+        $openAiResponse->assertSee('Measurement Pixel:');
+        $openAiResponse->assertSee('Conversions API:');
+
+        $chatGptResponse = $this->actingAs($admin, 'admin')->get(route('admin.analytics', ['section' => 'chatgpt']));
+        $chatGptResponse->assertOk();
+        $chatGptResponse->assertSee('OpenAI Ads');
+    }
 }

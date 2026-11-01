@@ -232,7 +232,9 @@ class ChatGptAdsReportingService
 
         $capiSent = $conversions->where('openai_state', 'sent')->count();
         $capiFailed = $conversions->where('openai_state', 'failed')->count();
-        $capiPending = $conversions->whereNull('openai_state')->count();
+        $capiExpired = $conversions->where('openai_state', 'expired')->count();
+        $capiRejected = $conversions->where('openai_state', 'rejected')->count();
+        $capiPending = $conversions->where(fn ($c) => $c->openai_state === null || $c->openai_state === 'pending')->count();
 
         return [
             'orders_created' => $ordersCreated,
@@ -249,6 +251,8 @@ class ChatGptAdsReportingService
             'capi' => [
                 'sent' => $capiSent,
                 'failed' => $capiFailed,
+                'expired' => $capiExpired,
+                'rejected' => $capiRejected,
                 'pending' => $capiPending,
             ],
         ];

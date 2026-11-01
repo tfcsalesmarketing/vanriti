@@ -34,11 +34,31 @@
     </div>
 @endif
 
+{{-- Active OpenAI Tracking Pipeline Badges --}}
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <div class="badge bg-white border text-dark p-2 px-3 d-inline-flex align-items-center gap-2 shadow-xs rounded-2">
+        <i class="bi bi-bullseye text-primary fs-6"></i>
+        <span><strong>Measurement Pixel:</strong> <code>{{ config('openai_ads.pixel_id', 'BBWekc1tuk8CcLkcNrLBzk') }}</code></span>
+    </div>
+    <div class="badge bg-white border text-dark p-2 px-3 d-inline-flex align-items-center gap-2 shadow-xs rounded-2">
+        <i class="bi bi-cloud-arrow-up text-success fs-6"></i>
+        <span><strong>Conversions API:</strong> {{ config('openai_ads.validate_only') ? 'Active (Validate-Only Mode)' : 'Active (Live Production Mode)' }}</span>
+    </div>
+    <div class="badge bg-white border text-dark p-2 px-3 d-inline-flex align-items-center gap-2 shadow-xs rounded-2">
+        <i class="bi bi-shield-check text-info fs-6"></i>
+        <span><strong>Event Type:</strong> <code>{{ config('openai_ads.event_type', 'order_created') }}</code> ({{ config('openai_ads.event_setting_name', 'VANRITI Purchases') }})</span>
+    </div>
+    <div class="badge bg-white border text-dark p-2 px-3 d-inline-flex align-items-center gap-2 shadow-xs rounded-2">
+        <i class="bi bi-diagram-3 text-secondary fs-6"></i>
+        <span><strong>Source ID:</strong> <code>{{ config('openai_ads.source_id', 'cds_6ae63e02f93c819795162116d99676e4') }}</code></span>
+    </div>
+</div>
+
 {{-- Section Title --}}
 <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
-        <h6 class="fw-bold mb-0">ChatGPT Ads Campaign Performance</h6>
-        <span class="text-muted small">Real-time first-party measurement for traffic arriving via ChatGPT ads (click reference <code>oppref</code>).</span>
+        <h6 class="fw-bold mb-0">OpenAI Ads &mdash; ChatGPT Ads Campaign Performance</h6>
+        <span class="text-muted small">Real-time first-party measurement for traffic, attribution, and server-side Conversions API delivery for OpenAI ChatGPT Ads (click reference <code>oppref</code>).</span>
     </div>
 </div>
 
@@ -230,6 +250,10 @@
                 <div class="small text-muted">
                     @if (($orders['capi']['failed'] ?? 0) > 0)
                         <span class="text-danger fw-semibold">{{ $orders['capi']['failed'] }} failed</span>
+                    @elseif (($orders['capi']['expired'] ?? 0) > 0 || ($orders['capi']['rejected'] ?? 0) > 0)
+                        <span class="text-warning fw-semibold">{{ ($orders['capi']['expired'] ?? 0) + ($orders['capi']['rejected'] ?? 0) }} terminal</span>
+                    @elseif (($orders['capi']['pending'] ?? 0) > 0)
+                        <span class="text-info fw-semibold">{{ $orders['capi']['pending'] }} pending</span>
                     @else
                         <span class="text-success">0 failed</span>
                     @endif
