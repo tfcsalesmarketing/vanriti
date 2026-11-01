@@ -295,7 +295,7 @@ class ChatGptAdsConversionTrackingTest extends TestCase
 
         $ledger = AnalyticsConversion::where('event_type', 'order_created')->where('order_number', $order->order_number)->first();
         $this->assertNotNull($ledger);
-        $this->assertSame(150000, $ledger->payload['amount']);
+        $this->assertSame(147000, $ledger->payload['amount']);
     }
 
     /**

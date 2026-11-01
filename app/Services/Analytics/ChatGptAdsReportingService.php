@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Reporting and intelligence service for ChatGPT Ads campaign and storefront performance.
@@ -85,60 +86,301 @@ class ChatGptAdsReportingService
     }
 
     /**
-     * Query the official OpenAI Advertiser API if configured.
+     * Resolve the configured OpenAI Advertiser API key from encrypted settings or config.
+     */
+    public function apiKey(): string
+    {
+        return trim((string) (secret_setting('openai_advertiser_api_key') ?: config('openai_ads.advertiser_api_key', '')));
+    }
+
+    /**
+     * Resolve the optional OpenAI Advertiser account ID from settings or config.
+     */
+    public function accountId(): string
+    {
+        return trim((string) (setting('openai_advertiser_account_id') ?: config('openai_ads.advertiser_account_id', '')));
+    }
+
+    /**
+     * Normalized base URL for the OpenAI Advertiser API.
+     * Guarantees https://api.ads.openai.com/v1 format without duplicating or omitting /v1.
+     */
+    public function baseUrl(): string
+    {
+        $raw = trim((string) (setting('openai_advertiser_api_endpoint') ?: config('openai_ads.advertiser_api_endpoint', 'https://api.ads.openai.com/v1')));
+        if ($raw === '') {
+            $raw = 'https://api.ads.openai.com/v1';
+        }
+
+        $clean = rtrim($raw, '/');
+
+        // Strip any trailing /v1 (or multiple duplicate /v1) so only exactly one /v1 remains
+        while (preg_match('#/v1$#i', $clean)) {
+            $clean = substr($clean, 0, -3);
+        }
+
+        return $clean . '/v1';
+    }
+
+    /**
+     * Build a fully qualified API endpoint URL.
+     */
+    public function endpoint(string $path = ''): string
+    {
+        $base = $this->baseUrl();
+        $trimmed = ltrim($path, '/');
+
+        return $trimmed === '' ? $base : "{$base}/{$trimmed}";
+    }
+
+    /**
+     * Verify the configured OpenAI Advertiser API credentials and retrieve ad account context.
+     * Request: GET https://api.ads.openai.com/v1/ad_account
+     * Headers: Authorization: Bearer {API_KEY}
+     */
+    public function verifyAdAccount(): array
+    {
+        $apiKey = $this->apiKey();
+        if ($apiKey === '') {
+            return [
+                'success' => false,
+                'status' => null,
+                'error_type' => 'not_configured',
+                'error' => 'OpenAI Advertiser API not configured. To display platform ad impressions, clicks and spend, configure OPENAI_ADVERTISER_API_KEY in your environment or Settings.',
+                'account' => null,
+                'endpoint' => $this->endpoint('ad_account'),
+            ];
+        }
+
+        $url = $this->endpoint('ad_account');
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                ])
+                ->timeout((int) config('openai_ads.timeout', 5))
+                ->get($url);
+
+            $status = $response->status();
+            $body = $response->body();
+
+            // Secure logging: logs HTTP status, response body, URL, and timestamp (never logs the API key)
+            $this->logApiExchange('GET', $url, $status, $body);
+
+            if ($response->successful()) {
+                $account = $response->json();
+
+                return [
+                    'success' => true,
+                    'status' => $status,
+                    'error_type' => null,
+                    'error' => null,
+                    'account' => $account,
+                    'endpoint' => $url,
+                ];
+            }
+
+            $errorInfo = $this->formatApiError($status, $body, $url);
+
+            return [
+                'success' => false,
+                'status' => $status,
+                'error_type' => $errorInfo['error_type'],
+                'error' => $errorInfo['message'],
+                'account' => null,
+                'endpoint' => $url,
+            ];
+        } catch (\Throwable $e) {
+            $this->logApiException('GET', $url, $e);
+
+            return [
+                'success' => false,
+                'status' => null,
+                'error_type' => 'network_error',
+                'error' => 'Connection failure: Could not reach OpenAI Ads API (' . $e->getMessage() . '). Check network connectivity and DNS.',
+                'account' => null,
+                'endpoint' => $url,
+            ];
+        }
+    }
+
+    /**
+     * Query the official OpenAI Advertiser API Insights endpoint for delivery metrics.
+     * Request: GET https://api.ads.openai.com/v1/ad_account/insights
      * Never throws; marks 'available' => false when missing or failing.
      */
     public function platformMetrics(array $bounds): array
     {
-        $apiKey = trim((string) (secret_setting('openai_advertiser_api_key') ?: config('openai_ads.advertiser_api_key', '')));
-        $accountId = trim((string) (setting('openai_advertiser_account_id') ?: config('openai_ads.advertiser_account_id', '')));
+        $apiKey = $this->apiKey();
+        $accountId = $this->accountId();
 
-        if ($apiKey === '' || $accountId === '') {
+        if ($apiKey === '') {
             return [
                 'available' => false,
+                'status' => null,
+                'error_type' => 'not_configured',
                 'reason' => 'OpenAI Advertiser API not configured. To display platform ad impressions, clicks and spend, configure OPENAI_ADVERTISER_API_KEY and OPENAI_ADVERTISER_ACCOUNT_ID.',
                 'metrics' => null,
             ];
         }
 
+        // Documented Insights endpoint: GET /v1/ad_account/insights (Account ID is NOT in the path)
+        $url = $this->endpoint('ad_account/insights');
+
         try {
-            $base = rtrim(config('openai_ads.advertiser_api_endpoint', 'https://api.ads.openai.com/v1'), '/');
-            $url = "{$base}/accounts/{$accountId}/insights";
+            $params = [
+                'aggregation_level' => 'ad_account',
+                'fields' => ['impressions', 'clicks', 'spend'],
+                'time_ranges' => [
+                    [
+                        'type' => 'date_range',
+                        'since' => $bounds['from'],
+                        'until' => $bounds['to'],
+                    ],
+                ],
+                'start_date' => $bounds['from'],
+                'end_date' => $bounds['to'],
+            ];
+
+            // If an account ID is configured, include as an optional query param (never in URL path)
+            if ($accountId !== '') {
+                $params['account_id'] = $accountId;
+            }
 
             $response = Http::withToken($apiKey)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                ])
                 ->timeout((int) config('openai_ads.timeout', 5))
-                ->get($url, [
-                    'start_date' => $bounds['from'],
-                    'end_date' => $bounds['to'],
-                ]);
+                ->get($url, $params);
+
+            $status = $response->status();
+            $body = $response->body();
+
+            // Secure logging: records HTTP status, response body, URL, and timestamp (never logs the API key)
+            $this->logApiExchange('GET', $url, $status, $body);
 
             if ($response->successful()) {
-                $data = $response->json();
+                $payload = $response->json();
+                $impressions = 0;
+                $clicks = 0;
+                $spend = 0.0;
+
+                $rows = $payload['data'] ?? ($payload['insights'] ?? null);
+
+                if (is_array($rows)) {
+                    foreach ($rows as $row) {
+                        if (is_array($row)) {
+                            $impressions += (int) ($row['impressions'] ?? 0);
+                            $clicks += (int) ($row['clicks'] ?? 0);
+                            $spend += (float) ($row['spend'] ?? 0.0);
+                        }
+                    }
+                } else {
+                    $impressions = (int) ($payload['impressions'] ?? 0);
+                    $clicks = (int) ($payload['clicks'] ?? 0);
+                    $spend = (float) ($payload['spend'] ?? 0.0);
+                }
+
                 return [
                     'available' => true,
+                    'status' => $status,
+                    'error_type' => null,
                     'reason' => null,
                     'metrics' => [
-                        'impressions' => (int) ($data['impressions'] ?? 0),
-                        'clicks' => (int) ($data['clicks'] ?? 0),
-                        'spend' => (float) ($data['spend'] ?? 0.0),
+                        'impressions' => $impressions,
+                        'clicks' => $clicks,
+                        'spend' => round($spend, 2),
                     ],
                 ];
             }
 
-            return [
-                'available' => false,
-                'reason' => 'OpenAI Advertiser API returned HTTP '.$response->status().'.',
-                'metrics' => null,
-            ];
-        } catch (\Throwable $e) {
-            Log::warning('[analytics] OpenAI Advertiser API request failed', ['message' => $e->getMessage()]);
+            $errorInfo = $this->formatApiError($status, $body, $url);
 
             return [
                 'available' => false,
-                'reason' => 'Could not connect to OpenAI Advertiser API: '.$e->getMessage(),
+                'status' => $status,
+                'error_type' => $errorInfo['error_type'],
+                'reason' => $errorInfo['message'],
+                'metrics' => null,
+            ];
+        } catch (\Throwable $e) {
+            $this->logApiException('GET', $url, $e);
+
+            return [
+                'available' => false,
+                'status' => null,
+                'error_type' => 'network_error',
+                'reason' => 'Could not connect to OpenAI Advertiser API (' . $e->getMessage() . '). Check network connectivity and DNS.',
                 'metrics' => null,
             ];
         }
+    }
+
+    /**
+     * Format descriptive error messages distinguishing 401, 403, 404, 422, 429, 5xx, and network errors.
+     *
+     * @return array{error_type: string, message: string}
+     */
+    public function formatApiError(int $status, string $body, string $url): array
+    {
+        $json = json_decode($body, true);
+        $detail = $json['error']['message'] ?? ($json['message'] ?? null);
+        $detailSuffix = $detail ? " Message: {$detail}" : '';
+
+        $errorType = match ($status) {
+            401 => 'auth_error',
+            403 => 'permission_error',
+            404 => 'not_found',
+            422 => 'validation_error',
+            429 => 'rate_limited',
+            default => ($status >= 500) ? 'server_error' : 'http_error',
+        };
+
+        $message = match ($status) {
+            401 => "Authentication failed (HTTP 401): Invalid, expired, or missing OpenAI Advertiser API key. Verify OPENAI_ADVERTISER_API_KEY in your environment or Settings.{$detailSuffix}",
+            403 => "Access denied (HTTP 403): The API key lacks permission to access this ad account or reporting insights. Verify account permissions in OpenAI Ads Manager.{$detailSuffix}",
+            404 => "Endpoint not found (HTTP 404): The requested OpenAI Ads resource ({$url}) was not found. Verify the API base URL and endpoint path (expected: /ad_account or /ad_account/insights). Ensure the account ID is not incorrectly appended to the path.{$detailSuffix}",
+            422 => "Validation failed (HTTP 422): OpenAI Ads API rejected the request parameters.{$detailSuffix}",
+            429 => "Rate limit exceeded (HTTP 429): OpenAI Ads API request quota exceeded. Please try again later.{$detailSuffix}",
+            default => ($status >= 500)
+                ? "OpenAI Ads server error (HTTP {$status}): The upstream OpenAI service is temporarily unavailable.{$detailSuffix}"
+                : "OpenAI Advertiser API returned HTTP {$status}.{$detailSuffix}",
+        };
+
+        return [
+            'error_type' => $errorType,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * Log HTTP exchange securely. Never logs the Authorization header or API key.
+     */
+    protected function logApiExchange(string $method, string $url, int $status, string $body): void
+    {
+        Log::info('[openai_advertiser_api] HTTP response', [
+            'method' => $method,
+            'url' => $url,
+            'status' => $status,
+            'response_body' => Str::limit($body, 1500),
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Log request exception securely. Never logs the API key.
+     */
+    protected function logApiException(string $method, string $url, \Throwable $e): void
+    {
+        Log::warning('[openai_advertiser_api] Request failed', [
+            'method' => $method,
+            'url' => $url,
+            'error_class' => get_class($e),
+            'message' => $e->getMessage(),
+            'timestamp' => now()->toIso8601String(),
+        ]);
     }
 
     /**

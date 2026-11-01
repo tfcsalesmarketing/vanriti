@@ -9,20 +9,12 @@
     $series = $chatgpt['series'] ?? [];
 
     $platformAvailable = (bool) ($platform['available'] ?? false);
+    $errorType = $platform['error_type'] ?? null;
+    $statusCode = $platform['status'] ?? null;
 @endphp
 
 {{-- Platform Integration Status Banner --}}
-@if (! $platformAvailable)
-    <div class="alert alert-light border shadow-xs d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
-        <div class="rounded-circle bg-secondary bg-opacity-10 p-2 text-secondary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
-            <i class="bi bi-info-circle-fill fs-5"></i>
-        </div>
-        <div class="flex-grow-1 small">
-            <div class="fw-semibold text-dark">OpenAI Advertiser API Status: <span class="badge text-bg-light border text-muted">Offline / Not Configured</span></div>
-            <div class="text-muted">{{ $platform['reason'] ?? 'Platform metrics like ad spend and platform impressions require connection to the OpenAI Advertiser API. First-party website attribution, conversion tracking and order metrics are actively measured below.' }}</div>
-        </div>
-    </div>
-@else
+@if ($platformAvailable)
     <div class="alert alert-success border-success-subtle bg-success bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
         <div class="rounded-circle bg-success bg-opacity-20 p-2 text-success d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
             <i class="bi bi-check-circle-fill fs-5"></i>
@@ -30,6 +22,71 @@
         <div class="flex-grow-1 small">
             <div class="fw-semibold text-success">OpenAI Advertiser API: <span class="badge text-bg-success">Connected</span></div>
             <div class="text-success-emphasis">Ad campaign spend and impression insights are synchronized with first-party storefront conversions.</div>
+        </div>
+    </div>
+@elseif ($errorType === 'auth_error' || $statusCode === 401)
+    <div class="alert alert-danger border-danger-subtle bg-danger bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-danger bg-opacity-20 p-2 text-danger d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-shield-x fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-danger">OpenAI Advertiser API: <span class="badge text-bg-danger">HTTP 401 Unauthorized</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'Invalid or expired API key. Please check your OPENAI_ADVERTISER_API_KEY.' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
+        </div>
+    </div>
+@elseif ($errorType === 'permission_error' || $statusCode === 403)
+    <div class="alert alert-warning border-warning-subtle bg-warning bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-warning bg-opacity-20 p-2 text-warning d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-lock-fill fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-dark">OpenAI Advertiser API: <span class="badge text-bg-warning text-dark">HTTP 403 Forbidden</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'Access denied. The API key does not have permission to access reporting insights for this ad account.' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
+        </div>
+    </div>
+@elseif ($errorType === 'not_found' || $statusCode === 404)
+    <div class="alert alert-danger border-danger-subtle bg-danger bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-danger bg-opacity-20 p-2 text-danger d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-danger">OpenAI Advertiser API: <span class="badge text-bg-danger">HTTP 404 Endpoint Not Found</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'The requested OpenAI Ads endpoint was not found. Expected: GET /ad_account/insights (without appending account ID in the URL path).' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
+        </div>
+    </div>
+@elseif ($errorType === 'rate_limited' || $statusCode === 429)
+    <div class="alert alert-warning border-warning-subtle bg-warning bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-warning bg-opacity-20 p-2 text-warning d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-speedometer2 fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-dark">OpenAI Advertiser API: <span class="badge text-bg-warning text-dark">HTTP 429 Rate Limited</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'OpenAI Ads API request quota exceeded. Platform data will refresh automatically.' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
+        </div>
+    </div>
+@elseif ($errorType === 'network_error')
+    <div class="alert alert-secondary border-secondary-subtle bg-secondary bg-opacity-10 d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-secondary bg-opacity-20 p-2 text-secondary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-wifi-off fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-dark">OpenAI Advertiser API: <span class="badge text-bg-secondary">Network Failure / Timeout</span></div>
+            <div class="text-dark">{{ $platform['reason'] ?? 'Could not connect to OpenAI Ads API. Check internet connectivity and DNS resolution.' }}</div>
+            <div class="text-muted mt-1 small"><i class="bi bi-shield-check me-1 text-success"></i>First-party storefront attribution, click tracker (oppref), conversions, and revenue are fully preserved below.</div>
+        </div>
+    </div>
+@else
+    <div class="alert alert-light border shadow-xs d-flex align-items-center gap-3 mb-4 p-3 rounded-3" role="alert">
+        <div class="rounded-circle bg-secondary bg-opacity-10 p-2 text-secondary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-info-circle-fill fs-5"></i>
+        </div>
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold text-dark">OpenAI Advertiser API Status: <span class="badge text-bg-light border text-muted">Offline / Not Configured</span></div>
+            <div class="text-muted">{{ $platform['reason'] ?? 'Platform metrics like ad spend and platform impressions require connection to the OpenAI Advertiser API. First-party website attribution, conversion tracking and order metrics are actively measured below.' }}</div>
         </div>
     </div>
 @endif

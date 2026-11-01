@@ -47,6 +47,22 @@
         default => 'Unproven',
     };
     $openAiCapiLastSent = $openAiCapi['last_sent_at'] ?? null;
+
+    $chatgptPlatform = $report['chatgpt']['platform'] ?? [];
+    $advertiserReportingService = app(\App\Services\Analytics\ChatGptAdsReportingService::class);
+    $advertiserApiKeyPresent = $advertiserReportingService->apiKey() !== '';
+    $advertiserApiBase = $advertiserReportingService->baseUrl();
+    $advertiserApiVerificationEndpoint = $advertiserReportingService->endpoint('ad_account');
+    $advertiserApiInsightsEndpoint = $advertiserReportingService->endpoint('ad_account/insights');
+    $advertiserApiStatus = match (true) {
+        (bool) ($chatgptPlatform['available'] ?? false) => ['badge' => 'text-bg-success', 'label' => 'CONNECTED'],
+        ($chatgptPlatform['error_type'] ?? '') === 'auth_error' => ['badge' => 'text-bg-danger', 'label' => '401 UNAUTHORIZED'],
+        ($chatgptPlatform['error_type'] ?? '') === 'permission_error' => ['badge' => 'text-bg-warning text-dark', 'label' => '403 FORBIDDEN'],
+        ($chatgptPlatform['error_type'] ?? '') === 'not_found' => ['badge' => 'text-bg-danger', 'label' => '404 NOT FOUND'],
+        ($chatgptPlatform['error_type'] ?? '') === 'network_error' => ['badge' => 'text-bg-secondary', 'label' => 'NETWORK ERROR'],
+        $advertiserApiKeyPresent => ['badge' => 'text-bg-info', 'label' => 'CONFIGURED'],
+        default => ['badge' => 'text-bg-secondary', 'label' => 'NOT CONFIGURED'],
+    };
 @endphp
 
 @if (($tracking['error'] ?? false))
@@ -173,6 +189,24 @@
                                     &middot; {{ $state === 'null' ? 'pending' : $state }}: {{ $cnt }}
                                 @endforeach
                                 &middot; failed (7 day): {{ $tracking['openai_ledger_failures_7d'] ?? 0 }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="small">OpenAI Advertiser Reporting API</td>
+                            <td><span class="badge {{ $advertiserApiStatus['badge'] }}">{{ $advertiserApiStatus['label'] }}</span></td>
+                            <td class="small text-muted">
+                                Retrieves platform impressions, clicks, and spend from OpenAI Ads Manager.
+                                <span class="d-block mt-2">
+                                    <span class="d-block"><strong>Base URL:</strong> <code>{{ $advertiserApiBase }}</code> (normalized, strict /v1)</span>
+                                    <span class="d-block"><strong>Account Verification Endpoint:</strong> <code>GET {{ $advertiserApiVerificationEndpoint }}</code></span>
+                                    <span class="d-block"><strong>Delivery Insights Endpoint:</strong> <code>GET {{ $advertiserApiInsightsEndpoint }}</code></span>
+                                    <span class="d-block"><strong>Authentication:</strong> <code>Authorization: Bearer {API_KEY}</code> ({{ $advertiserApiKeyPresent ? 'Configured Server-Side' : 'Missing / Unset' }})</span>
+                                    <span class="d-block"><strong>Account Context:</strong> Authenticated account context (Account ID not appended to endpoint path)</span>
+                                    @if (!empty($chatgptPlatform['reason']))
+                                        <span class="d-block text-danger mt-1"><strong>Status Detail:</strong> {{ $chatgptPlatform['reason'] }}</span>
+                                    @endif
+                                </span>
+                                <span class="d-block text-muted mt-1">First-party order conversions and oppref attribution remain active even when platform reporting is offline.</span>
                             </td>
                         </tr>
                         <tr>
