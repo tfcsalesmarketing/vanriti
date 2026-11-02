@@ -233,20 +233,19 @@ class ChatGptAdsReportingService
             $until = Carbon::parse($bounds['to'])->toDateString();
 
             // Official OpenAI Ads API specification:
-            // time_ranges parameter must be a JSON-encoded string containing a date_range object:
-            // e.g. [{"type":"date_range","since":"YYYY-MM-DD","until":"YYYY-MM-DD"}]
-            $timeRangesJson = json_encode([
-                [
-                    'type' => 'date_range',
-                    'since' => $since,
-                    'until' => $until,
-                ],
+            // time_ranges parameter must be an array of JSON-encoded strings, where each element
+            // is a stringified date_range object:
+            // e.g. time_ranges[0] = '{"type":"date_range","since":"YYYY-MM-DD","until":"YYYY-MM-DD"}'
+            $timeRangeItem = json_encode([
+                'type' => 'date_range',
+                'since' => $since,
+                'until' => $until,
             ]);
 
             $params = [
                 'aggregation_level' => 'ad_account',
                 'fields' => 'impressions,clicks,spend',
-                'time_ranges' => $timeRangesJson,
+                'time_ranges' => [$timeRangeItem],
             ];
 
             // If an account ID is configured, include as an optional query param (never in URL path)

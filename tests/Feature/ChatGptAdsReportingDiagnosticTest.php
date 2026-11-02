@@ -138,17 +138,20 @@ class ChatGptAdsReportingDiagnosticTest extends TestCase
             $parsedUrl = parse_url($url, PHP_URL_PATH);
             parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $queryParams);
 
-            $timeRangesJson = $queryParams['time_ranges'] ?? '';
-            $decodedRanges = json_decode($timeRangesJson, true);
+            $timeRanges = $queryParams['time_ranges'] ?? null;
+            $decodedRange = is_array($timeRanges) && isset($timeRanges[0])
+                ? json_decode($timeRanges[0], true)
+                : null;
 
             return $parsedUrl === '/v1/ad_account/insights'
                 && !str_contains($url, '/accounts/act_99887766')
                 && $request->hasHeader('Authorization', 'Bearer test_advertiser_key_abc123')
-                && is_array($decodedRanges)
-                && isset($decodedRanges[0]['type'])
-                && $decodedRanges[0]['type'] === 'date_range'
-                && $decodedRanges[0]['since'] === '2026-11-01'
-                && $decodedRanges[0]['until'] === '2026-11-02';
+                && is_array($timeRanges)
+                && is_array($decodedRange)
+                && isset($decodedRange['type'])
+                && $decodedRange['type'] === 'date_range'
+                && $decodedRange['since'] === '2026-11-01'
+                && $decodedRange['until'] === '2026-11-02';
         });
     }
 
