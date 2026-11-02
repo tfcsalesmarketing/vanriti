@@ -43,7 +43,7 @@ class InstagramReelController extends Controller
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
             'caption' => 'nullable|string|max:1000',
-            'instagram_url' => 'nullable|url|max:500',
+            'instagram_url' => 'nullable|string|max:10000',
             'video_url' => 'nullable|url|max:500',
             'video_file' => 'nullable|file|mimes:mp4,mov,webm,m4v,ogg|max:102400', // 100MB
             'thumbnail_url' => 'nullable|url|max:500',
@@ -59,8 +59,17 @@ class InstagramReelController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['sort_order'] = (int) ($validated['sort_order'] ?? 0);
 
-        if (! empty($validated['instagram_url'])) {
-            $validated['instagram_shortcode'] = InstagramReel::extractShortcode($validated['instagram_url']);
+        $rawInsta = $validated['instagram_url'] ?? null;
+        if (! empty($rawInsta)) {
+            $shortcode = InstagramReel::extractShortcode($rawInsta);
+            $validated['instagram_shortcode'] = $shortcode;
+
+            if (str_contains($rawInsta, '<blockquote')) {
+                $validated['embed_code'] = $rawInsta;
+                $validated['instagram_url'] = $shortcode ? "https://www.instagram.com/reel/{$shortcode}/" : null;
+            } elseif ($shortcode) {
+                $validated['instagram_url'] = "https://www.instagram.com/reel/{$shortcode}/";
+            }
         }
 
         // Handle uploaded video file
@@ -95,7 +104,7 @@ class InstagramReelController extends Controller
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
             'caption' => 'nullable|string|max:1000',
-            'instagram_url' => 'nullable|url|max:500',
+            'instagram_url' => 'nullable|string|max:10000',
             'video_url' => 'nullable|url|max:500',
             'video_file' => 'nullable|file|mimes:mp4,mov,webm,m4v,ogg|max:102400',
             'thumbnail_url' => 'nullable|url|max:500',
@@ -111,10 +120,20 @@ class InstagramReelController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['sort_order'] = (int) ($validated['sort_order'] ?? 0);
 
-        if (! empty($validated['instagram_url'])) {
-            $validated['instagram_shortcode'] = InstagramReel::extractShortcode($validated['instagram_url']);
+        $rawInsta = $validated['instagram_url'] ?? null;
+        if (! empty($rawInsta)) {
+            $shortcode = InstagramReel::extractShortcode($rawInsta);
+            $validated['instagram_shortcode'] = $shortcode;
+
+            if (str_contains($rawInsta, '<blockquote')) {
+                $validated['embed_code'] = $rawInsta;
+                $validated['instagram_url'] = $shortcode ? "https://www.instagram.com/reel/{$shortcode}/" : null;
+            } elseif ($shortcode) {
+                $validated['instagram_url'] = "https://www.instagram.com/reel/{$shortcode}/";
+            }
         } else {
             $validated['instagram_shortcode'] = null;
+            $validated['embed_code'] = null;
         }
 
         // Handle video replacement

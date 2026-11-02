@@ -16,6 +16,7 @@ class InstagramReel extends Model
         'caption',
         'instagram_url',
         'instagram_shortcode',
+        'embed_code',
         'video_url',
         'thumbnail_url',
         'product_id',

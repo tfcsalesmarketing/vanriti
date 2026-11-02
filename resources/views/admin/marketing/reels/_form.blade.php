@@ -18,17 +18,18 @@
             </div>
 
             <div class="mb-3">
-                <label for="instagram_url" class="form-label small fw-semibold">Instagram Reel URL</label>
+                <label for="instagram_url" class="form-label small fw-semibold">Instagram Reel URL or Embed Code</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-danger"><i class="bi bi-instagram"></i></span>
-                    <input type="url"
+                    <input type="text"
                            name="instagram_url"
                            id="instagram_url"
-                           class="form-control @error('instagram_url') is-invalid @enderror"
+                           class="form-control font-monospace @error('instagram_url') is-invalid @enderror"
+                           style="font-size: 0.85rem;"
                            value="{{ old('instagram_url', $reel->instagram_url ?? '') }}"
-                           placeholder="https://www.instagram.com/reel/C8XYZ123/">
+                           placeholder="https://www.instagram.com/reel/DfKecY2gY8K/ or paste <blockquote> embed code">
                 </div>
-                <div class="form-text small">Paste the link to your Instagram Reel. Customers can click to view your original post on Instagram.</div>
+                <div class="form-text small">Paste your Instagram Reel link (e.g. <code>https://www.instagram.com/reel/DfKecY2gY8K/</code>) or the full embed code provided by Instagram.</div>
                 @error('instagram_url') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
