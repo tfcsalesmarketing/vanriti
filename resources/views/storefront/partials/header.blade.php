@@ -25,7 +25,7 @@
 <nav class="vr-navbar" id="vrNavbar">
     <div class="container">
         <div class="row align-items-center py-3 g-0">
-            {{-- Mobile Header: Logo centered, Left Category Menu Icon, Right User Icon --}}
+            {{-- Mobile Header: Logo centered, Left Category Menu Icon, Right Search Icon --}}
             <div class="col-12 d-flex d-lg-none align-items-center justify-content-between px-2">
                 <button type="button" class="vr-mobile-header-btn" data-bs-toggle="offcanvas" data-bs-target="#vrCategoryPanel" aria-controls="vrCategoryPanel" aria-label="Open Categories">
                     <i class="ri-menu-line"></i>
@@ -39,20 +39,9 @@
                     @endif
                 </a>
 
-                <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="vr-mobile-header-btn" data-bs-toggle="modal" data-bs-target="#vrSearchModal" aria-label="Search">
-                        <i class="ri-search-line"></i>
-                    </button>
-                    @auth('web')
-                        <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('account.*') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Account">
-                            <i class="ri-user-3-line"></i>
-                        </button>
-                    @else
-                        <button type="button" class="vr-mobile-header-btn {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Login">
-                            <i class="ri-user-3-line"></i>
-                        </button>
-                    @endauth
-                </div>
+                <button type="button" class="vr-mobile-header-btn" data-bs-toggle="modal" data-bs-target="#vrSearchModal" aria-label="Search">
+                    <i class="ri-search-line"></i>
+                </button>
             </div>
 
             {{-- Desktop: logo + category nav --}}
