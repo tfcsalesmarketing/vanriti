@@ -6,6 +6,7 @@ use App\Models\PushCampaign;
 use App\Models\PushSubscription;
 use App\Models\Setting;
 use App\Models\User;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Support\Facades\Log;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\VAPID;
@@ -99,7 +100,6 @@ class WebPushService
                 'content_encoding' => $encoding,
                 'user_id' => $user?->id,
                 'session_id' => $sessionId ?: session()->getId(),
-                'user_agent' => $userAgent ?: request()->userAgent(),
                 'device_type' => $deviceType,
                 'browser' => $browser,
                 'status' => 'active',
@@ -146,16 +146,18 @@ class WebPushService
                 $subject = 'mailto:care@vanriti.com';
             }
 
+            $httpClient = new GuzzleClient([
+                'timeout' => 20,
+                'connect_timeout' => 10,
+            ]);
+
             $webPush = new WebPush([
                 'VAPID' => [
                     'subject' => $subject,
                     'publicKey' => $keys['publicKey'],
                     'privateKey' => $keys['privateKey'],
                 ],
-            ], [], 30, [
-                'timeout' => 20,
-                'connect_timeout' => 10,
-            ]);
+            ], [], $httpClient);
 
             $sub = Subscription::create([
                 'endpoint' => $subscription->endpoint,
@@ -244,16 +246,18 @@ class WebPushService
             $subject = 'mailto:care@vanriti.com';
         }
 
+        $httpClient = new GuzzleClient([
+            'timeout' => 25,
+            'connect_timeout' => 10,
+        ]);
+
         $webPush = new WebPush([
             'VAPID' => [
                 'subject' => $subject,
                 'publicKey' => $keys['publicKey'],
                 'privateKey' => $keys['privateKey'],
             ],
-        ], [], 30, [
-            'timeout' => 25,
-            'connect_timeout' => 10,
-        ]);
+        ], [], $httpClient);
 
         $sentCount = 0;
         $failedCount = 0;
