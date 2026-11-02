@@ -37,6 +37,14 @@
     </div>
 @endif
 
+@if (session('warning'))
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <div>{{ session('warning') }}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 {{-- Top KPI Summary Ribbon --}}
 <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
@@ -536,6 +544,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Dynamic config using Blade route helpers for full environment compatibility
+    var VR_ADMIN_PUSH_CONFIG = {
+        publicKeyUrl: "{{ route('push.public-key') }}",
+        subscribeUrl: "{{ route('push.subscribe') }}",
+        swUrl: "{{ url('sw.js') }}",
+        scopeUrl: "{{ url('/') }}/",
+        testUrl: "{{ route('admin.push.test') }}",
+        csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}"
+    };
+
     // Helper: convert url-safe base64 to Uint8Array
     function urlB64ToUint8Array(base64String) {
         base64String = (base64String || '').trim();
@@ -557,6 +575,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var deviceBadge = document.getElementById('deviceSubBadge');
     var adminSubBtn = document.getElementById('adminSubscribeDeviceBtn');
     var adminSubBtnText = document.getElementById('adminSubBtnText');
+    var sendTestBtn = document.getElementById('sendTestPushBtn');
+    var currentDeviceSubscriptionId = null;
 
     function checkDeviceStatus() {
         if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -565,11 +585,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 deviceBadge.textContent = 'Insecure Context (Requires HTTPS or localhost)';
             }
             if (adminSubBtn) adminSubBtn.disabled = true;
-            return;
+            return Promise.resolve(null);
         }
 
         if (Notification.permission === 'granted') {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            return navigator.serviceWorker.register(VR_ADMIN_PUSH_CONFIG.swUrl, { scope: VR_ADMIN_PUSH_CONFIG.scopeUrl })
                 .then(function () { return navigator.serviceWorker.ready; })
                 .then(function (reg) {
                     return reg.pushManager.getSubscription();
@@ -578,20 +598,29 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (sub) {
                         if (deviceBadge) {
                             deviceBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill font-2xs';
-                            deviceBadge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>This Device Subscribed & Ready';
+                            deviceBadge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>This Device Subscribed &amp; Ready';
                         }
                         if (adminSubBtn) {
                             adminSubBtn.className = 'btn btn-sm btn-light border text-muted font-2xs';
                             adminSubBtnText.textContent = 'Device Registered (Re-sync)';
                         }
+                        return sub;
                     } else {
                         if (deviceBadge) {
                             deviceBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill font-2xs';
                             deviceBadge.textContent = 'Permission Granted, Device Not Subscribed';
                         }
+                        if (adminSubBtn) {
+                            adminSubBtn.className = 'btn btn-sm btn-outline-success font-2xs';
+                            adminSubBtnText.textContent = 'Subscribe This Device Now';
+                        }
+                        return null;
                     }
                 })
-                .catch(function () {});
+                .catch(function (err) {
+                    console.warn('checkDeviceStatus error:', err);
+                    return null;
+                });
         } else if (Notification.permission === 'denied') {
             if (deviceBadge) {
                 deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
@@ -601,82 +630,173 @@ document.addEventListener('DOMContentLoaded', function () {
                 adminSubBtn.className = 'btn btn-sm btn-outline-danger font-2xs';
                 adminSubBtnText.textContent = 'Unblock in Browser URL Bar';
             }
+            return Promise.resolve(null);
         } else {
             if (deviceBadge) {
                 deviceBadge.className = 'badge bg-secondary-subtle text-secondary border rounded-pill font-2xs';
                 deviceBadge.textContent = 'Not Subscribed on This Device';
             }
+            if (adminSubBtn) {
+                adminSubBtn.className = 'btn btn-sm btn-outline-success font-2xs';
+                adminSubBtnText.textContent = 'Subscribe This Device';
+            }
+            return Promise.resolve(null);
         }
     }
 
     checkDeviceStatus();
+
+    // Reusable routine to subscribe device and store token in database
+    function registerDeviceSubscription() {
+        return Notification.requestPermission().then(function (perm) {
+            if (perm !== 'granted') {
+                throw new Error('Notification permission was ' + perm + '. Please allow notifications in browser prompt.');
+            }
+
+            return fetch(VR_ADMIN_PUSH_CONFIG.publicKeyUrl, { headers: { 'Accept': 'application/json' } })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching public VAPID key');
+                    return res.json();
+                })
+                .then(function (keyData) {
+                    if (!keyData || !keyData.publicKey) {
+                        throw new Error('VAPID public key unavailable from server');
+                    }
+
+                    return navigator.serviceWorker.register(VR_ADMIN_PUSH_CONFIG.swUrl, { scope: VR_ADMIN_PUSH_CONFIG.scopeUrl })
+                        .then(function () { return navigator.serviceWorker.ready; })
+                        .then(function (reg) {
+                            return reg.pushManager.getSubscription().then(function (existingSub) {
+                                if (existingSub) {
+                                    return existingSub;
+                                }
+                                return reg.pushManager.subscribe({
+                                    userVisibleOnly: true,
+                                    applicationServerKey: urlB64ToUint8Array(keyData.publicKey)
+                                });
+                            });
+                        });
+                })
+                .then(function (sub) {
+                    var subJson = sub.toJSON();
+                    return fetch(VR_ADMIN_PUSH_CONFIG.subscribeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': VR_ADMIN_PUSH_CONFIG.csrfToken
+                        },
+                        body: JSON.stringify(subJson)
+                    });
+                })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status + ' storing subscription');
+                    return res.json();
+                })
+                .then(function (data) {
+                    if (data && data.subscription_id) {
+                        currentDeviceSubscriptionId = data.subscription_id;
+                    }
+                    checkDeviceStatus();
+                    return data;
+                });
+        });
+    }
 
     if (adminSubBtn) {
         adminSubBtn.addEventListener('click', function () {
             adminSubBtn.disabled = true;
             adminSubBtnText.textContent = 'Subscribing Device...';
 
-            Notification.requestPermission().then(function (perm) {
-                if (perm !== 'granted') {
-                    alert('Please allow notification permission in your browser prompt to subscribe this device.');
+            registerDeviceSubscription()
+                .then(function () {
                     adminSubBtn.disabled = false;
+                    alert('Success! Your admin device is now subscribed. You can now send instant test alerts to this screen.');
+                })
+                .catch(function (err) {
+                    adminSubBtn.disabled = false;
+                    console.error(err);
+                    alert('Device subscription error: ' + err.message);
                     checkDeviceStatus();
-                    return;
-                }
-
-                fetch('/push/public-key', { headers: { 'Accept': 'application/json' } })
-                    .then(function (res) { return res.json(); })
-                    .then(function (keyData) {
-                        return navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                            .then(function () { return navigator.serviceWorker.ready; })
-                            .then(function (reg) {
-                                return reg.pushManager.subscribe({
-                                    userVisibleOnly: true,
-                                    applicationServerKey: urlB64ToUint8Array(keyData.publicKey)
-                                });
-                            });
-                    })
-                    .then(function (sub) {
-                        var subJson = sub.toJSON();
-                        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                        return fetch('/push/subscribe', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken || ''
-                            },
-                            body: JSON.stringify(subJson)
-                        });
-                    })
-                    .then(function (res) { return res.json(); })
-                    .then(function (data) {
-                        adminSubBtn.disabled = false;
-                        checkDeviceStatus();
-                        alert('Success! Your admin device is now subscribed. You can now click "Send Test to My Browser" to receive instant test alerts on this screen.');
-                        window.location.reload();
-                    })
-                    .catch(function (err) {
-                        adminSubBtn.disabled = false;
-                        console.error(err);
-                        alert('Device subscription error: ' + err.message);
-                        checkDeviceStatus();
-                    });
-            });
+                });
         });
     }
 
-    // Send Test push handler
-    var sendTestBtn = document.getElementById('sendTestPushBtn');
+    // Send Test push handler (Seamless AJAX with auto-subscribe & instant onscreen alert)
     if (sendTestBtn) {
         sendTestBtn.addEventListener('click', function () {
-            var form = document.getElementById('pushBroadcastForm');
-            var testInput = document.createElement('input');
-            testInput.type = 'hidden';
-            testInput.name = '_is_test';
-            testInput.value = '1';
-            form.action = '{{ route("admin.push.test") }}';
-            form.submit();
+            var title = (titleInput && titleInput.value.trim()) || '';
+            var body = (bodyInput && bodyInput.value.trim()) || '';
+            var url = (urlInput && urlInput.value.trim()) || '';
+
+            if (!title) {
+                alert('Please enter a Notification Title first.');
+                if (titleInput) titleInput.focus();
+                return;
+            }
+            if (!body) {
+                alert('Please enter a Notification Message first.');
+                if (bodyInput) bodyInput.focus();
+                return;
+            }
+            if (!url) {
+                url = window.location.origin;
+            }
+
+            var originalHtml = sendTestBtn.innerHTML;
+            sendTestBtn.disabled = true;
+            sendTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Preparing Test Alert...</span>';
+
+            // Check if device is already subscribed, or subscribe automatically
+            registerDeviceSubscription()
+                .catch(function (subErr) {
+                    console.warn('Direct registration failed or permission prompt needed:', subErr);
+                    // Continue attempt with existing subscription in DB if present
+                    return null;
+                })
+                .then(function () {
+                    sendTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Dispatching Push...</span>';
+
+                    var payload = {
+                        title: title,
+                        body: body,
+                        url: url,
+                        subscription_id: currentDeviceSubscriptionId,
+                        _token: VR_ADMIN_PUSH_CONFIG.csrfToken
+                    };
+
+                    return fetch(VR_ADMIN_PUSH_CONFIG.testUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': VR_ADMIN_PUSH_CONFIG.csrfToken
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, data: data };
+                    });
+                })
+                .then(function (result) {
+                    sendTestBtn.disabled = false;
+                    sendTestBtn.innerHTML = originalHtml;
+
+                    if (result.ok && result.data && result.data.success) {
+                        alert('🎉 ' + result.data.message);
+                    } else {
+                        var errMsg = (result.data && result.data.message) ? result.data.message : 'Failed to send test push notification.';
+                        alert('⚠️ ' + errMsg);
+                    }
+                })
+                .catch(function (err) {
+                    sendTestBtn.disabled = false;
+                    sendTestBtn.innerHTML = originalHtml;
+                    console.error('Test push dispatch error:', err);
+                    alert('Error dispatching test push: ' + err.message);
+                });
         });
     }
 });

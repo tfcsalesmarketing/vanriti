@@ -13,6 +13,12 @@ use Minishlink\WebPush\WebPush;
 
 class WebPushService
 {
+    protected ?string $lastError = null;
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
     /**
      * Get or create VAPID cryptographic keys.
      */
@@ -161,11 +167,13 @@ class WebPushService
             $report = $webPush->sendOneNotification($sub, json_encode($payload));
 
             if ($report->isSuccess()) {
+                $this->lastError = null;
                 $subscription->update(['last_active_at' => now()]);
                 return true;
             }
 
-            Log::warning("WebPushService: Failed to send to subscription #{$subscription->id}: {$report->getReason()}");
+            $this->lastError = $report->getReason();
+            Log::warning("WebPushService: Failed to send to subscription #{$subscription->id}: {$this->lastError}");
 
             if ($report->isSubscriptionExpired()) {
                 $subscription->update(['status' => 'expired']);
@@ -173,7 +181,8 @@ class WebPushService
 
             return false;
         } catch (\Throwable $e) {
-            Log::error("WebPushService: Error sending to subscription #{$subscription->id}: " . $e->getMessage());
+            $this->lastError = $e->getMessage();
+            Log::error("WebPushService: Error sending to subscription #{$subscription->id}: " . $this->lastError);
             return false;
         }
     }

@@ -65,6 +65,13 @@ class PushNotificationController extends Controller
 
     public function send(Request $request): RedirectResponse
     {
+        if ($request->filled('url')) {
+            $inputUrl = trim((string) $request->input('url'));
+            if (! str_starts_with($inputUrl, 'http://') && ! str_starts_with($inputUrl, 'https://')) {
+                $request->merge(['url' => url(ltrim($inputUrl, '/'))]);
+            }
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
             'body' => ['required', 'string', 'max:300'],
@@ -88,9 +95,13 @@ class PushNotificationController extends Controller
         $result = $this->webPushService->broadcastCampaign($campaign);
 
         if (! empty($result['success'])) {
-            $msg = "Push notification broadcast completed! Sent: {$result['sent']} devices";
+            if ($result['total'] === 0) {
+                return back()->with('warning', 'Broadcast campaign created, but 0 active subscriber devices were found in audience "' . ucfirst(str_replace('_', ' ', $validated['target_audience'])) . '". Please click "Subscribe This Device" above or allow notifications on the storefront first.');
+            }
+
+            $msg = "Push notification broadcast dispatched to {$result['sent']} active device(s)!";
             if (! empty($result['failed'])) {
-                $msg .= ", Failed/Expired: {$result['failed']}";
+                $msg .= " ({$result['failed']} expired device endpoints removed)";
             }
             return back()->with('success', $msg);
         }
@@ -98,18 +109,36 @@ class PushNotificationController extends Controller
         return back()->with('error', $result['message'] ?? 'Failed to broadcast notification.');
     }
 
-    public function sendTest(Request $request): RedirectResponse
+    public function sendTest(Request $request): \Symfony\Component\HttpFoundation\Response
     {
+        if ($request->filled('url')) {
+            $inputUrl = trim((string) $request->input('url'));
+            if (! str_starts_with($inputUrl, 'http://') && ! str_starts_with($inputUrl, 'https://')) {
+                $request->merge(['url' => url(ltrim($inputUrl, '/'))]);
+            }
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
             'body' => ['required', 'string', 'max:300'],
             'url' => ['required', 'url', 'max:500'],
+            'subscription_id' => ['nullable', 'integer'],
         ]);
 
-        $subscription = PushSubscription::active()->latest('last_active_at')->first();
+        $subscription = null;
+        if (! empty($validated['subscription_id'])) {
+            $subscription = PushSubscription::find($validated['subscription_id']);
+        }
+        if (! $subscription) {
+            $subscription = PushSubscription::active()->latest('last_active_at')->first();
+        }
 
         if (! $subscription) {
-            return back()->with('error', 'No active device subscriptions found to receive a test alert. Visit the website and click "Allow Alerts" first.');
+            $msg = 'No active device subscriptions found. Click "Subscribe This Device" above to register your browser, then send the test alert.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
         }
 
         $payload = [
@@ -124,10 +153,19 @@ class PushNotificationController extends Controller
         $success = $this->webPushService->sendToSubscription($subscription, $payload);
 
         if ($success) {
-            return back()->with('success', "Test push notification dispatched successfully to subscription #{$subscription->id} ({$subscription->device_type} / {$subscription->browser})!");
+            $msg = "Test alert dispatched to {$subscription->device_type} ({$subscription->browser}) #{$subscription->id}! It should appear on your screen now.";
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return back()->with('success', $msg);
         }
 
-        return back()->with('error', 'Failed to dispatch test notification. Endpoint may be expired.');
+        $reason = $this->webPushService->getLastError();
+        $failMsg = 'Failed to deliver test alert' . ($reason ? ": {$reason}" : '. The browser endpoint may have expired or was denied.');
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => false, 'message' => $failMsg], 422);
+        }
+        return back()->with('error', $failMsg);
     }
 
     public function destroyCampaign(PushCampaign $campaign): RedirectResponse

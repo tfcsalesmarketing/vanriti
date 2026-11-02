@@ -301,6 +301,51 @@ class PushNotificationCommandCenterTest extends TestCase
         $this->assertDatabaseMissing('push_campaigns', ['id' => $recentCampaign->id]);
     }
 
+    public function test_admin_can_send_test_notification_to_specific_subscription_via_ajax(): void
+    {
+        $endpoint = 'https://fcm.googleapis.com/fcm/send/test_admin_device_' . \Illuminate\Support\Str::random(16);
+        $sub = PushSubscription::create([
+            'endpoint' => $endpoint,
+            'endpoint_hash' => md5($endpoint),
+            'public_key' => 'BM5_fake_key_for_testing_purposes_only',
+            'auth_token' => 'fake_auth_token',
+            'device_type' => 'desktop',
+            'browser' => 'Chrome',
+            'status' => 'active',
+            'last_active_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->admin, 'admin')
+            ->postJson(route('admin.push.test'), [
+                'title' => 'Flash Sale Test',
+                'body' => 'Testing test push alert message',
+                'url' => '/shop',
+                'subscription_id' => $sub->id,
+            ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+            ]);
+    }
+
+    public function test_admin_send_test_notification_returns_error_when_no_subscribers(): void
+    {
+        PushSubscription::query()->delete();
+
+        $response = $this->actingAs($this->admin, 'admin')
+            ->postJson(route('admin.push.test'), [
+                'title' => 'Flash Sale Test',
+                'body' => 'Testing test push alert message',
+                'url' => 'https://vanriti.com/shop',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
     public function test_abandoned_cart_push_artisan_command_executes_successfully(): void
     {
         $exitCode = Artisan::call('push:send-abandoned-cart-reminders');

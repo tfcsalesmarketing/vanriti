@@ -26,15 +26,18 @@ self.addEventListener('push', function (event) {
         };
     }
 
+    var baseScope = self.registration.scope || (self.location.origin + '/');
+    var defaultLogo = new URL('images/logo.png', baseScope).href;
+
     var title = payload.title || 'Vanriti Herbal & Ayurvedic Care';
     var options = {
         body: payload.body || 'Discover pure Ayurvedic wellness on Vanriti.',
-        icon: payload.icon || '/images/logo.png',
+        icon: payload.icon || defaultLogo,
         image: payload.image || undefined,
-        badge: payload.badge || '/images/logo.png',
+        badge: payload.badge || defaultLogo,
         tag: payload.tag || ('vr-push-' + (payload.data?.campaign_id || Date.now())),
         renotify: true,
-        data: payload.data || { url: '/' },
+        data: payload.data || { url: baseScope },
         actions: [
             { action: 'open', title: 'Shop Now' }
         ]
@@ -49,22 +52,24 @@ self.addEventListener('push', function (event) {
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
 
+    var baseScope = self.registration.scope || (self.location.origin + '/');
     var data = event.notification.data || {};
-    var rawUrl = data.url || '/';
+    var rawUrl = data.url || baseScope;
     var campaignId = data.campaign_id;
 
-    // Resolve destination URL against current origin
-    var targetUrl = '/';
+    // Resolve destination URL against service worker base scope
+    var targetUrl = baseScope;
     try {
-        targetUrl = new URL(rawUrl, self.location.origin).href;
+        targetUrl = new URL(rawUrl, baseScope).href;
     } catch (e) {
-        targetUrl = self.location.origin + '/';
+        targetUrl = baseScope;
     }
 
     // Ping click tracking endpoint asynchronously
     if (campaignId) {
         try {
-            fetch('/push/track-click/' + encodeURIComponent(campaignId), {
+            var trackUrl = new URL('push/track-click/' + encodeURIComponent(campaignId), baseScope).href;
+            fetch(trackUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 keepalive: true
@@ -88,4 +93,3 @@ self.addEventListener('notificationclick', function (event) {
         })
     );
 });
-
