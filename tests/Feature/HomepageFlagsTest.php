@@ -107,3 +107,4 @@ class HomepageFlagsTest extends TestCase
         $this->assertStringNotContainsString('New Arrivals', $content);
     }
 }
+
