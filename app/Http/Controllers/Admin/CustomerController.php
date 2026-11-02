@@ -24,21 +24,24 @@ class CustomerController extends Controller
 
     public function index(Request $request): View
     {
-        // 1. Calculate KPI summary metrics
+        $baseQuery = User::vanritiCustomers();
+
+        // 1. Calculate KPI summary metrics for VANRITI retail storefront customers only
         $kpis = [
-            'total' => User::count(),
-            'active_shoppers' => User::whereHas('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']))->count(),
-            'vip' => User::whereHas('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']))
+            'total' => (clone $baseQuery)->count(),
+            'active_shoppers' => (clone $baseQuery)->whereHas('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']))->count(),
+            'vip' => (clone $baseQuery)->whereHas('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']))
                 ->withCount(['orders' => fn ($q) => $q->whereNotIn('order_status', ['cancelled'])])
                 ->withSum(['orders as total_spent' => fn ($q) => $q->whereNotIn('order_status', ['cancelled'])], 'grand_total')
                 ->get()
                 ->filter(fn ($u) => ($u->total_spent ?? 0) >= 2500 || ($u->orders_count ?? 0) >= 3)
                 ->count(),
-            'whatsapp_connected' => User::whereNotNull('phone')->where('phone', '!=', '')->count(),
+            'whatsapp_connected' => (clone $baseQuery)->whereNotNull('phone')->where('phone', '!=', '')->count(),
+            'direct_sellers_count' => User::directSellers()->count(),
         ];
 
-        // 2. Query builder
-        $query = User::query()
+        // 2. Query builder strictly scoped to VANRITI retail customers (excluding TFC direct sellers)
+        $query = (clone $baseQuery)
             ->withCount(['orders' => fn ($q) => $q->whereNotIn('order_status', ['cancelled'])])
             ->withSum(['orders as total_spent' => fn ($q) => $q->whereNotIn('order_status', ['cancelled'])], 'grand_total')
             ->with(['whatsappConversation']);
@@ -104,6 +107,104 @@ class CustomerController extends Controller
         return view('admin.customers.index', compact('customers', 'kpis'));
     }
 
+    /**
+     * TFC Sales & Marketing Direct Sellers Customer Directory.
+     * Strictly scopes records to users associated with direct_selling_members.
+     */
+    public function tfcIndex(Request $request): View
+    {
+        $baseQuery = User::directSellers();
+
+        // 1. Calculate KPI summary metrics for Direct Sellers only
+        $kpis = [
+            'total' => (clone $baseQuery)->count(),
+            'active_members' => (clone $baseQuery)->whereHas('directSellingMember', fn ($q) => $q->where('membership_status', 'active'))->count(),
+            'ordering_sellers' => (clone $baseQuery)->whereHas('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']))->count(),
+            'whatsapp_connected' => (clone $baseQuery)->whereNotNull('phone')->where('phone', '!=', '')->count(),
+            'vanriti_customers_count' => User::vanritiCustomers()->count(),
+        ];
+
+        // 2. Query builder strictly scoped to Direct Sellers
+        $query = (clone $baseQuery)
+            ->with([
+                'directSellingMember.sponsor',
+                'directSellingMember.placementParent',
+                'directSellingMember.kyc',
+                'whatsappConversation',
+            ])
+            ->withCount(['orders' => fn ($q) => $q->whereNotIn('order_status', ['cancelled'])])
+            ->withSum(['orders as total_spent' => fn ($q) => $q->whereNotIn('order_status', ['cancelled'])], 'grand_total');
+
+        // Search: Name, Email, Phone, or TFC Member ID
+        if ($q = trim((string) $request->input('q'))) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%")
+                    ->orWhereHas('directSellingMember', function ($dq) use ($q) {
+                        $dq->where('member_id', 'like', "%{$q}%");
+                    });
+            });
+        }
+
+        // Membership Status Filter
+        if ($status = $request->input('status')) {
+            if (in_array($status, ['active', 'inactive', 'suspended', 'terminated'], true)) {
+                $query->whereHas('directSellingMember', fn ($dq) => $dq->where('membership_status', $status));
+            }
+        }
+
+        // Leg / Placement Position Filter
+        if ($leg = $request->input('leg')) {
+            if (in_array($leg, ['orange', 'blue'], true)) {
+                $query->whereHas('directSellingMember', fn ($dq) => $dq->where('placement_position', $leg));
+            }
+        }
+
+        // KYC Status Filter
+        if ($kycStatus = $request->input('kyc')) {
+            if (in_array($kycStatus, ['approved', 'pending', 'rejected', 'not_submitted'], true)) {
+                if ($kycStatus === 'not_submitted') {
+                    $query->whereDoesntHave('directSellingMember.kyc');
+                } else {
+                    $query->whereHas('directSellingMember.kyc', fn ($kq) => $kq->where('status', $kycStatus));
+                }
+            }
+        }
+
+        // WhatsApp Filter
+        if ($request->boolean('has_whatsapp')) {
+            $query->whereNotNull('phone')->where('phone', '!=', '');
+        }
+
+        // Orders Activity Filter
+        if ($activity = $request->input('activity')) {
+            if ($activity === 'with_orders') {
+                $query->whereHas('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']));
+            } elseif ($activity === 'no_orders') {
+                $query->whereDoesntHave('orders', fn ($q) => $q->whereNotIn('order_status', ['cancelled']));
+            }
+        }
+
+        // Sorting
+        $sort = $request->input('sort', 'latest');
+        if ($sort === 'clv_desc') {
+            $query->orderByDesc('total_spent')->orderByDesc('created_at');
+        } elseif ($sort === 'orders_desc') {
+            $query->orderByDesc('orders_count')->orderByDesc('created_at');
+        } elseif ($sort === 'oldest') {
+            $query->orderBy('created_at');
+        } elseif ($sort === 'name_asc') {
+            $query->orderBy('name');
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $sellers = $query->paginate(20)->withQueryString();
+
+        return view('admin.tfc.customers.index', compact('sellers', 'kpis'));
+    }
+
     public function show(User $user): View
     {
         $user->load([
@@ -112,6 +213,9 @@ class CustomerController extends Controller
             'reviews.product',
             'activeCart.items.product',
             'returnRequests',
+            'directSellingMember.sponsor',
+            'directSellingMember.placementParent',
+            'directSellingMember.kyc',
         ]);
 
         $orders = $user->orders;
@@ -157,6 +261,11 @@ class CustomerController extends Controller
         ];
 
         return view('admin.customers.show', compact('user', 'orders', 'addresses', 'reviews', 'stats', 'conversation', 'approvedTemplates'));
+    }
+
+    public function tfcShow(User $user): View
+    {
+        return $this->show($user);
     }
 
     public function toggleStatus(User $user): JsonResponse|RedirectResponse

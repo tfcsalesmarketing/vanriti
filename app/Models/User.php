@@ -94,7 +94,30 @@ class User extends Authenticatable
 
     public function isTfcMember(): bool
     {
-        return $this->directSellingMember()->exists();
+        return $this->relationLoaded('directSellingMember')
+            ? $this->directSellingMember !== null
+            : $this->directSellingMember()->exists();
+    }
+
+    public function isDirectSeller(): bool
+    {
+        return $this->isTfcMember();
+    }
+
+    /**
+     * Scope query to only regular VANRITI retail storefront customers (excluding direct sellers).
+     */
+    public function scopeVanritiCustomers(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereDoesntHave('directSellingMember');
+    }
+
+    /**
+     * Scope query to only TFC Direct Selling members.
+     */
+    public function scopeDirectSellers(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereHas('directSellingMember');
     }
 
     public function carts(): HasMany

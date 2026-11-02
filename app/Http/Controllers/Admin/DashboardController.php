@@ -40,7 +40,7 @@ class DashboardController extends Controller
             'delivered_orders' => $ordersTable ? Order::where('order_status', 'delivered')->count() : 0,
             'cancelled_orders' => $ordersTable ? Order::where('order_status', 'cancelled')->count() : 0,
             'refund_requests' => Schema::hasTable('return_requests') ? ReturnRequest::whereHas('refunds', fn ($q) => $q->whereIn('status', ['requested', 'under_review', 'approved', 'processing']))->count() : 0,
-            'customers' => Schema::hasTable('users') ? User::count() : 0,
+            'customers' => Schema::hasTable('users') ? User::vanritiCustomers()->count() : 0,
             'products' => Schema::hasTable('products') ? Product::query()->withoutGlobalScopes()->count() : 0,
             'low_stock' => Schema::hasTable('product_variants') ? DB::table('product_variants')->where('stock', '>', 0)->whereColumn('stock', '<=', 'low_stock_threshold')->count() : 0,
             'out_of_stock' => Schema::hasTable('product_variants') ? DB::table('product_variants')->where('stock', '<=', 0)->count() : 0,

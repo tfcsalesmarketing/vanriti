@@ -376,6 +376,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('members/{id}', [\App\Http\Controllers\Admin\Tfc\TfcMemberAdminController::class, 'show'])->name('members.show');
             Route::post('members/{id}/status', [\App\Http\Controllers\Admin\Tfc\TfcMemberAdminController::class, 'updateStatus'])->name('members.status');
 
+            // TFC Direct Sellers Customer Directory
+            Route::get('customers', [\App\Http\Controllers\Admin\CustomerController::class, 'tfcIndex'])->name('customers.index');
+            Route::get('customers/{user}', [\App\Http\Controllers\Admin\CustomerController::class, 'tfcShow'])->name('customers.show');
+
             // TFC Direct Selling KYC Review Desk
             Route::get('kyc', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'index'])->name('kyc.index');
             Route::get('kyc/{id}', [\App\Http\Controllers\Admin\Tfc\TfcKycAdminController::class, 'show'])->name('kyc.show');

@@ -3,15 +3,24 @@
 @section('title', 'Customer 360° Profile: ' . $user->name)
 
 @section('content')
+@php
+    $backUrl = request()->routeIs('admin.tfc.*') ? route('admin.tfc.customers.index') : route('admin.customers.index');
+@endphp
+
 {{-- Header Bar --}}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div class="d-flex align-items-center gap-2">
-        <a href="{{ route('admin.customers.index') }}" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ $backUrl }}" class="btn btn-sm btn-outline-secondary" title="Back to Customer List">
             <i class="bi bi-arrow-left"></i>
         </a>
         <div>
             <h5 class="mb-0 fw-bold d-inline-flex align-items-center gap-2">
                 <span>{{ $user->name }}</span>
+                @if ($user->isDirectSeller() && $user->directSellingMember)
+                    <span class="badge text-bg-warning text-dark font-monospace" style="font-size:0.75rem;">
+                        <i class="bi bi-diagram-3-fill me-1"></i>{{ $user->directSellingMember->member_id }}
+                    </span>
+                @endif
                 <span class="badge bg-{{ $stats['segment']['badge'] }}-subtle text-{{ $stats['segment']['badge'] }} border border-{{ $stats['segment']['badge'] }}-subtle rounded-pill small py-1 px-2.5" style="font-size:0.75rem;">
                     <i class="bi {{ $stats['segment']['icon'] }} me-1"></i>{{ $stats['segment']['label'] }}
                 </span>
@@ -43,6 +52,34 @@
         </form>
     </div>
 </div>
+
+{{-- Direct Seller Account Context Banner --}}
+@if ($user->isDirectSeller() && $user->directSellingMember)
+    <div class="alert alert-light border shadow-xs d-flex flex-wrap align-items-center justify-content-between p-3 rounded-3 mb-3 gap-2" style="border-left: 4px solid #D49B24 !important;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 40px; height: 40px; background: #0A1D37;">
+                <i class="bi bi-diagram-3-fill fs-5" style="color: #D49B24;"></i>
+            </div>
+            <div>
+                <div class="fw-bold text-dark">
+                    <span>TFC Independent Direct Seller Account</span>
+                    <span class="badge text-bg-warning ms-1 font-monospace">{{ $user->directSellingMember->member_id }}</span>
+                    <span class="badge {{ $user->directSellingMember->membership_status === 'active' ? 'bg-success' : 'bg-secondary' }} ms-1">{{ ucfirst($user->directSellingMember->membership_status) }}</span>
+                </div>
+                <div class="text-muted small">
+                    Sponsor: <strong>{{ $user->directSellingMember->sponsor?->full_name ?? 'Direct' }}</strong> &middot; 
+                    Placement Leg: <strong>{{ ucfirst($user->directSellingMember->placement_position) }}</strong> &middot; 
+                    KYC: <span class="badge {{ $user->directSellingMember->kyc?->status === 'approved' ? 'text-bg-success' : 'text-bg-secondary' }}">{{ ucfirst($user->directSellingMember->kyc?->status ?? 'Not submitted') }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.tfc.members.show', $user->directSellingMember->id) }}" class="btn btn-sm text-white" style="background: #0A1D37;">
+                <i class="bi bi-diagram-3 me-1" style="color: #D49B24;"></i><span>View Direct Seller Detail &rarr;</span>
+            </a>
+        </div>
+    </div>
+@endif
 
 {{-- 360° Metrics Cards --}}
 <div class="row g-3 mb-4">

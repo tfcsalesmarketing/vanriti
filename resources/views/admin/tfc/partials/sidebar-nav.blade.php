@@ -6,7 +6,7 @@
     $pendingKycCount = \App\Models\Tfc\MemberKyc::where('status', 'pending')->count();
 
     // Group active checks matching VANRITI accordion pattern
-    $membersActive = request()->routeIs('admin.tfc.members.*', 'admin.tfc.kyc.*');
+    $membersActive = request()->routeIs('admin.tfc.members.*', 'admin.tfc.customers.*', 'admin.tfc.kyc.*');
     $crmActive = request()->routeIs('admin.tfc.inquiries.*', 'admin.tfc.grievances.*');
     $waActive = request()->routeIs('admin.tfc.whatsapp.*');
     $settingsActive = request()->routeIs('admin.tfc.settings.*');
@@ -66,6 +66,13 @@
                        href="{{ route('admin.tfc.members.index') }}">
                         <i class="bi bi-person-badge"></i>
                         <span>Member Directory</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.tfc.customers.*') ? 'active' : '' }}" 
+                       href="{{ route('admin.tfc.customers.index') }}">
+                        <i class="bi bi-people-fill" style="color: #D49B24;"></i>
+                        <span>Direct Sellers (Customers)</span>
                     </a>
                 </li>
                 <li class="nav-item">
