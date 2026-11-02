@@ -68,8 +68,8 @@ self.addEventListener('notificationclick', function (event) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 keepalive: true
-            }).catch(function () {});
-        } catch (e) {}
+            }).catch(function () { });
+        } catch (e) { }
     }
 
     // Open destination URL or focus existing open tab
