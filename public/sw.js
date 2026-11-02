@@ -27,14 +27,15 @@ self.addEventListener('push', function (event) {
     }
 
     var baseScope = self.registration.scope || (self.location.origin + '/');
-    var defaultLogo = new URL('images/logo.png', baseScope).href;
+    var defaultIcon = new URL('images/push-icon-192.png', baseScope).href;
+    var defaultBadge = new URL('images/push-badge-96.png', baseScope).href;
 
     var title = payload.title || 'Vanriti Herbal & Ayurvedic Care';
     var options = {
         body: payload.body || 'Discover pure Ayurvedic wellness on Vanriti.',
-        icon: payload.icon || defaultLogo,
+        icon: payload.icon || defaultIcon,
         image: payload.image || undefined,
-        badge: payload.badge || defaultLogo,
+        badge: payload.badge || defaultBadge,
         tag: payload.tag || ('vr-push-' + (payload.data?.campaign_id || Date.now())),
         renotify: true,
         data: payload.data || { url: baseScope },

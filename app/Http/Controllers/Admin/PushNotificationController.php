@@ -87,7 +87,7 @@ class PushNotificationController extends Controller
             'url' => $validated['url'],
             'target_audience' => $validated['target_audience'],
             'image_url' => $validated['image_url'] ?? null,
-            'icon_url' => $validated['icon_url'] ?? asset('images/logo.png'),
+            'icon_url' => $validated['icon_url'] ?? asset('images/push-icon-192.png'),
             'sent_by' => auth('admin')->id(),
             'status' => 'draft',
         ]);
@@ -145,7 +145,8 @@ class PushNotificationController extends Controller
         $payload = [
             'title' => '[TEST] ' . $validated['title'],
             'body' => $validated['body'],
-            'icon' => asset('images/logo.png'),
+            'icon' => asset('images/push-icon-192.png'),
+            'badge' => asset('images/push-badge-96.png'),
             'image' => $validated['image_url'] ?? null,
             'data' => [
                 'url' => $validated['url'],

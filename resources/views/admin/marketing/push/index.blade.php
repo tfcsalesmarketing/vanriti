@@ -232,7 +232,7 @@
                     <div class="p-3 bg-white rounded-4 shadow-sm border" style="border-color: #e2e8f0 !important;">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div class="d-flex align-items-center gap-1.5">
-                                <img src="{{ asset('images/logo.png') }}" alt="Vanriti" width="16" height="16" class="rounded">
+                                <img src="{{ asset('images/push-icon-192.png') }}" alt="Vanriti" width="16" height="16" class="rounded">
                                 <span class="fw-bold text-dark font-2xs" style="font-size: 0.72rem;">VANRITI</span>
                                 <span class="text-muted font-2xs">&middot; now</span>
                             </div>
@@ -256,7 +256,7 @@
                 <div id="desktopPreviewFrame" class="w-100 d-none" style="max-width: 360px;">
                     <div class="p-3 bg-white rounded-3 shadow border" style="border-left: 4px solid #15803d;">
                         <div class="d-flex align-items-start gap-2.5">
-                            <img src="{{ asset('images/logo.png') }}" alt="Vanriti" width="38" height="38" class="rounded flex-shrink-0">
+                            <img src="{{ asset('images/push-icon-192.png') }}" alt="Vanriti" width="38" height="38" class="rounded flex-shrink-0">
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="fw-bold text-dark small text-truncate" id="previewDesktopTitle">🌿 Weekend Ayurvedic Flash Sale!</div>

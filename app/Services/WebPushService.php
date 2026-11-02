@@ -230,9 +230,9 @@ class WebPushService
         $payload = [
             'title' => $campaign->title,
             'body' => $campaign->body,
-            'icon' => $campaign->icon_url ?: asset('images/logo.png'),
+            'icon' => $campaign->icon_url ?: asset('images/push-icon-192.png'),
             'image' => $campaign->image_url,
-            'badge' => asset('images/logo.png'),
+            'badge' => asset('images/push-badge-96.png'),
             'data' => [
                 'url' => $campaign->url,
                 'campaign_id' => $campaign->id,
@@ -365,7 +365,8 @@ class WebPushService
             $payload = [
                 'title' => '🌿 Still thinking about ' . str($productName)->limit(32) . '?',
                 'body' => 'Your items are safely reserved in your cart. Complete your order today with code WELCOME10 for 10% off!',
-                'icon' => asset('images/logo.png'),
+                'icon' => asset('images/push-icon-192.png'),
+                'badge' => asset('images/push-badge-96.png'),
                 'image' => $image ? image_url($image) : null,
                 'data' => [
                     'url' => route('cart.index'),
