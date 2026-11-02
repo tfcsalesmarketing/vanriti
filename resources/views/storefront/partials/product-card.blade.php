@@ -13,20 +13,58 @@
     $category = $product->categories->first();
     $wishlistService = app(App\Services\WishlistService::class);
     $liked = $wishlistService->has($product);
-    $isNew = $product->created_at && $product->created_at->gte(now()->subDays(30));
+    $isNew = $product->is_new_arrival || ($product->created_at && $product->created_at->gte(now()->subDays(30)));
     $cartLineByProduct = $cartLineByProduct ?? collect();
     $cartLine = $cartLineByProduct->get($product->id);
     $cartQty = $cartLine?->quantity ?? 0;
+
+    $cardFlag = $cardFlag ?? null;
+    if (! $cardFlag) {
+        if ($product->is_bestseller) {
+            $cardFlag = 'bestseller';
+        } elseif ($product->is_featured) {
+            $cardFlag = 'featured';
+        } elseif ($isNew) {
+            $cardFlag = 'new_arrival';
+        }
+    }
+    $rank = $rank ?? null;
 @endphp
 
 <div class="vr-card">
     <div class="img-wrap">
-        @if ($discount > 0)
-            <span class="vr-disc-badge">{{ (int) round($discount) }}% OFF</span>
-        @endif
-        @if ($isNew)
-            <span class="vr-new-badge">NEW</span>
-        @endif
+        {{-- Badges Stack (Top Left) --}}
+        <div class="vr-card-badges-stack">
+            @if ($cardFlag === 'bestseller')
+                @if ($rank && $rank <= 3)
+                    <span class="vr-flag-badge vr-flag-bestseller rank-{{ $rank }}">
+                        @if ($rank === 1)
+                            <i class="ri-trophy-fill"></i> #1 Bestseller
+                        @elseif ($rank === 2)
+                            <i class="ri-medal-fill"></i> #2 Bestseller
+                        @else
+                            <i class="ri-fire-fill"></i> #3 Bestseller
+                        @endif
+                    </span>
+                @else
+                    <span class="vr-flag-badge vr-flag-bestseller">
+                        <i class="ri-fire-fill"></i> Bestseller
+                    </span>
+                @endif
+            @elseif ($cardFlag === 'featured')
+                <span class="vr-flag-badge vr-flag-featured">
+                    <i class="ri-sparkling-fill"></i> Featured
+                </span>
+            @elseif ($cardFlag === 'new_arrival')
+                <span class="vr-flag-badge vr-flag-new">
+                    <i class="ri-sparkles-line"></i> New
+                </span>
+            @endif
+
+            @if ($discount > 0)
+                <span class="vr-disc-badge">{{ (int) round($discount) }}% OFF</span>
+            @endif
+        </div>
 
         <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="m-0 js-wishlist-form">
             @csrf

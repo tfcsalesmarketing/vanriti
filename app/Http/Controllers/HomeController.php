@@ -28,27 +28,57 @@ class HomeController extends Controller
             ->groupBy('position')
             ->map->first();
 
+        // 1. Featured Collection: strictly products with is_featured = true
         $featured = Product::query()
             ->active()
             ->featured()
             ->inStock()
             ->with(['images', 'categories', 'approvedReviews'])
+            ->orderByDesc('id')
             ->limit(8)
             ->get();
 
-        $bestsellers = Product::query()
+        $featuredIds = $featured->pluck('id');
+
+        // 2. Bestsellers: strictly products with is_bestseller = true
+        // Avoid duplicate products already presented in Featured above
+        $bestsellersBase = Product::query()
             ->active()
             ->bestsellers()
+            ->inStock()
             ->with(['images', 'categories', 'approvedReviews'])
+            ->orderByDesc('total_sold')
+            ->orderByDesc('id');
+
+        $bestsellers = (clone $bestsellersBase)
+            ->when($featuredIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $featuredIds))
             ->limit(8)
             ->get();
 
-        $newArrivals = Product::query()
+        if ($bestsellers->isEmpty()) {
+            $bestsellers = $bestsellersBase->limit(8)->get();
+        }
+
+        $shownIds = $featuredIds->concat($bestsellers->pluck('id'))->unique();
+
+        // 3. New Arrivals: strictly products with is_new_arrival = true
+        // Avoid duplicate products already presented in Featured or Bestsellers
+        $newArrivalsBase = Product::query()
             ->active()
             ->newArrivals()
+            ->inStock()
             ->with(['images', 'categories', 'approvedReviews'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        $newArrivals = (clone $newArrivalsBase)
+            ->when($shownIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $shownIds))
             ->limit(8)
             ->get();
+
+        if ($newArrivals->isEmpty()) {
+            $newArrivals = $newArrivalsBase->limit(8)->get();
+        }
 
         $categories = Category::query()
             ->with(['children'])
@@ -56,9 +86,6 @@ class HomeController extends Controller
             ->active()
             ->orderBy('sort_order')
             ->get();
-
-        $bestsellers = $bestsellers->isEmpty() ? $featured : $bestsellers;
-        $newArrivals = $newArrivals->isEmpty() ? $featured : $newArrivals;
 
         return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories'));
     }

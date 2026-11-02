@@ -113,48 +113,49 @@
     </div>
 </section>
 
-<section class="vr-section">
+@if ($featured->isNotEmpty())
+<section class="vr-section vr-section-featured">
     <div class="container">
         <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
             <div>
-                <h2 class="vr-section-title mb-1">Featured</h2>
-                <p class="vr-section-sub mb-0">Handpicked favourites from our collection</p>
+                <div class="vr-section-kicker vr-kicker-featured">
+                    <i class="ri-sparkling-fill"></i> CURATED FORMULATIONS
+                </div>
+                <h2 class="vr-section-title mb-1">Featured Collection</h2>
+                <p class="vr-section-sub mb-0">Handpicked favourites from our authentic Ayurvedic collection</p>
             </div>
             <a href="{{ route('shop.index') }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
         </div>
-        <div class="row g-4 vr-stagger">
-            @forelse ($featured as $product)
+        <div class="row g-3 g-md-4 vr-stagger">
+            @foreach ($featured as $product)
                 <div class="col-6 col-xl-3">
-                    @include('storefront.partials.product-card', ['product' => $product])
+                    @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'featured'])
                 </div>
-            @empty
-                <div class="col-12">
-                    <div class="vr-empty bg-white rounded-4" style="box-shadow:var(--vr-shadow-xs);">
-                        <i class="bi bi-box"></i>
-                        <p class="mt-2 mb-0">No featured products yet.</p>
-                    </div>
-                </div>
-            @endforelse
+            @endforeach
         </div>
     </div>
 </section>
+@endif
 
 @include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_featured')])
 
 @if ($bestsellers->isNotEmpty())
-    <section class="vr-section pt-0">
+    <section class="vr-section vr-section-bestsellers py-5">
         <div class="container">
             <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
                 <div>
-                    <h2 class="vr-section-title mb-1">Bestsellers</h2>
-                    <p class="vr-section-sub mb-0">Loved by thousands of happy customers</p>
+                    <div class="vr-section-kicker vr-kicker-bestsellers">
+                        <i class="ri-fire-fill"></i> MOST LOVED BY CUSTOMERS
+                    </div>
+                    <h2 class="vr-section-title mb-1">Our Bestsellers</h2>
+                    <p class="vr-section-sub mb-0">Loved &amp; trusted by thousands of happy Ayurvedic routines</p>
                 </div>
                 <a href="{{ route('shop.index') }}?sort=popular" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="row g-4 vr-stagger">
+            <div class="row g-3 g-md-4 vr-stagger">
                 @foreach ($bestsellers as $product)
                     <div class="col-6 col-xl-3">
-                        @include('storefront.partials.product-card', ['product' => $product])
+                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'bestseller', 'rank' => $loop->iteration])
                     </div>
                 @endforeach
             </div>
@@ -165,19 +166,22 @@
 @include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_bestsellers')])
 
 @if ($newArrivals->isNotEmpty())
-    <section class="vr-section pt-0">
+    <section class="vr-section vr-section-newarrivals py-5">
         <div class="container">
             <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
                 <div>
+                    <div class="vr-section-kicker vr-kicker-newarrivals">
+                        <i class="ri-leaf-line"></i> FRESH BATCH DROPS
+                    </div>
                     <h2 class="vr-section-title mb-1">New Arrivals</h2>
-                    <p class="vr-section-sub mb-0">Fresh from our lab to your shelf</p>
+                    <p class="vr-section-sub mb-0">Fresh botanical herbs &amp; new formulations crafted with care</p>
                 </div>
                 <a href="{{ route('shop.index') }}?sort=newest" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="row g-4 vr-stagger">
+            <div class="row g-3 g-md-4 vr-stagger">
                 @foreach ($newArrivals as $product)
                     <div class="col-6 col-xl-3">
-                        @include('storefront.partials.product-card', ['product' => $product])
+                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'new_arrival'])
                     </div>
                 @endforeach
             </div>
@@ -188,11 +192,14 @@
 @include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_new_arrivals')])
 
 @if ($categories->isNotEmpty())
-    <section class="vr-section pt-0">
+    <section class="vr-section vr-section-categories py-5">
         <div class="container">
             <div class="mb-4 text-center vr-animate-in">
+                <div class="vr-section-kicker vr-kicker-categories justify-content-center">
+                    <i class="ri-grid-fill"></i> EXPLORE BY CONCERN
+                </div>
                 <h2 class="vr-section-title mb-1">Shop by Category</h2>
-                <p class="vr-section-sub mb-0">Explore our collections</p>
+                <p class="vr-section-sub mb-0">Explore our specialized botanical ranges</p>
             </div>
             <div class="row g-3 justify-content-center vr-stagger">
                 @foreach ($categories as $cat)
@@ -206,6 +213,7 @@
                                 @endif
                             </div>
                             <span class="vr-cat-name">{{ $cat->name }}</span>
+                            <span class="vr-cat-explore d-none d-md-inline-block">Explore &rarr;</span>
                         </a>
                     </div>
                 @endforeach

@@ -386,6 +386,105 @@ img { max-width: 100%; height: auto; }
     line-height: 1.5;
 }
 
+/* ---------- Homepage Differentiated Flag Sections ---------- */
+.vr-section-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.vr-kicker-featured {
+    color: var(--vr-green-dark, #263D25);
+}
+.vr-kicker-featured i {
+    color: var(--vr-gold, #B58A3A);
+}
+
+.vr-kicker-bestsellers {
+    color: #92691e;
+}
+.vr-kicker-bestsellers i {
+    color: #e07a1f;
+}
+
+.vr-kicker-newarrivals {
+    color: var(--vr-green, #6F8736);
+}
+.vr-kicker-newarrivals i {
+    color: var(--vr-green, #6F8736);
+}
+
+.vr-kicker-categories {
+    color: var(--vr-muted, #6B736B);
+}
+
+/* 1. Featured Section */
+.vr-section-featured {
+    background: #ffffff;
+    position: relative;
+}
+
+/* 2. Bestsellers Section: Warm Amber Glow Band */
+.vr-section-bestsellers {
+    background: linear-gradient(180deg, #FAF7F0 0%, #F5F0E4 100%);
+    border-top: 1px solid rgba(181, 138, 58, 0.16);
+    border-bottom: 1px solid rgba(181, 138, 58, 0.16);
+    position: relative;
+}
+
+.vr-section-bestsellers .vr-card {
+    background: #ffffff;
+    border-color: rgba(181, 138, 58, 0.22);
+    box-shadow: 0 4px 18px rgba(181, 138, 58, 0.08);
+}
+
+.vr-section-bestsellers .vr-card:hover {
+    border-color: rgba(181, 138, 58, 0.5);
+    box-shadow: 0 8px 24px rgba(181, 138, 58, 0.15);
+}
+
+/* 3. New Arrivals Section: Fresh Botanical Sage Band */
+.vr-section-newarrivals {
+    background: linear-gradient(180deg, #F3F8EE 0%, #FAFDF7 100%);
+    border-top: 1px solid rgba(111, 135, 54, 0.16);
+    border-bottom: 1px solid rgba(111, 135, 54, 0.16);
+    position: relative;
+}
+
+.vr-section-newarrivals .vr-card {
+    background: #ffffff;
+    border-color: rgba(111, 135, 54, 0.2);
+    box-shadow: 0 4px 18px rgba(38, 61, 37, 0.06);
+}
+
+.vr-section-newarrivals .vr-card:hover {
+    border-color: rgba(111, 135, 54, 0.45);
+    box-shadow: 0 8px 24px rgba(38, 61, 37, 0.12);
+}
+
+/* 4. Shop by Category */
+.vr-section-categories {
+    background: #ffffff;
+}
+
+.vr-cat-explore {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--vr-green);
+    margin-top: 2px;
+    transition: transform var(--vr-transition-fast), color var(--vr-transition-fast);
+}
+
+.vr-cat-card:hover .vr-cat-explore {
+    color: var(--vr-green-dark);
+    transform: translateX(3px);
+}
+
 /* ---------- Promotional section banners ----------
    Rendered between homepage product sections. Half the hero's 600px height so
    the strip reads as a supporting band rather than competing with the carousel.
@@ -556,6 +655,73 @@ img { max-width: 100%; height: auto; }
 }
 .vr-card:hover .img-wrap img { transform: scale(1.04); }
 
+/* Badges Stack (Top Left of Card) */
+.vr-card-badges-stack {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.vr-flag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 3px 9px;
+    border-radius: var(--vr-radius-pill);
+    line-height: 1.25;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+}
+
+.vr-flag-badge i {
+    font-size: 0.74rem;
+}
+
+/* Featured Badge: Royal Forest Green & Warm Gold */
+.vr-flag-badge.vr-flag-featured {
+    background: linear-gradient(135deg, #1b321d 0%, #29462a 100%);
+    color: #f7f4ea;
+    border: 1px solid rgba(181, 138, 58, 0.45);
+}
+
+/* Bestseller Badge: Radiant Gold & Amber Flame */
+.vr-flag-badge.vr-flag-bestseller {
+    background: linear-gradient(135deg, #b58a3a 0%, #8c651e 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 2px 8px rgba(181, 138, 58, 0.35);
+}
+
+.vr-flag-badge.vr-flag-bestseller.rank-1 {
+    background: linear-gradient(135deg, #d4a34b 0%, #9e7123 100%);
+    box-shadow: 0 3px 10px rgba(181, 138, 58, 0.5);
+}
+
+.vr-flag-badge.vr-flag-bestseller.rank-2 {
+    background: linear-gradient(135deg, #a67c30 0%, #7d5718 100%);
+}
+
+.vr-flag-badge.vr-flag-bestseller.rank-3 {
+    background: linear-gradient(135deg, #9e6f28 0%, #6e4912 100%);
+}
+
+/* New Arrival Badge: Fresh Botanical Sage Green */
+.vr-flag-badge.vr-flag-new {
+    background: linear-gradient(135deg, #6F8736 0%, #4f6621 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .vr-disc-badge {
     position: absolute;
     top: 12px;
@@ -569,6 +735,17 @@ img { max-width: 100%; height: auto; }
     border-radius: var(--vr-radius-pill);
     letter-spacing: 0.02em;
     box-shadow: 0 2px 8px rgba(38, 61, 37, 0.2);
+}
+
+.vr-card-badges-stack .vr-disc-badge {
+    position: static;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    background: #b3402e;
+    color: #ffffff;
+    border-radius: var(--vr-radius-pill);
+    box-shadow: 0 1px 4px rgba(179, 64, 46, 0.3);
 }
 
 .vr-new-badge {
