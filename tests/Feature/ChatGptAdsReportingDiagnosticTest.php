@@ -138,6 +138,7 @@ class ChatGptAdsReportingDiagnosticTest extends TestCase
             $parsedUrl = parse_url($url, PHP_URL_PATH);
             parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $queryParams);
 
+            $fields = $queryParams['fields'] ?? null;
             $timeRanges = $queryParams['time_ranges'] ?? null;
             $decodedRange = is_array($timeRanges) && isset($timeRanges[0])
                 ? json_decode($timeRanges[0], true)
@@ -146,6 +147,11 @@ class ChatGptAdsReportingDiagnosticTest extends TestCase
             return $parsedUrl === '/v1/ad_account/insights'
                 && !str_contains($url, '/accounts/act_99887766')
                 && $request->hasHeader('Authorization', 'Bearer test_advertiser_key_abc123')
+                && ($queryParams['aggregation_level'] ?? '') === 'campaign'
+                && is_array($fields)
+                && in_array('impressions', $fields)
+                && in_array('clicks', $fields)
+                && in_array('spend', $fields)
                 && is_array($timeRanges)
                 && is_array($decodedRange)
                 && isset($decodedRange['type'])

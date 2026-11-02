@@ -213,19 +213,19 @@ class ChatGptAdsReportingService
     public function platformMetrics(array $bounds): array
     {
         $apiKey = $this->apiKey();
-        $accountId = $this->accountId();
 
         if ($apiKey === '') {
             return [
                 'available' => false,
                 'status' => null,
                 'error_type' => 'not_configured',
-                'reason' => 'OpenAI Advertiser API not configured. To display platform ad impressions, clicks and spend, configure OPENAI_ADVERTISER_API_KEY and OPENAI_ADVERTISER_ACCOUNT_ID.',
+                'reason' => 'OpenAI Advertiser API not configured. To display platform ad impressions, clicks and spend, configure OPENAI_ADVERTISER_API_KEY in your environment or Settings.',
                 'metrics' => null,
             ];
         }
 
-        // Documented Insights endpoint: GET /v1/ad_account/insights (Account ID is NOT in the path)
+        // Documented Insights endpoint: GET /v1/ad_account/insights
+        // The Bearer token provides the authenticated account context (never append account ID)
         $url = $this->endpoint('ad_account/insights');
 
         try {
@@ -233,9 +233,9 @@ class ChatGptAdsReportingService
             $until = Carbon::parse($bounds['to'])->toDateString();
 
             // Official OpenAI Ads API specification:
-            // time_ranges parameter must be an array of JSON-encoded strings, where each element
-            // is a stringified date_range object:
-            // e.g. time_ranges[0] = '{"type":"date_range","since":"YYYY-MM-DD","until":"YYYY-MM-DD"}'
+            // - time_ranges: array of JSON-encoded strings, where each element is a stringified date_range object
+            // - fields: array of strings specifying metrics to retrieve
+            // - aggregation_level: 'campaign' (aggregates metrics across ad account campaigns)
             $timeRangeItem = json_encode([
                 'type' => 'date_range',
                 'since' => $since,
@@ -243,15 +243,10 @@ class ChatGptAdsReportingService
             ]);
 
             $params = [
-                'aggregation_level' => 'ad_account',
-                'fields' => 'impressions,clicks,spend',
+                'aggregation_level' => 'campaign',
+                'fields' => ['impressions', 'clicks', 'spend'],
                 'time_ranges' => [$timeRangeItem],
             ];
-
-            // If an account ID is configured, include as an optional query param (never in URL path)
-            if ($accountId !== '') {
-                $params['account_id'] = $accountId;
-            }
 
             $response = Http::withToken($apiKey)
                 ->withHeaders([
