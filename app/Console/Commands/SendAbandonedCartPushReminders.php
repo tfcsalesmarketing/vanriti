@@ -22,3 +22,4 @@ class SendAbandonedCartPushReminders extends Command
         return Command::SUCCESS;
     }
 }
+

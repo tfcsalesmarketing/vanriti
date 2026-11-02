@@ -48,3 +48,4 @@ class PushCampaign extends Model
         return round(($this->total_clicked / $this->total_sent) * 100, 1);
     }
 }
+
