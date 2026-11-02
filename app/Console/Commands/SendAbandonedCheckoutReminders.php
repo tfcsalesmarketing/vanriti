@@ -104,7 +104,12 @@ class SendAbandonedCheckoutReminders extends Command
 
         // Part 2: Abandoned carts (items added to cart but customer never clicked checkout)
         $carts = \App\Models\Cart::query()
-            ->where('owner_type', \App\Models\User::class)
+            ->where(function ($q) {
+                $q->where('owner_type', \App\Models\User::class)
+                    ->orWhere(function ($gq) {
+                        $gq->whereNotNull('guest_phone')->where('guest_phone', '!=', '');
+                    });
+            })
             ->whereHas('items')
             ->whereNull('whatsapp_recovery_sent_at')
             ->where('updated_at', '<=', $minCutoff)
@@ -115,25 +120,23 @@ class SendAbandonedCheckoutReminders extends Command
             ->get();
 
         foreach ($carts as $cart) {
-            $user = $cart->owner;
-            if (! $user instanceof \App\Models\User) {
-                continue;
-            }
-
-            $phone = trim((string) $user->phone);
+            $user = $cart->owner instanceof \App\Models\User ? $cart->owner : null;
+            $phone = trim((string) ($user?->phone ?: $cart->guest_phone));
             if ($phone === '') {
                 continue;
             }
 
             // If user has already placed an order in the last 24h, don't ping them about old cart items
-            $hasRecentOrder = Order::where('user_id', $user->id)
-                ->where('created_at', '>=', $maxCutoff)
-                ->whereNotIn('order_status', ['cancelled', 'failed'])
-                ->exists();
+            if ($user) {
+                $hasRecentOrder = Order::where('user_id', $user->id)
+                    ->where('created_at', '>=', $maxCutoff)
+                    ->whereNotIn('order_status', ['cancelled', 'failed'])
+                    ->exists();
 
-            if ($hasRecentOrder) {
-                $cart->update(['whatsapp_recovery_sent_at' => now()]);
-                continue;
+                if ($hasRecentOrder) {
+                    $cart->update(['whatsapp_recovery_sent_at' => now()]);
+                    continue;
+                }
             }
 
             $firstItem = $cart->items->first();

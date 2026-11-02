@@ -241,6 +241,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('contact-messages/{message}', [ContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
         });
 
+        // Web Push Notifications Command Center
+        Route::prefix('push-notifications')->name('push.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\PushNotificationController::class, 'index'])->name('index');
+            Route::post('/send', [\App\Http\Controllers\Admin\PushNotificationController::class, 'send'])->name('send');
+            Route::post('/test', [\App\Http\Controllers\Admin\PushNotificationController::class, 'sendTest'])->name('test');
+            Route::delete('/subscribers/{subscription}', [\App\Http\Controllers\Admin\PushNotificationController::class, 'destroySubscriber'])->name('subscribers.destroy');
+            Route::post('/settings', [\App\Http\Controllers\Admin\PushNotificationController::class, 'updateSettings'])->name('settings.update');
+        });
+
         Route::resource('admins', AdminUserController::class)->except(['show'])->middleware('permission:manage-admins');
         Route::middleware('permission:manage-roles')->group(function () {
             Route::get('roles', [RoleController::class, 'index'])->name('roles.index');

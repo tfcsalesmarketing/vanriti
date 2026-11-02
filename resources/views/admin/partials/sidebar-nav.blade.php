@@ -5,7 +5,7 @@
     $catActive = request()->routeIs('admin.products.*', 'admin.categories.*', 'admin.main-categories.*', 'admin.inventory.*', 'admin.dadi.product-profiles.*');
     $ordersActive = request()->routeIs('admin.orders.*', 'admin.shipments.*', 'admin.returns.*', 'admin.refunds.*');
     $waActive = request()->routeIs('admin.whatsapp.*');
-    $custActive = request()->routeIs('admin.customers.*', 'admin.carts.*', 'admin.wishlists.*', 'admin.coupons.*', 'admin.reviews.*', 'admin.newsletters.*', 'admin.contact-messages.*');
+    $custActive = request()->routeIs('admin.customers.*', 'admin.carts.*', 'admin.wishlists.*', 'admin.push.*', 'admin.coupons.*', 'admin.reviews.*', 'admin.newsletters.*', 'admin.contact-messages.*');
     $contentActive = request()->routeIs('admin.media.*', 'admin.banners.*', 'admin.blogs.*', 'admin.pages.*', 'admin.faqs.*');
     $sysActive = request()->routeIs('admin.admins.*', 'admin.roles.*', 'admin.activities.*', 'admin.settings.*');
 @endphp
@@ -220,7 +220,7 @@
     @endif
 
     {{-- Customers & Growth Dropdown --}}
-    @if ($admin->hasPermission(['view-customers', 'manage-customers', 'view-coupons', 'manage-coupons', 'view-reviews', 'manage-reviews', 'manage-newsletters']))
+    @if ($admin->hasPermission(['view-customers', 'manage-customers', 'view-coupons', 'manage-coupons', 'view-reviews', 'manage-reviews', 'manage-newsletters', 'manage-notifications']))
     <li class="nav-item">
         <a class="nav-link sidebar-group-toggle {{ $custActive ? 'active-parent' : '' }}"
            data-bs-toggle="collapse"
@@ -251,6 +251,13 @@
                     <a class="nav-link {{ request()->routeIs('admin.wishlists.*') ? 'active' : '' }}"
                        href="{{ route('admin.wishlists.index') }}">
                         <i class="bi bi-heart"></i><span>Wishlist Items</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.push.*') ? 'active' : '' }}"
+                       href="{{ route('admin.push.index') }}">
+                        <i class="bi bi-bell"></i><span>Push Notifications</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-auto small">Web Push</span>
                     </a>
                 </li>
                 @endif

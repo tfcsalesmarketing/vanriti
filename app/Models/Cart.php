@@ -12,6 +12,7 @@ class Cart extends Model
         'owner_type',
         'owner_id',
         'session_id',
+        'guest_phone',
         'whatsapp_recovery_sent_at',
     ];
 

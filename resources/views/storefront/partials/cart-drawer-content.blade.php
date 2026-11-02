@@ -114,6 +114,21 @@
 {{-- Footer Summary & Checkout Action --}}
 @if ($cartItems->isNotEmpty())
     <div class="vr-drawer-footer">
+        {{-- Save Cart on WhatsApp Box --}}
+        <div class="vr-save-whatsapp-card mb-2 p-2.5 rounded-3 border" style="background: #f0fdf4; border-color: rgba(22, 101, 52, 0.2) !important;">
+            <div class="d-flex align-items-center gap-2 mb-1.5">
+                <i class="bi bi-whatsapp text-success fs-6"></i>
+                <span class="small fw-bold text-success" style="font-size: 0.8rem;">Save Bag &amp; Get 10% Off on WhatsApp</span>
+            </div>
+            <form id="vrSaveCartWhatsAppForm" class="d-flex gap-1.5">
+                <input type="tel" name="phone" id="vrSaveCartPhone" class="form-control form-control-sm bg-white" placeholder="Enter 10-digit mobile" maxlength="10" pattern="[6-9][0-9]{9}" required style="font-size: 0.8rem; border-color: #cbd5e1;">
+                <button type="submit" id="vrSaveCartBtn" class="btn btn-sm btn-success text-white fw-semibold px-2.5 flex-shrink-0" style="font-size: 0.78rem;">
+                    Send Cart
+                </button>
+            </form>
+            <div id="vrSaveCartMsg" class="small mt-1 d-none" style="font-size: 0.72rem;"></div>
+        </div>
+
         {{-- Summary Rounded Card --}}
         <div class="vr-summary-card">
             <div class="vr-summary-row">

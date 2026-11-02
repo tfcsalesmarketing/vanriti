@@ -262,6 +262,9 @@
                     <a href="{{ route('admin.carts.index') }}" class="command-palette-item" data-keywords="carts abandoned recovery wishlist">
                         <i class="bi bi-cart"></i><span>Abandoned Carts</span><span class="item-meta">Retention</span>
                     </a>
+                    <a href="{{ route('admin.push.index') }}" class="command-palette-item" data-keywords="push web notifications campaigns broadcast subscribers alerts vapid">
+                        <i class="bi bi-bell"></i><span>Push Notifications</span><span class="item-meta">Web Push Broadcast</span>
+                    </a>
                     @endif
                     @if (auth('admin')->user()->hasPermission('manage-coupons'))
                     <a href="{{ route('admin.coupons.index') }}" class="command-palette-item" data-keywords="coupons discounts promo vouchers">

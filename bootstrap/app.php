@@ -43,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'razorpay/webhook',
             'shipmojo/webhook',
             'whatsapp/webhook',
+            'push/track-click/*',
             'member/ajax/*',
             'tfc/member/ajax/*',
             '*/ajax/verify-sponsor',

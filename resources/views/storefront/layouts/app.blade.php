@@ -297,6 +297,7 @@
     @include('storefront.partials.login-modal')
     @include('storefront.partials.cart-drawer')
     @include('storefront.partials.search-modal')
+    @include('storefront.partials.push-prompt')
     @include('storefront.partials.whatsapp-button')
     @include('storefront.partials.footer')
 

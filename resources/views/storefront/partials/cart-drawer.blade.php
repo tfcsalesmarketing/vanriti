@@ -287,5 +287,53 @@
             }
         }
     });
+
+    // Handle Save Cart to WhatsApp form submission
+    document.addEventListener('submit', function (e) {
+        if (!e.target || e.target.id !== 'vrSaveCartWhatsAppForm') return;
+        e.preventDefault();
+
+        var phoneInput = document.getElementById('vrSaveCartPhone');
+        var btn = document.getElementById('vrSaveCartBtn');
+        var msg = document.getElementById('vrSaveCartMsg');
+        if (!phoneInput || !phoneInput.value) return;
+
+        var phone = phoneInput.value.trim();
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+        fetch('{{ route("cart.save-whatsapp") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || ''
+            },
+            body: JSON.stringify({ phone: phone })
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Saved';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+            if (msg) {
+                msg.className = 'small mt-1 text-success fw-semibold';
+                msg.textContent = data.message || 'Cart & coupon sent to your WhatsApp!';
+                msg.classList.remove('d-none');
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = 'Send Cart';
+            if (msg) {
+                msg.className = 'small mt-1 text-danger';
+                msg.textContent = 'Could not send cart. Please try again.';
+                msg.classList.remove('d-none');
+            }
+        });
+    });
 })();
 </script>

@@ -195,4 +195,14 @@ Route::get('/shipping', fn () => view('storefront.page', ['page' => Page::where(
 // ---------- Dynamic WhatsApp JPEG Header Image ----------
 Route::get('/media/whatsapp-product/{product}.jpg', [MediaController::class, 'whatsappProductImage'])->name('media.whatsapp.product');
 
+// ---------- Web Push Notifications ----------
+Route::get('/push/public-key', [\App\Http\Controllers\WebPushSubscriptionController::class, 'publicKey'])->name('push.public-key');
+Route::post('/push/subscribe', [\App\Http\Controllers\WebPushSubscriptionController::class, 'subscribe'])->name('push.subscribe');
+Route::post('/push/unsubscribe', [\App\Http\Controllers\WebPushSubscriptionController::class, 'unsubscribe'])->name('push.unsubscribe');
+Route::post('/push/track-click/{campaignId}', [\App\Http\Controllers\WebPushSubscriptionController::class, 'trackClick'])->name('push.track-click');
+
+// ---------- Side-Cart WhatsApp Quick Lead Capture ----------
+Route::post('/cart/save-whatsapp', [\App\Http\Controllers\CartController::class, 'saveToWhatsApp'])->name('cart.save-whatsapp')->middleware('throttle:10,1');
+
+
 

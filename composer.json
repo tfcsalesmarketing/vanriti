@@ -9,7 +9,8 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "league/flysystem-aws-s3-v3": "*"
+        "league/flysystem-aws-s3-v3": "*",
+        "minishlink/web-push": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -82,7 +83,7 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": false
         }
     },
     "minimum-stability": "stable",

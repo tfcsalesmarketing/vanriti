@@ -15,3 +15,6 @@ Schedule::command('orders:expire-pending-payments')->everyFifteenMinutes();
 // Send WhatsApp recovery message to customers who initiated checkout in the last 24h
 // but did not complete payment.
 Schedule::command('checkout:send-recovery-reminders --hours=1')->hourly();
+
+// Send Web Push notification reminders to anonymous & registered subscribers who abandoned their cart
+Schedule::command('push:send-abandoned-cart-reminders')->everyThirtyMinutes();

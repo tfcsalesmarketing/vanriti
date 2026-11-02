@@ -346,4 +346,67 @@ class CartController extends Controller
 
         return back()->with('success', $message);
     }
+
+    /**
+     * Save cart to WhatsApp & register phone number for anonymous guest or customer.
+     */
+    public function saveToWhatsApp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[6-9]\d{9}$/'],
+        ], [
+            'phone.regex' => 'Please enter a valid 10-digit Indian mobile number.',
+        ]);
+
+        $phone = $validated['phone'];
+        $cart = $this->cartService->getCart();
+
+        if (! $cart || ! $cart->items()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your cart is empty. Add items first to save your cart.',
+            ], 422);
+        }
+
+        // Save phone to cart
+        $cart->update(['guest_phone' => $phone]);
+
+        // If user is logged in and doesn't have phone, backfill it
+        if ($user = auth('web')->user()) {
+            if (! $user->phone) {
+                $user->update(['phone' => $phone]);
+            }
+        }
+
+        // Send WhatsApp notification via WhatsAppOtpService
+        try {
+            $whatsappService = app(\App\Services\WhatsAppOtpService::class);
+            $name = auth('web')->user()?->name ?: 'Customer';
+            $total = (string) number_format((float) $cart->subtotal(), 2, '.', '');
+            $cartRef = 'Cart (' . $cart->itemsCount() . ' item' . ($cart->itemsCount() > 1 ? 's' : '') . ')';
+            $recoveryUrl = url('/cart');
+            $firstItem = $cart->items->first();
+            $productName = $firstItem?->product?->name ?: 'your Ayurvedic items';
+            $imageUrl = $firstItem?->product?->getPrimaryImage()?->image_path
+                ? image_url($firstItem->product->getPrimaryImage()->image_path)
+                : null;
+
+            $whatsappService->sendAbandonedCheckoutRecovery(
+                $phone,
+                $name,
+                $cartRef,
+                $total,
+                $recoveryUrl,
+                $productName,
+                $imageUrl
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('saveToWhatsApp: Failed to send WhatsApp cart message: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your cart & 10% WELCOME10 coupon have been sent to your WhatsApp!',
+        ]);
+    }
 }
