@@ -135,12 +135,20 @@ class WebPushService
         }
 
         try {
+            $subject = config('app.url', 'https://vanriti.com');
+            if (! str_starts_with($subject, 'https://') && ! str_starts_with($subject, 'mailto:')) {
+                $subject = 'mailto:care@vanriti.com';
+            }
+
             $webPush = new WebPush([
                 'VAPID' => [
-                    'subject' => config('app.url', 'https://vanriti.com'),
+                    'subject' => $subject,
                     'publicKey' => $keys['publicKey'],
                     'privateKey' => $keys['privateKey'],
                 ],
+            ], [], 30, [
+                'timeout' => 20,
+                'connect_timeout' => 10,
             ]);
 
             $sub = Subscription::create([
@@ -156,6 +164,8 @@ class WebPushService
                 $subscription->update(['last_active_at' => now()]);
                 return true;
             }
+
+            Log::warning("WebPushService: Failed to send to subscription #{$subscription->id}: {$report->getReason()}");
 
             if ($report->isSubscriptionExpired()) {
                 $subscription->update(['status' => 'expired']);
@@ -220,16 +230,25 @@ class WebPushService
 
         $payloadJson = json_encode($payload);
 
+        $subject = config('app.url', 'https://vanriti.com');
+        if (! str_starts_with($subject, 'https://') && ! str_starts_with($subject, 'mailto:')) {
+            $subject = 'mailto:care@vanriti.com';
+        }
+
         $webPush = new WebPush([
             'VAPID' => [
-                'subject' => config('app.url', 'https://vanriti.com'),
+                'subject' => $subject,
                 'publicKey' => $keys['publicKey'],
                 'privateKey' => $keys['privateKey'],
             ],
+        ], [], 30, [
+            'timeout' => 25,
+            'connect_timeout' => 10,
         ]);
 
         $sentCount = 0;
         $failedCount = 0;
+        $lastFailureReason = null;
 
         foreach ($subscriptions as $subscription) {
             try {
@@ -243,6 +262,7 @@ class WebPushService
                 $webPush->queueNotification($sub, $payloadJson);
             } catch (\Throwable $e) {
                 $failedCount++;
+                Log::warning("WebPushService: Failed to queue sub #{$subscription->id}: " . $e->getMessage());
             }
         }
 
@@ -253,6 +273,8 @@ class WebPushService
                     $sentCount++;
                 } else {
                     $failedCount++;
+                    $lastFailureReason = $report->getReason();
+                    Log::warning("WebPushService: Broadcast delivery failed for {$report->getEndpoint()}: {$lastFailureReason}");
                     if ($report->isSubscriptionExpired()) {
                         PushSubscription::where('endpoint', $report->getEndpoint())->update(['status' => 'expired']);
                     }
@@ -260,6 +282,7 @@ class WebPushService
             }
         } catch (\Throwable $e) {
             Log::error('WebPushService: Flush error: ' . $e->getMessage());
+            $lastFailureReason = $e->getMessage();
         }
 
         $campaign->update([
@@ -273,6 +296,7 @@ class WebPushService
             'total' => $totalTargeted,
             'sent' => $sentCount,
             'failed' => $failedCount,
+            'reason' => $lastFailureReason,
         ];
     }
 

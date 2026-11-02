@@ -38,7 +38,7 @@
 @endif
 
 {{-- Top KPI Summary Ribbon --}}
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
         <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);">
             <div class="card-body p-3">
@@ -85,6 +85,32 @@
                 <div class="h3 fw-bold mb-1 text-warning-emphasis">{{ $stats['overall_ctr'] }}%</div>
                 <div class="small text-muted" style="font-size:0.75rem;">{{ number_format($stats['total_clicks']) }} total link visits</div>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Diagnostic & Admin Device Test Strip --}}
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #fafafa; border-left: 4px solid #15803d !important;">
+    <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-2.5">
+            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white shadow-xs text-success" style="width: 38px; height: 38px;">
+                <i class="bi bi-shield-check fs-5"></i>
+            </div>
+            <div>
+                <div class="fw-bold small text-dark d-flex align-items-center gap-2">
+                    <span>Web Push Engine Status</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-2xs">Self-Hosted VAPID Active</span>
+                    <span id="deviceSubBadge" class="badge bg-secondary-subtle text-secondary border rounded-pill font-2xs">Checking Device...</span>
+                </div>
+                <div class="text-muted font-2xs mt-0.5">
+                    100% Free browser push notification protocol &middot; Zero monthly third-party subscriptions &middot; VAPID Subject: <code class="text-dark">care@vanriti.com</code>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" id="adminSubscribeDeviceBtn" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                <i class="bi bi-bell-plus"></i><span id="adminSubBtnText">Subscribe This Device (Test Alerts)</span>
+            </button>
         </div>
     </div>
 </div>
@@ -246,11 +272,18 @@
 
 {{-- Broadcast Campaign History Table --}}
 <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px;">
-    <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+    <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
             <h5 class="mb-0 fw-bold">Broadcast Campaigns &amp; Delivery Stats</h5>
             <div class="text-muted small">Real-time delivery confirmation and recipient click-through performance.</div>
         </div>
+        @if ($campaigns->count() > 0)
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#cleanupCampaignsModal">
+                <i class="bi bi-trash"></i><span>Delete Older Notifications</span>
+            </button>
+        </div>
+        @endif
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -263,7 +296,8 @@
                     <th class="text-center">Delivered</th>
                     <th class="text-center">Clicks</th>
                     <th class="text-center">CTR</th>
-                    <th class="text-end pe-4">Status</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-end pe-4">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -289,7 +323,7 @@
                         <td class="text-center">
                             <span class="badge bg-warning-subtle text-warning-emphasis">{{ $camp->click_through_rate }}%</span>
                         </td>
-                        <td class="text-end pe-4">
+                        <td class="text-center">
                             @if ($camp->status === 'completed')
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Completed</span>
                             @elseif ($camp->status === 'sending')
@@ -298,10 +332,19 @@
                                 <span class="badge bg-secondary-subtle text-secondary border rounded-pill">{{ ucfirst($camp->status) }}</span>
                             @endif
                         </td>
+                        <td class="text-end pe-4">
+                            <form method="POST" action="{{ route('admin.push.campaigns.destroy', $camp) }}" class="d-inline" onsubmit="return confirm('Delete push notification campaign &quot;{{ addslashes($camp->title) }}&quot;?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2 font-2xs rounded" title="Delete this campaign">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             <i class="bi bi-broadcast fs-2 d-block mb-2 text-muted"></i>
                             <h6>No push notification campaigns sent yet</h6>
                             <p class="small mb-0">Use the composer above to broadcast your first offer to all active subscribers.</p>
@@ -354,6 +397,67 @@
                 <div class="modal-footer border-top py-2 px-4">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-sm btn-success fw-bold px-3">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Cleanup / Delete Older Campaigns Modal --}}
+<div class="modal fade" id="cleanupCampaignsModal" tabindex="-1" aria-labelledby="cleanupCampaignsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{{ route('admin.push.campaigns.cleanup') }}">
+                @csrf
+                <div class="modal-header border-bottom py-3 px-4">
+                    <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="cleanupCampaignsModalLabel">
+                        <i class="bi bi-trash-fill"></i>
+                        <span>Delete Older Push Notifications</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        Choose which past push notification campaigns you would like to permanently remove from history:
+                    </p>
+                    <div class="list-group mb-3">
+                        <label class="list-group-item d-flex gap-2.5 cursor-pointer py-3">
+                            <input class="form-check-input flex-shrink-0 mt-0.5" type="radio" name="scope" value="older_30" checked>
+                            <div>
+                                <div class="fw-semibold small">Campaigns Older Than 30 Days</div>
+                                <div class="text-muted font-2xs">Safely purge older campaigns while keeping the last month of analytics.</div>
+                            </div>
+                        </label>
+                        <label class="list-group-item d-flex gap-2.5 cursor-pointer py-3">
+                            <input class="form-check-input flex-shrink-0 mt-0.5" type="radio" name="scope" value="older_7">
+                            <div>
+                                <div class="fw-semibold small">Campaigns Older Than 7 Days</div>
+                                <div class="text-muted font-2xs">Keep only this week's campaigns and delete everything older.</div>
+                            </div>
+                        </label>
+                        <label class="list-group-item d-flex gap-2.5 cursor-pointer py-3">
+                            <input class="form-check-input flex-shrink-0 mt-0.5" type="radio" name="scope" value="failed">
+                            <div>
+                                <div class="fw-semibold small">Failed Campaigns Only</div>
+                                <div class="text-muted font-2xs">Remove campaigns that failed to deliver or had 0 recipients.</div>
+                            </div>
+                        </label>
+                        <label class="list-group-item d-flex gap-2.5 cursor-pointer py-3 bg-danger-subtle border-danger-subtle">
+                            <input class="form-check-input flex-shrink-0 mt-0.5 text-danger" type="radio" name="scope" value="all">
+                            <div>
+                                <div class="fw-semibold small text-danger">Entire Campaign History (Delete All)</div>
+                                <div class="text-muted font-2xs">Permanently delete all push broadcast logs and reset history to zero.</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="alert alert-warning font-2xs py-2 px-3 mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        This action will delete the broadcast logs and delivery analytics. Active subscriber devices will remain subscribed.
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-danger fw-bold px-3">Confirm &amp; Delete</button>
                 </div>
             </form>
         </div>
@@ -429,6 +533,136 @@ document.addEventListener('DOMContentLoaded', function () {
             mobileToggle.classList.remove('active');
             desktopFrame.classList.remove('d-none');
             mobileFrame.classList.add('d-none');
+        });
+    }
+
+    // Helper: convert url-safe base64 to Uint8Array
+    function urlB64ToUint8Array(base64String) {
+        base64String = (base64String || '').trim();
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+
+        for (var i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    // Admin Device Web Push Subscription & Diagnostics Routine
+    var deviceBadge = document.getElementById('deviceSubBadge');
+    var adminSubBtn = document.getElementById('adminSubscribeDeviceBtn');
+    var adminSubBtnText = document.getElementById('adminSubBtnText');
+
+    function checkDeviceStatus() {
+        if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+            if (deviceBadge) {
+                deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
+                deviceBadge.textContent = 'Insecure Context (Requires HTTPS or localhost)';
+            }
+            if (adminSubBtn) adminSubBtn.disabled = true;
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(function () { return navigator.serviceWorker.ready; })
+                .then(function (reg) {
+                    return reg.pushManager.getSubscription();
+                })
+                .then(function (sub) {
+                    if (sub) {
+                        if (deviceBadge) {
+                            deviceBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill font-2xs';
+                            deviceBadge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>This Device Subscribed & Ready';
+                        }
+                        if (adminSubBtn) {
+                            adminSubBtn.className = 'btn btn-sm btn-light border text-muted font-2xs';
+                            adminSubBtnText.textContent = 'Device Registered (Re-sync)';
+                        }
+                    } else {
+                        if (deviceBadge) {
+                            deviceBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill font-2xs';
+                            deviceBadge.textContent = 'Permission Granted, Device Not Subscribed';
+                        }
+                    }
+                })
+                .catch(function () {});
+        } else if (Notification.permission === 'denied') {
+            if (deviceBadge) {
+                deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
+                deviceBadge.textContent = 'Notifications Blocked in Browser';
+            }
+            if (adminSubBtn) {
+                adminSubBtn.className = 'btn btn-sm btn-outline-danger font-2xs';
+                adminSubBtnText.textContent = 'Unblock in Browser URL Bar';
+            }
+        } else {
+            if (deviceBadge) {
+                deviceBadge.className = 'badge bg-secondary-subtle text-secondary border rounded-pill font-2xs';
+                deviceBadge.textContent = 'Not Subscribed on This Device';
+            }
+        }
+    }
+
+    checkDeviceStatus();
+
+    if (adminSubBtn) {
+        adminSubBtn.addEventListener('click', function () {
+            adminSubBtn.disabled = true;
+            adminSubBtnText.textContent = 'Subscribing Device...';
+
+            Notification.requestPermission().then(function (perm) {
+                if (perm !== 'granted') {
+                    alert('Please allow notification permission in your browser prompt to subscribe this device.');
+                    adminSubBtn.disabled = false;
+                    checkDeviceStatus();
+                    return;
+                }
+
+                fetch('/push/public-key', { headers: { 'Accept': 'application/json' } })
+                    .then(function (res) { return res.json(); })
+                    .then(function (keyData) {
+                        return navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                            .then(function () { return navigator.serviceWorker.ready; })
+                            .then(function (reg) {
+                                return reg.pushManager.subscribe({
+                                    userVisibleOnly: true,
+                                    applicationServerKey: urlB64ToUint8Array(keyData.publicKey)
+                                });
+                            });
+                    })
+                    .then(function (sub) {
+                        var subJson = sub.toJSON();
+                        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        return fetch('/push/subscribe', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken || ''
+                            },
+                            body: JSON.stringify(subJson)
+                        });
+                    })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        adminSubBtn.disabled = false;
+                        checkDeviceStatus();
+                        alert('Success! Your admin device is now subscribed. You can now click "Send Test to My Browser" to receive instant test alerts on this screen.');
+                        window.location.reload();
+                    })
+                    .catch(function (err) {
+                        adminSubBtn.disabled = false;
+                        console.error(err);
+                        alert('Device subscription error: ' + err.message);
+                        checkDeviceStatus();
+                    });
+            });
         });
     }
 

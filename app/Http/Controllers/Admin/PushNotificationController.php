@@ -130,6 +130,32 @@ class PushNotificationController extends Controller
         return back()->with('error', 'Failed to dispatch test notification. Endpoint may be expired.');
     }
 
+    public function destroyCampaign(PushCampaign $campaign): RedirectResponse
+    {
+        $title = $campaign->title;
+        $campaign->delete();
+
+        return back()->with('success', "Campaign \"{$title}\" was deleted successfully.");
+    }
+
+    public function cleanupCampaigns(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'scope' => ['required', 'in:all,older_30,older_7,failed'],
+        ]);
+
+        $query = PushCampaign::query();
+
+        $count = match ($validated['scope']) {
+            'older_30' => $query->where('created_at', '<', now()->subDays(30))->delete(),
+            'older_7' => $query->where('created_at', '<', now()->subDays(7))->delete(),
+            'failed' => $query->where('status', 'failed')->delete(),
+            'all' => $query->delete(),
+        };
+
+        return back()->with('success', "Cleanup complete: {$count} push notification campaign(s) removed.");
+    }
+
     public function destroySubscriber(PushSubscription $subscription): RedirectResponse
     {
         $subscription->delete();

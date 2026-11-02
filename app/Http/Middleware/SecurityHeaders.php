@@ -34,7 +34,7 @@ class SecurityHeaders
             "script-src 'self' 'nonce-".csp_nonce()."' https://checkout.razorpay.com https://*.razorpay.com https://www.googletagmanager.com https://connect.facebook.net https://staticxx.facebook.com https://cdn.jsdelivr.net https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.clarity.ms https://apis.google.com https://www.gstatic.com",
             "worker-src 'self' blob: https://cdn.jsdelivr.net",
             "frame-src 'self' blob: https://checkout.razorpay.com https://*.razorpay.com https://www.googletagmanager.com https://staticxx.facebook.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.google.com https://*.google.com",
-            "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://www.googletagmanager.com https://connect.facebook.net https://graph.facebook.com https://*.google-analytics.com https://api.postalpincode.in https://www.clarity.ms https://*.clarity.ms https://apis.google.com https://www.google.com https://*.google.com https://www.gstatic.com",
+            "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://www.googletagmanager.com https://connect.facebook.net https://graph.facebook.com https://*.google-analytics.com https://api.postalpincode.in https://www.clarity.ms https://*.clarity.ms https://apis.google.com https://www.google.com https://*.google.com https://www.gstatic.com https://fcm.googleapis.com https://*.push.apple.com https://*.notify.windows.com https://updates.push.services.mozilla.com",
         ]));
 
         // HSTS only on production where HTTPS is enforced.

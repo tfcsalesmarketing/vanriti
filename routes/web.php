@@ -196,6 +196,18 @@ Route::get('/shipping', fn () => view('storefront.page', ['page' => Page::where(
 Route::get('/media/whatsapp-product/{product}.jpg', [MediaController::class, 'whatsappProductImage'])->name('media.whatsapp.product');
 
 // ---------- Web Push Notifications ----------
+Route::get('/sw.js', function () {
+    $path = public_path('sw.js');
+    if (! file_exists($path)) {
+        abort(404);
+    }
+    return response()->file($path, [
+        'Content-Type' => 'application/javascript; charset=utf-8',
+        'Service-Worker-Allowed' => '/',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+    ]);
+})->name('service-worker');
+
 Route::get('/push/public-key', [\App\Http\Controllers\WebPushSubscriptionController::class, 'publicKey'])->name('push.public-key');
 Route::post('/push/subscribe', [\App\Http\Controllers\WebPushSubscriptionController::class, 'subscribe'])->name('push.subscribe');
 Route::post('/push/unsubscribe', [\App\Http\Controllers\WebPushSubscriptionController::class, 'unsubscribe'])->name('push.unsubscribe');

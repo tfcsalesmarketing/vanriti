@@ -30,7 +30,7 @@ class WebPushSubscriptionController extends Controller
     public function subscribe(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'endpoint' => ['required', 'string', 'max:1000'],
+            'endpoint' => ['required', 'string', 'max:2048'],
             'keys.p256dh' => ['required', 'string'],
             'keys.auth' => ['required', 'string'],
             'contentEncoding' => ['nullable', 'string', 'max:30'],

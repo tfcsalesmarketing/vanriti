@@ -246,6 +246,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\PushNotificationController::class, 'index'])->name('index');
             Route::post('/send', [\App\Http\Controllers\Admin\PushNotificationController::class, 'send'])->name('send');
             Route::post('/test', [\App\Http\Controllers\Admin\PushNotificationController::class, 'sendTest'])->name('test');
+            Route::delete('/campaigns/{campaign}', [\App\Http\Controllers\Admin\PushNotificationController::class, 'destroyCampaign'])->name('campaigns.destroy');
+            Route::post('/campaigns/cleanup', [\App\Http\Controllers\Admin\PushNotificationController::class, 'cleanupCampaigns'])->name('campaigns.cleanup');
             Route::delete('/subscribers/{subscription}', [\App\Http\Controllers\Admin\PushNotificationController::class, 'destroySubscriber'])->name('subscribers.destroy');
             Route::post('/settings', [\App\Http\Controllers\Admin\PushNotificationController::class, 'updateSettings'])->name('settings.update');
         });

@@ -9,27 +9,31 @@ self.addEventListener('activate', function (event) {
 
 // Handle incoming background push notification
 self.addEventListener('push', function (event) {
-    if (!event.data) {
-        return;
-    }
-
     var payload = {};
-    try {
-        payload = event.data.json();
-    } catch (e) {
+    if (event.data) {
+        try {
+            payload = event.data.json();
+        } catch (e) {
+            payload = {
+                title: 'Vanriti Ayurvedic Care',
+                body: event.data.text()
+            };
+        }
+    } else {
         payload = {
-            title: 'Vanriti Ayurvedic Care',
-            body: event.data.text()
+            title: 'Vanriti Herbal & Ayurvedic Care',
+            body: 'Special Ayurvedic wellness offer waiting for you!'
         };
     }
 
     var title = payload.title || 'Vanriti Herbal & Ayurvedic Care';
     var options = {
-        body: payload.body || 'Discover fresh Ayurvedic wellness offers on Vanriti.',
+        body: payload.body || 'Discover pure Ayurvedic wellness on Vanriti.',
         icon: payload.icon || '/images/logo.png',
         image: payload.image || undefined,
         badge: payload.badge || '/images/logo.png',
-        vibrate: [100, 50, 100],
+        tag: payload.tag || ('vr-push-' + (payload.data?.campaign_id || Date.now())),
+        renotify: true,
         data: payload.data || { url: '/' },
         actions: [
             { action: 'open', title: 'Shop Now' }
@@ -46,10 +50,18 @@ self.addEventListener('notificationclick', function (event) {
     event.notification.close();
 
     var data = event.notification.data || {};
-    var targetUrl = data.url || '/';
+    var rawUrl = data.url || '/';
     var campaignId = data.campaign_id;
 
-    // Track click event asynchronously if campaign ID is present
+    // Resolve destination URL against current origin
+    var targetUrl = '/';
+    try {
+        targetUrl = new URL(rawUrl, self.location.origin).href;
+    } catch (e) {
+        targetUrl = self.location.origin + '/';
+    }
+
+    // Ping click tracking endpoint asynchronously
     if (campaignId) {
         try {
             fetch('/push/track-click/' + encodeURIComponent(campaignId), {
@@ -60,16 +72,14 @@ self.addEventListener('notificationclick', function (event) {
         } catch (e) {}
     }
 
-    // Open target URL or focus existing window
+    // Open destination URL or focus existing open tab
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
             for (var i = 0; i < clientList.length; i++) {
                 var client = clientList[i];
-                if ('focus' in client) {
-                    if (client.url.indexOf(self.location.origin) !== -1) {
-                        client.navigate(targetUrl);
-                        return client.focus();
-                    }
+                if ('focus' in client && client.url.indexOf(self.location.origin) !== -1) {
+                    client.navigate(targetUrl);
+                    return client.focus();
                 }
             }
             if (self.clients.openWindow) {

@@ -88,10 +88,10 @@
 }
 </style>
 
-<script nonce="{{ $cspNonce ?? '' }}">
+<script nonce="{{ $cspNonce ?? csp_nonce() }}">
 (function () {
-    // Only supported browsers
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    // Only supported in secure contexts with Service Worker & PushManager
+    if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
         return;
     }
 
@@ -100,35 +100,8 @@
     var dismissBtn = document.getElementById('vrPushDismissBtn');
     var closeBtn = document.getElementById('vrPushCloseBtn');
 
-    if (!promptCard) return;
-
-    // Check if dismissed recently (7 days delay)
-    var dismissedAt = localStorage.getItem('vanriti_push_dismissed_at');
-    if (dismissedAt && (Date.now() - parseInt(dismissedAt, 10)) < (7 * 24 * 60 * 60 * 1000)) {
-        return;
-    }
-
-    // Only show if user has not yet decided
-    if (Notification.permission === 'default') {
-        // Show after 6 seconds of engagement
-        setTimeout(function () {
-            promptCard.classList.remove('d-none');
-        }, 6000);
-    }
-
-    function dismissPrompt() {
-        promptCard.style.opacity = '0';
-        promptCard.style.transform = 'translateY(15px)';
-        setTimeout(function () {
-            promptCard.classList.add('d-none');
-        }, 250);
-        localStorage.setItem('vanriti_push_dismissed_at', Date.now().toString());
-    }
-
-    if (dismissBtn) dismissBtn.addEventListener('click', dismissPrompt);
-    if (closeBtn) closeBtn.addEventListener('click', dismissPrompt);
-
     function urlB64ToUint8Array(base64String) {
+        base64String = (base64String || '').trim();
         var padding = '='.repeat((4 - base64String.length % 4) % 4);
         var base64 = (base64String + padding)
             .replace(/\-/g, '+')
@@ -143,62 +116,116 @@
         return outputArray;
     }
 
-    if (allowBtn) {
-        allowBtn.addEventListener('click', function () {
-            allowBtn.disabled = true;
-            allowBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Subscribing...';
+    function dismissPrompt() {
+        if (!promptCard) return;
+        promptCard.style.opacity = '0';
+        promptCard.style.transform = 'translateY(15px)';
+        setTimeout(function () {
+            promptCard.classList.add('d-none');
+        }, 250);
+        localStorage.setItem('vanriti_push_dismissed_at', Date.now().toString());
+    }
 
-            Notification.requestPermission().then(function (permission) {
-                if (permission !== 'granted') {
-                    dismissPrompt();
-                    return;
-                }
+    if (dismissBtn) dismissBtn.addEventListener('click', dismissPrompt);
+    if (closeBtn) closeBtn.addEventListener('click', dismissPrompt);
 
-                // Fetch VAPID public key
-                fetch('/push/public-key', {
-                    headers: { 'Accept': 'application/json' }
+    // Core subscription worker routine
+    function performSubscription() {
+        return fetch('/push/public-key', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function (res) {
+            if (!res.ok) throw new Error('Failed to retrieve VAPID key');
+            return res.json();
+        })
+        .then(function (keyData) {
+            if (!keyData || !keyData.publicKey) {
+                throw new Error('VAPID public key unavailable');
+            }
+
+            // Register service worker with root scope and wait until ready
+            return navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(function () {
+                    return navigator.serviceWorker.ready;
                 })
-                .then(function (res) { return res.json(); })
-                .then(function (keyData) {
-                    if (!keyData.publicKey) {
-                        throw new Error('VAPID public key unavailable');
-                    }
-
-                    return navigator.serviceWorker.register('/sw.js').then(function (registration) {
+                .then(function (registration) {
+                    return registration.pushManager.getSubscription().then(function (existingSub) {
+                        if (existingSub) {
+                            return existingSub;
+                        }
                         return registration.pushManager.subscribe({
                             userVisibleOnly: true,
                             applicationServerKey: urlB64ToUint8Array(keyData.publicKey)
                         });
                     });
-                })
-                .then(function (subscription) {
-                    var subJson = subscription.toJSON();
+                });
+        })
+        .then(function (subscription) {
+            if (!subscription) throw new Error('No push subscription object');
 
-                    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            var subJson = subscription.toJSON();
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-                    return fetch('/push/subscribe', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken || ''
-                        },
-                        body: JSON.stringify(subJson)
-                    });
-                })
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    promptCard.innerHTML = '<div class="d-flex align-items-center gap-2 text-success py-1"><i class="bi bi-check-circle-fill fs-5"></i><span class="small fw-semibold">Notifications enabled! Thank you.</span></div>';
-                    setTimeout(function () {
-                        promptCard.classList.add('d-none');
-                    }, 3000);
-                })
-                .catch(function (err) {
-                    console.error('Push subscription failed:', err);
-                    dismissPrompt();
+            return fetch('/push/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || ''
+                },
+                body: JSON.stringify(subJson)
+            });
+        })
+        .then(function (res) {
+            return res.json();
+        });
+    }
+
+    // 1. If user already granted permission previously, silently sync in the background
+    if (Notification.permission === 'granted') {
+        performSubscription().catch(function (err) {
+            console.warn('[VANRITI WebPush] Background sync failed:', err);
+        });
+        return;
+    }
+
+    // 2. If user hasn't decided yet, display the gentle soft opt-in prompt
+    if (Notification.permission === 'default' && promptCard) {
+        var forceShow = window.location.search.indexOf('push_prompt=1') !== -1;
+        var dismissedAt = localStorage.getItem('vanriti_push_dismissed_at');
+        var wasRecentlyDismissed = dismissedAt && (Date.now() - parseInt(dismissedAt, 10)) < (3 * 24 * 60 * 60 * 1000);
+
+        if (forceShow || !wasRecentlyDismissed) {
+            setTimeout(function () {
+                promptCard.classList.remove('d-none');
+            }, 2500);
+        }
+
+        if (allowBtn) {
+            allowBtn.addEventListener('click', function () {
+                allowBtn.disabled = true;
+                allowBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Subscribing...';
+
+                Notification.requestPermission().then(function (permission) {
+                    if (permission !== 'granted') {
+                        dismissPrompt();
+                        return;
+                    }
+
+                    performSubscription()
+                        .then(function () {
+                            promptCard.innerHTML = '<div class="d-flex align-items-center gap-2 text-success py-1"><i class="bi bi-check-circle-fill fs-5"></i><span class="small fw-semibold">Notifications enabled! Thank you.</span></div>';
+                            setTimeout(function () {
+                                promptCard.classList.add('d-none');
+                            }, 3000);
+                        })
+                        .catch(function (err) {
+                            console.error('[VANRITI WebPush] Subscription error:', err);
+                            dismissPrompt();
+                        });
                 });
             });
-        });
+        }
     }
 })();
 </script>

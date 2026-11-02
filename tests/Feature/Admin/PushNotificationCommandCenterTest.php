@@ -239,6 +239,68 @@ class PushNotificationCommandCenterTest extends TestCase
         $this->assertEquals('60', Setting::where('key', 'push_abandoned_cart_delay_minutes')->value('value'));
     }
 
+    public function test_admin_can_delete_individual_push_campaign(): void
+    {
+        $campaign = PushCampaign::create([
+            'title' => 'Old Flash Sale to Delete',
+            'body' => 'Limited stock chyawanprash offer.',
+            'url' => 'https://vanriti.com/shop',
+            'target_audience' => 'all',
+            'status' => 'completed',
+            'total_targeted' => 10,
+            'total_sent' => 10,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'admin')
+            ->delete(route('admin.push.campaigns.destroy', $campaign));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('push_campaigns', [
+            'id' => $campaign->id,
+        ]);
+    }
+
+    public function test_admin_can_cleanup_older_push_campaigns(): void
+    {
+        // Create 1 old campaign (40 days ago) and 1 recent campaign (yesterday)
+        $oldCampaign = PushCampaign::create([
+            'title' => 'Campaign from last month',
+            'body' => 'Older notification',
+            'url' => 'https://vanriti.com/shop',
+            'target_audience' => 'all',
+            'status' => 'completed',
+        ]);
+        PushCampaign::where('id', $oldCampaign->id)->update(['created_at' => now()->subDays(40)]);
+
+        $recentCampaign = PushCampaign::create([
+            'title' => 'Recent yesterday campaign',
+            'body' => 'Recent notification',
+            'url' => 'https://vanriti.com/shop',
+            'target_audience' => 'all',
+            'status' => 'completed',
+        ]);
+        PushCampaign::where('id', $recentCampaign->id)->update(['created_at' => now()->subDay()]);
+
+        // Cleanup campaigns older than 30 days
+        $response = $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.push.campaigns.cleanup'), ['scope' => 'older_30']);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('push_campaigns', ['id' => $oldCampaign->id]);
+        $this->assertDatabaseHas('push_campaigns', ['id' => $recentCampaign->id]);
+
+        // Cleanup all campaigns
+        $responseAll = $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.push.campaigns.cleanup'), ['scope' => 'all']);
+
+        $responseAll->assertRedirect();
+        $this->assertDatabaseMissing('push_campaigns', ['id' => $recentCampaign->id]);
+    }
+
     public function test_abandoned_cart_push_artisan_command_executes_successfully(): void
     {
         $exitCode = Artisan::call('push:send-abandoned-cart-reminders');
