@@ -165,6 +165,175 @@
 
 @include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_bestsellers')])
 
+@if (isset($reels) && $reels->isNotEmpty())
+    <section class="vr-section vr-section-reels py-5" id="vrReelsSection">
+        <div class="container">
+            <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
+                <div>
+                    <div class="vr-section-kicker vr-kicker-reels">
+                        <i class="ri-instagram-line"></i> AS SEEN ON INSTAGRAM
+                    </div>
+                    <h2 class="vr-section-title mb-1">Watch &amp; Shop</h2>
+                    <p class="vr-section-sub mb-0">Ayurvedic hair care routines, unboxings &amp; honest beauty rituals</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle d-none d-md-flex align-items-center justify-content-center vr-reels-arrow-btn" id="vrReelsPrevBtn" aria-label="Previous reels" style="width:38px;height:38px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle d-none d-md-flex align-items-center justify-content-center vr-reels-arrow-btn" id="vrReelsNextBtn" aria-label="Next reels" style="width:38px;height:38px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Horizontal Reel Carousel --}}
+            <div class="vr-reels-carousel" id="vrReelsCarousel">
+                @foreach ($reels as $index => $reel)
+                    @php
+                        $taggedProduct = $reel->product;
+                        $prodImg = $taggedProduct?->getPrimaryImage()?->image_path;
+                    @endphp
+                    <div class="vr-reel-card js-open-reel"
+                         data-index="{{ $index }}"
+                         data-title="{{ $reel->title ?: 'Vanriti Ayurvedic Ritual' }}"
+                         data-caption="{{ $reel->caption }}"
+                         data-video="{{ $reel->video_source }}"
+                         data-embed="{{ $reel->embed_url }}"
+                         data-instagram="{{ $reel->instagram_url }}"
+                         data-poster="{{ $reel->poster }}"
+                         @if ($taggedProduct)
+                             data-has-product="true"
+                             data-product-name="{{ $taggedProduct->name }}"
+                             data-product-price="{{ format_price($taggedProduct->selling_price) }}"
+                             @if ($taggedProduct->mrp > $taggedProduct->selling_price)
+                                 data-product-mrp="{{ format_price($taggedProduct->mrp) }}"
+                             @endif
+                             data-product-url="{{ route('product.show', $taggedProduct) }}"
+                             data-product-img="{{ $prodImg ? image_url($prodImg) : '' }}"
+                             data-product-id="{{ $taggedProduct->id }}"
+                             data-add-url="{{ route('cart.add', $taggedProduct) }}"
+                         @else
+                             data-has-product="false"
+                         @endif
+                    >
+                        <div class="vr-reel-poster-wrap">
+                            <img src="{{ $reel->poster }}" alt="{{ $reel->title }}" class="vr-reel-img" loading="lazy">
+                            <div class="vr-reel-gradient-top">
+                                <span class="vr-reel-ig-badge">
+                                    <i class="ri-instagram-line"></i> {{ setting('instagram_handle', '@vanriti.in') }}
+                                </span>
+                                @if ($reel->views_count)
+                                    <span class="vr-reel-views-chip">
+                                        <i class="ri-eye-line"></i> {{ $reel->views_count }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="vr-reel-play-icon">
+                                <i class="ri-play-fill"></i>
+                            </div>
+
+                            <div class="vr-reel-gradient-bottom">
+                                @if ($reel->title)
+                                    <div class="vr-reel-title-text">{{ $reel->title }}</div>
+                                @endif
+
+                                @if ($taggedProduct)
+                                    <div class="vr-reel-product-pill">
+                                        @if ($prodImg)
+                                            <img src="{{ image_url($prodImg) }}" alt="" class="vr-pill-thumb">
+                                        @else
+                                            <i class="ri-shopping-bag-3-line text-success"></i>
+                                        @endif
+                                        <div class="vr-pill-info">
+                                            <span class="vr-pill-name">{{ Str::limit($taggedProduct->name, 26) }}</span>
+                                            <span class="vr-pill-price">{{ format_price($taggedProduct->selling_price) }}</span>
+                                        </div>
+                                        <span class="vr-pill-cta">Shop</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- Reel Fullscreen / Modal Viewer --}}
+    <div class="vr-reel-modal" id="vrReelModal" tabindex="-1" aria-hidden="true">
+        <div class="vr-reel-modal-backdrop" id="vrReelModalBackdrop"></div>
+        <div class="vr-reel-modal-dialog">
+            <button type="button" class="vr-reel-close-btn" id="vrReelCloseBtn" aria-label="Close modal">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+            {{-- Nav Buttons --}}
+            <button type="button" class="vr-reel-nav-btn prev" id="vrReelModalPrevBtn" aria-label="Previous reel">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button type="button" class="vr-reel-nav-btn next" id="vrReelModalNextBtn" aria-label="Next reel">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <div class="vr-reel-player-box">
+                {{-- Video Container --}}
+                <div class="vr-reel-media-wrap">
+                    <video id="vrReelVideo" class="vr-reel-video-element" playsinline loop preload="metadata"></video>
+                    <iframe id="vrReelIframe" class="vr-reel-iframe-element d-none" frameborder="0" allowfullscreen allowtransparency="true"></iframe>
+                    <div class="vr-reel-play-overlay d-none" id="vrReelPlayOverlay">
+                        <i class="ri-play-circle-fill"></i>
+                    </div>
+
+                    {{-- Player Top Controls --}}
+                    <div class="vr-reel-player-top">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="vr-reel-brand-pill">
+                                <i class="ri-instagram-line"></i> {{ setting('instagram_handle', '@vanriti.in') }}
+                            </span>
+                            <span class="vr-reel-title-badge" id="vrModalReelTitle"></span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="vr-reel-sound-btn" id="vrReelSoundBtn" title="Toggle sound">
+                                <i class="bi bi-volume-mute-fill"></i>
+                            </button>
+                            <a href="#" target="_blank" class="vr-reel-ext-btn" id="vrReelInstaLink" title="View on Instagram">
+                                <i class="bi bi-instagram"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Video Progress Bar --}}
+                    <div class="vr-reel-progress-bar">
+                        <div class="vr-reel-progress-fill" id="vrReelProgressFill"></div>
+                    </div>
+
+                    {{-- Bottom Shoppable Product Drawer --}}
+                    <div class="vr-reel-shoppable-drawer d-none" id="vrModalProductDrawer">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <img src="" alt="" class="vr-drawer-thumb" id="vrModalProductImg">
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="vr-drawer-name" id="vrModalProductName"></div>
+                                <div class="d-flex align-items-center gap-2 mt-0.5">
+                                    <span class="vr-drawer-price" id="vrModalProductPrice"></span>
+                                    <span class="vr-drawer-mrp text-muted text-decoration-line-through small" id="vrModalProductMrp"></span>
+                                </div>
+                            </div>
+                            <form method="POST" action="" id="vrModalCartForm" class="m-0">
+                                @csrf
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn btn-vr btn-sm vr-drawer-buy-btn text-nowrap" id="vrModalBuyBtn">
+                                    <i class="bi bi-bag-plus me-1"></i> Add to Cart
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 @if ($newArrivals->isNotEmpty())
     <section class="vr-section vr-section-newarrivals py-5">
         <div class="container">
@@ -243,5 +412,195 @@
         </div>
     </div>
 </section>
+
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+(function () {
+    var carousel = document.getElementById('vrReelsCarousel');
+    var prevBtn = document.getElementById('vrReelsPrevBtn');
+    var nextBtn = document.getElementById('vrReelsNextBtn');
+    var modal = document.getElementById('vrReelModal');
+    var backdrop = document.getElementById('vrReelModalBackdrop');
+    var closeBtn = document.getElementById('vrReelCloseBtn');
+    var video = document.getElementById('vrReelVideo');
+    var iframe = document.getElementById('vrReelIframe');
+    var playOverlay = document.getElementById('vrReelPlayOverlay');
+    var soundBtn = document.getElementById('vrReelSoundBtn');
+    var modalTitle = document.getElementById('vrModalReelTitle');
+    var instaLink = document.getElementById('vrReelInstaLink');
+    var progressFill = document.getElementById('vrReelProgressFill');
+    var modalPrevBtn = document.getElementById('vrReelModalPrevBtn');
+    var modalNextBtn = document.getElementById('vrReelModalNextBtn');
+
+    // Drawer elements
+    var drawer = document.getElementById('vrModalProductDrawer');
+    var drawerImg = document.getElementById('vrModalProductImg');
+    var drawerName = document.getElementById('vrModalProductName');
+    var drawerPrice = document.getElementById('vrModalProductPrice');
+    var drawerMrp = document.getElementById('vrModalProductMrp');
+    var cartForm = document.getElementById('vrModalCartForm');
+
+    if (!carousel) return;
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+            carousel.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+            carousel.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
+
+    var cards = Array.from(document.querySelectorAll('.js-open-reel'));
+    var currentIndex = 0;
+
+    function loadReel(index) {
+        if (index < 0 || index >= cards.length) return;
+        currentIndex = index;
+        var card = cards[index];
+
+        var videoSrc = card.getAttribute('data-video');
+        var embedSrc = card.getAttribute('data-embed');
+        var instaUrl = card.getAttribute('data-instagram') || '#';
+        var title = card.getAttribute('data-title') || '';
+        var poster = card.getAttribute('data-poster') || '';
+        var hasProduct = card.getAttribute('data-has-product') === 'true';
+
+        modalTitle.textContent = title;
+        instaLink.href = instaUrl;
+        progressFill.style.width = '0%';
+
+        if (videoSrc) {
+            iframe.classList.add('d-none');
+            iframe.src = '';
+            video.classList.remove('d-none');
+            video.poster = poster;
+            video.src = videoSrc;
+            video.muted = true;
+            updateSoundIcon(true);
+            video.play().catch(function () {});
+            playOverlay.classList.add('d-none');
+        } else if (embedSrc) {
+            video.classList.add('d-none');
+            video.pause();
+            video.src = '';
+            iframe.classList.remove('d-none');
+            iframe.src = embedSrc;
+            playOverlay.classList.add('d-none');
+        } else if (instaUrl && instaUrl !== '#') {
+            window.open(instaUrl, '_blank');
+            return;
+        }
+
+        if (hasProduct) {
+            drawer.classList.remove('d-none');
+            drawerImg.src = card.getAttribute('data-product-img') || '';
+            drawerName.textContent = card.getAttribute('data-product-name') || '';
+            drawerPrice.textContent = card.getAttribute('data-product-price') || '';
+            var mrp = card.getAttribute('data-product-mrp');
+            if (mrp) {
+                drawerMrp.textContent = mrp;
+                drawerMrp.classList.remove('d-none');
+            } else {
+                drawerMrp.classList.add('d-none');
+            }
+            cartForm.action = card.getAttribute('data-add-url') || '';
+        } else {
+            drawer.classList.add('d-none');
+        }
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        if (video) {
+            video.pause();
+            video.src = '';
+        }
+        if (iframe) {
+            iframe.src = '';
+        }
+        progressFill.style.width = '0%';
+    }
+
+    function updateSoundIcon(isMuted) {
+        if (!soundBtn) return;
+        soundBtn.innerHTML = isMuted ? '<i class="bi bi-volume-mute-fill"></i>' : '<i class="bi bi-volume-up-fill"></i>';
+    }
+
+    cards.forEach(function (card) {
+        card.addEventListener('click', function () {
+            var idx = parseInt(this.getAttribute('data-index'), 10) || 0;
+            loadReel(idx);
+        });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
+
+    if (soundBtn) {
+        soundBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (!video) return;
+            video.muted = !video.muted;
+            updateSoundIcon(video.muted);
+        });
+    }
+
+    if (video) {
+        video.addEventListener('timeupdate', function () {
+            if (video.duration) {
+                var pct = (video.currentTime / video.duration) * 100;
+                progressFill.style.width = pct + '%';
+            }
+        });
+
+        video.addEventListener('click', function () {
+            if (video.paused) {
+                video.play();
+                playOverlay.classList.add('d-none');
+            } else {
+                video.pause();
+                playOverlay.classList.remove('d-none');
+            }
+        });
+    }
+
+    if (modalPrevBtn) {
+        modalPrevBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (currentIndex > 0) {
+                loadReel(currentIndex - 1);
+            } else {
+                loadReel(cards.length - 1);
+            }
+        });
+    }
+
+    if (modalNextBtn) {
+        modalNextBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (currentIndex < cards.length - 1) {
+                loadReel(currentIndex + 1);
+            } else {
+                loadReel(0);
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (!modal.classList.contains('active')) return;
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'ArrowRight' && modalNextBtn) modalNextBtn.click();
+        if (e.key === 'ArrowLeft' && modalPrevBtn) modalPrevBtn.click();
+    });
+})();
+</script>
+@endpush
 
 @endsection

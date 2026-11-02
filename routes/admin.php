@@ -233,6 +233,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('faqs/{faq}', [FaqController::class, 'destroy'])->name('faqs.destroy');
         });
 
+        // Instagram Reels Management
+        Route::resource('reels', \App\Http\Controllers\Admin\InstagramReelController::class)->except(['show']);
+        Route::post('reels/{reel}/toggle', [\App\Http\Controllers\Admin\InstagramReelController::class, 'toggleActive'])->name('reels.toggle');
+
         Route::middleware('permission:manage-newsletters')->group(function () {
             Route::get('newsletters', [NewsletterController::class, 'index'])->name('newsletters.index');
             Route::delete('newsletters/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletters.destroy');

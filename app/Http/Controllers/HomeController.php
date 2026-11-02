@@ -87,6 +87,14 @@ class HomeController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories'));
+        // 4. Shoppable Instagram Reels: curated reels active on website
+        $reels = \App\Models\InstagramReel::query()
+            ->active()
+            ->ordered()
+            ->with(['product.images'])
+            ->limit(12)
+            ->get();
+
+        return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories', 'reels'));
     }
 }

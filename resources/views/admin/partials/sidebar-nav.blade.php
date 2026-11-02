@@ -6,7 +6,7 @@
     $ordersActive = request()->routeIs('admin.orders.*', 'admin.shipments.*', 'admin.returns.*', 'admin.refunds.*');
     $waActive = request()->routeIs('admin.whatsapp.*');
     $custActive = request()->routeIs('admin.customers.*', 'admin.carts.*', 'admin.wishlists.*', 'admin.push.*', 'admin.coupons.*', 'admin.reviews.*', 'admin.newsletters.*', 'admin.contact-messages.*');
-    $contentActive = request()->routeIs('admin.media.*', 'admin.banners.*', 'admin.blogs.*', 'admin.pages.*', 'admin.faqs.*');
+    $contentActive = request()->routeIs('admin.media.*', 'admin.banners.*', 'admin.reels.*', 'admin.blogs.*', 'admin.pages.*', 'admin.faqs.*');
     $sysActive = request()->routeIs('admin.admins.*', 'admin.roles.*', 'admin.activities.*', 'admin.settings.*');
 @endphp
 
@@ -327,6 +327,12 @@
                     </a>
                 </li>
                 @endif
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.reels.*') ? 'active' : '' }}"
+                       href="{{ route('admin.reels.index') }}">
+                        <i class="bi bi-instagram"></i><span>Instagram Reels</span>
+                    </a>
+                </li>
                 @if ($admin->hasPermission(['view-blogs', 'manage-blogs']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}"
