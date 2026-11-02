@@ -106,5 +106,85 @@ class HomepageFlagsTest extends TestCase
         $this->assertStringNotContainsString('Our Bestsellers', $content);
         $this->assertStringNotContainsString('New Arrivals', $content);
     }
+
+    public function test_view_all_links_point_to_specific_flag_shop_pages(): void
+    {
+        $cat = Category::factory()->create();
+
+        $featured = Product::factory()->create(['status' => 'active', 'stock' => 10, 'is_featured' => true]);
+        $bestseller = Product::factory()->create(['status' => 'active', 'stock' => 10, 'is_bestseller' => true]);
+        $new = Product::factory()->create(['status' => 'active', 'stock' => 10, 'is_new_arrival' => true]);
+
+        $featured->categories()->attach($cat);
+        $bestseller->categories()->attach($cat);
+        $new->categories()->attach($cat);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('is_featured=1', $html);
+        $this->assertStringContainsString('is_bestseller=1', $html);
+        $this->assertStringContainsString('is_new_arrival=1', $html);
+    }
+
+    public function test_shop_page_filters_strictly_by_flag_parameter(): void
+    {
+        $cat = Category::factory()->create();
+
+        $featured = Product::factory()->create([
+            'name' => 'Royal Saffron Night Oil',
+            'status' => 'active',
+            'stock' => 10,
+            'is_featured' => true,
+            'is_bestseller' => false,
+            'is_new_arrival' => false,
+        ]);
+        $featured->categories()->attach($cat);
+
+        $bestseller = Product::factory()->create([
+            'name' => 'Kumkumadi Radiance Face Cream',
+            'status' => 'active',
+            'stock' => 10,
+            'is_featured' => false,
+            'is_bestseller' => true,
+            'is_new_arrival' => false,
+        ]);
+        $bestseller->categories()->attach($cat);
+
+        $new = Product::factory()->create([
+            'name' => 'Vetiver Hydrating Body Mist',
+            'status' => 'active',
+            'stock' => 10,
+            'is_featured' => false,
+            'is_bestseller' => false,
+            'is_new_arrival' => true,
+        ]);
+        $new->categories()->attach($cat);
+
+        // 1. View all featured products
+        $resFeatured = $this->get(route('shop.index', ['is_featured' => 1]))->assertOk();
+        $resFeatured->assertSee('Royal Saffron Night Oil');
+        $resFeatured->assertDontSee('Kumkumadi Radiance Face Cream');
+        $resFeatured->assertDontSee('Vetiver Hydrating Body Mist');
+        $resFeatured->assertSee('Featured Collection');
+
+        // 2. View all bestsellers
+        $resBestseller = $this->get(route('shop.index', ['is_bestseller' => 1]))->assertOk();
+        $resBestseller->assertSee('Kumkumadi Radiance Face Cream');
+        $resBestseller->assertDontSee('Royal Saffron Night Oil');
+        $resBestseller->assertDontSee('Vetiver Hydrating Body Mist');
+        $resBestseller->assertSee('Bestsellers');
+
+        // 3. View all new arrivals
+        $resNew = $this->get(route('shop.index', ['is_new_arrival' => 1]))->assertOk();
+        $resNew->assertSee('Vetiver Hydrating Body Mist');
+        $resNew->assertDontSee('Royal Saffron Night Oil');
+        $resNew->assertDontSee('Kumkumadi Radiance Face Cream');
+        $resNew->assertSee('New Arrivals');
+
+        // 4. View all with filter query parameter (e.g. ?filter=bestseller)
+        $resFilter = $this->get(route('shop.index', ['filter' => 'bestseller']))->assertOk();
+        $resFilter->assertSee('Kumkumadi Radiance Face Cream');
+        $resFilter->assertDontSee('Royal Saffron Night Oil');
+    }
 }
 

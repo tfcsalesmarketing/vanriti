@@ -124,7 +124,7 @@
                 <h2 class="vr-section-title mb-1">Featured Collection</h2>
                 <p class="vr-section-sub mb-0">Handpicked favourites from our authentic Ayurvedic collection</p>
             </div>
-            <a href="{{ route('shop.index') }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
+            <a href="{{ route('shop.index', ['is_featured' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="row g-3 g-md-4 vr-stagger">
             @foreach ($featured as $product)
@@ -150,7 +150,7 @@
                     <h2 class="vr-section-title mb-1">Our Bestsellers</h2>
                     <p class="vr-section-sub mb-0">Loved &amp; trusted by thousands of happy Ayurvedic routines</p>
                 </div>
-                <a href="{{ route('shop.index') }}?sort=popular" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
+                <a href="{{ route('shop.index', ['is_bestseller' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="row g-3 g-md-4 vr-stagger">
                 @foreach ($bestsellers as $product)
@@ -176,7 +176,7 @@
                     <h2 class="vr-section-title mb-1">New Arrivals</h2>
                     <p class="vr-section-sub mb-0">Fresh botanical herbs &amp; new formulations crafted with care</p>
                 </div>
-                <a href="{{ route('shop.index') }}?sort=newest" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
+                <a href="{{ route('shop.index', ['is_new_arrival' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="row g-3 g-md-4 vr-stagger">
                 @foreach ($newArrivals as $product)

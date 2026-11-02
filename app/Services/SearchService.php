@@ -12,23 +12,40 @@ class SearchService
 
         $queryBuilder = Product::query()
             ->active()
-            ->with(['categories', 'images', 'variants'])
-            ->where(function ($builder) use ($q) {
+            ->with(['categories', 'images', 'variants', 'activeVariants', 'approvedReviews']);
+
+        if ($q !== '') {
+            $queryBuilder->where(function ($builder) use ($q) {
                 $builder->where('name', 'LIKE', "%{$q}%")
                     ->orWhere('sku', 'LIKE', "%{$q}%")
                     ->orWhere('short_description', 'LIKE', "%{$q}%")
                     ->orWhere('search_keywords', 'LIKE', "%{$q}%")
                     ->orWhereHas('categories', fn ($c) => $c->where('name', 'LIKE', "%{$q}%"));
             });
+        }
+
+        if (! empty($filters['is_featured'])) {
+            $queryBuilder->featured();
+        }
+
+        if (! empty($filters['is_bestseller'])) {
+            $queryBuilder->bestsellers();
+        }
+
+        if (! empty($filters['is_new_arrival'])) {
+            $queryBuilder->newArrivals();
+        }
 
         if (! empty($filters['category'])) {
             $queryBuilder->whereHas('categories', fn ($c) => $c->whereIn('categories.id', (array) $filters['category']));
         }
 
-        if (! empty($filters['min_price']) || ! empty($filters['max_price'])) {
+        $minPrice = $filters['min_price'] ?? null;
+        $maxPrice = $filters['max_price'] ?? null;
+        if (($minPrice !== null && $minPrice !== '') || ($maxPrice !== null && $maxPrice !== '')) {
             $queryBuilder->whereBetween('selling_price', [
-                $filters['min_price'] ?? 0,
-                $filters['max_price'] ?? 99999999,
+                $minPrice !== null && $minPrice !== '' ? (float) $minPrice : 0,
+                $maxPrice !== null && $maxPrice !== '' ? (float) $maxPrice : 99999999,
             ]);
         }
 
@@ -41,7 +58,11 @@ class SearchService
                 default => $queryBuilder->orderByDesc('created_at'),
             };
         } else {
-            $queryBuilder->orderByDesc('created_at');
+            if (! empty($filters['is_bestseller'])) {
+                $queryBuilder->orderByDesc('total_sold')->orderByDesc('id');
+            } else {
+                $queryBuilder->orderByDesc('created_at')->orderByDesc('id');
+            }
         }
 
         return $queryBuilder->paginate($perPage)->withQueryString();

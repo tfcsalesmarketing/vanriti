@@ -15,13 +15,18 @@ class ShopController extends Controller
         Paginator::useBootstrap();
 
         $query = trim((string) $request->query('q', ''));
-        $isFeatured = $request->boolean('is_featured') || $request->query('is_featured') === '1';
+        $filter = (string) $request->query('filter', '');
 
-        if ($isFeatured) {
-            $products = $this->featuredSearch($request);
-        } else {
-            $products = app(SearchService::class)->search($query, $this->filtersFromRequest($request), 12);
-        }
+        $isFeatured = $filter === 'featured' || $request->boolean('is_featured') || $request->query('is_featured') === '1';
+        $isBestseller = in_array($filter, ['bestseller', 'bestsellers']) || $request->boolean('is_bestseller') || $request->query('is_bestseller') === '1';
+        $isNewArrival = in_array($filter, ['new_arrival', 'new_arrivals', 'new']) || $request->boolean('is_new_arrival') || $request->query('is_new_arrival') === '1';
+
+        $filters = $this->filtersFromRequest($request);
+        $filters['is_featured'] = $isFeatured;
+        $filters['is_bestseller'] = $isBestseller;
+        $filters['is_new_arrival'] = $isNewArrival;
+
+        $products = app(SearchService::class)->search($query, $filters, 12);
 
         $categories = Category::query()
             ->with(['children'])
@@ -36,6 +41,8 @@ class ShopController extends Controller
             'categories' => $categories,
             'sort' => (string) $request->query('sort', ''),
             'isFeatured' => $isFeatured,
+            'isBestseller' => $isBestseller,
+            'isNewArrival' => $isNewArrival,
             'selectedCategories' => array_values(array_filter((array) $request->input('category'))),
             'minPrice' => $request->query('min_price', ''),
             'maxPrice' => $request->query('max_price', ''),

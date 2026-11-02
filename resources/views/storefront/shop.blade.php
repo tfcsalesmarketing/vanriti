@@ -1,14 +1,29 @@
 @extends('storefront.layouts.app')
 
-@section('title', $query !== '' ? 'Search results for "'.$query.'"' : 'Shop')
 @php
+    $flagTitle = null;
+    if (!empty($isFeatured)) {
+        $flagTitle = 'Featured Collection';
+    } elseif (!empty($isBestseller)) {
+        $flagTitle = 'Bestsellers';
+    } elseif (!empty($isNewArrival)) {
+        $flagTitle = 'New Arrivals';
+    }
+
+    $pageTitle = $query !== ''
+        ? 'Search results for "'.$query.'"'
+        : ($flagTitle ?: 'Shop');
+
     $shopIsFiltered = $query !== ''
-        || $isFeatured
+        || !empty($isFeatured)
+        || !empty($isBestseller)
+        || !empty($isNewArrival)
         || $sort !== ''
         || $selectedCategories !== []
         || $minPrice !== ''
         || $maxPrice !== '';
 @endphp
+@section('title', $pageTitle)
 @section('robots', $shopIsFiltered ? 'noindex, follow' : 'index, follow')
 @section('canonical', $shopIsFiltered ? route('shop.index') : '')
 
@@ -28,7 +43,7 @@
         {
             "@@type": "ListItem",
             "position": 2,
-            "name": "Shop",
+            "name": {!! json_encode($flagTitle ?: 'Shop', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
             "item": {!! json_encode(route('shop.index'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
         }
     ]
@@ -39,7 +54,7 @@
 {
     "@@context": "https://schema.org",
     "@@type": "ItemList",
-    "name": @if ($query !== ''){!! json_encode('Search results for "'.$query.'"', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}@else"All Products"@endif,
+    "name": @if ($query !== ''){!! json_encode('Search results for "'.$query.'"', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}@else{!! json_encode($flagTitle ?: 'All Products', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}@endif,
     "url": {!! json_encode(route('shop.index'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
     "itemListElement": [
 @foreach ($products as $i => $item)
@@ -57,14 +72,21 @@
 
 <div class="container py-4">
     <div class="mb-4">
-        <h1 class="h4 fw-bold mb-1" style="color:var(--vr-green-dark);">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center flex-wrap gap-2" style="color:var(--vr-green-dark);">
             @if ($query !== '')
-                Search results for '{{ $query }}'
+                <span>Search results for '{{ $query }}'</span>
+            @elseif ($flagTitle)
+                <span>{{ $flagTitle }}</span>
             @else
-                Shop
+                <span>Shop</span>
             @endif
-            @if ($isFeatured)
-                <span class="vr-pill-badge ps-pending ms-2" style="font-size:0.7rem;">Featured</span>
+
+            @if (!empty($isFeatured))
+                <span class="vr-flag-badge vr-flag-featured" style="font-size:0.68rem;"><i class="ri-sparkling-fill"></i> Featured</span>
+            @elseif (!empty($isBestseller))
+                <span class="vr-flag-badge vr-flag-bestseller" style="font-size:0.68rem;"><i class="ri-fire-fill"></i> Bestseller</span>
+            @elseif (!empty($isNewArrival))
+                <span class="vr-flag-badge vr-flag-new" style="font-size:0.68rem;"><i class="ri-sparkles-line"></i> New Arrival</span>
             @endif
         </h1>
         <p class="text-muted small mb-0">{{ $products->total() }} product{{ $products->total() === 1 ? '' : 's' }}</p>
@@ -83,8 +105,12 @@
                             @if ($query !== '')
                                 <input type="hidden" name="q" value="{{ $query }}">
                             @endif
-                            @if ($isFeatured)
+                            @if (!empty($isFeatured))
                                 <input type="hidden" name="is_featured" value="1">
+                            @elseif (!empty($isBestseller))
+                                <input type="hidden" name="is_bestseller" value="1">
+                            @elseif (!empty($isNewArrival))
+                                <input type="hidden" name="is_new_arrival" value="1">
                             @endif
 
                             <div class="mb-3">
@@ -150,8 +176,12 @@
                     @if ($query !== '')
                         <input type="hidden" name="q" value="{{ $query }}">
                     @endif
-                    @if ($isFeatured)
+                    @if (!empty($isFeatured))
                         <input type="hidden" name="is_featured" value="1">
+                    @elseif (!empty($isBestseller))
+                        <input type="hidden" name="is_bestseller" value="1">
+                    @elseif (!empty($isNewArrival))
+                        <input type="hidden" name="is_new_arrival" value="1">
                     @endif
                     @foreach ($selectedCategories as $c)
                         <input type="hidden" name="category[]" value="{{ $c }}">
