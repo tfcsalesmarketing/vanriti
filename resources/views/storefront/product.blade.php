@@ -313,44 +313,98 @@
             </div>
 
             {{-- Pincode Delivery & COD Estimator --}}
-            <div class="vr-pincode-card p-3 rounded-3 border bg-white shadow-xs mb-3.5" id="vrPdpPincodeCard">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <label for="pdpPincodeInput" class="small fw-semibold text-dark mb-0 d-flex align-items-center gap-1.5">
-                        <i class="bi bi-geo-alt text-success"></i>
-                        <span>Delivery &amp; COD Availability</span>
-                    </label>
-                    <span class="text-muted small" id="vrPdpPincodeLocation" style="font-size: 0.75rem;"></span>
+            <div class="vr-pdp-check-card" id="vrPdpPincodeCard">
+                <div class="vr-pdp-check-header">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+                        <label for="pdpPincodeInput" class="vr-pdp-check-title mb-0">
+                            <i class="ri-map-pin-range-line"></i>
+                            <span>Delivery &amp; COD Availability</span>
+                        </label>
+                        <span class="vr-pdp-location-pill" id="vrPdpPincodeLocation"></span>
+                    </div>
                 </div>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" id="pdpPincodeInput" placeholder="Enter 6-digit Pincode" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" value="{{ session('delivery_pincode', '') }}">
-                    <button class="btn btn-vr btn-sm px-3" type="button" id="pdpPincodeCheckBtn">Check</button>
+
+                <div class="vr-pdp-input-capsule">
+                    <i class="ri-search-line vr-pdp-capsule-icon"></i>
+                    <input type="text"
+                           class="form-control vr-pdp-capsule-input"
+                           id="pdpPincodeInput"
+                           placeholder="Enter 6-digit Pincode"
+                           maxlength="6"
+                           inputmode="numeric"
+                           pattern="[0-9]{6}"
+                           value="{{ session('delivery_pincode', '') }}"
+                           autocomplete="postal-code">
+                    <button class="btn vr-pdp-capsule-btn" type="button" id="pdpPincodeCheckBtn">Check</button>
                 </div>
-                <div class="vr-pincode-result mt-2.5 d-none" id="vrPdpPincodeResult">
-                    <div class="d-flex align-items-start gap-2 text-dark small py-1">
-                        <i class="bi bi-truck text-success fs-6 flex-shrink-0 mt-0.5"></i>
-                        <div>
-                            <span class="fw-semibold text-dark" id="vrPdpDeliveryDate">Delivery in 2–4 days</span>
-                            <span class="text-muted d-block small" id="vrPdpDispatchNote" style="font-size: 0.75rem;">Dispatches within 24 hours</span>
+
+                <div class="vr-pdp-result-box d-none" id="vrPdpPincodeResult">
+                    <div class="vr-pdp-result-main">
+                        <div class="vr-pdp-result-icon">
+                            <i class="ri-truck-line"></i>
+                        </div>
+                        <div class="vr-pdp-result-meta">
+                            <span class="vr-pdp-result-date" id="vrPdpDeliveryDate">Delivery in 2–4 days</span>
+                            <span class="vr-pdp-result-dispatch" id="vrPdpDispatchNote">Dispatches within 24 hours</span>
                         </div>
                     </div>
-                    <div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">
-                        <span class="badge bg-light text-dark border small fw-normal d-inline-flex align-items-center gap-1" id="vrPdpCodBadge">
-                            <i class="bi bi-cash-coin text-success"></i> <span id="vrPdpCodText">COD Available</span>
+                    <div class="vr-pdp-result-pills">
+                        <span class="vr-pdp-status-pill" id="vrPdpCodBadge">
+                            <i class="ri-checkbox-circle-fill"></i>
+                            <span id="vrPdpCodText">COD Available</span>
                         </span>
-                        <span class="badge bg-light text-dark border small fw-normal d-inline-flex align-items-center gap-1">
-                            <i class="bi bi-shield-check text-success"></i> Free Delivery &gt; {{ format_price(setting('free_shipping_threshold', 499)) }}
+                        <span class="vr-pdp-status-pill">
+                            <i class="ri-shield-check-fill"></i>
+                            <span>Free Delivery &gt; {{ format_price(setting('free_shipping_threshold', 499)) }}</span>
                         </span>
                     </div>
                 </div>
-                <div class="small text-danger mt-1.5 d-none" id="vrPdpPincodeError"></div>
+
+                <div class="vr-pdp-check-error d-none" id="vrPdpPincodeError"></div>
             </div>
 
-            <ul class="list-unstyled d-flex flex-wrap gap-3 small text-muted mb-0">
-                <li><i class="bi bi-truck me-1" style="color:var(--vr-green);"></i> Free shipping above {{ format_price(setting('free_shipping_threshold', 499)) }}</li>
-                <li><i class="bi bi-cash-coin me-1" style="color:var(--vr-green);"></i> COD available</li>
-                <li><i class="bi bi-arrow-counterclockwise me-1" style="color:var(--vr-green);"></i> {{ setting('return_window_days', 7) }}-day easy returns</li>
-                <li><i class="bi bi-flower1 me-1" style="color:var(--vr-green);"></i> Cruelty-free &amp; natural</li>
-            </ul>
+            {{-- Trust Highlights 2x2 Grid on Mobile / 4-Col on Desktop --}}
+            <div class="vr-pdp-trust-grid">
+                <div class="vr-pdp-trust-card">
+                    <div class="vr-pdp-trust-icon">
+                        <i class="ri-truck-line"></i>
+                    </div>
+                    <div class="vr-pdp-trust-info">
+                        <span class="vr-pdp-trust-title">Free Shipping</span>
+                        <span class="vr-pdp-trust-desc">Above {{ format_price(setting('free_shipping_threshold', 499)) }}</span>
+                    </div>
+                </div>
+
+                <div class="vr-pdp-trust-card">
+                    <div class="vr-pdp-trust-icon">
+                        <i class="ri-hand-coin-line"></i>
+                    </div>
+                    <div class="vr-pdp-trust-info">
+                        <span class="vr-pdp-trust-title">Cash on Delivery</span>
+                        <span class="vr-pdp-trust-desc">Pay at your doorstep</span>
+                    </div>
+                </div>
+
+                <div class="vr-pdp-trust-card">
+                    <div class="vr-pdp-trust-icon">
+                        <i class="ri-arrow-go-back-line"></i>
+                    </div>
+                    <div class="vr-pdp-trust-info">
+                        <span class="vr-pdp-trust-title">{{ setting('return_window_days', 7) }}-Day Returns</span>
+                        <span class="vr-pdp-trust-desc">Hassle-free process</span>
+                    </div>
+                </div>
+
+                <div class="vr-pdp-trust-card">
+                    <div class="vr-pdp-trust-icon">
+                        <i class="ri-leaf-line"></i>
+                    </div>
+                    <div class="vr-pdp-trust-info">
+                        <span class="vr-pdp-trust-title">100% Ayurvedic</span>
+                        <span class="vr-pdp-trust-desc">Pure &amp; cruelty-free</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1372,6 +1426,10 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
             locationEl.textContent = data.location_display ? '📍 ' + data.location_display : '';
             if (codText) {
                 codText.textContent = data.cod_available ? 'COD Available' : 'Prepaid Only';
+                var codIcon = document.querySelector('#vrPdpCodBadge i');
+                if (codIcon) {
+                    codIcon.className = data.cod_available ? 'ri-checkbox-circle-fill' : 'ri-information-line';
+                }
             }
             try { localStorage.setItem('vr_pincode', pin); } catch (e) {}
         })
