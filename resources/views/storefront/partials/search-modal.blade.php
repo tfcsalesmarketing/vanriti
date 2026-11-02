@@ -88,7 +88,17 @@
         searchInput.focus();
     });
 
-    searchInput.addEventListener('input', function () {
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function handleSearchInput() {
         var query = searchInput.value.trim();
         clearTimeout(debounceTimer);
 
@@ -108,7 +118,12 @@
             fetch('{{ route("search.suggest") }}?q=' + encodeURIComponent(query), {
                 headers: { 'Accept': 'application/json' }
             })
-            .then(function (res) { return res.json(); })
+            .then(function (res) {
+                if (!res.ok) {
+                    throw new Error('HTTP ' + res.status);
+                }
+                return res.json();
+            })
             .then(function (data) {
                 searchSpinner.classList.remove('d-flex');
                 searchSpinner.classList.add('d-none');
@@ -118,12 +133,19 @@
                 searchSpinner.classList.remove('d-flex');
                 searchSpinner.classList.add('d-none');
             });
-        }, 220);
-    });
+        }, 180);
+    }
+
+    searchInput.addEventListener('input', handleSearchInput);
+    searchInput.addEventListener('search', handleSearchInput);
 
     function renderResults(data, query) {
-        var hasProducts = data.products && data.products.length > 0;
-        var hasCategories = data.categories && data.categories.length > 0;
+        if (searchInput.value.trim() !== query) {
+            return;
+        }
+
+        var hasProducts = data && Array.isArray(data.products) && data.products.length > 0;
+        var hasCategories = data && Array.isArray(data.categories) && data.categories.length > 0;
 
         emptyState.classList.add('d-none');
 
@@ -161,7 +183,7 @@
                 a.className = 'vr-search-item';
 
                 var imgHtml = p.image
-                    ? '<img src="' + p.image + '" alt="' + p.name + '" class="vr-search-thumb">'
+                    ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '" class="vr-search-thumb">'
                     : '<div class="vr-search-thumb d-flex align-items-center justify-content-center text-muted"><i class="bi bi-image"></i></div>';
 
                 var stockBadge = p.in_stock
@@ -170,12 +192,12 @@
 
                 a.innerHTML = imgHtml +
                     '<div class="flex-grow-1 min-w-0">' +
-                        '<div class="fw-semibold text-truncate small">' + p.name + '</div>' +
-                        (p.category ? '<div class="text-muted" style="font-size: 11px;">' + p.category + '</div>' : '') +
+                        '<div class="fw-semibold text-truncate small">' + escapeHtml(p.name) + '</div>' +
+                        (p.category ? '<div class="text-muted" style="font-size: 11px;">' + escapeHtml(p.category) + '</div>' : '') +
                     '</div>' +
                     '<div class="text-end flex-shrink-0">' +
-                        '<div class="fw-bold small text-success">' + p.price + '</div>' +
-                        (p.mrp ? '<div class="text-muted text-decoration-line-through" style="font-size: 11px;">' + p.mrp + '</div>' : '') +
+                        '<div class="fw-bold small text-success">' + escapeHtml(p.price) + '</div>' +
+                        (p.mrp ? '<div class="text-muted text-decoration-line-through" style="font-size: 11px;">' + escapeHtml(p.mrp) + '</div>' : '') +
                         stockBadge +
                     '</div>';
 

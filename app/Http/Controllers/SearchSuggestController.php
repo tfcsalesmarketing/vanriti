@@ -15,25 +15,47 @@ class SearchSuggestController extends Controller
 
         if (mb_strlen($q) < 2) {
             return response()->json([
+                'query' => $q,
                 'products' => [],
                 'categories' => [],
             ]);
         }
 
-        $cleanQ = preg_replace('/[^\p{L}\p{N}\s]/u', '', $q);
+        $cleanQ = preg_replace('/[^\p{L}\p{N}\s\-]/u', '', $q);
+        $term = trim($cleanQ !== '' ? $cleanQ : $q);
 
-        // Matching products
+        // Matching products - aligned with SearchService (name, sku, short_description, search_keywords, category)
         $products = Product::query()
-            ->where('status', 'active')
-            ->where(function ($query) use ($cleanQ) {
-                $query->where('name', 'like', "%{$cleanQ}%")
-                    ->orWhere('short_description', 'like', "%{$cleanQ}%")
-                    ->orWhereHas('categories', function ($catQuery) use ($cleanQ) {
-                        $catQuery->where('name', 'like', "%{$cleanQ}%");
+            ->active()
+            ->where(function ($query) use ($term, $q) {
+                $query->where('name', 'like', "%{$term}%")
+                    ->orWhere('name', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$term}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('search_keywords', 'like', "%{$term}%")
+                    ->orWhere('short_description', 'like', "%{$term}%")
+                    ->orWhereHas('categories', function ($catQuery) use ($term, $q) {
+                        $catQuery->where('name', 'like', "%{$term}%")
+                            ->orWhere('name', 'like', "%{$q}%");
                     });
+
+                // Support multi-word queries (e.g. "amla hair", "rose powder")
+                $words = array_filter(explode(' ', $term), fn ($w) => mb_strlen($w) >= 2);
+                if (count($words) > 1) {
+                    $query->orWhere(function ($multi) use ($words) {
+                        foreach ($words as $word) {
+                            $multi->where(function ($wQ) use ($word) {
+                                $wQ->where('name', 'like', "%{$word}%")
+                                    ->orWhere('search_keywords', 'like', "%{$word}%")
+                                    ->orWhere('short_description', 'like', "%{$word}%")
+                                    ->orWhereHas('categories', fn ($c) => $c->where('name', 'like', "%{$word}%"));
+                            });
+                        }
+                    });
+                }
             })
             ->with(['images', 'categories', 'variants'])
-            ->take(6)
+            ->take(8)
             ->get()
             ->map(function (Product $product) {
                 $primaryImage = $product->getPrimaryImage()?->image_path;
@@ -55,11 +77,14 @@ class SearchSuggestController extends Controller
                 ];
             });
 
-        // Matching categories
+        // Matching categories (Using scopeActive() which checks status='active')
         $categories = Category::query()
-            ->where('is_active', true)
-            ->where('name', 'like', "%{$cleanQ}%")
-            ->take(3)
+            ->active()
+            ->where(function ($catQuery) use ($term, $q) {
+                $catQuery->where('name', 'like', "%{$term}%")
+                    ->orWhere('name', 'like', "%{$q}%");
+            })
+            ->take(4)
             ->get(['id', 'name', 'slug'])
             ->map(function (Category $cat) {
                 return [
