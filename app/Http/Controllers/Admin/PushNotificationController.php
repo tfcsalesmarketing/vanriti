@@ -123,6 +123,7 @@ class PushNotificationController extends Controller
             'body' => ['required', 'string', 'max:300'],
             'url' => ['required', 'url', 'max:500'],
             'subscription_id' => ['nullable', 'integer'],
+            'image_url' => ['nullable', 'url', 'max:500'],
         ]);
 
         $subscription = null;
@@ -145,6 +146,7 @@ class PushNotificationController extends Controller
             'title' => '[TEST] ' . $validated['title'],
             'body' => $validated['body'],
             'icon' => asset('images/logo.png'),
+            'image' => $validated['image_url'] ?? null,
             'data' => [
                 'url' => $validated['url'],
             ],

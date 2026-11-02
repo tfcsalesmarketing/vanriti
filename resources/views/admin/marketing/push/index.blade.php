@@ -221,7 +221,7 @@
             <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
                 <span class="fw-bold small text-uppercase tracking-wider text-muted">Live Preview</span>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-secondary active" id="previewMobileToggle"><i class="bi bi-phone me-1"></i>Mobile</button>
+                    <button type="button" class="btn btn-dark active" id="previewMobileToggle"><i class="bi bi-phone me-1"></i>Mobile</button>
                     <button type="button" class="btn btn-outline-secondary" id="previewDesktopToggle"><i class="bi bi-laptop me-1"></i>Desktop</button>
                 </div>
             </div>
@@ -264,6 +264,9 @@
                                 </div>
                                 <div class="text-muted small mt-1 font-2xs" id="previewDesktopBody" style="line-height: 1.35;">
                                     Pure Bhringraj &amp; Amla Hair Oils are back in stock. Enjoy free shipping today!
+                                </div>
+                                <div id="previewDesktopImageWrap" class="mt-2 d-none">
+                                    <img src="" id="previewDesktopImage" class="img-fluid rounded w-100" style="max-height: 120px; object-fit: cover;">
                                 </div>
                             </div>
                         </div>
@@ -471,335 +474,395 @@
         </div>
     </div>
 </div>
+@endsection
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var titleInput = document.getElementById('pushTitleInput');
-    var bodyInput = document.getElementById('pushBodyInput');
-    var imageInput = document.getElementById('pushImageInput');
-    var urlInput = document.getElementById('pushUrlInput');
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+(function () {
+    function initPushAdmin() {
+        var titleInput = document.getElementById('pushTitleInput');
+        var bodyInput = document.getElementById('pushBodyInput');
+        var imageInput = document.getElementById('pushImageInput');
+        var urlInput = document.getElementById('pushUrlInput');
 
-    var previewMobileTitle = document.getElementById('previewMobileTitle');
-    var previewMobileBody = document.getElementById('previewMobileBody');
-    var previewMobileImageWrap = document.getElementById('previewMobileImageWrap');
-    var previewMobileImage = document.getElementById('previewMobileImage');
+        var titleCounter = document.getElementById('pushTitleCounter');
+        var bodyCounter = document.getElementById('pushBodyCounter');
 
-    var previewDesktopTitle = document.getElementById('previewDesktopTitle');
-    var previewDesktopBody = document.getElementById('previewDesktopBody');
+        var previewMobileTitle = document.getElementById('previewMobileTitle');
+        var previewMobileBody = document.getElementById('previewMobileBody');
+        var previewMobileImageWrap = document.getElementById('previewMobileImageWrap');
+        var previewMobileImage = document.getElementById('previewMobileImage');
 
-    var mobileFrame = document.getElementById('mobilePreviewFrame');
-    var desktopFrame = document.getElementById('desktopPreviewFrame');
-    var mobileToggle = document.getElementById('previewMobileToggle');
-    var desktopToggle = document.getElementById('previewDesktopToggle');
+        var previewDesktopTitle = document.getElementById('previewDesktopTitle');
+        var previewDesktopBody = document.getElementById('previewDesktopBody');
+        var previewDesktopImageWrap = document.getElementById('previewDesktopImageWrap');
+        var previewDesktopImage = document.getElementById('previewDesktopImage');
 
-    function updatePreview() {
-        var title = titleInput.value.trim() || '🌿 Weekend Ayurvedic Flash Sale - 20% Off!';
-        var body = bodyInput.value.trim() || 'Pure Bhringraj & Amla Hair Oils are back in stock. Enjoy free shipping today!';
-        var img = imageInput.value.trim();
+        var mobileFrame = document.getElementById('mobilePreviewFrame');
+        var desktopFrame = document.getElementById('desktopPreviewFrame');
+        var mobileToggle = document.getElementById('previewMobileToggle');
+        var desktopToggle = document.getElementById('previewDesktopToggle');
 
-        if (previewMobileTitle) previewMobileTitle.textContent = title;
-        if (previewDesktopTitle) previewDesktopTitle.textContent = title;
+        // Dynamic config using Blade route helpers
+        var VR_ADMIN_PUSH_CONFIG = {
+            publicKeyUrl: "{{ route('push.public-key') }}",
+            subscribeUrl: "{{ route('push.subscribe') }}",
+            swUrl: "{{ url('sw.js') }}",
+            scopeUrl: "{{ url('/') }}/",
+            testUrl: "{{ route('admin.push.test') }}",
+            csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}"
+        };
 
-        if (previewMobileBody) previewMobileBody.textContent = body;
-        if (previewDesktopBody) previewDesktopBody.textContent = body;
+        // 1. Live Preview Syncer
+        function updatePreview() {
+            var title = (titleInput && titleInput.value.trim()) || '🌿 Weekend Ayurvedic Flash Sale - 20% Off!';
+            var body = (bodyInput && bodyInput.value.trim()) || 'Pure Bhringraj & Amla Hair Oils are back in stock. Enjoy free shipping with code WELCOME10 today only!';
+            var img = (imageInput && imageInput.value.trim()) || '';
 
-        document.getElementById('pushTitleCounter').textContent = titleInput.value.length + ' / 60';
-        document.getElementById('pushBodyCounter').textContent = bodyInput.value.length + ' / 180';
+            if (previewMobileTitle) previewMobileTitle.textContent = title;
+            if (previewDesktopTitle) previewDesktopTitle.textContent = title;
 
-        if (img) {
-            previewMobileImage.src = img;
-            previewMobileImageWrap.classList.remove('d-none');
-        } else {
-            previewMobileImageWrap.classList.add('d-none');
-        }
-    }
+            if (previewMobileBody) previewMobileBody.textContent = body;
+            if (previewDesktopBody) previewDesktopBody.textContent = body;
 
-    if (titleInput) titleInput.addEventListener('input', updatePreview);
-    if (bodyInput) bodyInput.addEventListener('input', updatePreview);
-    if (imageInput) imageInput.addEventListener('input', updatePreview);
-
-    // Quick presets for URL
-    document.querySelectorAll('.js-url-preset').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            if (urlInput) {
-                urlInput.value = btn.dataset.url;
+            if (titleCounter && titleInput) {
+                titleCounter.textContent = titleInput.value.length + ' / 60';
             }
-        });
-    });
-
-    // Preview toggles
-    if (mobileToggle && desktopToggle) {
-        mobileToggle.addEventListener('click', function () {
-            mobileToggle.classList.add('active');
-            desktopToggle.classList.remove('active');
-            mobileFrame.classList.remove('d-none');
-            desktopFrame.classList.add('d-none');
-        });
-
-        desktopToggle.addEventListener('click', function () {
-            desktopToggle.classList.add('active');
-            mobileToggle.classList.remove('active');
-            desktopFrame.classList.remove('d-none');
-            mobileFrame.classList.add('d-none');
-        });
-    }
-
-    // Dynamic config using Blade route helpers for full environment compatibility
-    var VR_ADMIN_PUSH_CONFIG = {
-        publicKeyUrl: "{{ route('push.public-key') }}",
-        subscribeUrl: "{{ route('push.subscribe') }}",
-        swUrl: "{{ url('sw.js') }}",
-        scopeUrl: "{{ url('/') }}/",
-        testUrl: "{{ route('admin.push.test') }}",
-        csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}"
-    };
-
-    // Helper: convert url-safe base64 to Uint8Array
-    function urlB64ToUint8Array(base64String) {
-        base64String = (base64String || '').trim();
-        var padding = '='.repeat((4 - base64String.length % 4) % 4);
-        var base64 = (base64String + padding)
-            .replace(/\-/g, '+')
-            .replace(/_/g, '/');
-
-        var rawData = window.atob(base64);
-        var outputArray = new Uint8Array(rawData.length);
-
-        for (var i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-        }
-        return outputArray;
-    }
-
-    // Admin Device Web Push Subscription & Diagnostics Routine
-    var deviceBadge = document.getElementById('deviceSubBadge');
-    var adminSubBtn = document.getElementById('adminSubscribeDeviceBtn');
-    var adminSubBtnText = document.getElementById('adminSubBtnText');
-    var sendTestBtn = document.getElementById('sendTestPushBtn');
-    var currentDeviceSubscriptionId = null;
-
-    function checkDeviceStatus() {
-        if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-            if (deviceBadge) {
-                deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
-                deviceBadge.textContent = 'Insecure Context (Requires HTTPS or localhost)';
+            if (bodyCounter && bodyInput) {
+                bodyCounter.textContent = bodyInput.value.length + ' / 180';
             }
-            if (adminSubBtn) adminSubBtn.disabled = true;
-            return Promise.resolve(null);
+
+            if (img) {
+                if (previewMobileImage) previewMobileImage.src = img;
+                if (previewMobileImageWrap) previewMobileImageWrap.classList.remove('d-none');
+                if (previewDesktopImage) previewDesktopImage.src = img;
+                if (previewDesktopImageWrap) previewDesktopImageWrap.classList.remove('d-none');
+            } else {
+                if (previewMobileImageWrap) previewMobileImageWrap.classList.add('d-none');
+                if (previewDesktopImageWrap) previewDesktopImageWrap.classList.add('d-none');
+            }
         }
 
-        if (Notification.permission === 'granted') {
-            return navigator.serviceWorker.register(VR_ADMIN_PUSH_CONFIG.swUrl, { scope: VR_ADMIN_PUSH_CONFIG.scopeUrl })
-                .then(function () { return navigator.serviceWorker.ready; })
-                .then(function (reg) {
-                    return reg.pushManager.getSubscription();
-                })
-                .then(function (sub) {
-                    if (sub) {
-                        if (deviceBadge) {
-                            deviceBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill font-2xs';
-                            deviceBadge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>This Device Subscribed &amp; Ready';
+        if (titleInput) titleInput.addEventListener('input', updatePreview);
+        if (bodyInput) bodyInput.addEventListener('input', updatePreview);
+        if (imageInput) imageInput.addEventListener('input', updatePreview);
+
+        // Run initial preview update immediately
+        updatePreview();
+
+        // 2. Mobile / Desktop Preview Toggle
+        function switchPreview(mode) {
+            if (mode === 'desktop') {
+                if (mobileToggle) {
+                    mobileToggle.classList.remove('active', 'btn-dark');
+                    mobileToggle.classList.add('btn-outline-secondary');
+                }
+                if (desktopToggle) {
+                    desktopToggle.classList.add('active', 'btn-dark');
+                    desktopToggle.classList.remove('btn-outline-secondary');
+                }
+                if (mobileFrame) mobileFrame.classList.add('d-none');
+                if (desktopFrame) desktopFrame.classList.remove('d-none');
+            } else {
+                if (desktopToggle) {
+                    desktopToggle.classList.remove('active', 'btn-dark');
+                    desktopToggle.classList.add('btn-outline-secondary');
+                }
+                if (mobileToggle) {
+                    mobileToggle.classList.add('active', 'btn-dark');
+                    mobileToggle.classList.remove('btn-outline-secondary');
+                }
+                if (desktopFrame) desktopFrame.classList.add('d-none');
+                if (mobileFrame) mobileFrame.classList.remove('d-none');
+            }
+        }
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function () {
+                switchPreview('mobile');
+            });
+        }
+        if (desktopToggle) {
+            desktopToggle.addEventListener('click', function () {
+                switchPreview('desktop');
+            });
+        }
+
+        // 3. Quick presets for URL
+        document.querySelectorAll('.js-url-preset').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (urlInput) {
+                    urlInput.value = btn.dataset.url;
+                }
+            });
+        });
+
+        // 4. Helper: Base64 to Uint8Array
+        function urlB64ToUint8Array(base64String) {
+            base64String = (base64String || '').trim();
+            var padding = '='.repeat((4 - base64String.length % 4) % 4);
+            var base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+
+            var rawData = window.atob(base64);
+            var outputArray = new Uint8Array(rawData.length);
+
+            for (var i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // 5. Admin Device Diagnostics & Web Push
+        var deviceBadge = document.getElementById('deviceSubBadge');
+        var adminSubBtn = document.getElementById('adminSubscribeDeviceBtn');
+        var adminSubBtnText = document.getElementById('adminSubBtnText');
+        var sendTestBtn = document.getElementById('sendTestPushBtn');
+        var currentDeviceSubscriptionId = null;
+
+        function checkDeviceStatus() {
+            if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+                if (deviceBadge) {
+                    deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
+                    deviceBadge.textContent = 'Insecure Context (Requires HTTPS or localhost)';
+                }
+                if (adminSubBtn) adminSubBtn.disabled = true;
+                return Promise.resolve(null);
+            }
+
+            if (Notification.permission === 'granted') {
+                return navigator.serviceWorker.register(VR_ADMIN_PUSH_CONFIG.swUrl, { scope: VR_ADMIN_PUSH_CONFIG.scopeUrl })
+                    .then(function () { return navigator.serviceWorker.ready; })
+                    .then(function (reg) {
+                        return reg.pushManager.getSubscription();
+                    })
+                    .then(function (sub) {
+                        if (sub) {
+                            if (deviceBadge) {
+                                deviceBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill font-2xs';
+                                deviceBadge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>This Device Subscribed &amp; Ready';
+                            }
+                            if (adminSubBtn) {
+                                adminSubBtn.className = 'btn btn-sm btn-light border text-muted font-2xs';
+                                if (adminSubBtnText) adminSubBtnText.textContent = 'Device Registered (Re-sync)';
+                            }
+                            return sub;
+                        } else {
+                            if (deviceBadge) {
+                                deviceBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill font-2xs';
+                                deviceBadge.textContent = 'Permission Granted, Device Not Subscribed';
+                            }
+                            if (adminSubBtn) {
+                                adminSubBtn.className = 'btn btn-sm btn-outline-success font-2xs';
+                                if (adminSubBtnText) adminSubBtnText.textContent = 'Subscribe This Device Now';
+                            }
+                            return null;
                         }
-                        if (adminSubBtn) {
-                            adminSubBtn.className = 'btn btn-sm btn-light border text-muted font-2xs';
-                            adminSubBtnText.textContent = 'Device Registered (Re-sync)';
-                        }
-                        return sub;
-                    } else {
-                        if (deviceBadge) {
-                            deviceBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill font-2xs';
-                            deviceBadge.textContent = 'Permission Granted, Device Not Subscribed';
-                        }
-                        if (adminSubBtn) {
-                            adminSubBtn.className = 'btn btn-sm btn-outline-success font-2xs';
-                            adminSubBtnText.textContent = 'Subscribe This Device Now';
-                        }
+                    })
+                    .catch(function (err) {
+                        console.warn('checkDeviceStatus error:', err);
                         return null;
-                    }
-                })
-                .catch(function (err) {
-                    console.warn('checkDeviceStatus error:', err);
-                    return null;
-                });
-        } else if (Notification.permission === 'denied') {
-            if (deviceBadge) {
-                deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
-                deviceBadge.textContent = 'Notifications Blocked in Browser';
+                    });
+            } else if (Notification.permission === 'denied') {
+                if (deviceBadge) {
+                    deviceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-2xs';
+                    deviceBadge.textContent = 'Notifications Blocked in Browser';
+                }
+                if (adminSubBtn) {
+                    adminSubBtn.className = 'btn btn-sm btn-outline-danger font-2xs';
+                    if (adminSubBtnText) adminSubBtnText.textContent = 'Unblock in Browser URL Bar';
+                }
+                return Promise.resolve(null);
+            } else {
+                if (deviceBadge) {
+                    deviceBadge.className = 'badge bg-secondary-subtle text-secondary border rounded-pill font-2xs';
+                    deviceBadge.textContent = 'Not Subscribed on This Device';
+                }
+                if (adminSubBtn) {
+                    adminSubBtn.className = 'btn btn-sm btn-outline-success font-2xs';
+                    if (adminSubBtnText) adminSubBtnText.textContent = 'Subscribe This Device';
+                }
+                return Promise.resolve(null);
             }
-            if (adminSubBtn) {
-                adminSubBtn.className = 'btn btn-sm btn-outline-danger font-2xs';
-                adminSubBtnText.textContent = 'Unblock in Browser URL Bar';
-            }
-            return Promise.resolve(null);
-        } else {
-            if (deviceBadge) {
-                deviceBadge.className = 'badge bg-secondary-subtle text-secondary border rounded-pill font-2xs';
-                deviceBadge.textContent = 'Not Subscribed on This Device';
-            }
-            if (adminSubBtn) {
-                adminSubBtn.className = 'btn btn-sm btn-outline-success font-2xs';
-                adminSubBtnText.textContent = 'Subscribe This Device';
-            }
-            return Promise.resolve(null);
         }
-    }
 
-    checkDeviceStatus();
+        checkDeviceStatus();
 
-    // Reusable routine to subscribe device and store token in database
-    function registerDeviceSubscription() {
-        return Notification.requestPermission().then(function (perm) {
-            if (perm !== 'granted') {
-                throw new Error('Notification permission was ' + perm + '. Please allow notifications in browser prompt.');
-            }
+        // 6. Device Subscription Routine
+        function registerDeviceSubscription() {
+            return Notification.requestPermission().then(function (perm) {
+                if (perm !== 'granted') {
+                    throw new Error('Notification permission was ' + perm + '. Please allow notifications in browser prompt.');
+                }
 
-            return fetch(VR_ADMIN_PUSH_CONFIG.publicKeyUrl, { headers: { 'Accept': 'application/json' } })
-                .then(function (res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching public VAPID key');
-                    return res.json();
-                })
-                .then(function (keyData) {
-                    if (!keyData || !keyData.publicKey) {
-                        throw new Error('VAPID public key unavailable from server');
-                    }
+                return fetch(VR_ADMIN_PUSH_CONFIG.publicKeyUrl, { headers: { 'Accept': 'application/json' } })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching public VAPID key');
+                        return res.json();
+                    })
+                    .then(function (keyData) {
+                        if (!keyData || !keyData.publicKey) {
+                            throw new Error('VAPID public key unavailable from server');
+                        }
 
-                    return navigator.serviceWorker.register(VR_ADMIN_PUSH_CONFIG.swUrl, { scope: VR_ADMIN_PUSH_CONFIG.scopeUrl })
-                        .then(function () { return navigator.serviceWorker.ready; })
-                        .then(function (reg) {
-                            return reg.pushManager.getSubscription().then(function (existingSub) {
-                                if (existingSub) {
-                                    return existingSub;
-                                }
-                                return reg.pushManager.subscribe({
-                                    userVisibleOnly: true,
-                                    applicationServerKey: urlB64ToUint8Array(keyData.publicKey)
+                        var serverKeyBytes = urlB64ToUint8Array(keyData.publicKey);
+
+                        return navigator.serviceWorker.register(VR_ADMIN_PUSH_CONFIG.swUrl, { scope: VR_ADMIN_PUSH_CONFIG.scopeUrl })
+                            .then(function () { return navigator.serviceWorker.ready; })
+                            .then(function (reg) {
+                                return reg.pushManager.getSubscription().then(function (existingSub) {
+                                    if (existingSub) {
+                                        return existingSub;
+                                    }
+                                    return reg.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: serverKeyBytes
+                                    });
+                                }).catch(function (subErr) {
+                                    // If key mismatch or stale subscription, unsubscribe and re-subscribe
+                                    return reg.pushManager.getSubscription().then(function (oldSub) {
+                                        if (oldSub) {
+                                            return oldSub.unsubscribe().then(function () {
+                                                return reg.pushManager.subscribe({
+                                                    userVisibleOnly: true,
+                                                    applicationServerKey: serverKeyBytes
+                                                });
+                                            });
+                                        }
+                                        throw subErr;
+                                    });
                                 });
                             });
+                    })
+                    .then(function (sub) {
+                        var subJson = sub.toJSON();
+                        return fetch(VR_ADMIN_PUSH_CONFIG.subscribeUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': VR_ADMIN_PUSH_CONFIG.csrfToken
+                            },
+                            body: JSON.stringify(subJson)
                         });
-                })
-                .then(function (sub) {
-                    var subJson = sub.toJSON();
-                    return fetch(VR_ADMIN_PUSH_CONFIG.subscribeUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': VR_ADMIN_PUSH_CONFIG.csrfToken
-                        },
-                        body: JSON.stringify(subJson)
+                    })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status + ' storing subscription');
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        if (data && data.subscription_id) {
+                            currentDeviceSubscriptionId = data.subscription_id;
+                        }
+                        checkDeviceStatus();
+                        return data;
                     });
-                })
-                .then(function (res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status + ' storing subscription');
-                    return res.json();
-                })
-                .then(function (data) {
-                    if (data && data.subscription_id) {
-                        currentDeviceSubscriptionId = data.subscription_id;
-                    }
-                    checkDeviceStatus();
-                    return data;
-                });
-        });
-    }
+            });
+        }
 
-    if (adminSubBtn) {
-        adminSubBtn.addEventListener('click', function () {
-            adminSubBtn.disabled = true;
-            adminSubBtnText.textContent = 'Subscribing Device...';
+        if (adminSubBtn) {
+            adminSubBtn.addEventListener('click', function () {
+                adminSubBtn.disabled = true;
+                if (adminSubBtnText) adminSubBtnText.textContent = 'Subscribing Device...';
 
-            registerDeviceSubscription()
-                .then(function () {
-                    adminSubBtn.disabled = false;
-                    alert('Success! Your admin device is now subscribed. You can now send instant test alerts to this screen.');
-                })
-                .catch(function (err) {
-                    adminSubBtn.disabled = false;
-                    console.error(err);
-                    alert('Device subscription error: ' + err.message);
-                    checkDeviceStatus();
-                });
-        });
-    }
-
-    // Send Test push handler (Seamless AJAX with auto-subscribe & instant onscreen alert)
-    if (sendTestBtn) {
-        sendTestBtn.addEventListener('click', function () {
-            var title = (titleInput && titleInput.value.trim()) || '';
-            var body = (bodyInput && bodyInput.value.trim()) || '';
-            var url = (urlInput && urlInput.value.trim()) || '';
-
-            if (!title) {
-                alert('Please enter a Notification Title first.');
-                if (titleInput) titleInput.focus();
-                return;
-            }
-            if (!body) {
-                alert('Please enter a Notification Message first.');
-                if (bodyInput) bodyInput.focus();
-                return;
-            }
-            if (!url) {
-                url = window.location.origin;
-            }
-
-            var originalHtml = sendTestBtn.innerHTML;
-            sendTestBtn.disabled = true;
-            sendTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Preparing Test Alert...</span>';
-
-            // Check if device is already subscribed, or subscribe automatically
-            registerDeviceSubscription()
-                .catch(function (subErr) {
-                    console.warn('Direct registration failed or permission prompt needed:', subErr);
-                    // Continue attempt with existing subscription in DB if present
-                    return null;
-                })
-                .then(function () {
-                    sendTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Dispatching Push...</span>';
-
-                    var payload = {
-                        title: title,
-                        body: body,
-                        url: url,
-                        subscription_id: currentDeviceSubscriptionId,
-                        _token: VR_ADMIN_PUSH_CONFIG.csrfToken
-                    };
-
-                    return fetch(VR_ADMIN_PUSH_CONFIG.testUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': VR_ADMIN_PUSH_CONFIG.csrfToken
-                        },
-                        body: JSON.stringify(payload)
+                registerDeviceSubscription()
+                    .then(function () {
+                        adminSubBtn.disabled = false;
+                        alert('Success! Your admin device is now subscribed. You can now send instant test alerts to this screen.');
+                    })
+                    .catch(function (err) {
+                        adminSubBtn.disabled = false;
+                        console.error(err);
+                        alert('Device subscription error: ' + err.message);
+                        checkDeviceStatus();
                     });
-                })
-                .then(function (res) {
-                    return res.json().then(function (data) {
-                        return { ok: res.ok, data: data };
-                    });
-                })
-                .then(function (result) {
+            });
+        }
+
+        // 7. Send Test Push Handler
+        if (sendTestBtn) {
+            sendTestBtn.addEventListener('click', function () {
+                var title = (titleInput && titleInput.value.trim()) || '🌿 Weekend Ayurvedic Flash Sale - 20% Off!';
+                var body = (bodyInput && bodyInput.value.trim()) || 'Pure Bhringraj & Amla Hair Oils are back in stock. Enjoy free shipping with code WELCOME10 today only!';
+                var url = (urlInput && urlInput.value.trim()) || '{{ url("/") }}';
+                var imageUrl = (imageInput && imageInput.value.trim()) || '';
+
+                if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    alert('⚠️ Web Push Notifications are not supported in this browser window. Please test using Chrome, Edge, Safari 16+, or Firefox on localhost or HTTPS.');
+                    return;
+                }
+
+                if (Notification.permission === 'denied') {
+                    alert('⚠️ Notifications are blocked in your browser settings for this site.\n\nPlease click the lock/settings icon in your browser URL address bar, allow Notifications, and try again.');
+                    return;
+                }
+
+                var originalHtml = sendTestBtn.innerHTML;
+                sendTestBtn.disabled = true;
+                sendTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Connecting Device...</span>';
+
+                function restoreBtn() {
                     sendTestBtn.disabled = false;
                     sendTestBtn.innerHTML = originalHtml;
+                }
 
-                    if (result.ok && result.data && result.data.success) {
-                        alert('🎉 ' + result.data.message);
-                    } else {
-                        var errMsg = (result.data && result.data.message) ? result.data.message : 'Failed to send test push notification.';
-                        alert('⚠️ ' + errMsg);
-                    }
-                })
-                .catch(function (err) {
-                    sendTestBtn.disabled = false;
-                    sendTestBtn.innerHTML = originalHtml;
-                    console.error('Test push dispatch error:', err);
-                    alert('Error dispatching test push: ' + err.message);
-                });
-        });
+                registerDeviceSubscription()
+                    .catch(function (subErr) {
+                        console.warn('Direct registration failed or permission prompt needed:', subErr);
+                        return null;
+                    })
+                    .then(function () {
+                        sendTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Dispatching Push...</span>';
+
+                        var payload = {
+                            title: title,
+                            body: body,
+                            url: url,
+                            image_url: imageUrl,
+                            subscription_id: currentDeviceSubscriptionId,
+                            _token: VR_ADMIN_PUSH_CONFIG.csrfToken
+                        };
+
+                        return fetch(VR_ADMIN_PUSH_CONFIG.testUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': VR_ADMIN_PUSH_CONFIG.csrfToken
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            return { ok: res.ok, data: data };
+                        });
+                    })
+                    .then(function (result) {
+                        restoreBtn();
+                        if (result.ok && result.data && result.data.success) {
+                            alert('🎉 ' + result.data.message);
+                        } else {
+                            var errMsg = (result.data && result.data.message) ? result.data.message : 'Failed to send test push notification.';
+                            alert('⚠️ ' + errMsg);
+                        }
+                    })
+                    .catch(function (err) {
+                        restoreBtn();
+                        console.error('Test push dispatch error:', err);
+                        alert('Error dispatching test push: ' + err.message);
+                    });
+            });
+        }
     }
-});
+
+    if (document.readyState !== 'loading') {
+        initPushAdmin();
+    } else {
+        document.addEventListener('DOMContentLoaded', initPushAdmin);
+    }
+})();
 </script>
-@endsection
+@endpush
 
