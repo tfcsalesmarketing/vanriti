@@ -12,6 +12,12 @@
         <div class="text-muted small mt-0.5">Instant 1-click broadcasts, anonymous visitor reach, and automated abandoned cart push reminders.</div>
     </div>
     <div class="d-flex align-items-center gap-2">
+        <form method="POST" action="{{ route('admin.push.dispatch-cart-recovery') }}" class="d-inline" onsubmit="return confirm('Scan abandoned carts and dispatch recovery push alerts to eligible subscribers now?')">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 shadow-xs" title="Scan and trigger abandoned cart reminders now">
+                <i class="bi bi-cart-check"></i><span>Dispatch Cart Recovery Now</span>
+            </button>
+        </form>
         <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#pushSettingsModal">
             <i class="bi bi-gear-fill"></i><span>Auto-Push Settings</span>
         </button>
@@ -403,6 +409,14 @@
                         <div class="small fw-bold text-dark mb-1">Server VAPID Public Key:</div>
                         <input type="text" class="form-control form-control-sm bg-white font-monospace" readonly value="{{ $keys['publicKey'] ?? 'Configured' }}" style="font-size: 0.7rem;">
                         <div class="small text-muted mt-1 font-2xs">Used by customer browsers to securely encrypt notifications.</div>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-white rounded-3 border">
+                        <div class="small fw-bold text-dark mb-1">Instant Recovery Test (Skip 45-min delay):</div>
+                        <p class="font-2xs text-muted mb-2">Want to verify alerts on your device without waiting? Force-trigger a recovery dispatch scan right now to any active cart with a subscriber.</p>
+                        <button type="submit" formaction="{{ route('admin.push.dispatch-cart-recovery') }}" name="force" value="1" class="btn btn-sm btn-outline-success font-2xs fw-bold">
+                            <i class="bi bi-play-circle me-1"></i>Force Dispatch Scan Now
+                        </button>
                     </div>
                 </div>
                 <div class="modal-footer border-top py-2 px-4">

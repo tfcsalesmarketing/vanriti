@@ -168,3 +168,4 @@ class InstagramReelController extends Controller
         return back()->with('success', $reel->is_active ? 'Reel published to website.' : 'Reel hidden from website.');
     }
 }
+

@@ -81,6 +81,8 @@ class CartService
             ? $this->getCartForUserOrCreate()
             : $this->getCart(true);
 
+        $this->syncPushSubscriptionToCart($cart);
+
         $price = $variant?->selling_price ?? $product->selling_price;
         $mrp = $variant?->mrp ?? $product->mrp;
         $gst = $variant?->gst_rate ?? $product->gst_rate;
@@ -223,6 +225,14 @@ class CartService
 
         $guestCart->items()->delete();
         $guestCart->delete();
+
+        try {
+            if (class_exists(\App\Models\PushSubscription::class)) {
+                \App\Models\PushSubscription::where('session_id', $sessionId)
+                    ->orWhere('session_id', session()->getId())
+                    ->update(['user_id' => $user->id]);
+            }
+        } catch (\Throwable) {}
 
         Cookie::queue(Cookie::forget(self::COOKIE_NAME));
     }
@@ -369,6 +379,31 @@ class CartService
             if ($item->quantity > $available) {
                 $item->update(['quantity' => $available]);
             }
+        }
+    }
+
+    /**
+     * Synchronize any existing browser push subscription to this cart's session or owner.
+     */
+    protected function syncPushSubscriptionToCart(Cart $cart): void
+    {
+        try {
+            $laravelSessionId = session()->getId();
+            if ($laravelSessionId && class_exists(\App\Models\PushSubscription::class)) {
+                $query = \App\Models\PushSubscription::query()
+                    ->where('session_id', $laravelSessionId);
+
+                if (auth()->check()) {
+                    $query->update([
+                        'user_id' => auth()->id(),
+                        'session_id' => $cart->session_id ?: $laravelSessionId,
+                    ]);
+                } elseif ($cart->session_id) {
+                    $query->update(['session_id' => $cart->session_id]);
+                }
+            }
+        } catch (\Throwable) {
+            // Push notification attribution is non-blocking.
         }
     }
 }

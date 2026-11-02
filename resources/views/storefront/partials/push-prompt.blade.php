@@ -190,6 +190,12 @@
             if (!subscription) throw new Error('No push subscription object');
 
             var subJson = subscription.toJSON();
+            try {
+                var cartMatch = document.cookie.match(/(^|;)\s*vanriti_cart\s*=\s*([^;]+)/);
+                if (cartMatch) {
+                    subJson.cart_token = decodeURIComponent(cartMatch[2]);
+                }
+            } catch (e) {}
 
             return fetch(VR_PUSH_CONFIG.subscribeUrl, {
                 method: 'POST',

@@ -55,7 +55,11 @@ class PushSubscription extends Model
                             ->whereExists(function ($cartQuery) {
                                 $cartQuery->selectRaw(1)
                                     ->from('carts')
-                                    ->whereColumn('carts.session_id', 'push_subscriptions.session_id')
+                                    ->where(function ($match) {
+                                        $match->whereColumn('carts.session_id', 'push_subscriptions.session_id')
+                                            ->orWhereRaw("CONCAT('cart_', push_subscriptions.session_id) = carts.session_id")
+                                            ->orWhereRaw("push_subscriptions.session_id = REPLACE(carts.session_id, 'cart_', '')");
+                                    })
                                     ->whereExists(function ($itemQuery) {
                                         $itemQuery->selectRaw(1)
                                             ->from('cart_items')

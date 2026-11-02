@@ -316,14 +316,14 @@ class WebPushService
     /**
      * Send automated abandoned cart web push notifications.
      */
-    public function sendAbandonedCartPushReminders(int $delayMinutes = 45): int
+    public function sendAbandonedCartPushReminders(int $delayMinutes = 45, bool $force = false): int
     {
         $enabled = Setting::where('key', 'push_abandoned_cart_enabled')->value('value');
-        if ($enabled === '0' || $enabled === false) {
+        if (! $force && ($enabled === '0' || $enabled === false)) {
             return 0;
         }
 
-        $delay = (int) (Setting::where('key', 'push_abandoned_cart_delay_minutes')->value('value') ?: $delayMinutes);
+        $delay = $force ? 0 : (int) (Setting::where('key', 'push_abandoned_cart_delay_minutes')->value('value') ?: $delayMinutes);
         $minCutoff = now()->subMinutes($delay);
         $maxCutoff = now()->subHours(48);
 
@@ -332,11 +332,13 @@ class WebPushService
             ->whereHas('items')
             ->where('updated_at', '<=', $minCutoff)
             ->where('updated_at', '>=', $maxCutoff)
-            ->where(function ($q) {
-                $q->whereNull('whatsapp_recovery_sent_at')
-                    ->orWhere('whatsapp_recovery_sent_at', '<=', now()->subHours(24));
+            ->when(! $force, function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNull('whatsapp_recovery_sent_at')
+                        ->orWhere('whatsapp_recovery_sent_at', '<=', now()->subHours(24));
+                });
             })
-            ->with(['items.product.images', 'owner'])
+            ->with(['items.product.images'])
             ->latest('updated_at')
             ->limit(50)
             ->get();
@@ -351,7 +353,15 @@ class WebPushService
             }
 
             if (! $subscription && $cart->session_id) {
-                $subscription = PushSubscription::active()->where('session_id', $cart->session_id)->latest('last_active_at')->first();
+                $rawCartSession = str_replace('cart_', '', $cart->session_id);
+                $subscription = PushSubscription::active()
+                    ->where(function ($q) use ($cart, $rawCartSession) {
+                        $q->where('session_id', $cart->session_id)
+                          ->orWhere('session_id', $rawCartSession)
+                          ->orWhere('session_id', 'cart_' . $rawCartSession);
+                    })
+                    ->latest('last_active_at')
+                    ->first();
             }
 
             if (! $subscription) {

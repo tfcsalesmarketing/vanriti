@@ -15,6 +15,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PushNotificationCommandCenterTest extends TestCase
@@ -350,5 +351,93 @@ class PushNotificationCommandCenterTest extends TestCase
     {
         $exitCode = Artisan::call('push:send-abandoned-cart-reminders');
         $this->assertEquals(0, $exitCode);
+    }
+
+    public function test_guest_add_to_cart_links_push_subscription_session(): void
+    {
+        $product = Product::factory()->create([
+            'status' => 'active',
+            'selling_price' => 299,
+            'stock' => 50,
+        ]);
+
+        $endpoint = 'https://fcm.googleapis.com/fcm/send/guest_device_' . Str::random(16);
+        $sub = PushSubscription::create([
+            'endpoint' => $endpoint,
+            'endpoint_hash' => md5($endpoint),
+            'public_key' => 'BPushKey123',
+            'auth_token' => 'AuthKey123',
+            'device_type' => 'mobile',
+            'session_id' => 'temp_session_id',
+            'status' => 'active',
+        ]);
+
+        $cartSession = 'cart_' . Str::random(32);
+
+        // When a subscriber has a cart token or cookie, subscribe endpoint binds to the cart session
+        $response = $this->postJson(route('push.subscribe'), [
+            'endpoint' => $sub->endpoint,
+            'cart_token' => $cartSession,
+            'keys' => [
+                'p256dh' => 'BPushKey123',
+                'auth' => 'AuthKey123',
+            ],
+        ]);
+
+        $response->assertOk();
+        $this->assertEquals($cartSession, $sub->fresh()->session_id);
+    }
+
+    public function test_abandoned_cart_push_dispatches_to_guest_subscriber(): void
+    {
+        $product = Product::factory()->create([
+            'status' => 'active',
+            'name' => 'Ayurvedic Amla Powder',
+            'selling_price' => 349,
+            'stock' => 20,
+        ]);
+
+        $cartSession = 'cart_' . Str::random(32);
+        $cart = \App\Models\Cart::create([
+            'owner_type' => 'guest',
+            'owner_id' => 0,
+            'session_id' => $cartSession,
+        ]);
+
+        $cart->items()->create([
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => 349,
+            'mrp' => 399,
+            'gst_rate' => 0,
+        ]);
+
+        $endpoint = 'https://fcm.googleapis.com/fcm/send/guest_abandoned_' . Str::random(16);
+        PushSubscription::create([
+            'endpoint' => $endpoint,
+            'endpoint_hash' => md5($endpoint),
+            'public_key' => 'BPushKey123',
+            'auth_token' => 'AuthKey123',
+            'device_type' => 'mobile',
+            'session_id' => $cartSession,
+            'status' => 'active',
+        ]);
+
+        $exitCode = Artisan::call('push:send-abandoned-cart-reminders', ['--force' => true]);
+        $this->assertEquals(0, $exitCode);
+
+        // Cart recovery timestamp should now be marked
+        $this->assertNotNull($cart->fresh()->whatsapp_recovery_sent_at);
+    }
+
+    public function test_admin_can_trigger_dispatch_cart_recovery_manually(): void
+    {
+        $response = $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.push.dispatch-cart-recovery'), [
+                'force' => '1',
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('info');
     }
 }

@@ -33,13 +33,15 @@ class WebPushSubscriptionController extends Controller
             'endpoint' => ['required', 'string', 'max:2048'],
             'keys.p256dh' => ['required', 'string'],
             'keys.auth' => ['required', 'string'],
+            'cart_token' => ['nullable', 'string', 'max:100'],
             'contentEncoding' => ['nullable', 'string', 'max:30'],
             'device_type' => ['nullable', 'string', 'max:20'],
             'browser' => ['nullable', 'string', 'max:30'],
         ]);
 
         $user = auth('web')->user();
-        $sessionId = session()->getId();
+        $cartSession = $request->input('cart_token') ?: $request->cookie(\App\Services\CartService::COOKIE_NAME);
+        $sessionId = $cartSession ?: session()->getId();
 
         $subscription = $this->webPushService->subscribe(
             $validated,

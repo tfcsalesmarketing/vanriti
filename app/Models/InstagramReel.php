@@ -85,3 +85,4 @@ class InstagramReel extends Model
         return image_url($this->video_url);
     }
 }
+

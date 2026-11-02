@@ -222,4 +222,18 @@ class PushNotificationController extends Controller
 
         return back()->with('success', 'Push notification automation settings updated successfully.');
     }
+
+    public function dispatchAbandonedCartReminders(Request $request): RedirectResponse
+    {
+        $force = $request->boolean('force');
+        $delay = (int) ($request->input('delay') ?: 45);
+
+        $sent = $this->webPushService->sendAbandonedCartPushReminders($delay, $force);
+
+        if ($sent > 0) {
+            return back()->with('success', "Dispatched abandoned cart push reminders to {$sent} subscriber device(s).");
+        }
+
+        return back()->with('info', "Scan finished. 0 alerts dispatched. (Carts must be at least {$delay} minutes old with active push subscribers and no reminder dispatched in the last 24h, or check 'Force Dispatch' to test immediately).");
+    }
 }

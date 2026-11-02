@@ -254,6 +254,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/campaigns/cleanup', [\App\Http\Controllers\Admin\PushNotificationController::class, 'cleanupCampaigns'])->name('campaigns.cleanup');
             Route::delete('/subscribers/{subscription}', [\App\Http\Controllers\Admin\PushNotificationController::class, 'destroySubscriber'])->name('subscribers.destroy');
             Route::post('/settings', [\App\Http\Controllers\Admin\PushNotificationController::class, 'updateSettings'])->name('settings.update');
+            Route::post('/dispatch-cart-recovery', [\App\Http\Controllers\Admin\PushNotificationController::class, 'dispatchAbandonedCartReminders'])->name('dispatch-cart-recovery');
         });
 
         Route::resource('admins', AdminUserController::class)->except(['show'])->middleware('permission:manage-admins');
