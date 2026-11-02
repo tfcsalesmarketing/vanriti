@@ -94,3 +94,4 @@ class SearchSuggestTest extends TestCase
         $prodResponse->assertJsonMissing(['name' => 'Archived Hair Serum']);
     }
 }
+
