@@ -45,11 +45,13 @@ class InstagramReelController extends Controller
             'caption' => 'nullable|string|max:1000',
             'instagram_url' => 'nullable|url|max:500',
             'video_url' => 'nullable|url|max:500',
-            'video_file' => 'nullable|file|mimes:mp4,mov,webm|max:51200', // 50MB
+            'video_file' => 'nullable|file|mimes:mp4,mov,webm,m4v,ogg|max:102400', // 100MB
             'thumbnail_url' => 'nullable|url|max:500',
             'thumbnail_file' => 'nullable|image|mimes:jpeg,png,webp,jpg|max:5120',
             'product_id' => 'nullable|exists:products,id',
             'views_count' => 'nullable|string|max:50',
+            'likes_count' => 'nullable|integer|min:0',
+            'shares_count' => 'nullable|integer|min:0',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',
         ]);
@@ -95,11 +97,13 @@ class InstagramReelController extends Controller
             'caption' => 'nullable|string|max:1000',
             'instagram_url' => 'nullable|url|max:500',
             'video_url' => 'nullable|url|max:500',
-            'video_file' => 'nullable|file|mimes:mp4,mov,webm|max:51200',
+            'video_file' => 'nullable|file|mimes:mp4,mov,webm,m4v,ogg|max:102400',
             'thumbnail_url' => 'nullable|url|max:500',
             'thumbnail_file' => 'nullable|image|mimes:jpeg,png,webp,jpg|max:5120',
             'product_id' => 'nullable|exists:products,id',
             'views_count' => 'nullable|string|max:50',
+            'likes_count' => 'nullable|integer|min:0',
+            'shares_count' => 'nullable|integer|min:0',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',
         ]);

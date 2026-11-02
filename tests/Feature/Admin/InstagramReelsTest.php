@@ -182,4 +182,40 @@ class InstagramReelsTest extends TestCase
         $response->assertSee('Active Glow Ritual');
         $response->assertDontSee('Hidden Draft Reel');
     }
+
+    public function test_visitor_can_like_a_reel(): void
+    {
+        $reel = InstagramReel::create([
+            'title' => 'Amla Hair Ritual',
+            'likes_count' => 10,
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson(route('reels.like', $reel));
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'likes' => 11,
+        ]);
+        $this->assertEquals(11, $reel->fresh()->likes_count);
+    }
+
+    public function test_visitor_can_share_a_reel(): void
+    {
+        $reel = InstagramReel::create([
+            'title' => 'Hibiscus Care Ritual',
+            'shares_count' => 5,
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson(route('reels.share', $reel));
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'shares' => 6,
+        ]);
+        $this->assertEquals(6, $reel->fresh()->shares_count);
+    }
 }

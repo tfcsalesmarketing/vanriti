@@ -20,6 +20,8 @@ class InstagramReel extends Model
         'thumbnail_url',
         'product_id',
         'views_count',
+        'likes_count',
+        'shares_count',
         'sort_order',
         'is_active',
     ];
@@ -27,6 +29,8 @@ class InstagramReel extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'likes_count' => 'integer',
+        'shares_count' => 'integer',
     ];
 
     public function product(): BelongsTo

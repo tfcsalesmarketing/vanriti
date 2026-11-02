@@ -216,5 +216,10 @@ Route::post('/push/track-click/{campaignId}', [\App\Http\Controllers\WebPushSubs
 // ---------- Side-Cart WhatsApp Quick Lead Capture ----------
 Route::post('/cart/save-whatsapp', [\App\Http\Controllers\CartController::class, 'saveToWhatsApp'])->name('cart.save-whatsapp')->middleware('throttle:10,1');
 
+// ---------- Public Shoppable Reels Interactions ----------
+Route::post('/reels/{reel}/like', [\App\Http\Controllers\ReelInteractionController::class, 'like'])->name('reels.like');
+Route::post('/reels/{reel}/share', [\App\Http\Controllers\ReelInteractionController::class, 'share'])->name('reels.share');
+
+
 
 

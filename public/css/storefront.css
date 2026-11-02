@@ -489,24 +489,25 @@ img { max-width: 100%; height: auto; }
    Watch & Shop - Instagram Shoppable Reels Section
    ========================================================================== */
 .vr-section-reels {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F2 50%, #FFFFFF 100%);
+    background: #ffffff;
     position: relative;
     overflow: hidden;
 }
 
-.vr-kicker-reels {
-    color: #C13584;
-}
-.vr-kicker-reels i {
-    color: #E1306C;
+.vr-section-title-reels {
+    color: #263D25;
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 0;
 }
 
 .vr-reels-carousel {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    padding: 6px 2px 20px;
+    padding: 8px 4px 20px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
@@ -515,211 +516,202 @@ img { max-width: 100%; height: auto; }
 }
 
 .vr-reel-card {
-    flex: 0 0 calc(50% - 8px);
-    min-width: 170px;
-    max-width: 250px;
-    border-radius: 18px;
+    flex: 0 0 calc(52% - 10px);
+    min-width: 175px;
+    max-width: 230px;
+    border-radius: 14px;
     overflow: hidden;
     cursor: pointer;
     position: relative;
-    box-shadow: 0 4px 16px rgba(38, 61, 37, 0.08);
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    border: 1px solid #edf0ea;
+    background: #ffffff;
+    transition: transform 0.26s ease, box-shadow 0.26s ease;
     scroll-snap-align: start;
-    background: #111;
+    display: flex;
+    flex-direction: column;
 }
 
 @media (min-width: 576px) {
     .vr-reel-card {
-        flex: 0 0 200px;
+        flex: 0 0 210px;
     }
 }
 
 @media (min-width: 992px) {
     .vr-reel-card {
-        flex: 0 0 230px;
+        flex: 0 0 235px;
     }
 }
 
 .vr-reel-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 30px rgba(38, 61, 37, 0.16);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(38, 61, 37, 0.12);
 }
 
-.vr-reel-poster-wrap {
+.vr-reel-video-wrap {
     position: relative;
     width: 100%;
     aspect-ratio: 9/16;
-    background: #1a1a1a;
+    background: #111111;
     overflow: hidden;
 }
 
-.vr-reel-img {
+.vr-reel-inline-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s ease;
+    display: block;
+    background: #000;
 }
 
-.vr-reel-card:hover .vr-reel-img {
-    transform: scale(1.05);
-}
-
-.vr-reel-gradient-top {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 12px 10px;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-}
-
-.vr-reel-ig-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.66rem;
-    font-weight: 700;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(6px);
-    padding: 2px 7px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-.vr-reel-ig-badge i {
-    color: #E1306C;
-}
-
-.vr-reel-views-chip {
-    font-size: 0.64rem;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(6px);
-    padding: 2px 6px;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.vr-reel-play-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.28);
-    backdrop-filter: blur(8px);
-    border: 1.5px solid rgba(255, 255, 255, 0.6);
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    z-index: 2;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.vr-reel-card:hover .vr-reel-play-icon {
-    background: rgba(111, 135, 54, 0.9);
-    border-color: #ffffff;
-    transform: translate(-50%, -50%) scale(1.12);
-}
-
-.vr-reel-gradient-bottom {
+.vr-reel-video-bottom-bar {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     padding: 24px 10px 10px;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.4) 65%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.75) 100%);
     z-index: 2;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
 }
 
-.vr-reel-title-text {
+.vr-reel-views-pill {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     color: #ffffff;
-    font-size: 0.78rem;
-    font-weight: 700;
-    line-height: 1.25;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    letter-spacing: 0.2px;
 }
 
-.vr-reel-product-pill {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 999px;
-    padding: 3px 6px 3px 3px;
+.vr-reel-actions-badge {
     display: flex;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    gap: 8px;
+    pointer-events: auto;
 }
 
-.vr-pill-thumb {
-    width: 24px;
-    height: 24px;
+.vr-reel-act-btn {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+    padding: 0;
+}
+.vr-reel-act-btn:hover {
+    transform: scale(1.14);
+    background: rgba(0, 0, 0, 0.7);
+}
+.vr-reel-act-btn.liked {
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+.vr-reel-card-product {
+    padding: 10px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid #edf0ea;
+}
+
+.vr-reel-prod-details {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.vr-reel-prod-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
     object-fit: cover;
+    border: 1px solid #edf0ea;
     flex-shrink: 0;
 }
 
-.vr-pill-info {
-    display: flex;
-    flex-direction: column;
+.vr-reel-prod-meta {
+    flex: 1;
     min-width: 0;
-    flex-grow: 1;
-    line-height: 1.15;
+    line-height: 1.25;
 }
 
-.vr-pill-name {
-    font-size: 0.65rem;
+.vr-reel-prod-name {
+    font-size: 0.78rem;
     font-weight: 700;
-    color: var(--vr-green-dark, #263D25);
+    color: #1f3320;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-bottom: 2px;
 }
 
-.vr-pill-price {
-    font-size: 0.62rem;
-    color: var(--vr-green, #6F8736);
+.vr-reel-prod-prices {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+}
+
+.vr-reel-prod-price {
     font-weight: 800;
+    color: #1f3320;
 }
 
-.vr-pill-cta {
-    background: var(--vr-green, #6F8736);
-    color: #ffffff;
-    font-size: 0.6rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 999px;
-    letter-spacing: 0.05em;
+.vr-reel-prod-mrp {
+    color: #888888;
+    font-size: 0.68rem;
+    text-decoration: line-through;
 }
 
-/* Reel Modal Dialog */
+.vr-reel-card-buy-btn {
+    background: #263D25 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    padding: 7px 0 !important;
+    width: 100% !important;
+    text-align: center !important;
+    transition: background 0.2s ease !important;
+}
+.vr-reel-card-buy-btn:hover {
+    background: #172716 !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Krishna Ayurved Style Reel Fullscreen Modal Player
+   ========================================================================== */
 .vr-reel-modal {
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: 10000;
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 12px;
 }
 
 .vr-reel-modal.active {
@@ -729,244 +721,283 @@ img { max-width: 100%; height: auto; }
 .vr-reel-modal-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(10, 15, 10, 0.88);
-    backdrop-filter: blur(10px);
+    background: rgba(5, 10, 6, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .vr-reel-modal-dialog {
     position: relative;
     z-index: 2;
     width: 100%;
-    max-width: 390px;
-    height: 85vh;
-    max-height: 720px;
-    border-radius: 20px;
+    max-width: 410px;
+    aspect-ratio: 9/16;
+    max-height: 90vh;
+    border-radius: 16px;
     overflow: hidden;
     background: #000000;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
     display: flex;
     flex-direction: column;
 }
 
-.vr-reel-close-btn {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 10;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.vr-reel-close-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.08);
-}
-
-.vr-reel-nav-btn {
+.vr-modal-nav-arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 10;
-    width: 44px;
-    height: 44px;
+    z-index: 10002;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
     color: #ffffff;
     display: none;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     transition: all 0.2s ease;
+    padding: 0;
 }
 @media (min-width: 768px) {
-    .vr-reel-nav-btn {
+    .vr-modal-nav-arrow {
         display: flex;
     }
-    .vr-reel-nav-btn.prev {
-        left: -58px;
+    .vr-modal-nav-arrow.prev {
+        left: calc(50% - 270px);
     }
-    .vr-reel-nav-btn.next {
-        right: -58px;
+    .vr-modal-nav-arrow.next {
+        right: calc(50% - 270px);
     }
 }
-.vr-reel-nav-btn:hover {
+.vr-modal-nav-arrow:hover {
     background: rgba(255, 255, 255, 0.35);
-    transform: translateY(-50%) scale(1.1);
+    transform: translateY(-50%) scale(1.08);
 }
 
-.vr-reel-player-box {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000;
-}
-
-.vr-reel-media-wrap {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.vr-reel-video-element {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.vr-reel-iframe-element {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.vr-reel-play-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 3.5rem;
-    z-index: 5;
-    pointer-events: none;
-}
-
-.vr-reel-player-top {
+.vr-modal-top-bar {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     padding: 14px 14px 20px;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 100%);
-    z-index: 8;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.vr-reel-brand-pill {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 3px 8px;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.vr-reel-title-badge {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.85);
-    max-width: 130px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.vr-reel-sound-btn, .vr-reel-ext-btn {
-    width: 32px;
-    height: 32px;
+.vr-modal-ctrl-btn {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     color: #ffffff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-size: 0.95rem;
     cursor: pointer;
-    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+.vr-modal-ctrl-btn:hover {
+    background: rgba(0, 0, 0, 0.75);
+    transform: scale(1.06);
+}
+
+/* Right vertical action rail (Views, Like, Share, Cart) */
+.vr-modal-action-rail {
+    position: absolute;
+    right: 12px;
+    bottom: 125px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.vr-rail-item, .vr-rail-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #ffffff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.vr-rail-btn i {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+.vr-rail-btn:hover i {
+    transform: scale(1.12);
+    background: rgba(0, 0, 0, 0.65);
+}
+.vr-rail-btn.liked i {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.vr-rail-number {
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-top: 3px;
+    line-height: 1;
+}
+
+.vr-rail-sub {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 2px;
+}
+
+/* Bottom shoppable product drawer inside modal */
+.vr-modal-product-drawer {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.vr-modal-product-glass-card {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.vr-modal-drawer-thumb {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #edf0ea;
+    flex-shrink: 0;
+}
+
+.vr-modal-drawer-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1f3320;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+}
+
+.vr-modal-drawer-ext {
+    color: #666;
+    font-size: 0.8rem;
     text-decoration: none;
+    transition: color 0.15s ease;
+}
+.vr-modal-drawer-ext:hover {
+    color: #263D25;
+}
+
+.vr-modal-drawer-pricing {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+
+.vr-modal-drawer-price {
+    font-weight: 800;
+    color: #1f3320;
+}
+
+.vr-modal-buy-now-btn {
+    background: #263D25 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 0.82rem !important;
+    border-radius: 8px !important;
+    padding: 8px 0 !important;
+    border: none !important;
+    width: 100% !important;
+    text-align: center !important;
+    transition: background 0.2s ease !important;
+}
+.vr-modal-buy-now-btn:hover {
+    background: #172716 !important;
+    color: #ffffff !important;
 }
 
 .vr-reel-progress-bar {
     position: absolute;
-    bottom: 84px;
-    left: 12px;
-    right: 12px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: rgba(255, 255, 255, 0.25);
-    border-radius: 3px;
-    z-index: 8;
+    z-index: 11;
     overflow: hidden;
 }
 
 .vr-reel-progress-fill {
     height: 100%;
     width: 0%;
-    background: var(--vr-green, #6F8736);
+    background: #D4AF37;
     transition: width 0.1s linear;
 }
 
-.vr-reel-shoppable-drawer {
+.vr-reel-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10005;
+    background: #263D25;
+    color: #ffffff;
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.vr-reel-ig-fallback {
     position: absolute;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    z-index: 8;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(10px);
-    border-radius: 14px;
-    padding: 8px 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-.vr-drawer-thumb {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: 1px solid rgba(38, 61, 37, 0.1);
-}
-
-.vr-drawer-name {
-    font-size: 0.74rem;
-    font-weight: 700;
-    color: var(--vr-green-dark, #263D25);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2;
-}
-
-.vr-drawer-price {
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: var(--vr-green-dark, #263D25);
-}
-
-.vr-drawer-buy-btn {
-    background: var(--vr-green, #6F8736) !important;
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    font-size: 0.74rem !important;
-    padding: 6px 12px !important;
-    border-radius: 8px !important;
-    border: none !important;
-}
-.vr-drawer-buy-btn:hover {
-    background: var(--vr-green-dark, #263D25) !important;
+    inset: 0;
+    background: #111111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    z-index: 4;
 }
 
 /* ---------- Promotional section banners ----------

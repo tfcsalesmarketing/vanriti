@@ -46,20 +46,29 @@
         {{-- Video & Media Source Card --}}
         <div class="card border-0 shadow-xs p-4 mb-4">
             <h6 class="fw-bold mb-2 text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-play-btn text-primary"></i> Video Player File (Direct High-Speed Playback)
+                <i class="bi bi-play-btn text-primary"></i> Reel Video File (Auto-Playing MP4 for Krishna Ayurved Experience)
             </h6>
-            <p class="small text-muted mb-3">
-                For the smoothest experience on mobile without Instagram login walls, you can attach an MP4 video or direct video link.
-            </p>
+            
+            <div class="alert alert-warning d-flex align-items-start gap-2.5 py-2.5 px-3 mb-3" style="font-size: 0.82rem; border-radius: 8px;">
+                <i class="bi bi-exclamation-circle-fill fs-5 text-warning flex-shrink-0"></i>
+                <div>
+                    <strong class="d-block text-dark">Why upload an MP4 video instead of only pasting an Instagram link?</strong>
+                    Instagram strictly blocks external iframe embeds with <em class="text-danger">"This content is blocked. Contact the site owner to fix the issue."</em> and prohibits multiple videos from autoplaying together.
+                    Uploading the short vertical MP4 video file below gives your customers the exact <strong>Krishna Ayurved</strong> experience: <strong>all videos autoplay smoothly together without volume in the carousel</strong> and open with sound on click!
+                    <div class="mt-1.5 text-muted">
+                        💡 <em>Tip: You can quickly download any Instagram Reel as MP4 using free tools like <a href="https://snapinsta.app" target="_blank" class="fw-bold text-primary text-decoration-underline">SnapInsta.app</a> or <a href="https://fastdl.app" target="_blank" class="fw-bold text-primary text-decoration-underline">FastDl.app</a>, then upload it below!</em>
+                    </div>
+                </div>
+            </div>
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="video_file" class="form-label small fw-semibold">Upload MP4 Video <span class="text-muted fw-normal">(Max 50MB)</span></label>
+                    <label for="video_file" class="form-label small fw-semibold">Upload Reel Video (MP4) <span class="text-muted fw-normal">(Max 100MB)</span></label>
                     <input type="file"
                            name="video_file"
                            id="video_file"
                            class="form-control @error('video_file') is-invalid @enderror"
-                           accept="video/mp4,video/webm,video/quicktime">
+                           accept="video/mp4,video/webm,video/quicktime,video/m4v">
                     @if (isset($reel) && $reel->video_url)
                         <div class="mt-2 small text-success d-flex align-items-center gap-1">
                             <i class="bi bi-check-circle-fill"></i> Video configured
@@ -69,7 +78,7 @@
                     @error('video_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-6">
-                    <label for="video_url" class="form-label small fw-semibold">Or Direct Video URL (CDN / Storage)</label>
+                    <label for="video_url" class="form-label small fw-semibold">Or Direct Video URL (CDN / Cloud Storage)</label>
                     <input type="url"
                            name="video_url"
                            id="video_url"
@@ -162,6 +171,29 @@
                        placeholder="e.g. 18.5K or 24,000+">
                 <div class="form-text small">Shown as a social proof badge on the reel card.</div>
                 @error('views_count') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="likes_count" class="form-label small fw-semibold">Likes Count</label>
+                    <input type="number"
+                           name="likes_count"
+                           id="likes_count"
+                           class="form-control @error('likes_count') is-invalid @enderror"
+                           value="{{ old('likes_count', $reel->likes_count ?? 150) }}"
+                           min="0">
+                    @error('likes_count') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-6">
+                    <label for="shares_count" class="form-label small fw-semibold">Shares Count</label>
+                    <input type="number"
+                           name="shares_count"
+                           id="shares_count"
+                           class="form-control @error('shares_count') is-invalid @enderror"
+                           value="{{ old('shares_count', $reel->shares_count ?? 45) }}"
+                           min="0">
+                    @error('shares_count') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
             </div>
 
             <div class="mb-3">
