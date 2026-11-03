@@ -95,6 +95,14 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
 
-        return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories', 'reels'));
+        // 5. Recent Editorial Journal Stories: 4 latest published articles
+        $recentBlogs = \App\Models\Blog::query()
+            ->published()
+            ->with(['category', 'author'])
+            ->latest('published_at')
+            ->limit(4)
+            ->get();
+
+        return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories', 'reels', 'recentBlogs'));
     }
 }

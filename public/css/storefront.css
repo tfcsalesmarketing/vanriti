@@ -637,6 +637,13 @@ img { max-width: 100%; height: auto; }
     transform: translateX(3px);
 }
 
+/* 5. Editorial Journal Section */
+.vr-section-journal {
+    background: linear-gradient(180deg, #FAF8F2 0%, #FFFFFF 100%);
+    border-top: 1px solid rgba(181, 138, 58, 0.14);
+    border-bottom: 1px solid rgba(181, 138, 58, 0.14);
+}
+
 /* ==========================================================================
    Watch & Shop - Instagram Shoppable Reels Section
    ========================================================================== */

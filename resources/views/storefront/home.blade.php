@@ -5,6 +5,10 @@
 @section('og_title', setting('meta_title') ?: (store_name() . ' - ' . setting('store_tagline', 'PURE BY NATURE')))
 @section('canonical', route('home'))
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset_version('css/vr-journal-premium.css') }}">
+@endpush
+
 @section('content')
 
 @if ($banners->isNotEmpty())
@@ -448,6 +452,73 @@
                             <span class="vr-cat-name">{{ $cat->name }}</span>
                             <span class="vr-cat-explore d-none d-md-inline-block">Explore &rarr;</span>
                         </a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+@endif
+
+@if (isset($recentBlogs) && $recentBlogs->isNotEmpty())
+    <section class="vr-section vr-section-journal py-5">
+        <div class="container">
+            <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
+                <div>
+                    <div class="vr-section-kicker text-muted">
+                        <i class="ri-book-open-line text-success"></i> THE VANRITI JOURNAL
+                    </div>
+                    <h2 class="vr-section-title mb-1">Rituals, Recipes &amp; Wellness</h2>
+                    <p class="vr-section-sub mb-0">Mindful herbal guides and natural care rituals curated by our botanists</p>
+                </div>
+                <a href="{{ route('blog.index') }}" class="vr-link-more">
+                    View all stories <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="row g-3 g-md-4 vr-stagger">
+                @foreach ($recentBlogs as $post)
+                    <div class="col-12 col-sm-6 col-lg-3 d-flex">
+                        <article class="vr-journal-card w-100">
+                            <div class="vr-journal-card-img">
+                                <a href="{{ route('blog.show', $post->slug) }}" class="d-block w-100 h-100" aria-label="{{ $post->title }}">
+                                    @if ($post->featured_image)
+                                        <img src="{{ image_url($post->featured_image) }}" alt="{{ $post->title }}" loading="lazy">
+                                    @else
+                                        <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
+                                            <i class="ri-article-line fs-1 opacity-25"></i>
+                                        </div>
+                                    @endif
+                                </a>
+                                @if ($post->category)
+                                    <a href="{{ route('blog.index', ['category' => $post->category->slug]) }}" class="vr-journal-card-cat text-decoration-none">
+                                        {{ $post->category->name }}
+                                    </a>
+                                @endif
+                            </div>
+
+                            <div class="vr-journal-card-body">
+                                <div class="vr-journal-card-meta">
+                                    <span>{{ $post->published_at ? $post->published_at->format('M d, Y') : '' }}</span>
+                                    <span>&middot;</span>
+                                    <span><i class="ri-time-line me-1"></i>{{ $post->readingTime() }} min read</span>
+                                </div>
+
+                                <a href="{{ route('blog.show', $post->slug) }}" class="text-decoration-none" title="{{ $post->title }}">
+                                    <h3 class="vr-journal-card-title">{{ Str::limit($post->title, 50) }}</h3>
+                                </a>
+
+                                <p class="vr-journal-card-excerpt">
+                                    {{ $post->excerpt ? Str::limit($post->excerpt, 75) : Str::limit(strip_tags($post->content), 75) }}
+                                </p>
+
+                                <div class="vr-journal-card-footer">
+                                    <span class="vr-journal-card-author text-truncate" style="max-width: 110px;">By {{ $post->author_name }}</span>
+                                    <a href="{{ route('blog.show', $post->slug) }}" class="vr-journal-card-link">
+                                        Read <i class="ri-arrow-right-line"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
                     </div>
                 @endforeach
             </div>
