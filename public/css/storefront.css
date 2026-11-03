@@ -987,19 +987,6 @@ img { max-width: 100%; height: auto; }
     transition: opacity 0.25s ease;
 }
 
-.vr-reel-ig-fallback {
-    position: absolute;
-    inset: 0;
-    background: #111111;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    text-align: center;
-    z-index: 4;
-}
-
 /* ---------- Promotional section banners ----------
    Rendered between homepage product sections. Half the hero's 600px height so
    the strip reads as a supporting band rather than competing with the carousel.

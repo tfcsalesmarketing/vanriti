@@ -322,18 +322,6 @@
             {{-- Video Element --}}
             <video id="vrReelVideo" class="vr-reel-video-element" playsinline loop preload="auto"></video>
 
-            {{-- Fallback Card if Video MP4 is missing (Prevents "This content is blocked" error) --}}
-            <div class="vr-reel-ig-fallback d-none" id="vrModalIgFallback">
-                <div class="p-3">
-                    <i class="bi bi-instagram fs-1 text-danger mb-2"></i>
-                    <h5 class="text-white fw-bold mb-1">Watch on Instagram</h5>
-                    <p class="text-white-50 small mb-3">Instagram restricts playing this video directly within an iframe on external sites. Tap below to watch on our official page!</p>
-                    <a href="#" target="_blank" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold" id="vrModalOpenInstaLink">
-                        <i class="bi bi-instagram me-1"></i> Open Instagram Reel
-                    </a>
-                </div>
-            </div>
-
             {{-- Play/Pause Indicator Overlay --}}
             <div class="vr-reel-play-overlay d-none" id="vrReelPlayOverlay">
                 <i class="bi bi-play-circle-fill"></i>
@@ -465,8 +453,6 @@
     var backdrop = document.getElementById('vrReelModalBackdrop');
     var closeBtn = document.getElementById('vrReelCloseBtn');
     var video = document.getElementById('vrReelVideo');
-    var fallback = document.getElementById('vrModalIgFallback');
-    var fallbackLink = document.getElementById('vrModalOpenInstaLink');
     var playOverlay = document.getElementById('vrReelPlayOverlay');
     var soundBtn = document.getElementById('vrModalSoundBtn');
     var fullscreenBtn = document.getElementById('vrModalFullscreenBtn');
@@ -560,7 +546,6 @@
         }
 
         if (videoSrc) {
-            fallback.classList.add('d-none');
             video.classList.remove('d-none');
             video.poster = poster;
             video.src = videoSrc;
@@ -579,12 +564,10 @@
                 });
             }
         } else {
-            // No direct MP4: show fallback card instead of blocked iframe
             video.pause();
             video.src = '';
-            video.classList.add('d-none');
-            fallback.classList.remove('d-none');
-            if (fallbackLink) fallbackLink.href = instaUrl;
+            video.poster = poster;
+            playOverlay.classList.remove('d-none');
         }
 
         if (hasProduct) {

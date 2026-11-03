@@ -16,7 +16,6 @@ class InstagramReel extends Model
         'caption',
         'instagram_url',
         'instagram_shortcode',
-        'embed_code',
         'video_url',
         'thumbnail_url',
         'product_id',
@@ -62,11 +61,6 @@ class InstagramReel extends Model
         return null;
     }
 
-    public function getEmbedUrlAttribute(): ?string
-    {
-        $code = $this->instagram_shortcode ?: static::extractShortcode($this->instagram_url);
-        return $code ? "https://www.instagram.com/reel/{$code}/embed/" : null;
-    }
 
     public function getPosterAttribute(): string
     {
