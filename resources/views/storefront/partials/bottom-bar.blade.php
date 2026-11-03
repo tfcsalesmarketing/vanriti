@@ -26,7 +26,7 @@
         <h2 class="visually-hidden" id="vrMenuPanelLabel">Navigation Menu</h2>
         <a class="vr-drawer-brand" href="{{ route('home') }}" aria-label="{{ store_name() }} Home">
             @if ($logo)
-                <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="36" width="120" class="vr-logo">
+                <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="36" width="47" class="vr-logo">
             @else
                 <span class="vr-brand-name">{{ store_name() }}</span>
             @endif

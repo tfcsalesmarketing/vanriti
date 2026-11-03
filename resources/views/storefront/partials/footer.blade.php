@@ -22,7 +22,7 @@
             <div class="col-lg-4">
                 <a href="{{ route('home') }}" class="vr-footer-brand mb-3" aria-label="{{ store_name() }} Home">
                     @if ($logo)
-                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="40" width="128" class="vr-logo">
+                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="40" width="52" class="vr-logo">
                     @else
                         <span class="vr-brand-name">{{ store_name() }}</span>
                     @endif

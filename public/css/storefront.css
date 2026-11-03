@@ -345,26 +345,44 @@ img { max-width: 100%; height: auto; }
     border-radius: 18px;
 }
 
-.vr-hero .carousel-indicators { bottom: 1.25rem; margin-bottom: 0; }
+.vr-hero .carousel-indicators {
+    bottom: 1.25rem;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 4;
+}
 .vr-hero .carousel-indicators [data-bs-target] {
-    width: 28px;
-    height: 4px;
-    border-radius: 4px;
-    opacity: 0.5;
-    background: #fff;
-    border: 0;
+    box-sizing: content-box !important;
+    width: 28px !important;
+    height: 6px !important;
+    border-radius: 4px !important;
+    opacity: 0.65 !important;
+    background-color: #fff !important;
+    background-clip: padding-box !important;
+    border-top: 21px solid transparent !important;
+    border-bottom: 21px solid transparent !important;
+    border-left: 4px solid transparent !important;
+    border-right: 4px solid transparent !important;
+    margin: 0 4px !important;
+    padding: 0 !important;
+    cursor: pointer;
     transition: all var(--vr-transition);
 }
 .vr-hero .carousel-indicators [data-bs-target].active {
-    width: 44px;
-    opacity: 1;
-    background: #fff;
+    width: 44px !important;
+    opacity: 1 !important;
+    background-color: #fff !important;
 }
 
 .vr-hero .carousel-control-prev,
 .vr-hero .carousel-control-next {
-    width: 42px;
-    height: 42px;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
     top: 50%;
     transform: translateY(-50%);
     bottom: auto;
@@ -562,6 +580,18 @@ img { max-width: 100%; height: auto; }
     z-index: 10;
     transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     padding: 0;
+}
+
+.vr-slider-nav::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
 }
 
 .vr-slider-nav:hover {
@@ -913,6 +943,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .vr-reel-act-btn {
+    position: relative;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -928,6 +959,17 @@ img { max-width: 100%; height: auto; }
     cursor: pointer;
     transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
     padding: 0;
+}
+.vr-reel-act-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
 }
 .vr-reel-act-btn:hover {
     transform: scale(1.14);

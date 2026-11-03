@@ -33,7 +33,7 @@
 
                 <a class="vr-brand mx-auto text-center" href="{{ route('home') }}" aria-label="{{ store_name() }} Home">
                     @if ($logo)
-                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="50" width="160" class="vr-logo">
+                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="50" width="65" class="vr-logo">
                     @else
                         {{ strtoupper(store_name()) }}<span class="dot">.</span>
                     @endif
@@ -48,7 +48,7 @@
             <div class="col-lg-3 d-none d-lg-flex align-items-center">
                 <a class="vr-brand me-lg-0" href="{{ route('home') }}" aria-label="{{ store_name() }} Home">
                     @if ($logo)
-                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="55" width="176" class="vr-logo">
+                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="55" width="71" class="vr-logo">
                     @else
                         {{ strtoupper(store_name()) }}<span class="dot">.</span>
                     @endif
