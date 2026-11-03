@@ -35,7 +35,7 @@ class HomeController extends Controller
             ->inStock()
             ->with(['images', 'categories', 'approvedReviews'])
             ->orderByDesc('id')
-            ->limit(8)
+            ->limit(10)
             ->get();
 
         $featuredIds = $featured->pluck('id');
@@ -52,11 +52,11 @@ class HomeController extends Controller
 
         $bestsellers = (clone $bestsellersBase)
             ->when($featuredIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $featuredIds))
-            ->limit(8)
+            ->limit(10)
             ->get();
 
         if ($bestsellers->isEmpty()) {
-            $bestsellers = $bestsellersBase->limit(8)->get();
+            $bestsellers = $bestsellersBase->limit(10)->get();
         }
 
         $shownIds = $featuredIds->concat($bestsellers->pluck('id'))->unique();
@@ -73,11 +73,11 @@ class HomeController extends Controller
 
         $newArrivals = (clone $newArrivalsBase)
             ->when($shownIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $shownIds))
-            ->limit(8)
+            ->limit(10)
             ->get();
 
         if ($newArrivals->isEmpty()) {
-            $newArrivals = $newArrivalsBase->limit(8)->get();
+            $newArrivals = $newArrivalsBase->limit(10)->get();
         }
 
         $categories = Category::query()

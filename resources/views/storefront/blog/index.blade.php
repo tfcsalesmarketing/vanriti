@@ -154,7 +154,7 @@
             <div class="mt-5 pt-3 d-flex justify-content-center">
                 {{ $blogs->links('storefront.partials.pagination') }}
             </div>
-        @elseif (! $featured)
+        @elseif (empty($featured))
             <div class="vr-journal-empty">
                 <div class="vr-journal-empty-icon">
                     <i class="ri-book-open-line"></i>

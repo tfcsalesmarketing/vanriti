@@ -342,7 +342,7 @@ img { max-width: 100%; height: auto; }
 .btn-vr {
     background: var(--vr-green-dark);
     color: #fff;
-    border-radius: var(--vr-radius-pill);
+    border-radius: 6px !important;
     padding: 0.65rem 1.7rem;
     font-weight: 600;
     font-size: 0.92rem;
@@ -373,7 +373,7 @@ img { max-width: 100%; height: auto; }
     background: transparent;
     color: var(--vr-green-dark);
     border: 1.5px solid var(--vr-border);
-    border-radius: var(--vr-radius-pill);
+    border-radius: 6px !important;
     padding: 0.65rem 1.7rem;
     font-weight: 600;
     font-size: 0.92rem;
@@ -385,6 +385,141 @@ img { max-width: 100%; height: auto; }
     border-color: var(--vr-green-dark);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(38, 61, 37, 0.15);
+}
+
+/* All action and CTA buttons in rectangular shape like insta reel card */
+.btn,
+.btn-vr,
+.btn-vr-outline,
+.btn-vr-soft-outline,
+.vr-quick-add,
+.vr-card-qty,
+.btn-vr-card-buy,
+.vr-reel-card-buy-btn,
+.vr-modal-buy-now-btn,
+.vr-btn-checkout,
+.btn-primary,
+.btn-secondary,
+.btn-dark,
+.btn-success,
+.btn-danger,
+.vr-pdp-capsule-btn,
+.js-pdp-add,
+.js-pdp-buy,
+.js-bar-btn,
+.vr-dock-buy-btn,
+.vr-auth-btn {
+    border-radius: 6px !important;
+}
+
+/* ==========================================================================
+   Horizontal Sliders: Single Row, 5 Cards in a Row on Desktop, Prev/Next Navigation
+   ========================================================================== */
+.vr-slider-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.vr-slider-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50% !important;
+    background: #ffffff;
+    border: 1.5px solid #E6E2D6;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+    color: var(--vr-green-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    padding: 0;
+}
+
+.vr-slider-nav:hover {
+    background: var(--vr-green-dark);
+    color: #ffffff;
+    border-color: var(--vr-green-dark);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(38, 61, 37, 0.3);
+}
+
+.vr-slider-nav.prev {
+    left: -22px;
+}
+
+.vr-slider-nav.next {
+    right: -22px;
+}
+
+@media (max-width: 991.98px) {
+    .vr-slider-nav.prev { left: -8px; }
+    .vr-slider-nav.next { right: -8px; }
+}
+
+@media (max-width: 575.98px) {
+    .vr-slider-nav {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    .vr-slider-nav.prev { left: -4px; }
+    .vr-slider-nav.next { right: -4px; }
+}
+
+/* Horizontal Product Slider: Single row with 5 cards on desktop */
+.vr-product-slider {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 10px 4px 20px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+    margin: 0;
+}
+
+.vr-product-slider::-webkit-scrollbar {
+    display: none;
+}
+
+.vr-product-slider .vr-slider-item {
+    scroll-snap-align: start;
+    flex: 0 0 calc((100% - 12px) / 2); /* 2 in a row on mobile */
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.vr-product-slider .vr-slider-item > .vr-card {
+    width: 100%;
+    height: 100%;
+}
+
+@media (min-width: 576px) {
+    .vr-product-slider .vr-slider-item {
+        flex: 0 0 calc((100% - (2 * 16px)) / 3); /* 3 in a row on small tablet */
+    }
+}
+
+@media (min-width: 768px) {
+    .vr-product-slider .vr-slider-item {
+        flex: 0 0 calc((100% - (3 * 16px)) / 4); /* 4 in a row on tablet / laptop */
+    }
+}
+
+@media (min-width: 992px) {
+    .vr-product-slider .vr-slider-item {
+        /* EXACTLY 5 PRODUCT CARDS IN A SINGLE ROW ON DESKTOP */
+        flex: 0 0 calc((100% - (4 * 16px)) / 5) !important;
+        max-width: calc((100% - (4 * 16px)) / 5) !important;
+    }
 }
 
 /* ---------- Sections ---------- */
@@ -508,7 +643,35 @@ img { max-width: 100%; height: auto; }
 .vr-section-reels {
     background: #ffffff;
     position: relative;
-    overflow: hidden;
+}
+
+/* Reels section overlay navigation arrows (Krishna Ayurved style) */
+.vr-section-reels .vr-slider-nav {
+    top: 38% !important;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.65) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    z-index: 20 !important;
+}
+
+.vr-section-reels .vr-slider-nav:hover {
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+    transform: translateY(-50%) scale(1.08) !important;
+}
+
+.vr-section-reels .vr-slider-nav.prev {
+    left: 10px !important;
+}
+
+.vr-section-reels .vr-slider-nav.next {
+    right: 10px !important;
 }
 
 .vr-section-title-reels {
@@ -527,6 +690,7 @@ img { max-width: 100%; height: auto; }
     padding: 8px 4px 20px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    scroll-behavior: smooth;
 }
 .vr-reels-carousel::-webkit-scrollbar {
     display: none;
@@ -557,7 +721,8 @@ img { max-width: 100%; height: auto; }
 
 @media (min-width: 992px) {
     .vr-reel-card {
-        flex: 0 0 235px;
+        flex: 0 0 calc((100% - (4 * 16px)) / 5) !important;
+        max-width: calc((100% - (4 * 16px)) / 5) !important;
     }
 }
 
@@ -580,6 +745,7 @@ img { max-width: 100%; height: auto; }
     object-fit: cover;
     display: block;
     background: #000;
+    pointer-events: none; /* Let clicks bubble to card */
 }
 
 .vr-reel-video-bottom-bar {
@@ -763,19 +929,19 @@ img { max-width: 100%; height: auto; }
     top: 50%;
     transform: translateY(-50%);
     z-index: 10002;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.18);
+    width: 52px;
+    height: 52px;
+    border-radius: 50% !important;
+    background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
     color: #ffffff;
     display: none;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     transition: all 0.2s ease;
     padding: 0;
 }
@@ -784,15 +950,16 @@ img { max-width: 100%; height: auto; }
         display: flex;
     }
     .vr-modal-nav-arrow.prev {
-        left: calc(50% - 270px);
+        left: calc(50% - 280px);
     }
     .vr-modal-nav-arrow.next {
-        right: calc(50% - 270px);
+        right: calc(50% - 280px);
     }
 }
 .vr-modal-nav-arrow:hover {
-    background: rgba(255, 255, 255, 0.35);
-    transform: translateY(-50%) scale(1.08);
+    background: rgba(0, 0, 0, 0.85);
+    color: #ffffff;
+    transform: translateY(-50%) scale(1.1);
 }
 
 .vr-modal-top-bar {
@@ -811,7 +978,7 @@ img { max-width: 100%; height: auto; }
 .vr-modal-ctrl-btn {
     width: 36px;
     height: 36px;
-    border-radius: 50%;
+    border-radius: 50% !important;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -830,16 +997,23 @@ img { max-width: 100%; height: auto; }
     transform: scale(1.06);
 }
 
-/* Right vertical action rail (Views, Like, Share, Cart) */
+/* Right vertical action rail (Krishna Ayurved style frosted capsule) */
 .vr-modal-action-rail {
     position: absolute;
     right: 12px;
-    bottom: 125px;
+    bottom: 135px;
     z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    padding: 12px 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .vr-rail-item, .vr-rail-btn {
@@ -848,48 +1022,39 @@ img { max-width: 100%; height: auto; }
     align-items: center;
     text-align: center;
     color: #ffffff;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
     background: none;
     border: none;
-    padding: 0;
+    padding: 2px 4px;
     cursor: pointer;
+    transition: transform 0.18s ease;
 }
 
-.vr-rail-btn i {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+.vr-rail-item i, .vr-rail-btn i {
+    font-size: 1.25rem;
+    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
-    transition: transform 0.2s ease, background 0.2s ease;
+    transition: transform 0.18s ease;
 }
 .vr-rail-btn:hover i {
-    transform: scale(1.12);
-    background: rgba(0, 0, 0, 0.65);
+    transform: scale(1.15);
 }
 .vr-rail-btn.liked i {
-    color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.5);
-    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444 !important;
 }
 
 .vr-rail-number {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 700;
     margin-top: 3px;
     line-height: 1;
 }
 
 .vr-rail-sub {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: rgba(255, 255, 255, 0.8);
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 /* Bottom shoppable product drawer inside modal */

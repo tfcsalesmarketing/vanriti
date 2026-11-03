@@ -126,12 +126,20 @@
             </div>
             <a href="{{ route('shop.index', ['is_featured' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
         </div>
-        <div class="row g-3 g-md-4 vr-stagger">
-            @foreach ($featured as $product)
-                <div class="col-6 col-xl-3">
-                    @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'featured'])
-                </div>
-            @endforeach
+        <div class="vr-slider-wrapper position-relative">
+            <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous featured products">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <div class="vr-product-slider">
+                @foreach ($featured as $product)
+                    <div class="vr-slider-item">
+                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'featured'])
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next featured products">
+                <i class="bi bi-chevron-right"></i>
+            </button>
         </div>
     </div>
 </section>
@@ -152,12 +160,20 @@
                 </div>
                 <a href="{{ route('shop.index', ['is_bestseller' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="row g-3 g-md-4 vr-stagger">
-                @foreach ($bestsellers as $product)
-                    <div class="col-6 col-xl-3">
-                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'bestseller', 'rank' => $loop->iteration])
-                    </div>
-                @endforeach
+            <div class="vr-slider-wrapper position-relative">
+                <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous bestsellers">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="vr-product-slider">
+                    @foreach ($bestsellers as $product)
+                        <div class="vr-slider-item">
+                            @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'bestseller', 'rank' => $loop->iteration])
+                        </div>
+                    @endforeach
+                </div>
+                <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next bestsellers">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         </div>
     </section>
@@ -172,101 +188,109 @@
                 <h2 class="vr-section-title-reels">Watch &amp; Shop</h2>
             </div>
 
-            {{-- Horizontal Reel Carousel --}}
-            <div class="vr-reels-carousel" id="vrReelsCarousel">
-                @foreach ($reels as $index => $reel)
-                    @php
-                        $taggedProduct = $reel->product;
-                        $prodImg = $taggedProduct?->getPrimaryImage()?->image_path;
-                        $likes = (int) ($reel->likes_count ?: 120);
-                        $shares = (int) ($reel->shares_count ?: 45);
-                        $views = $reel->views_count ?: '18.3K';
-                    @endphp
-                    <div class="vr-reel-card"
-                         data-index="{{ $index }}"
-                         data-id="{{ $reel->id }}"
-                         data-title="{{ $reel->title ?: 'Vanriti Ayurvedic Ritual' }}"
-                         data-caption="{{ $reel->caption }}"
-                         data-video="{{ $reel->video_source }}"
-                         data-instagram="{{ $reel->instagram_url }}"
-                         data-poster="{{ $reel->poster }}"
-                         data-views="{{ $views }}"
-                         data-likes="{{ $likes }}"
-                         data-shares="{{ $shares }}"
-                         data-like-url="{{ route('reels.like', $reel) }}"
-                         data-share-url="{{ route('reels.share', $reel) }}"
-                         @if ($taggedProduct)
-                             data-has-product="true"
-                             data-product-name="{{ $taggedProduct->name }}"
-                             data-product-price="{{ format_price($taggedProduct->selling_price) }}"
-                             @if ($taggedProduct->mrp > $taggedProduct->selling_price)
-                                 data-product-mrp="{{ format_price($taggedProduct->mrp) }}"
+            {{-- Horizontal Reel Carousel with Slider Navigation --}}
+            <div class="vr-slider-wrapper position-relative">
+                <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous reels">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="vr-reels-carousel" id="vrReelsCarousel">
+                    @foreach ($reels as $index => $reel)
+                        @php
+                            $taggedProduct = $reel->product;
+                            $prodImg = $taggedProduct?->getPrimaryImage()?->image_path;
+                            $likes = (int) ($reel->likes_count ?: 120);
+                            $shares = (int) ($reel->shares_count ?: 45);
+                            $views = $reel->views_count ?: '18.3K';
+                        @endphp
+                        <div class="vr-reel-card"
+                             data-index="{{ $index }}"
+                             data-id="{{ $reel->id }}"
+                             data-title="{{ $reel->title ?: 'Vanriti Ayurvedic Ritual' }}"
+                             data-caption="{{ $reel->caption }}"
+                             data-video="{{ $reel->video_source }}"
+                             data-instagram="{{ $reel->instagram_url }}"
+                             data-poster="{{ $reel->poster }}"
+                             data-views="{{ $views }}"
+                             data-likes="{{ $likes }}"
+                             data-shares="{{ $shares }}"
+                             data-like-url="{{ route('reels.like', $reel) }}"
+                             data-share-url="{{ route('reels.share', $reel) }}"
+                             @if ($taggedProduct)
+                                 data-has-product="true"
+                                 data-product-name="{{ $taggedProduct->name }}"
+                                 data-product-price="{{ format_price($taggedProduct->selling_price) }}"
+                                 @if ($taggedProduct->mrp > $taggedProduct->selling_price)
+                                     data-product-mrp="{{ format_price($taggedProduct->mrp) }}"
+                                 @endif
+                                 data-product-url="{{ route('product.show', $taggedProduct) }}"
+                                 data-product-img="{{ $prodImg ? image_url($prodImg) : asset('images/placeholder.png') }}"
+                                 data-product-id="{{ $taggedProduct->id }}"
+                                 data-add-url="{{ route('cart.add', $taggedProduct) }}"
+                             @else
+                                 data-has-product="false"
                              @endif
-                             data-product-url="{{ route('product.show', $taggedProduct) }}"
-                             data-product-img="{{ $prodImg ? image_url($prodImg) : asset('images/placeholder.png') }}"
-                             data-product-id="{{ $taggedProduct->id }}"
-                             data-add-url="{{ route('cart.add', $taggedProduct) }}"
-                         @else
-                             data-has-product="false"
-                         @endif
-                    >
-                        {{-- 9:16 Auto-Playing Video Box --}}
-                        <div class="vr-reel-video-wrap js-trigger-modal">
-                            @if ($reel->video_source)
-                                <video class="vr-reel-inline-video"
-                                       src="{{ $reel->video_source }}"
-                                       poster="{{ $reel->poster }}"
-                                       autoplay
-                                       muted
-                                       loop
-                                       playsinline
-                                       preload="auto"></video>
-                            @else
-                                <img src="{{ $reel->poster }}" alt="{{ $reel->title }}" class="vr-reel-inline-video" style="object-fit:cover;" loading="lazy">
-                            @endif
+                        >
+                            {{-- 9:16 Auto-Playing Video Box --}}
+                            <div class="vr-reel-video-wrap js-trigger-modal">
+                                @if ($reel->video_source)
+                                    <video class="vr-reel-inline-video"
+                                           src="{{ $reel->video_source }}"
+                                           poster="{{ $reel->poster }}"
+                                           autoplay
+                                           muted
+                                           loop
+                                           playsinline
+                                           preload="auto"></video>
+                                @else
+                                    <img src="{{ $reel->poster }}" alt="{{ $reel->title }}" class="vr-reel-inline-video" style="object-fit:cover;" loading="lazy">
+                                @endif
 
-                            {{-- Floating Overlays inside Video at Bottom --}}
-                            <div class="vr-reel-video-bottom-bar">
-                                <span class="vr-reel-views-pill">
-                                    {{ $views }} Views
-                                </span>
-                                <div class="vr-reel-actions-badge">
-                                    <button type="button" class="vr-reel-act-btn js-card-like-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.like', $reel) }}" title="Like">
-                                        <i class="bi bi-heart"></i>
-                                    </button>
-                                    <button type="button" class="vr-reel-act-btn js-card-share-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.share', $reel) }}" data-share-url="{{ $reel->instagram_url ?: ($taggedProduct ? route('product.show', $taggedProduct) : route('home')) }}" data-title="{{ $reel->title }}" title="Share">
-                                        <i class="bi bi-send"></i>
-                                    </button>
+                                {{-- Floating Overlays inside Video at Bottom --}}
+                                <div class="vr-reel-video-bottom-bar">
+                                    <span class="vr-reel-views-pill">
+                                        {{ $views }} Views
+                                    </span>
+                                    <div class="vr-reel-actions-badge">
+                                        <button type="button" class="vr-reel-act-btn js-card-like-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.like', $reel) }}" title="Like">
+                                            <i class="bi bi-heart"></i>
+                                        </button>
+                                        <button type="button" class="vr-reel-act-btn js-card-share-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.share', $reel) }}" data-share-url="{{ $reel->instagram_url ?: ($taggedProduct ? route('product.show', $taggedProduct) : route('home')) }}" data-title="{{ $reel->title }}" title="Share">
+                                            <i class="bi bi-send"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {{-- Attached Product Block --}}
-                        @if ($taggedProduct)
-                            <div class="vr-reel-card-product">
-                                <a href="{{ route('product.show', $taggedProduct) }}" class="vr-reel-prod-details">
-                                    <img src="{{ $prodImg ? image_url($prodImg) : asset('images/placeholder.png') }}" alt="{{ $taggedProduct->name }}" class="vr-reel-prod-img">
-                                    <div class="vr-reel-prod-meta">
-                                        <div class="vr-reel-prod-name" title="{{ $taggedProduct->name }}">{{ Str::limit($taggedProduct->name, 22) }}</div>
-                                        <div class="vr-reel-prod-prices">
-                                            <span class="vr-reel-prod-price">{{ format_price($taggedProduct->selling_price) }}</span>
-                                            @if ($taggedProduct->mrp > $taggedProduct->selling_price)
-                                                <del class="vr-reel-prod-mrp">{{ format_price($taggedProduct->mrp) }}</del>
-                                            @endif
+                            {{-- Attached Product Block --}}
+                            @if ($taggedProduct)
+                                <div class="vr-reel-card-product">
+                                    <a href="{{ route('product.show', $taggedProduct) }}" class="vr-reel-prod-details">
+                                        <img src="{{ $prodImg ? image_url($prodImg) : asset('images/placeholder.png') }}" alt="{{ $taggedProduct->name }}" class="vr-reel-prod-img">
+                                        <div class="vr-reel-prod-meta">
+                                            <div class="vr-reel-prod-name" title="{{ $taggedProduct->name }}">{{ Str::limit($taggedProduct->name, 22) }}</div>
+                                            <div class="vr-reel-prod-prices">
+                                                <span class="vr-reel-prod-price">{{ format_price($taggedProduct->selling_price) }}</span>
+                                                @if ($taggedProduct->mrp > $taggedProduct->selling_price)
+                                                    <del class="vr-reel-prod-mrp">{{ format_price($taggedProduct->mrp) }}</del>
+                                                @endif
+                                            </div>
                                         </div>
-                                    </div>
-                                </a>
-                                <form method="POST" action="{{ route('cart.add', $taggedProduct) }}" class="m-0">
-                                    @csrf
-                                    <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn vr-reel-card-buy-btn">
-                                        Buy Now
-                                    </button>
-                                </form>
-                            </div>
-                        @endif
-                    </div>
-                @endforeach
+                                    </a>
+                                    <form method="POST" action="{{ route('cart.add', $taggedProduct) }}" class="m-0">
+                                        @csrf
+                                        <input type="hidden" name="quantity" value="1">
+                                        <button type="submit" class="btn vr-reel-card-buy-btn">
+                                            Buy Now
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next reels">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         </div>
     </section>
@@ -379,12 +403,20 @@
                 </div>
                 <a href="{{ route('shop.index', ['is_new_arrival' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="row g-3 g-md-4 vr-stagger">
-                @foreach ($newArrivals as $product)
-                    <div class="col-6 col-xl-3">
-                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'new_arrival'])
-                    </div>
-                @endforeach
+            <div class="vr-slider-wrapper position-relative">
+                <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous new arrivals">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="vr-product-slider">
+                    @foreach ($newArrivals as $product)
+                        <div class="vr-slider-item">
+                            @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'new_arrival'])
+                        </div>
+                    @endforeach
+                </div>
+                <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next new arrivals">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         </div>
     </section>
@@ -448,6 +480,111 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 (function () {
+    // 0. Initialize All Horizontal Sliders (Featured, Bestsellers, Reels, New Arrivals)
+    var sliderWrappers = document.querySelectorAll('.vr-slider-wrapper');
+    sliderWrappers.forEach(function (wrapper) {
+        var slider = wrapper.querySelector('.vr-product-slider, .vr-reels-carousel');
+        var prevBtn = wrapper.querySelector('.js-slider-prev');
+        var nextBtn = wrapper.querySelector('.js-slider-next');
+
+        if (!slider || !prevBtn || !nextBtn) return;
+
+        function getCardStep() {
+            var card = slider.querySelector('.vr-slider-item, .vr-reel-card');
+            if (!card) return 320;
+            var gap = 16;
+            var width = card.offsetWidth;
+            var multiplier = window.innerWidth >= 992 ? 2 : 1;
+            return (width + gap) * multiplier;
+        }
+
+        prevBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            slider.scrollBy({ left: -getCardStep(), behavior: 'smooth' });
+        });
+
+        nextBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            slider.scrollBy({ left: getCardStep(), behavior: 'smooth' });
+        });
+
+        // Mouse Drag to Scroll for Desktop
+        var isDown = false;
+        var startX = 0;
+        var scrollLeft = 0;
+        var dragMoved = false;
+
+        slider.addEventListener('mousedown', function (e) {
+            if (e.target.closest('a, button, form, input, .vr-reel-act-btn')) return;
+            isDown = true;
+            dragMoved = false;
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+
+        window.addEventListener('mouseup', function () {
+            if (isDown) {
+                isDown = false;
+                slider.style.cursor = '';
+                setTimeout(function () { dragMoved = false; }, 80);
+            }
+        });
+
+        slider.addEventListener('mousemove', function (e) {
+            if (!isDown) return;
+            var x = e.pageX - slider.offsetLeft;
+            var walk = (x - startX);
+            if (Math.abs(walk) > 6) {
+                dragMoved = true;
+                slider.style.cursor = 'grabbing';
+                e.preventDefault();
+                slider.scrollLeft = scrollLeft - (walk * 1.3);
+            }
+        });
+
+        function updateArrows() {
+            var items = slider.querySelectorAll('.vr-slider-item, .vr-reel-card');
+            var maxScroll = slider.scrollWidth - slider.clientWidth;
+            var canScroll = maxScroll > 8 || items.length > 5;
+
+            if (!canScroll) {
+                prevBtn.style.opacity = '0';
+                prevBtn.style.pointerEvents = 'none';
+                nextBtn.style.opacity = '0';
+                nextBtn.style.pointerEvents = 'none';
+                return;
+            }
+
+            // Prev button visibility
+            if (slider.scrollLeft <= 8) {
+                prevBtn.style.opacity = '0';
+                prevBtn.style.pointerEvents = 'none';
+            } else {
+                prevBtn.style.opacity = '1';
+                prevBtn.style.pointerEvents = 'auto';
+            }
+
+            // Next button visibility
+            if (slider.scrollLeft >= maxScroll - 8) {
+                nextBtn.style.opacity = '0';
+                nextBtn.style.pointerEvents = 'none';
+            } else {
+                nextBtn.style.opacity = '1';
+                nextBtn.style.pointerEvents = 'auto';
+            }
+        }
+
+        slider.addEventListener('scroll', updateArrows, { passive: true });
+        window.addEventListener('resize', updateArrows, { passive: true });
+        window.addEventListener('load', updateArrows);
+        [100, 300, 700, 1500].forEach(function (ms) {
+            setTimeout(updateArrows, ms);
+        });
+        updateArrows();
+    });
+
     var carousel = document.getElementById('vrReelsCarousel');
     var modal = document.getElementById('vrReelModal');
     var backdrop = document.getElementById('vrReelModalBackdrop');
@@ -604,15 +741,12 @@
 
     // Card Trigger (click on video box opens modal)
     cards.forEach(function (card) {
-        var trigger = card.querySelector('.js-trigger-modal');
-        if (trigger) {
-            trigger.addEventListener('click', function (e) {
-                // If clicked on like or share button inside, don't open modal
-                if (e.target.closest('.vr-reel-act-btn')) return;
-                var idx = parseInt(card.getAttribute('data-index'), 10) || 0;
-                loadReel(idx);
-            });
-        }
+        card.addEventListener('click', function (e) {
+            // If clicked on like or share button, product link, buy now, form, don't open modal
+            if (e.target.closest('.vr-reel-act-btn, .vr-reel-card-product, a, button, form, input')) return;
+            var idx = parseInt(card.getAttribute('data-index'), 10) || 0;
+            loadReel(idx);
+        });
 
         // Inline Card Like Button
         var cardLikeBtn = card.querySelector('.js-card-like-btn');
@@ -802,6 +936,24 @@
                 loadReel(0);
             }
         });
+    }
+
+    // Touch swipe support for switching reels in modal
+    var touchStartX = 0;
+    var dialog = document.getElementById('vrModalDialog');
+    if (dialog) {
+        dialog.addEventListener('touchstart', function (e) {
+            touchStartX = e.changedTouches[0].clientX;
+        }, { passive: true });
+        dialog.addEventListener('touchend', function (e) {
+            var touchEndX = e.changedTouches[0].clientX;
+            var diff = touchEndX - touchStartX;
+            if (diff < -50) {
+                if (modalNextBtn) modalNextBtn.click();
+            } else if (diff > 50) {
+                if (modalPrevBtn) modalPrevBtn.click();
+            }
+        }, { passive: true });
     }
 
     document.addEventListener('keydown', function (e) {
