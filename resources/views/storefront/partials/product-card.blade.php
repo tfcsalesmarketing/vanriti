@@ -60,10 +60,6 @@
                     <i class="ri-sparkles-line"></i> New
                 </span>
             @endif
-
-            @if ($discount > 0)
-                <span class="vr-disc-badge">{{ (int) round($discount) }}% OFF</span>
-            @endif
         </div>
 
         <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="m-0 js-wishlist-form">
