@@ -52,6 +52,24 @@ body {
     line-height: 1.6;
 }
 
+/* ---------- Responsive Desktop Layout: 80% Content Width ----------
+   Removes excessive blank gutters on desktop monitors by expanding
+   Bootstrap containers from fixed pixel limits (1140px/1320px) to 80% of
+   viewport width, creating a balanced 10% margin on both left and right. */
+@media (min-width: 992px) {
+    .container:not([style*="max-width"]),
+    .container-sm:not([style*="max-width"]),
+    .container-md:not([style*="max-width"]),
+    .container-lg:not([style*="max-width"]),
+    .container-xl:not([style*="max-width"]),
+    .container-xxl:not([style*="max-width"]) {
+        width: 80% !important;
+        max-width: 80% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
 .vr-serif, h1, h2, h3, .hero-title, .vr-section-title, .vr-brand, .f-brand {
     font-family: var(--vr-font-serif);
 }
@@ -1724,7 +1742,7 @@ img { max-width: 100%; height: auto; }
     position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
-    max-height: 480px;
+    max-height: 560px;
     margin-bottom: 10px;
     border-radius: var(--vr-radius);
     background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);
