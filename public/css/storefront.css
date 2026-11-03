@@ -1480,25 +1480,28 @@ img { max-width: 100%; height: auto; }
 .vr-card .card-body { padding: 1.15rem 1.15rem 1.25rem; flex: 1 1 auto; display: flex; flex-direction: column; }
 
 .vr-card .cat-name {
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     color: var(--vr-green);
-    font-weight: 700;
+    font-weight: 600;
+    margin-bottom: 3px;
 }
 
 .vr-card .p-name {
     font-family: var(--vr-font-serif);
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 500;
+    font-size: 0.84rem;
     color: var(--vr-text);
-    line-height: 1.4;
+    line-height: 1.35;
+    text-align: justify;
+    text-justify: inter-word;
     transition: color var(--vr-transition-fast);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    min-height: 2.3em;
+    min-height: 2.25em;
 }
 .vr-card:hover .p-name { color: var(--vr-green-dark); }
 
