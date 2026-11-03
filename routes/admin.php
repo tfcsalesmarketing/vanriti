@@ -234,6 +234,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         // Instagram Reels Management
+        Route::post('reels/upload-video', [\App\Http\Controllers\Admin\InstagramReelController::class, 'uploadVideo'])->name('reels.upload-video');
         Route::resource('reels', \App\Http\Controllers\Admin\InstagramReelController::class)->except(['show']);
         Route::post('reels/{reel}/toggle', [\App\Http\Controllers\Admin\InstagramReelController::class, 'toggleActive'])->name('reels.toggle');
 

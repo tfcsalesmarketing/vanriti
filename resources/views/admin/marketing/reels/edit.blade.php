@@ -13,7 +13,7 @@
     </div>
 </div>
 
-<form method="POST" action="{{ route('admin.reels.update', $reel) }}" enctype="multipart/form-data">
+<form method="POST" action="{{ route('admin.reels.update', $reel) }}" enctype="multipart/form-data" id="vrReelForm">
     @csrf
     @method('PUT')
     @include('admin.marketing.reels._form')

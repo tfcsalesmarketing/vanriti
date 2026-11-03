@@ -38,7 +38,27 @@ class InstagramReelController extends Controller
         return view('admin.marketing.reels.create', compact('products'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function uploadVideo(Request $request): JsonResponse
+    {
+        $request->validate([
+            'video_file' => 'required|file|mimes:mp4,mov,webm,m4v,ogg|max:102400',
+        ]);
+
+        $file = $request->file('video_file');
+        $path = $file->store('reels', 'public');
+        $videoUrl = 'storage/' . $path;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Video uploaded successfully!',
+            'video_url' => $videoUrl,
+            'full_url' => image_url($videoUrl),
+            'filename' => $file->getClientOriginalName(),
+            'size_formatted' => round($file->getSize() / (1024 * 1024), 2) . ' MB',
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
@@ -75,7 +95,16 @@ class InstagramReelController extends Controller
             $validated['thumbnail_url'] = 'storage/' . $path;
         }
 
-        InstagramReel::create($validated);
+        $reel = InstagramReel::create($validated);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Video reel added successfully.',
+                'redirect_url' => route('admin.reels.index'),
+                'reel_id' => $reel->id,
+            ]);
+        }
 
         return redirect()->route('admin.reels.index')->with('success', 'Video reel added successfully.');
     }
@@ -90,7 +119,7 @@ class InstagramReelController extends Controller
         return view('admin.marketing.reels.edit', compact('reel', 'products'));
     }
 
-    public function update(Request $request, InstagramReel $reel): RedirectResponse
+    public function update(Request $request, InstagramReel $reel): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
@@ -138,6 +167,15 @@ class InstagramReelController extends Controller
         }
 
         $reel->update($validated);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Instagram reel updated successfully.',
+                'redirect_url' => route('admin.reels.index'),
+                'reel_id' => $reel->id,
+            ]);
+        }
 
         return redirect()->route('admin.reels.index')->with('success', 'Instagram reel updated successfully.');
     }

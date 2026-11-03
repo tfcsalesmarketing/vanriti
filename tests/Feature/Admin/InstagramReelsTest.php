@@ -218,4 +218,62 @@ class InstagramReelsTest extends TestCase
         ]);
         $this->assertEquals(6, $reel->fresh()->shares_count);
     }
+
+    public function test_admin_can_upload_video_file_via_ajax(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $admin = $this->superAdmin();
+        $file = \Illuminate\Http\UploadedFile::fake()->create('ritual.mp4', 1024, 'video/mp4');
+
+        $response = $this->actingAs($admin, 'admin')->postJson(route('admin.reels.upload-video'), [
+            'video_file' => $file,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Video uploaded successfully!',
+        ]);
+
+        $videoUrl = $response->json('video_url');
+        $this->assertNotEmpty($videoUrl);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists(str_replace('storage/', '', $videoUrl));
+    }
+
+    public function test_admin_cannot_upload_invalid_file_as_video(): void
+    {
+        $admin = $this->superAdmin();
+        $file = \Illuminate\Http\UploadedFile::fake()->create('document.pdf', 500, 'application/pdf');
+
+        $response = $this->actingAs($admin, 'admin')->postJson(route('admin.reels.upload-video'), [
+            'video_file' => $file,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['video_file']);
+    }
+
+    public function test_admin_can_submit_reel_via_ajax(): void
+    {
+        $admin = $this->superAdmin();
+
+        $response = $this->actingAs($admin, 'admin')->postJson(route('admin.reels.store'), [
+            'title' => 'Ayurvedic Skin Serum Routine',
+            'video_url' => 'https://cdn.example.com/serum.mp4',
+            'is_active' => true,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Video reel added successfully.',
+            'redirect_url' => route('admin.reels.index'),
+        ]);
+
+        $this->assertDatabaseHas('instagram_reels', [
+            'title' => 'Ayurvedic Skin Serum Routine',
+            'video_url' => 'https://cdn.example.com/serum.mp4',
+        ]);
+    }
 }
