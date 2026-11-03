@@ -16,12 +16,14 @@
                     </picture>
                 </a>
             @else
-                <picture>
-                    @if ($promoMobile)
-                        <source media="(max-width: 767.98px)" srcset="{{ $promoMobile }}">
-                    @endif
-                    <img src="{{ $promoDesktop }}" alt="{{ $promoAlt }}" class="vr-promo-img" loading="lazy" decoding="async">
-                </picture>
+                <div class="vr-promo-link">
+                    <picture>
+                        @if ($promoMobile)
+                            <source media="(max-width: 767.98px)" srcset="{{ $promoMobile }}">
+                        @endif
+                        <img src="{{ $promoDesktop }}" alt="{{ $promoAlt }}" class="vr-promo-img" loading="lazy" decoding="async">
+                    </picture>
+                </div>
             @endif
         </div>
     </section>

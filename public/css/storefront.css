@@ -300,16 +300,32 @@ img { max-width: 100%; height: auto; }
 
 /* ---------- Hero ---------- */
 .vr-hero {
-    background: var(--vr-cream);
+    background: transparent;
+    overflow: visible;
+}
+
+.vr-hero-carousel {
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(38, 61, 37, 0.08);
+    position: relative;
+    transform: translateZ(0);
+}
+
+.vr-hero-carousel .carousel-inner,
+.vr-hero-carousel .carousel-item {
+    border-radius: 18px;
     overflow: hidden;
 }
 
-.vr-hero .carousel-item { min-height: 600px; }
+.vr-hero .carousel-item { min-height: 520px; }
 
 .vr-hero-img {
     background-size: cover;
     background-position: center;
-    min-height: 600px;
+    min-height: 520px;
+    border-radius: 18px;
+    overflow: hidden;
 }
 
 /* Hero <picture>/<img>. Kept separate from .vr-hero-img because that class is
@@ -317,25 +333,97 @@ img { max-width: 100%; height: auto; }
 .vr-hero-pic {
     display: block;
     width: 100%;
-    height: 600px;
+    height: 520px;
     object-fit: cover;
     object-position: center;
+    border-radius: 18px;
 }
 
-.vr-hero .carousel-indicators { bottom: 1.5rem; }
+.vr-hero .carousel-indicators { bottom: 1.25rem; margin-bottom: 0; }
 .vr-hero .carousel-indicators [data-bs-target] {
-    width: 32px;
-    height: 3px;
-    border-radius: 3px;
-    opacity: 0.4;
+    width: 28px;
+    height: 4px;
+    border-radius: 4px;
+    opacity: 0.5;
     background: #fff;
     border: 0;
     transition: all var(--vr-transition);
 }
 .vr-hero .carousel-indicators [data-bs-target].active {
-    width: 48px;
+    width: 44px;
     opacity: 1;
     background: #fff;
+}
+
+.vr-hero .carousel-control-prev,
+.vr-hero .carousel-control-next {
+    width: 42px;
+    height: 42px;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    opacity: 0.85;
+    transition: all 0.25s ease;
+    z-index: 5;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+.vr-hero .carousel-control-prev { left: 16px; }
+.vr-hero .carousel-control-next { right: 16px; }
+
+.vr-hero .carousel-control-prev:hover,
+.vr-hero .carousel-control-next:hover {
+    opacity: 1;
+    background: #ffffff;
+    transform: translateY(-50%) scale(1.06);
+}
+.vr-hero .carousel-control-prev-icon,
+.vr-hero .carousel-control-next-icon {
+    width: 16px;
+    height: 16px;
+    filter: invert(1) brightness(0.2);
+}
+
+@media (max-width: 991.98px) {
+    .vr-hero-carousel,
+    .vr-hero-carousel .carousel-inner,
+    .vr-hero-carousel .carousel-item,
+    .vr-hero-img,
+    .vr-hero-pic {
+        border-radius: 14px;
+    }
+    .vr-hero .carousel-item { min-height: 400px; }
+    .vr-hero-img { min-height: 400px; }
+    .vr-hero-pic { height: 400px; }
+}
+
+@media (max-width: 575.98px) {
+    .vr-hero-carousel,
+    .vr-hero-carousel .carousel-inner,
+    .vr-hero-carousel .carousel-item,
+    .vr-hero-img,
+    .vr-hero-pic {
+        border-radius: 10px;
+    }
+    .vr-hero .carousel-item { min-height: 280px; }
+    .vr-hero-img { min-height: 280px; }
+    .vr-hero-pic { height: 280px; }
+    .vr-hero .carousel-control-prev,
+    .vr-hero .carousel-control-next {
+        width: 32px;
+        height: 32px;
+    }
+    .vr-hero .carousel-control-prev { left: 8px; }
+    .vr-hero .carousel-control-next { right: 8px; }
+    .vr-hero .carousel-control-prev-icon,
+    .vr-hero .carousel-control-next-icon {
+        width: 13px;
+        height: 13px;
+    }
 }
 
 /* ---------- Buttons ---------- */
@@ -1186,9 +1274,10 @@ img { max-width: 100%; height: auto; }
 
 .vr-promo-link {
     display: block;
-    border-radius: var(--vr-radius);
+    border-radius: 18px;
     overflow: hidden;
-    box-shadow: var(--vr-shadow-xs);
+    box-shadow: 0 6px 20px rgba(38, 61, 37, 0.06);
+    transform: translateZ(0);
 }
 
 .vr-promo-img {
@@ -1197,16 +1286,21 @@ img { max-width: 100%; height: auto; }
     height: 300px;
     object-fit: cover;
     object-position: center;
+    border-radius: 18px;
     transition: transform var(--vr-transition);
 }
 
 .vr-promo-link:hover .vr-promo-img { transform: scale(1.02); }
 
 @media (max-width: 991.98px) {
+    .vr-promo-link,
+    .vr-promo-img { border-radius: 14px; }
     .vr-promo-img { height: 220px; }
 }
 
 @media (max-width: 575.98px) {
+    .vr-promo-link,
+    .vr-promo-img { border-radius: 10px; }
     .vr-promo-img { height: 150px; }
 }
 
@@ -2362,8 +2456,6 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 991.98px) {
     .vr-account-nav { position: static !important; }
     .vr-section { padding: 3.5rem 0; }
-    .vr-hero .carousel-item { min-height: 450px; }
-    .vr-hero-img { min-height: 450px; }
 }
 
 /* ---------- Storefront Pagination ---------- */

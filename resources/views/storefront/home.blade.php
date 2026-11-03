@@ -12,62 +12,66 @@
 @section('content')
 
 @if ($banners->isNotEmpty())
-    <section class="vr-hero">
-        <h1 class="visually-hidden">{{ store_name() }}{{ setting('store_tagline') ? ' — '.setting('store_tagline') : '' }}</h1>
-        <div id="vrHeroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000">
-            <div class="carousel-indicators">
-                @foreach ($banners as $i => $banner)
-                    <button type="button" data-bs-target="#vrHeroCarousel" data-bs-slide-to="{{ $i }}" class="{{ $i === 0 ? 'active' : '' }}" aria-label="Slide {{ $i + 1 }}"></button>
-                @endforeach
-            </div>
-            <div class="carousel-inner">
-                @foreach ($banners as $i => $banner)
-                    @php
-                        $desktopImage = image_url($banner->image);
-                        $mobileImage = $banner->mobile_image ? image_url($banner->mobile_image) : null;
-                        $bannerAlt = store_name().' banner '.($i + 1);
-                    @endphp
-                    <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
-                        @if ($banner->link)
-                            <a href="{{ $banner->link }}" class="d-block">
+    <section class="vr-hero py-2 py-md-3">
+        <div class="container">
+            <h1 class="visually-hidden">{{ store_name() }}{{ setting('store_tagline') ? ' — '.setting('store_tagline') : '' }}</h1>
+            <div id="vrHeroCarousel" class="carousel slide carousel-fade vr-hero-carousel" data-bs-ride="carousel" data-bs-interval="6000">
+                <div class="carousel-indicators">
+                    @foreach ($banners as $i => $banner)
+                        <button type="button" data-bs-target="#vrHeroCarousel" data-bs-slide-to="{{ $i }}" class="{{ $i === 0 ? 'active' : '' }}" aria-label="Slide {{ $i + 1 }}"></button>
+                    @endforeach
+                </div>
+                <div class="carousel-inner">
+                    @foreach ($banners as $i => $banner)
+                        @php
+                            $desktopImage = image_url($banner->image);
+                            $mobileImage = $banner->mobile_image ? image_url($banner->mobile_image) : null;
+                            $bannerAlt = store_name().' banner '.($i + 1);
+                        @endphp
+                        <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
+                            @if ($banner->link)
+                                <a href="{{ $banner->link }}" class="d-block w-100 h-100">
+                                    <picture>
+                                        @if ($mobileImage)
+                                            <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
+                                        @endif
+                                        <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" width="1920" height="600" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                                    </picture>
+                                </a>
+                            @else
                                 <picture>
                                     @if ($mobileImage)
                                         <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
                                     @endif
                                     <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" width="1920" height="600" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                                 </picture>
-                            </a>
-                        @else
-                            <picture>
-                                @if ($mobileImage)
-                                    <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
-                                @endif
-                                <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" width="1920" height="600" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
-                            </picture>
-                        @endif
-                    </div>
-                @endforeach
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
             </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
         </div>
     </section>
 @else
-    <section class="vr-hero">
-        <div class="vr-hero-img" style="background:linear-gradient(120deg, #263D25 0%, #6F8736 100%);">
-            <div class="d-flex align-items-center" style="min-height:520px;">
-                <div class="container">
-                    <h1 class="hero-title mb-3" style="color:#fff;">{{ store_name() }}</h1>
-                    <p class="lead mb-4" style="color:rgba(255,255,255,0.8);max-width:520px;">Handcrafted skincare, herbal teas and wellness essentials made with nature in mind.</p>
-                    <a href="{{ route('shop.index') }}" class="btn btn-vr">
-                        <i class="bi bi-bag me-2"></i>Shop Now
-                    </a>
+    <section class="vr-hero py-2 py-md-3">
+        <div class="container">
+            <div class="vr-hero-img vr-hero-carousel" style="background:linear-gradient(120deg, #263D25 0%, #6F8736 100%);">
+                <div class="d-flex align-items-center p-4 p-md-5" style="min-height:500px;">
+                    <div>
+                        <h1 class="hero-title mb-3" style="color:#fff;">{{ store_name() }}</h1>
+                        <p class="lead mb-4" style="color:rgba(255,255,255,0.8);max-width:520px;">Handcrafted skincare, herbal teas and wellness essentials made with nature in mind.</p>
+                        <a href="{{ route('shop.index') }}" class="btn btn-vr">
+                            <i class="bi bi-bag me-2"></i>Shop Now
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -551,7 +555,7 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 (function () {
-    // 0. Initialize All Horizontal Sliders (Featured, Bestsellers, Reels, New Arrivals)
+    // 0. Initialize horizontal carousels and sliders
     var sliderWrappers = document.querySelectorAll('.vr-slider-wrapper');
     sliderWrappers.forEach(function (wrapper) {
         var slider = wrapper.querySelector('.vr-product-slider, .vr-reels-carousel');

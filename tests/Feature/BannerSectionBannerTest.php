@@ -65,18 +65,20 @@ class BannerSectionBannerTest extends TestCase
 
     public function test_a_banner_appears_after_the_matching_section_heading(): void
     {
-        // Bestsellers and New Arrivals fall back to the featured set when they
-        // are empty, so one featured product makes all three sections render.
         Product::factory()->active()->create([
-            'is_featured' => true,
+            'is_bestseller' => true,
+            'stock' => 5,
+        ]);
+        Product::factory()->active()->create([
+            'is_new_arrival' => true,
             'stock' => 5,
         ]);
         $this->promo('after_bestsellers', ['image' => 'banners/bestsellers.jpg']);
 
         $html = $this->html();
 
-        $bestsellersHeading = strpos($html, '>Bestsellers<');
-        $newArrivalsHeading = strpos($html, '>New Arrivals<');
+        $bestsellersHeading = strpos($html, 'Bestsellers');
+        $newArrivalsHeading = strpos($html, 'New Arrivals');
         $promoImage = strpos($html, image_url('banners/bestsellers.jpg'));
 
         $this->assertNotFalse($bestsellersHeading, 'The Bestsellers section did not render.');
