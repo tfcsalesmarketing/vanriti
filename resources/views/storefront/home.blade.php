@@ -30,20 +30,20 @@
                         @endphp
                         <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
                             @if ($banner->link)
-                                <a href="{{ $banner->link }}" class="d-block w-100 h-100">
-                                    <picture>
+                                <a href="{{ $banner->link }}" class="d-block w-100">
+                                    <picture class="vr-hero-pic-wrap">
                                         @if ($mobileImage)
                                             <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
                                         @endif
-                                        <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" width="1920" height="600" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                                        <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                                     </picture>
                                 </a>
                             @else
-                                <picture>
+                                <picture class="vr-hero-pic-wrap">
                                     @if ($mobileImage)
                                         <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
                                     @endif
-                                    <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" width="1920" height="600" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                                    <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                                 </picture>
                             @endif
                         </div>

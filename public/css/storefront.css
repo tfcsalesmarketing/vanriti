@@ -318,6 +318,12 @@ img { max-width: 100%; height: auto; }
     overflow: hidden;
 }
 
+.vr-hero picture,
+.vr-hero-pic-wrap {
+    display: block;
+    width: 100%;
+}
+
 .vr-hero .carousel-item { min-height: 520px; }
 
 .vr-hero-img {
@@ -401,6 +407,44 @@ img { max-width: 100%; height: auto; }
     .vr-hero-pic { height: 400px; }
 }
 
+/* Mobile Screens: Banners adapt to vertical / portrait format (height > width) */
+@media (max-width: 767.98px) {
+    .vr-hero-carousel,
+    .vr-hero-carousel .carousel-inner,
+    .vr-hero-carousel .carousel-item,
+    .vr-hero-img,
+    .vr-hero-pic {
+        border-radius: 12px;
+    }
+    .vr-hero .carousel-item {
+        min-height: unset;
+        height: auto;
+    }
+    .vr-hero-pic {
+        width: 100%;
+        height: auto;
+        min-height: 380px;
+        max-height: 82vh;
+        object-fit: cover;
+        object-position: center;
+    }
+    .vr-hero-img {
+        min-height: 420px;
+    }
+    .vr-hero .carousel-control-prev,
+    .vr-hero .carousel-control-next {
+        width: 34px;
+        height: 34px;
+    }
+    .vr-hero .carousel-control-prev { left: 8px; }
+    .vr-hero .carousel-control-next { right: 8px; }
+    .vr-hero .carousel-control-prev-icon,
+    .vr-hero .carousel-control-next-icon {
+        width: 13px;
+        height: 13px;
+    }
+}
+
 @media (max-width: 575.98px) {
     .vr-hero-carousel,
     .vr-hero-carousel .carousel-inner,
@@ -409,20 +453,11 @@ img { max-width: 100%; height: auto; }
     .vr-hero-pic {
         border-radius: 10px;
     }
-    .vr-hero .carousel-item { min-height: 280px; }
-    .vr-hero-img { min-height: 280px; }
-    .vr-hero-pic { height: 280px; }
-    .vr-hero .carousel-control-prev,
-    .vr-hero .carousel-control-next {
-        width: 32px;
-        height: 32px;
+    .vr-hero-pic {
+        min-height: 360px;
     }
-    .vr-hero .carousel-control-prev { left: 8px; }
-    .vr-hero .carousel-control-next { right: 8px; }
-    .vr-hero .carousel-control-prev-icon,
-    .vr-hero .carousel-control-next-icon {
-        width: 13px;
-        height: 13px;
+    .vr-hero-img {
+        min-height: 360px;
     }
 }
 
@@ -1274,10 +1309,17 @@ img { max-width: 100%; height: auto; }
 
 .vr-promo-link {
     display: block;
+    width: 100%;
     border-radius: 18px;
     overflow: hidden;
     box-shadow: 0 6px 20px rgba(38, 61, 37, 0.06);
     transform: translateZ(0);
+}
+
+.vr-promo picture,
+.vr-promo-pic-wrap {
+    display: block;
+    width: 100%;
 }
 
 .vr-promo-img {
@@ -1298,10 +1340,27 @@ img { max-width: 100%; height: auto; }
     .vr-promo-img { height: 220px; }
 }
 
+/* Mobile Screens: Promo banners adapt to vertical / portrait format (height > width) */
+@media (max-width: 767.98px) {
+    .vr-promo-link,
+    .vr-promo-img { border-radius: 12px; }
+    .vr-promo-img {
+        height: auto;
+        min-height: 360px;
+        max-height: 78vh;
+        object-fit: cover;
+        object-position: center;
+    }
+}
+
 @media (max-width: 575.98px) {
     .vr-promo-link,
     .vr-promo-img { border-radius: 10px; }
-    .vr-promo-img { height: 150px; }
+    .vr-promo-img {
+        height: auto;
+        min-height: 320px;
+        max-height: 78vh;
+    }
 }
 
 .vr-kicker {

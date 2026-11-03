@@ -8,7 +8,7 @@
         <div class="container">
             @if ($banner->link)
                 <a href="{{ $banner->link }}" class="vr-promo-link">
-                    <picture>
+                    <picture class="vr-promo-pic-wrap">
                         @if ($promoMobile)
                             <source media="(max-width: 767.98px)" srcset="{{ $promoMobile }}">
                         @endif
@@ -17,7 +17,7 @@
                 </a>
             @else
                 <div class="vr-promo-link">
-                    <picture>
+                    <picture class="vr-promo-pic-wrap">
                         @if ($promoMobile)
                             <source media="(max-width: 767.98px)" srcset="{{ $promoMobile }}">
                         @endif
