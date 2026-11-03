@@ -54,3 +54,4 @@ class HomepageBlogsTest extends TestCase
         $this->assertStringNotContainsString('vr-home-blogs-grid', $html);
     }
 }
+
