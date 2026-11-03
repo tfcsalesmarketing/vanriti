@@ -64,16 +64,16 @@
 
         <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="m-0 js-wishlist-form">
             @csrf
-            <button type="submit" class="vr-wish-btn {{ $liked ? 'liked' : '' }}" title="{{ $liked ? 'Remove from wishlist' : 'Add to wishlist' }}" aria-label="Toggle wishlist">
-                <i class="bi {{ $liked ? 'bi-heart-fill' : 'bi-heart' }}"></i>
+            <button type="submit" class="vr-wish-btn {{ $liked ? 'liked' : '' }}" title="{{ $liked ? 'Remove from wishlist' : 'Add to wishlist' }}" aria-label="{{ $liked ? 'Remove ' . $product->name . ' from wishlist' : 'Add ' . $product->name . ' to wishlist' }}">
+                <i class="bi {{ $liked ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
             </button>
         </form>
 
         <a href="{{ route('product.show', $product) }}" class="d-block h-100 w-100 position-relative overflow-hidden" aria-label="{{ $product->name }}">
             @if ($img)
-                <img src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-primary" loading="lazy" decoding="async">
+                <img src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-primary" loading="lazy" decoding="async" width="300" height="300">
                 @if ($secondaryImg)
-                    <img src="{{ image_url($secondaryImg) }}" alt="{{ $product->name }}" class="img-secondary" loading="lazy" decoding="async">
+                    <img src="{{ image_url($secondaryImg) }}" alt="{{ $product->name }}" class="img-secondary" loading="lazy" decoding="async" width="300" height="300">
                 @endif
             @else
                 <div class="d-flex align-items-center justify-content-center h-100 w-100" style="background:var(--vr-green-soft);">
@@ -140,9 +140,9 @@
                   data-remove-url="{{ route('cart.remove', '__ITEM__') }}">
                 @csrf
                 <div class="vr-card-qty">
-                    <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
-                    <input type="number" name="quantity" value="{{ $cartQty > 0 ? $cartQty : 1 }}" min="1" max="5" readonly aria-label="Quantity">
-                    <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-minus" data-step="-1" aria-label="Decrease quantity for {{ $product->name }}"><i class="bi bi-dash" aria-hidden="true"></i></button>
+                    <input type="number" name="quantity" value="{{ $cartQty > 0 ? $cartQty : 1 }}" min="1" max="5" readonly aria-label="Quantity for {{ $product->name }}">
+                    <button type="button" class="vr-card-qty-btn vr-card-qty-plus" data-step="1" aria-label="Increase quantity for {{ $product->name }}"><i class="bi bi-plus" aria-hidden="true"></i></button>
                 </div>
             </form>
         </div>

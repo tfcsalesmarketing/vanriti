@@ -6,20 +6,24 @@
             {{-- Fixed Modal Header --}}
             <div class="modal-header border-0 pb-1 pt-3 px-3 px-sm-4 d-flex align-items-center justify-content-between flex-shrink-0">
                 <span class="small text-uppercase fw-bold text-muted" id="vrSearchModalLabel" style="letter-spacing: 0.5px; font-size: 11px;">Search Vanriti Herbal &amp; Ayurvedic Care</span>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close search"></button>
             </div>
 
             {{-- Sticky Search Input Bar --}}
             <div class="px-3 px-sm-4 pb-2 pt-1 flex-shrink-0 bg-white">
                 <form action="{{ route('shop.index') }}" method="GET" id="vrLiveSearchForm" class="mb-0">
+                    <label for="vrSearchInput" class="visually-hidden">Search products, ingredients, or categories</label>
                     <div class="input-group input-group-lg border rounded-3 p-1 shadow-xs vr-search-input-wrap">
                         <span class="input-group-text bg-transparent border-0 text-muted ps-2 ps-sm-3 pe-2">
-                            <i class="bi bi-search fs-5 text-success"></i>
+                            <i class="bi bi-search fs-5 text-success" aria-hidden="true"></i>
                         </span>
                         <input type="search" name="q" id="vrSearchInput" class="form-control bg-transparent border-0 fs-6 ps-0"
-                               placeholder="Search hair care, skin care, amla, beetroot, wellness..." autocomplete="off" autofocus>
+                               placeholder="Search hair care, skin care, amla, beetroot, wellness..." autocomplete="off" autofocus
+                               aria-label="Search products, ingredients, or categories">
                         <div class="d-none align-items-center pe-3" id="vrSearchSpinner">
-                            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                            <div class="spinner-border spinner-border-sm text-success" role="status">
+                                <span class="visually-hidden">Searching...</span>
+                            </div>
                         </div>
                     </div>
                 </form>

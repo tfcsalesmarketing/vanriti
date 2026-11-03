@@ -7,12 +7,12 @@
     <section class="vr-promo">
         <div class="container">
             @if ($banner->link)
-                <a href="{{ $banner->link }}" class="vr-promo-link">
+                <a href="{{ $banner->link }}" class="vr-promo-link" aria-label="{{ $promoAlt }}">
                     <picture class="vr-promo-pic-wrap">
                         @if ($promoMobile)
                             <source media="(max-width: 767.98px)" srcset="{{ $promoMobile }}">
                         @endif
-                        <img src="{{ $promoDesktop }}" alt="{{ $promoAlt }}" class="vr-promo-img" loading="lazy" decoding="async">
+                        <img src="{{ $promoDesktop }}" alt="{{ $promoAlt }}" class="vr-promo-img" loading="lazy" decoding="async" width="1200" height="400">
                     </picture>
                 </a>
             @else
@@ -21,7 +21,7 @@
                         @if ($promoMobile)
                             <source media="(max-width: 767.98px)" srcset="{{ $promoMobile }}">
                         @endif
-                        <img src="{{ $promoDesktop }}" alt="{{ $promoAlt }}" class="vr-promo-img" loading="lazy" decoding="async">
+                        <img src="{{ $promoDesktop }}" alt="{{ $promoAlt }}" class="vr-promo-img" loading="lazy" decoding="async" width="1200" height="400">
                     </picture>
                 </div>
             @endif

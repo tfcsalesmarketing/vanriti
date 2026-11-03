@@ -23,16 +23,17 @@
 {{-- ========== APP DRAWER #1: MENU PANEL ========== --}}
 <div class="offcanvas offcanvas-start vr-app-drawer" tabindex="-1" id="vrMenuPanel" aria-labelledby="vrMenuPanelLabel">
     <div class="offcanvas-header vr-drawer-header">
-        <a class="vr-drawer-brand" href="{{ route('home') }}">
+        <h2 class="visually-hidden" id="vrMenuPanelLabel">Navigation Menu</h2>
+        <a class="vr-drawer-brand" href="{{ route('home') }}" aria-label="{{ store_name() }} Home">
             @if ($logo)
-                <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="36" class="vr-logo">
+                <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="36" width="120" class="vr-logo">
             @else
                 <span class="vr-brand-name">{{ store_name() }}</span>
             @endif
             <span class="vr-drawer-badge">Official Store</span>
         </a>
-        <button type="button" class="vr-drawer-close" data-bs-dismiss="offcanvas" aria-label="Close">
-            <i class="ri-close-line"></i>
+        <button type="button" class="vr-drawer-close" data-bs-dismiss="offcanvas" aria-label="Close menu">
+            <i class="ri-close-line" aria-hidden="true"></i>
         </button>
     </div>
 
@@ -163,8 +164,8 @@
                 <span class="small text-muted">Browse items by category</span>
             </div>
         </div>
-        <button type="button" class="vr-drawer-close" data-bs-dismiss="offcanvas" aria-label="Close">
-            <i class="ri-close-line"></i>
+        <button type="button" class="vr-drawer-close" data-bs-dismiss="offcanvas" aria-label="Close categories panel">
+            <i class="ri-close-line" aria-hidden="true"></i>
         </button>
     </div>
 
@@ -227,8 +228,8 @@
                 <span class="small text-muted">Personal hub</span>
             </div>
         </div>
-        <button type="button" class="vr-drawer-close" data-bs-dismiss="offcanvas" aria-label="Close">
-            <i class="ri-close-line"></i>
+        <button type="button" class="vr-drawer-close" data-bs-dismiss="offcanvas" aria-label="Close categories panel">
+            <i class="ri-close-line" aria-hidden="true"></i>
         </button>
     </div>
 
@@ -298,50 +299,50 @@
 <div class="vr-mobile-dock d-lg-none" id="vrBottomBar">
     <div class="vr-dock-container">
         {{-- Item 1: Menu (Hamburger Icon) --}}
-        <button type="button" class="vr-dock-item" data-bs-toggle="offcanvas" data-bs-target="#vrMenuPanel" aria-controls="vrMenuPanel" aria-label="Menu">
+        <button type="button" class="vr-dock-item" data-bs-toggle="offcanvas" data-bs-target="#vrMenuPanel" aria-controls="vrMenuPanel" aria-label="Open navigation menu">
             <div class="vr-dock-icon">
-                <i class="ri-menu-line"></i>
+                <i class="ri-menu-line" aria-hidden="true"></i>
             </div>
             <span class="vr-dock-label">Menu</span>
         </button>
 
         {{-- Item 2: Category (Leaf Icon) --}}
-        <button type="button" class="vr-dock-item" data-bs-toggle="offcanvas" data-bs-target="#vrCategoryPanel" aria-controls="vrCategoryPanel" aria-label="Category">
+        <button type="button" class="vr-dock-item" data-bs-toggle="offcanvas" data-bs-target="#vrCategoryPanel" aria-controls="vrCategoryPanel" aria-label="Browse categories">
             <div class="vr-dock-icon">
-                <i class="ri-leaf-line"></i>
+                <i class="ri-leaf-line" aria-hidden="true"></i>
             </div>
             <span class="vr-dock-label">Category</span>
         </button>
 
         {{-- Item 3: Home (Home Icon - Clean Uniform Styling) --}}
-        <a href="{{ route('home') }}" class="vr-dock-item {{ request()->routeIs('home') ? 'active' : '' }}" aria-label="Home">
+        <a href="{{ route('home') }}" class="vr-dock-item {{ request()->routeIs('home') ? 'active' : '' }}" aria-label="Go to homepage">
             <div class="vr-dock-icon">
-                <i class="{{ request()->routeIs('home') ? 'ri-home-5-fill' : 'ri-home-5-line' }}"></i>
+                <i class="{{ request()->routeIs('home') ? 'ri-home-5-fill' : 'ri-home-5-line' }}" aria-hidden="true"></i>
             </div>
             <span class="vr-dock-label">Home</span>
         </a>
 
         {{-- Item 4: Account (User Icon) --}}
         @auth('web')
-            <button type="button" class="vr-dock-item {{ request()->routeIs('account.*') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Account">
+            <button type="button" class="vr-dock-item {{ request()->routeIs('account.*') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="My account">
                 <div class="vr-dock-icon">
-                    <i class="{{ request()->routeIs('account.*') ? 'ri-user-3-fill' : 'ri-user-3-line' }}"></i>
+                    <i class="{{ request()->routeIs('account.*') ? 'ri-user-3-fill' : 'ri-user-3-line' }}" aria-hidden="true"></i>
                 </div>
                 <span class="vr-dock-label">Account</span>
             </button>
         @else
-            <button type="button" class="vr-dock-item {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Sign in">
+            <button type="button" class="vr-dock-item {{ request()->routeIs('login') ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#vrUserPanel" aria-controls="vrUserPanel" aria-label="Sign in to your account">
                 <div class="vr-dock-icon">
-                    <i class="{{ request()->routeIs('login') ? 'ri-user-3-fill' : 'ri-user-3-line' }}"></i>
+                    <i class="{{ request()->routeIs('login') ? 'ri-user-3-fill' : 'ri-user-3-line' }}" aria-hidden="true"></i>
                 </div>
                 <span class="vr-dock-label">Sign In</span>
             </button>
         @endauth
 
         {{-- Item 5: Cart (Bag Icon) --}}
-        <a href="{{ route('cart.index') }}" class="vr-dock-item js-cart-drawer-trigger {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="Cart">
+        <a href="{{ route('cart.index') }}" class="vr-dock-item js-cart-drawer-trigger {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="View shopping cart">
             <div class="vr-dock-icon position-relative">
-                <i class="{{ request()->routeIs('cart.*') ? 'ri-shopping-bag-3-fill' : 'ri-shopping-bag-3-line' }}"></i>
+                <i class="{{ request()->routeIs('cart.*') ? 'ri-shopping-bag-3-fill' : 'ri-shopping-bag-3-line' }}" aria-hidden="true"></i>
                 @if ($cartCount > 0)
                     <span class="vr-dock-badge js-cart-count">{{ $cartCount }}</span>
                 @else

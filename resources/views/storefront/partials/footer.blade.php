@@ -20,21 +20,21 @@
     <div class="container">
         <div class="row g-4">
             <div class="col-lg-4">
-                <a href="{{ route('home') }}" class="vr-footer-brand mb-3">
+                <a href="{{ route('home') }}" class="vr-footer-brand mb-3" aria-label="{{ store_name() }} Home">
                     @if ($logo)
-                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="40" class="vr-logo">
+                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="40" width="128" class="vr-logo">
                     @else
                         <span class="vr-brand-name">{{ store_name() }}</span>
                     @endif
                 </a>
                 <p class="vr-footer-about">{{ setting('store_tagline', 'PURE BY NATURE') }}. Handcrafted skincare, herbal teas and wellness essentials made with nature in mind.</p>
                 <ul class="list-unstyled vr-footer-contact mb-0">
-                    <li><i class="ri-map-pin-2-line"></i>{!! nl2br(e(setting('store_address', ''))) !!}</li>
-                    <li><i class="ri-mail-line"></i>{{ setting('store_email', '') }}</li>
-                    <li><i class="ri-phone-line"></i>{{ setting('store_phone', '') }}</li>
+                    <li><i class="ri-map-pin-2-line" aria-hidden="true"></i>{!! nl2br(e(setting('store_address', ''))) !!}</li>
+                    <li><i class="ri-mail-line" aria-hidden="true"></i>{{ setting('store_email', '') }}</li>
+                    <li><i class="ri-phone-line" aria-hidden="true"></i>{{ setting('store_phone', '') }}</li>
                     <li>
-                        <a href="https://wa.me/919211946606?text={{ urlencode('Hi Vanriti, I would like to inquire about your products.') }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none d-inline-flex align-items-center gap-2" style="color:inherit;">
-                            <i class="ri-whatsapp-line text-success"></i> +91 92119 46606
+                        <a href="https://wa.me/919211946606?text={{ urlencode('Hi Vanriti, I would like to inquire about your products.') }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none d-inline-flex align-items-center gap-2" style="color:inherit;" aria-label="Chat with us on WhatsApp">
+                            <i class="ri-whatsapp-line text-success" aria-hidden="true"></i> +91 92119 46606
                         </a>
                     </li>
                 </ul>
@@ -51,8 +51,8 @@
                 @if ($_socials)
                     <div class="vr-footer-social mt-3">
                         @foreach ($_socials as $_handle => $_url)
-                            <a href="{{ $_url }}" class="vr-social-icon" aria-label="{{ ucfirst($_handle) }}" target="_blank" rel="noopener noreferrer">
-                                <i class="ri-{{ $_handle === 'twitter' ? 'twitter-x-line' : $_handle }}-line"></i>
+                            <a href="{{ $_url }}" class="vr-social-icon" aria-label="Visit our {{ ucfirst($_handle) }} page" target="_blank" rel="noopener noreferrer">
+                                <i class="ri-{{ $_handle === 'twitter' ? 'twitter-x-line' : $_handle }}-line" aria-hidden="true"></i>
                             </a>
                         @endforeach
                     </div>
@@ -60,7 +60,7 @@
             </div>
 
             <div class="col-lg-2">
-                <div class="vr-footer-title">Shop</div>
+                <h3 class="vr-footer-title h6">Shop</h3>
                 <ul class="list-unstyled vr-footer-links">
                     <li><a href="{{ route('shop.index') }}">All Products</a></li>
                     @foreach ($footerCats as $cat)
@@ -70,7 +70,7 @@
             </div>
 
             <div class="col-lg-2">
-                <div class="vr-footer-title">Company</div>
+                <h3 class="vr-footer-title h6">Company</h3>
                 <ul class="list-unstyled vr-footer-links">
                     <li><a href="{{ route('info.about') }}">About Us</a></li>
                     <li><a href="{{ route('blog.index') }}">Journal</a></li>
@@ -80,7 +80,7 @@
             </div>
 
             <div class="col-lg-2">
-                <div class="vr-footer-title">Customer Care</div>
+                <h3 class="vr-footer-title h6">Customer Care</h3>
                 <ul class="list-unstyled vr-footer-links">
                     <li><a href="{{ route('track') }}">Track Order</a></li>
                     <li><a href="{{ route('account.orders') }}">My Orders</a></li>
@@ -91,7 +91,7 @@
             </div>
 
             <div class="col-lg-2">
-                <div class="vr-footer-title">Policies</div>
+                <h3 class="vr-footer-title h6">Policies</h3>
                 <ul class="list-unstyled vr-footer-links">
                     <li><a href="{{ route('info.shipping') }}">Shipping &amp; Delivery</a></li>
                     <li><a href="{{ route('info.privacy') }}">Privacy Policy</a></li>
@@ -103,7 +103,7 @@
         </div>
 
         <div class="vr-footer-bottom">
-            <span>Vanriti &copy; Copyright TFC Sales &amp; Marketing</span>
+            <span>&copy; {{ date('Y') }} {{ store_name() }}. All rights reserved.</span>
         </div>
     </div>
 </footer>

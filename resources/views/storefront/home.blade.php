@@ -30,12 +30,12 @@
                         @endphp
                         <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
                             @if ($banner->link)
-                                <a href="{{ $banner->link }}" class="d-block w-100">
+                                <a href="{{ $banner->link }}" class="d-block w-100" aria-label="{{ $bannerAlt }}">
                                     <picture class="vr-hero-pic-wrap">
                                         @if ($mobileImage)
                                             <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
                                         @endif
-                                        <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                                        <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" decoding="async" width="1200" height="500" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                                     </picture>
                                 </a>
                             @else
@@ -43,18 +43,18 @@
                                     @if ($mobileImage)
                                         <source media="(max-width: 767.98px)" srcset="{{ $mobileImage }}">
                                     @endif
-                                    <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" decoding="async" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                                    <img src="{{ $desktopImage }}" alt="{{ $bannerAlt }}" class="vr-hero-pic" decoding="async" width="1200" height="500" @if ($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                                 </picture>
                             @endif
                         </div>
                     @endforeach
                 </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon"></span>
+                <button class="carousel-control-prev" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="prev" aria-label="Previous slide">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="next">
-                    <span class="carousel-control-next-icon"></span>
+                <button class="carousel-control-next" type="button" data-bs-target="#vrHeroCarousel" data-bs-slide="next" aria-label="Next slide">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
             </div>
@@ -259,11 +259,11 @@
                                         {{ $views }} Views
                                     </span>
                                     <div class="vr-reel-actions-badge">
-                                        <button type="button" class="vr-reel-act-btn js-card-like-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.like', $reel) }}" title="Like">
-                                            <i class="bi bi-heart"></i>
+                                        <button type="button" class="vr-reel-act-btn js-card-like-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.like', $reel) }}" title="Like" aria-label="Like reel: {{ $reel->title }}">
+                                            <i class="bi bi-heart" aria-hidden="true"></i>
                                         </button>
-                                        <button type="button" class="vr-reel-act-btn js-card-share-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.share', $reel) }}" data-share-url="{{ $reel->instagram_url ?: ($taggedProduct ? route('product.show', $taggedProduct) : route('home')) }}" data-title="{{ $reel->title }}" title="Share">
-                                            <i class="bi bi-send"></i>
+                                        <button type="button" class="vr-reel-act-btn js-card-share-btn" data-id="{{ $reel->id }}" data-url="{{ route('reels.share', $reel) }}" data-share-url="{{ $reel->instagram_url ?: ($taggedProduct ? route('product.show', $taggedProduct) : route('home')) }}" data-title="{{ $reel->title }}" title="Share" aria-label="Share reel: {{ $reel->title }}">
+                                            <i class="bi bi-send" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -318,15 +318,15 @@
         <div class="vr-reel-modal-dialog" id="vrModalDialog">
             {{-- Top Controls Bar --}}
             <div class="vr-modal-top-bar">
-                <button type="button" class="vr-modal-ctrl-btn" id="vrModalFullscreenBtn" title="Fullscreen">
-                    <i class="bi bi-arrows-angle-expand"></i>
+                <button type="button" class="vr-modal-ctrl-btn" id="vrModalFullscreenBtn" title="Fullscreen" aria-label="Toggle fullscreen">
+                    <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
                 </button>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="vr-modal-ctrl-btn" id="vrModalSoundBtn" title="Sound toggle">
-                        <i class="bi bi-volume-up-fill"></i>
+                    <button type="button" class="vr-modal-ctrl-btn" id="vrModalSoundBtn" title="Sound toggle" aria-label="Toggle audio">
+                        <i class="bi bi-volume-up-fill" aria-hidden="true"></i>
                     </button>
-                    <button type="button" class="vr-modal-ctrl-btn vr-modal-close" id="vrReelCloseBtn" title="Close">
-                        <i class="bi bi-x-lg"></i>
+                    <button type="button" class="vr-modal-ctrl-btn vr-modal-close" id="vrReelCloseBtn" title="Close" aria-label="Close reel player">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -334,20 +334,20 @@
             {{-- Right-Side Vertical Floating Action Rail --}}
             <div class="vr-modal-action-rail">
                 <div class="vr-rail-item">
-                    <i class="bi bi-eye fs-5"></i>
+                    <i class="bi bi-eye fs-5" aria-hidden="true"></i>
                     <span class="vr-rail-number" id="vrModalViewsText">18.3K</span>
                     <span class="vr-rail-sub">Views</span>
                 </div>
-                <button type="button" class="vr-rail-btn" id="vrModalLikeBtn" title="Like this reel">
-                    <i class="bi bi-heart fs-5" id="vrModalLikeIcon"></i>
+                <button type="button" class="vr-rail-btn" id="vrModalLikeBtn" title="Like this reel" aria-label="Like this reel">
+                    <i class="bi bi-heart fs-5" id="vrModalLikeIcon" aria-hidden="true"></i>
                     <span class="vr-rail-number" id="vrModalLikesCount">192</span>
                 </button>
-                <button type="button" class="vr-rail-btn" id="vrModalShareBtn" title="Share this reel">
-                    <i class="bi bi-send fs-5"></i>
+                <button type="button" class="vr-rail-btn" id="vrModalShareBtn" title="Share this reel" aria-label="Share this reel">
+                    <i class="bi bi-send fs-5" aria-hidden="true"></i>
                     <span class="vr-rail-number" id="vrModalSharesCount">104</span>
                 </button>
-                <button type="button" class="vr-rail-btn" id="vrModalCartIconBtn" title="View Cart">
-                    <i class="bi bi-cart3 fs-5"></i>
+                <button type="button" class="vr-rail-btn" id="vrModalCartIconBtn" title="View Cart" aria-label="View Cart">
+                    <i class="bi bi-cart3 fs-5" aria-hidden="true"></i>
                 </button>
             </div>
 
@@ -363,12 +363,12 @@
             <div class="vr-modal-product-drawer d-none" id="vrModalProductDrawer">
                 <div class="vr-modal-product-glass-card">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <img src="" alt="" class="vr-modal-drawer-thumb" id="vrModalProductImg">
+                        <img src="" alt="Product thumbnail" class="vr-modal-drawer-thumb" id="vrModalProductImg" width="60" height="60">
                         <div class="flex-grow-1 min-w-0">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="vr-modal-drawer-title" id="vrModalProductName"></span>
-                                <a href="#" target="_blank" class="vr-modal-drawer-ext" id="vrModalProductExtLink" title="View product details">
-                                    <i class="bi bi-box-arrow-up-right"></i>
+                                <a href="#" target="_blank" rel="noopener noreferrer" class="vr-modal-drawer-ext" id="vrModalProductExtLink" title="View product details" aria-label="View product details in new tab">
+                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
                             </div>
                             <div class="d-flex align-items-center gap-1.5 mt-0.5">
@@ -445,10 +445,10 @@
             <div class="row g-3 justify-content-center vr-stagger">
                 @foreach ($categories as $cat)
                     <div class="col-4 col-md-3">
-                        <a href="{{ route('shop.category', $cat->slug) }}" class="vr-cat-card d-block text-center">
+                        <a href="{{ route('shop.category', $cat->slug) }}" class="vr-cat-card d-block text-center" aria-label="Shop {{ $cat->name }}">
                             <div class="vr-cat-img-wrap">
                                 @if ($cat->image)
-                                    <img src="{{ image_url($cat->image) }}" alt="{{ $cat->name }}" loading="lazy">
+                                    <img src="{{ image_url($cat->image) }}" alt="{{ $cat->name }}" loading="lazy" width="80" height="80">
                                 @else
                                     <div class="vr-cat-placeholder"><i class="bi bi-grid-3x3-gap"></i></div>
                                 @endif
@@ -486,7 +486,7 @@
                             <div class="vr-journal-card-img">
                                 <a href="{{ route('blog.show', $post->slug) }}" class="d-block w-100 h-100" aria-label="{{ $post->title }}">
                                     @if ($post->featured_image)
-                                        <img src="{{ image_url($post->featured_image) }}" alt="{{ $post->title }}" loading="lazy">
+                                        <img src="{{ image_url($post->featured_image) }}" alt="{{ $post->title }}" loading="lazy" width="300" height="180">
                                     @else
                                         <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
                                             <i class="ri-article-line fs-1 opacity-25"></i>
@@ -504,7 +504,7 @@
                                 <div class="vr-journal-card-meta">
                                     <span>{{ $post->published_at ? $post->published_at->format('M d, Y') : '' }}</span>
                                     <span>&middot;</span>
-                                    <span><i class="ri-time-line me-1"></i>{{ $post->readingTime() }} min read</span>
+                                    <span><i class="ri-time-line me-1" aria-hidden="true"></i>{{ $post->readingTime() }} min read</span>
                                 </div>
 
                                 <a href="{{ route('blog.show', $post->slug) }}" class="text-decoration-none" title="{{ $post->title }}">
@@ -517,8 +517,8 @@
 
                                 <div class="vr-journal-card-footer">
                                     <span class="vr-journal-card-author text-truncate" style="max-width: 110px;">By {{ $post->author_name }}</span>
-                                    <a href="{{ route('blog.show', $post->slug) }}" class="vr-journal-card-link">
-                                        Read <i class="ri-arrow-right-line"></i>
+                                    <a href="{{ route('blog.show', $post->slug) }}" class="vr-journal-card-link" aria-label="Read story: {{ $post->title }}">
+                                        Read <i class="ri-arrow-right-line" aria-hidden="true"></i>
                                     </a>
                                 </div>
                             </div>
@@ -540,11 +540,12 @@
                 <form class="mx-auto d-flex gap-2" style="max-width:460px;" action="{{ route('newsletter.subscribe') }}" method="POST" novalidate>
                     @csrf
                     <div class="flex-grow-1">
-                        <input type="email" name="email" class="form-control" placeholder="Your email address">
+                        <label for="vrNewsletterEmail" class="visually-hidden">Your email address</label>
+                        <input type="email" id="vrNewsletterEmail" name="email" class="form-control" placeholder="Your email address" aria-label="Your email address" autocomplete="email">
                         <div class="invalid-feedback"></div>
                     </div>
                     <button type="submit" class="btn btn-vr text-nowrap">
-                        <i class="bi bi-send me-1"></i>Subscribe
+                        <i class="bi bi-send me-1" aria-hidden="true"></i>Subscribe
                     </button>
                 </form>
             </div>

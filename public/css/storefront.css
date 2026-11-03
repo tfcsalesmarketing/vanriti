@@ -1625,7 +1625,7 @@ img { max-width: 100%; height: auto; }
     font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--vr-green);
+    color: #3f5d17;
     font-weight: 600;
     margin-bottom: 3px;
 }
@@ -1649,11 +1649,11 @@ img { max-width: 100%; height: auto; }
 
 .vr-price { display: flex; align-items: baseline; gap: 0.5rem; }
 .vr-price .now { font-weight: 800; color: var(--vr-green-dark); font-size: 1.08rem; }
-.vr-price .mrp { color: var(--vr-muted); text-decoration: line-through; font-size: 0.85rem; opacity: 0.7; }
+.vr-price .mrp { color: #556055; text-decoration: line-through; font-size: 0.85rem; }
 
 .vr-stock-label { font-size: 0.73rem; font-weight: 600; }
 .vr-stock-label.out { color: var(--vr-danger); }
-.vr-stock-label.in { color: var(--vr-green); }
+.vr-stock-label.in { color: #215e19; }
 
 .vr-quick-add {
     border-radius: var(--vr-radius-pill);
@@ -5336,13 +5336,15 @@ img { max-width: 100%; height: auto; }
     z-index: 1090 !important;
     box-shadow: -10px 0 35px rgba(0, 0, 0, 0.16) !important;
     transform: translateX(105%) !important;
-    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+    visibility: hidden !important;
+    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0.35s ease !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
 }
 .vr-cart-drawer.show {
     transform: translateX(0) !important;
+    visibility: visible !important;
 }
 @media (max-width: 575.98px) {
     .vr-cart-drawer {

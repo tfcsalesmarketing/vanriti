@@ -1,7 +1,7 @@
 {{-- Modern Ayurvedic Web Push Notification Soft-Prompt (Centered Modal for Mobile & Desktop) --}}
 <div id="vrPushPromptBackdrop" class="vr-push-backdrop d-none" aria-modal="true" role="dialog" aria-labelledby="vrPushTitle">
     <div id="vrPushPromptCard" class="vr-push-modal-card shadow-lg">
-        <button type="button" class="btn-close position-absolute top-0 end-0 m-3 font-2xs" id="vrPushCloseBtn" aria-label="Close"></button>
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3 font-2xs" id="vrPushCloseBtn" aria-label="Close notification prompt"></button>
         <div class="text-center pt-2 pb-1">
             <div class="vr-push-icon-box mx-auto mb-3">
                 <i class="bi bi-bell-fill fs-3"></i>

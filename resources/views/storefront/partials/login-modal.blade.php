@@ -20,7 +20,7 @@
         <div class="modal-content vr-login-dialog">
 
             {{-- Close Button --}}
-            <button type="button" class="vr-modal-close-btn" data-bs-dismiss="modal" aria-label="Close" data-vr-login-close>
+            <button type="button" class="vr-modal-close-btn" data-bs-dismiss="modal" aria-label="Close login dialog" data-vr-login-close>
                 <i class="ri-close-line"></i>
             </button>
 

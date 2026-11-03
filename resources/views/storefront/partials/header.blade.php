@@ -27,28 +27,28 @@
         <div class="row align-items-center py-3 g-0">
             {{-- Mobile Header: Logo centered, Left Category Menu Icon, Right Search Icon --}}
             <div class="col-12 d-flex d-lg-none align-items-center justify-content-between px-2">
-                <button type="button" class="vr-mobile-header-btn" data-bs-toggle="offcanvas" data-bs-target="#vrCategoryPanel" aria-controls="vrCategoryPanel" aria-label="Open Categories">
-                    <i class="ri-menu-line"></i>
+                <button type="button" class="vr-mobile-header-btn" data-bs-toggle="offcanvas" data-bs-target="#vrCategoryPanel" aria-controls="vrCategoryPanel" aria-label="Open categories navigation">
+                    <i class="ri-menu-line" aria-hidden="true"></i>
                 </button>
 
-                <a class="vr-brand mx-auto text-center" href="{{ route('home') }}">
+                <a class="vr-brand mx-auto text-center" href="{{ route('home') }}" aria-label="{{ store_name() }} Home">
                     @if ($logo)
-                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="50" class="vr-logo">
+                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="50" width="160" class="vr-logo">
                     @else
                         {{ strtoupper(store_name()) }}<span class="dot">.</span>
                     @endif
                 </a>
 
-                <button type="button" class="vr-mobile-header-btn" data-bs-toggle="modal" data-bs-target="#vrSearchModal" aria-label="Search">
-                    <i class="ri-search-line"></i>
+                <button type="button" class="vr-mobile-header-btn" data-bs-toggle="modal" data-bs-target="#vrSearchModal" aria-label="Search store">
+                    <i class="ri-search-line" aria-hidden="true"></i>
                 </button>
             </div>
 
             {{-- Desktop: logo + category nav --}}
             <div class="col-lg-3 d-none d-lg-flex align-items-center">
-                <a class="vr-brand me-lg-0" href="{{ route('home') }}">
+                <a class="vr-brand me-lg-0" href="{{ route('home') }}" aria-label="{{ store_name() }} Home">
                     @if ($logo)
-                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="55" class="vr-logo">
+                        <img src="{{ image_url($logo, 'favicon.ico') }}" alt="{{ store_name() }}" height="55" width="176" class="vr-logo">
                     @else
                         {{ strtoupper(store_name()) }}<span class="dot">.</span>
                     @endif
@@ -64,7 +64,7 @@
                         <li class="nav-item dropdown">
                             <a class="vr-nav-link dropdown-toggle {{ request('category', '') == $cat->slug ? 'active' : '' }}"
                                href="{{ route('shop.category', $cat->slug) }}"
-                               @if ($cat->children->count()) data-bs-toggle="dropdown" @endif>
+                               @if ($cat->children->count()) role="button" data-bs-toggle="dropdown" aria-expanded="false" @endif>
                                 {{ $cat->name }}
                             </a>
                             @if ($cat->children->count())
@@ -87,28 +87,28 @@
             </div>
 
             <div class="col-lg-3 d-none d-lg-flex align-items-center justify-content-end gap-3">
-                <button type="button" class="vr-icon-link border-0 bg-transparent p-0" data-bs-toggle="modal" data-bs-target="#vrSearchModal" title="Search" aria-label="Search">
-                    <i class="bi bi-search"></i>
+                <button type="button" class="vr-icon-link border-0 bg-transparent p-0" data-bs-toggle="modal" data-bs-target="#vrSearchModal" title="Search" aria-label="Search store">
+                    <i class="bi bi-search" aria-hidden="true"></i>
                 </button>
                 @auth('web')
-                    <a href="{{ route('account.dashboard') }}" class="vr-icon-link" title="Account" aria-label="Account">
-                        <i class="bi bi-person"></i>
+                    <a href="{{ route('account.dashboard') }}" class="vr-icon-link" title="Account" aria-label="My Account">
+                        <i class="bi bi-person" aria-hidden="true"></i>
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="vr-icon-link" title="Login" aria-label="Login">
-                        <i class="bi bi-person"></i>
+                    <a href="{{ route('login') }}" class="vr-icon-link" title="Login" aria-label="Sign in to your account">
+                        <i class="bi bi-person" aria-hidden="true"></i>
                     </a>
                 @endauth
-                <a href="{{ route('wishlist.index') }}" class="vr-icon-link" title="Wishlist" aria-label="Wishlist">
-                    <i class="bi bi-heart"></i>
+                <a href="{{ route('wishlist.index') }}" class="vr-icon-link" title="Wishlist" aria-label="Wishlist ({{ $wishCount }} items)">
+                    <i class="bi bi-heart" aria-hidden="true"></i>
                     @if ($wishCount > 0)
                         <span class="vr-badge js-wishlist-count">{{ $wishCount }}</span>
                     @else
                         <span class="vr-badge js-wishlist-count d-none">0</span>
                     @endif
                 </a>
-                <a href="{{ route('cart.index') }}" class="vr-icon-link position-relative js-cart-drawer-trigger" title="Cart" aria-label="Cart">
-                    <i class="bi bi-bag"></i>
+                <a href="{{ route('cart.index') }}" class="vr-icon-link position-relative js-cart-drawer-trigger" title="Cart" aria-label="Shopping cart ({{ $cartCount }} items)">
+                    <i class="bi bi-bag" aria-hidden="true"></i>
                     @if ($cartCount > 0)
                         <span class="vr-badge js-cart-count">{{ $cartCount }}</span>
                     @else
