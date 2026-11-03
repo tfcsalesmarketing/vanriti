@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="vr-section py-4 py-md-5" style="background: linear-gradient(180deg, #F9FAF8 0%, #FFFFFF 100%); min-height: 80vh;">
-    <div class="container" style="max-width: 960px;">
+    <div class="container">
         
         {{-- Section Header --}}
         <div class="text-center mb-4">

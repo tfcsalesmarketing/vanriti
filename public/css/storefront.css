@@ -52,10 +52,9 @@ body {
     line-height: 1.6;
 }
 
-/* ---------- Responsive Desktop Layout: 80% Content Width ----------
-   Removes excessive blank gutters on desktop monitors by expanding
-   Bootstrap containers from fixed pixel limits (1140px/1320px) to 80% of
-   viewport width, creating a balanced 10% margin on both left and right. */
+/* ---------- Responsive Desktop Layout: 90% Content Width ----------
+   Expands content containers to 90% of viewport width across all pages,
+   leaving a sleek, balanced 5% margin on both left and right sides. */
 @media (min-width: 992px) {
     .container:not([style*="max-width"]),
     .container-sm:not([style*="max-width"]),
@@ -63,8 +62,8 @@ body {
     .container-lg:not([style*="max-width"]),
     .container-xl:not([style*="max-width"]),
     .container-xxl:not([style*="max-width"]) {
-        width: 80% !important;
-        max-width: 80% !important;
+        width: 90% !important;
+        max-width: 90% !important;
         margin-left: auto !important;
         margin-right: auto !important;
     }
