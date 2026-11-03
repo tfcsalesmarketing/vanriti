@@ -11,11 +11,11 @@ use Illuminate\View\View;
 class ProductController extends Controller
 {
     /**
-     * Display live synced products from VANRITI catalogue.
+     * Display products from TFC catalogue.
      */
     public function index(Request $request): View
     {
-        $query = Product::active()->with(['images', 'categories', 'variants']);
+        $query = Product::tfc()->active()->with(['images', 'categories', 'variants']);
 
         // Optional category filter
         if ($request->filled('category')) {
@@ -44,7 +44,10 @@ class ProductController extends Controller
         };
 
         $products = $query->paginate(12)->withQueryString();
-        $categories = Category::active()->withCount('products')->get();
+        $categories = Category::active()
+            ->whereHas('products', fn ($q) => $q->tfc()->active())
+            ->withCount(['products' => fn ($q) => $q->tfc()->active()])
+            ->get();
 
         return view('tfc.products.index', compact('products', 'categories', 'sort'));
     }
@@ -62,7 +65,8 @@ class ProductController extends Controller
             $categoryIds = array_merge($categoryIds, $childIds);
         }
 
-        $products = Product::active()
+        $products = Product::tfc()
+            ->active()
             ->with(['images', 'categories', 'variants'])
             ->whereHas('categories', function ($q) use ($categoryIds) {
                 $q->whereIn('categories.id', $categoryIds);
@@ -70,22 +74,27 @@ class ProductController extends Controller
             ->latest()
             ->paginate(12);
 
-        $categories = Category::active()->withCount('products')->get();
+        $categories = Category::active()
+            ->whereHas('products', fn ($q) => $q->tfc()->active())
+            ->withCount(['products' => fn ($q) => $q->tfc()->active()])
+            ->get();
 
         return view('tfc.products.category', compact('category', 'products', 'categories'));
     }
 
     /**
-     * Display single product details with live stock and official buy-link on VANRITI.
+     * Display single product details with live stock for TFC Sales & Marketing.
      */
     public function show(string $slug): View
     {
-        $product = Product::active()
+        $product = Product::tfc()
+            ->active()
             ->with(['images', 'categories', 'variants', 'approvedReviews'])
             ->where('slug', $slug)
             ->firstOrFail();
 
-        $relatedProducts = Product::active()
+        $relatedProducts = Product::tfc()
+            ->active()
             ->with(['images', 'categories', 'variants'])
             ->where('id', '!=', $product->id)
             ->whereHas('categories', function ($q) use ($product) {

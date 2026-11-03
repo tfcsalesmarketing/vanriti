@@ -18,12 +18,22 @@
                         <label class="form-label small fw-semibold">SKU</label>
                         <input type="text" name="sku" class="form-control form-control-sm" value="{{ old('sku', $product->sku ?? '') }}">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small fw-semibold">Status <span class="text-danger">*</span></label>
                         <select name="status" class="form-select form-select-sm" required>
                             <option value="draft" {{ old('status', $product->status ?? 'draft') === 'draft' ? 'selected' : '' }}>Draft</option>
                             <option value="active" {{ old('status', $product->status ?? '') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ old('status', $product->status ?? '') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Platform / Channel <span class="text-danger">*</span></label>
+                        @php
+                            $defaultChannel = request('channel') ?: ($product->channel ?? 'vanriti');
+                        @endphp
+                        <select name="channel" class="form-select form-select-sm" required>
+                            <option value="vanriti" {{ old('channel', $defaultChannel) === 'vanriti' ? 'selected' : '' }}>VANRITI Retail Store</option>
+                            <option value="tfc" {{ old('channel', $defaultChannel) === 'tfc' ? 'selected' : '' }}>TFC Sales &amp; Marketing</option>
                         </select>
                     </div>
                     <div class="col-md-12">

@@ -84,7 +84,7 @@
 {{-- ── Streamlined Filter Bar ───────────────────────────────────────── --}}
 <div class="card filter-card mb-3">
     <form method="GET" action="{{ route('admin.products.index') }}" class="row g-2 align-items-center">
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
                 <input type="text" name="search" class="form-control border-start-0" placeholder="Search title, SKU, slug..." value="{{ request('search') }}">
@@ -98,7 +98,14 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
+            <select name="channel" class="form-select form-select-sm">
+                <option value="">All Platforms</option>
+                <option value="vanriti" {{ request('channel') === 'vanriti' ? 'selected' : '' }}>VANRITI Store</option>
+                <option value="tfc" {{ request('channel') === 'tfc' ? 'selected' : '' }}>TFC Marketing</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
             <select name="status" class="form-select form-select-sm">
                 <option value="">All Statuses</option>
                 <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
@@ -106,7 +113,7 @@
                 <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
             </select>
         </div>
-        <div class="col-12 col-md-2 d-flex gap-1">
+        <div class="col-6 col-md-2 d-flex gap-1">
             <button type="submit" class="btn btn-sm btn-dark flex-fill" title="Filter Products"><i class="bi bi-funnel me-1"></i>Filter</button>
             <a href="{{ route('admin.products.index') }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
         </div>

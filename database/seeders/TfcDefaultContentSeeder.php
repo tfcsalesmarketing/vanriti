@@ -208,12 +208,11 @@ class TfcDefaultContentSeeder extends Seeder
         $headerMenus = [
             ['title' => 'Home', 'url' => '/', 'sort_order' => 1],
             ['title' => 'About TFC', 'url' => '/about-us', 'sort_order' => 2],
-            ['title' => 'VANRITI Brand', 'url' => '/vanriti-brand', 'sort_order' => 3],
-            ['title' => 'Products', 'url' => '/products', 'sort_order' => 4],
-            ['title' => 'The Opportunity', 'url' => '/opportunity', 'sort_order' => 5],
-            ['title' => 'How It Works', 'url' => '/how-it-works', 'sort_order' => 6],
-            ['title' => 'Grievance', 'url' => '/grievance', 'sort_order' => 7],
-            ['title' => 'Contact', 'url' => '/contact-us', 'sort_order' => 8],
+            ['title' => 'Products', 'url' => '/products', 'sort_order' => 3],
+            ['title' => 'The Opportunity', 'url' => '/opportunity', 'sort_order' => 4],
+            ['title' => 'How It Works', 'url' => '/how-it-works', 'sort_order' => 5],
+            ['title' => 'Grievance', 'url' => '/grievance', 'sort_order' => 6],
+            ['title' => 'Contact', 'url' => '/contact-us', 'sort_order' => 7],
         ];
 
         foreach ($headerMenus as $item) {
@@ -231,10 +230,9 @@ class TfcDefaultContentSeeder extends Seeder
         // Footer Quick Links
         $footerCol1 = [
             ['title' => 'About Us', 'url' => '/about-us', 'sort_order' => 1],
-            ['title' => 'VANRITI Brand Story', 'url' => '/vanriti-brand', 'sort_order' => 2],
-            ['title' => 'Product Catalogue', 'url' => '/products', 'sort_order' => 3],
-            ['title' => 'Direct Selling Opportunity', 'url' => '/opportunity', 'sort_order' => 4],
-            ['title' => 'How It Works', 'url' => '/how-it-works', 'sort_order' => 5],
+            ['title' => 'Product Catalogue', 'url' => '/products', 'sort_order' => 2],
+            ['title' => 'Direct Selling Opportunity', 'url' => '/opportunity', 'sort_order' => 3],
+            ['title' => 'How It Works', 'url' => '/how-it-works', 'sort_order' => 4],
         ];
         foreach ($footerCol1 as $item) {
             TfcMenu::firstOrCreate(
@@ -254,7 +252,6 @@ class TfcDefaultContentSeeder extends Seeder
             ['title' => 'Track Grievance Status', 'url' => '/grievance/track', 'sort_order' => 2],
             ['title' => 'Frequently Asked Questions', 'url' => '/faqs', 'sort_order' => 3],
             ['title' => 'Contact Support', 'url' => '/contact-us', 'sort_order' => 4],
-            ['title' => 'Official VANRITI Store', 'url' => 'https://vanriti.com', 'sort_order' => 5, 'open_new_tab' => true],
         ];
         foreach ($footerCol2 as $item) {
             TfcMenu::firstOrCreate(

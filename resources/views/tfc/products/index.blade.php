@@ -88,12 +88,32 @@
                 </div>
             @empty
                 <div class="col-12 text-center py-5">
-                    <div class="py-5">
-                        <i class="bi bi-box-seam text-muted fs-1 mb-3 d-block"></i>
-                        <h5 class="fw-bold text-dark">No products found</h5>
-                        <p class="text-muted">Try adjusting your search criteria or explore another category.</p>
-                        <a href="{{ tfc_route('products') }}" class="btn btn-tfc-navy mt-2">View All Products</a>
-                    </div>
+                    @if (request()->filled('search') || request()->filled('category'))
+                        <div class="py-5">
+                            <i class="bi bi-search text-muted fs-1 mb-3 d-block"></i>
+                            <h5 class="fw-bold text-dark">No products found</h5>
+                            <p class="text-muted">Try adjusting your search criteria or explore another category.</p>
+                            <a href="{{ tfc_route('products') }}" class="btn btn-tfc-navy mt-2">View All Products</a>
+                        </div>
+                    @else
+                        <div class="p-4 p-md-5 rounded-4 border bg-light mx-auto shadow-sm my-4" style="max-width: 680px;">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: rgba(30, 58, 138, 0.08); color: #1E3A8A;">
+                                <i class="bi bi-box-seam fs-2"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2">TFC Product Catalogue Updating</h4>
+                            <p class="text-muted mb-4" style="line-height: 1.7;">
+                                We are currently updating our dedicated direct-selling product formulations catalogue. New verified products will be available shortly. Contact our corporate desk for preview inquiries or register as an independent direct seller.
+                            </p>
+                            <div class="d-flex flex-wrap justify-content-center gap-3">
+                                <a href="{{ tfc_route('contact') }}" class="btn btn-outline-dark px-4 py-2 rounded-3 fw-semibold">
+                                    <i class="bi bi-envelope me-1"></i>Contact Corporate Desk
+                                </a>
+                                <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary px-4 py-2 rounded-3 fw-semibold">
+                                    <i class="bi bi-person-plus me-1"></i>Become A Direct Seller
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endforelse
         </div>

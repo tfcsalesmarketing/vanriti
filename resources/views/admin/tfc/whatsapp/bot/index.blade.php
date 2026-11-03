@@ -246,7 +246,7 @@
                         <select name="action_type" class="form-select">
                             <option value="text" selected>Send Custom Text Response</option>
                             <option value="interactive_menu">Interactive Reply Buttons</option>
-                            <option value="catalog">Show VANRITI Herbal Catalog</option>
+                            <option value="catalog">Show TFC Product Catalog</option>
                             <option value="dynamic_order_tracking">Dynamic Order / Status Tracking</option>
                         </select>
                     </div>
@@ -256,7 +256,7 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-semibold text-dark">Response Text Body <span class="text-danger">*</span></label>
-                        <textarea name="response_text" class="form-control" rows="4" placeholder="Hello! Welcome to TFC Sales &amp; Marketing. We are a customer-first direct-selling company founded on genuine VANRITI Ayurvedic wellness formulations..." required></textarea>
+                        <textarea name="response_text" class="form-control" rows="4" placeholder="Hello! Welcome to TFC Sales &amp; Marketing. We are a customer-first direct-selling company offering certified wellness formulations..." required></textarea>
                     </div>
 
                     {{-- Interactive Reply Buttons (Up to 3) --}}

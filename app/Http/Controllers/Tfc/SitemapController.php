@@ -16,8 +16,8 @@ class SitemapController extends Controller
      */
     public function index(): Response
     {
-        $products = Product::active()->latest()->get(['slug', 'updated_at']);
-        $categories = Category::active()->get(['slug', 'updated_at']);
+        $products = Product::tfc()->active()->latest()->get(['slug', 'updated_at']);
+        $categories = Category::active()->whereHas('products', fn ($q) => $q->tfc()->active())->get(['slug', 'updated_at']);
         $blogs = TfcBlog::published()->latest('published_at')->get(['slug', 'updated_at']);
         $pages = TfcPage::published()->get(['slug', 'updated_at']);
 

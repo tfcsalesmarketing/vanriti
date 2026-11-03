@@ -18,12 +18,14 @@ class DirectSellingController extends Controller
     public function directSelling(): View
     {
         $rootCategories = Category::active()
+            ->whereHas('products', fn ($q) => $q->tfc()->active())
             ->roots()
             ->with(['children'])
             ->orderBy('sort_order')
             ->get();
 
-        $showcaseProducts = Product::active()
+        $showcaseProducts = Product::tfc()
+            ->active()
             ->with(['images', 'categories'])
             ->whereHas('images')
             ->latest()

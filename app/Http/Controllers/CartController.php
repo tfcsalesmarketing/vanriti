@@ -49,6 +49,7 @@ class CartController extends Controller
 
         $cartProductIds = $cartItems->pluck('product_id')->filter()->all();
         $relatedProducts = Product::query()
+            ->vanriti()
             ->active()
             ->whereNotIn('id', $cartProductIds)
             ->with(['categories', 'images', 'variants'])

@@ -219,7 +219,7 @@
 
         {{-- Real Live Products --}}
         <div class="row g-3 g-md-4">
-            @foreach ($showcaseProducts as $product)
+            @forelse ($showcaseProducts as $product)
                 @php
                     $img = $product->getPrimaryImage()?->image_path;
                     $discount = $product->discountPercent();
@@ -233,7 +233,7 @@
                                 @else
                                     <div class="tfc-product-img bg-light d-flex align-items-center justify-content-center text-muted">
                                         <i class="bi bi-image fs-1"></i>
-                                    </div>
+                                     </div>
                                 @endif
                             </a>
                             @if ($discount > 0)
@@ -244,7 +244,7 @@
                         </div>
                         <div class="card-body d-flex flex-column p-3 p-md-4">
                             <span class="small text-muted mb-1 text-truncate" style="font-size: 0.76rem;">
-                                {{ $product->primaryCategory()?->name ?? 'Ayurvedic Care' }}
+                                {{ $product->primaryCategory()?->name ?? 'Direct Selling Formulations' }}
                             </span>
                             <h6 class="tfc-product-title mb-2">
                                 <a href="{{ tfc_route('products.show', $product->slug) }}">
@@ -272,7 +272,27 @@
                         </div>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <div class="col-12 text-center py-4">
+                    <div class="p-4 p-md-5 rounded-4 border bg-light mx-auto shadow-sm" style="max-width: 680px;">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: rgba(30, 58, 138, 0.08); color: #1E3A8A;">
+                            <i class="bi bi-box-seam fs-2"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">Dedicated Formulations Updating</h4>
+                        <p class="text-muted mb-4" style="line-height: 1.7;">
+                            Our exclusive direct-selling formulations catalogue is currently being updated. Contact our corporate desk for preview inquiries or register as a direct seller to receive advance catalogue updates.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-3">
+                            <a href="{{ tfc_route('contact') }}" class="btn btn-outline-dark px-4 py-2 rounded-3 fw-semibold">
+                                <i class="bi bi-envelope me-1"></i>Contact Corporate Desk
+                            </a>
+                            <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary px-4 py-2 rounded-3 fw-semibold">
+                                <i class="bi bi-person-plus me-1"></i>Become A Direct Seller
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endforelse
         </div>
     </div>
 </section>

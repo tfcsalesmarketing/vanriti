@@ -26,6 +26,7 @@ class SearchSuggestController extends Controller
 
         // Matching products - aligned with SearchService (name, sku, short_description, search_keywords, category)
         $products = Product::query()
+            ->vanriti()
             ->active()
             ->where(function ($query) use ($term, $q) {
                 $query->where('name', 'like', "%{$term}%")

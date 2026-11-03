@@ -11,11 +11,11 @@ use Illuminate\View\View;
 class TfcProductController extends Controller
 {
     /**
-     * Display live synced VANRITI products inside TFC Admin.
+     * Display dedicated TFC products inside TFC Admin.
      */
     public function index(Request $request): View
     {
-        $query = Product::with(['images', 'categories', 'variants']);
+        $query = Product::tfc()->with(['images', 'categories', 'variants']);
 
         if ($request->filled('search')) {
             $search = trim($request->query('search'));

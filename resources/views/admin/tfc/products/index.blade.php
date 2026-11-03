@@ -1,15 +1,15 @@
 @extends('admin.layouts.app')
 
-@section('title', 'TFC Synced Products Catalogue')
+@section('title', 'TFC Products Catalogue')
 
 @section('content')
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
-        <h5 class="fw-bold mb-1">Live Synced Products</h5>
-        <p class="text-muted small mb-0">Products are automatically synced live from the central VANRITI database.</p>
+        <h5 class="fw-bold mb-1">TFC Products Catalogue</h5>
+        <p class="text-muted small mb-0">Manage dedicated formulations for TFC Sales &amp; Marketing.</p>
     </div>
-    <a href="{{ route('admin.products.index') }}" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-box-arrow-up-right me-1"></i>Manage in VANRITI Catalogue
+    <a href="{{ route('admin.products.create') }}?channel=tfc" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Add TFC Product
     </a>
 </div>
 
@@ -107,14 +107,20 @@
                                 <a href="{{ tfc_route('products.show', $product->slug) }}" target="_blank" class="btn btn-sm btn-light" title="View on TFC Website">
                                     <i class="bi bi-eye"></i> TFC Preview
                                 </a>
-                                <a href="{{ route('admin.products.show', $product) }}" class="btn btn-sm btn-outline-primary" title="Edit in VANRITI Admin">
+                                <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-outline-primary" title="Edit Product">
                                     <i class="bi bi-pencil-square"></i> Edit
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">No products found matching criteria.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-box-seam fs-2 d-block mb-2 text-muted"></i>
+                                No dedicated TFC products uploaded yet.<br>
+                                <a href="{{ route('admin.products.create') }}?channel=tfc" class="btn btn-primary btn-sm mt-3">
+                                    <i class="bi bi-plus-lg me-1"></i>Add First TFC Product
+                                </a>
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

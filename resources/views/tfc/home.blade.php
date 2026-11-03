@@ -274,18 +274,36 @@
                     </div>
                 </div>
             @empty
-                <div class="col-12 text-center py-5">
-                    <p class="text-muted">Formulations currently updating.</p>
+                <div class="col-12 text-center py-4">
+                    <div class="p-4 p-md-5 rounded-4 border bg-light mx-auto shadow-sm" style="max-width: 680px;">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: rgba(30, 58, 138, 0.08); color: #1E3A8A;">
+                            <i class="ri-sparkling-fill fs-2"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">TFC Product Line Updating</h4>
+                        <p class="text-muted mb-4" style="line-height: 1.7;">
+                            Our exclusive direct-selling formulations catalogue is currently being updated with new premium wellness products. Stay tuned for official catalogue launch announcements.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-3">
+                            <a href="{{ tfc_route('contact') }}" class="btn btn-outline-dark px-4 py-2 rounded-3 fw-semibold">
+                                <i class="ri-mail-line me-1"></i>Contact Corporate Desk
+                            </a>
+                            <a href="{{ route('tfc.preview.member.register') }}" class="btn btn-tfc-primary px-4 py-2 rounded-3 fw-semibold">
+                                <i class="ri-user-star-line me-1"></i>Become A Direct Seller
+                            </a>
+                        </div>
+                    </div>
                 </div>
             @endforelse
         </div>
 
-        <div class="products-section__footer mt-5 text-center">
-            <a href="{{ tfc_route('products') }}" class="products-all-btn shadow-sm">
-                <span>View Complete Catalogue</span>
-                <i class="ri-arrow-right-line" aria-hidden="true"></i>
-            </a>
-        </div>
+        @if ($featuredProducts->isNotEmpty())
+            <div class="products-section__footer mt-5 text-center">
+                <a href="{{ tfc_route('products') }}" class="products-all-btn shadow-sm">
+                    <span>View Complete Catalogue</span>
+                    <i class="ri-arrow-right-line" aria-hidden="true"></i>
+                </a>
+            </div>
+        @endif
     </div>
 </section>
 

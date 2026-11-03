@@ -17,8 +17,6 @@ return [
 
     'logo_url' => 'https://eduse-uploadedfiles.s3.ap-south-1.amazonaws.com/media/Ti0GRLXRJGYEbWLLfsuTPg7dcEhK04S2HIxxerIH.png',
 
-    'vanriti_store_url' => env('VANRITI_URL', 'https://vanriti.com'),
-
     /*
     |--------------------------------------------------------------------------
     | Direct Selling Statutory & Compliance Settings

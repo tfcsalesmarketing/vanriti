@@ -15,8 +15,9 @@ class HomeController extends Controller
      */
     public function index(): View
     {
-        // Synced live from products catalogue
-        $featuredProducts = Product::active()
+        // Synced live from TFC products catalogue
+        $featuredProducts = Product::tfc()
+            ->active()
             ->with(['images', 'categories', 'variants'])
             ->where('is_featured', true)
             ->latest()
@@ -24,15 +25,17 @@ class HomeController extends Controller
             ->get();
 
         if ($featuredProducts->count() < 4) {
-            $featuredProducts = Product::active()
+            $featuredProducts = Product::tfc()
+                ->active()
                 ->with(['images', 'categories', 'variants'])
                 ->latest()
                 ->take(8)
                 ->get();
         }
 
-        // Active Root Product Categories
+        // Active Root Product Categories having TFC products
         $categories = Category::active()
+            ->whereHas('products', fn ($q) => $q->tfc()->active())
             ->roots()
             ->with(['children'])
             ->orderBy('sort_order')

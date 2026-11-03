@@ -35,6 +35,9 @@ class Product extends Model
 
         static::creating(function (Product $product): void {
             $product->slug = static::uniqueSlugFromName((string) $product->name);
+            if (empty($product->channel)) {
+                $product->channel = 'vanriti';
+            }
         });
 
         static::updating(function (Product $product): void {
@@ -96,6 +99,7 @@ class Product extends Model
         'search_keywords',
         'video_url',
         'status',
+        'channel',
         'is_featured',
         'is_bestseller',
         'is_new_arrival',
@@ -175,6 +179,23 @@ class Product extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
+    }
+
+    public function scopeVanriti(Builder $query): Builder
+    {
+        return $query->where(function ($q) {
+            $q->where('channel', 'vanriti')->orWhereNull('channel');
+        });
+    }
+
+    public function scopeTfc(Builder $query): Builder
+    {
+        return $query->where('channel', 'tfc');
+    }
+
+    public function scopeForChannel(Builder $query, string $channel): Builder
+    {
+        return $query->where('channel', $channel);
     }
 
     public function scopeFeatured(Builder $query): Builder

@@ -12,6 +12,8 @@ class ProductController extends Controller
             abort(404);
         }
 
+        abort_if($product->channel === 'tfc', 404);
+
         $requested = request()->route()->originalParameter('product');
         if (is_string($requested) && $requested !== $product->slug) {
             return redirect()->route('product.show', $product, 301);
@@ -30,6 +32,7 @@ class ProductController extends Controller
 
         $related = $categoryIds->isNotEmpty()
             ? Product::query()
+                ->vanriti()
                 ->active()
                 ->where('id', '!=', $product->id)
                 ->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $categoryIds))

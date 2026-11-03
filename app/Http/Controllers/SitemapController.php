@@ -36,14 +36,14 @@ class SitemapController extends Controller
             'lastmod' => $modifiedAt ? Carbon::parse($modifiedAt)->toAtomString() : null,
         ];
 
-        $homeLastmod = Product::query()->active()->max('updated_at');
+        $homeLastmod = Product::query()->vanriti()->active()->max('updated_at');
         $urls[] = $entry(route('home'), $homeLastmod);
 
         // Shop - no content timestamp of its own
         $urls[] = $entry(route('shop.index'));
 
         // Products
-        Product::query()->active()->select('slug', 'updated_at')->each(function (Product $p) use (&$urls, $entry) {
+        Product::query()->vanriti()->active()->select('slug', 'updated_at')->each(function (Product $p) use (&$urls, $entry) {
             $urls[] = $entry(route('product.show', $p), $p->updated_at);
         });
 

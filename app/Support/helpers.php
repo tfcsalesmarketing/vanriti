@@ -631,13 +631,6 @@ if (! function_exists('tfc_route')) {
     }
 }
 
-if (! function_exists('tfc_vanriti_product_url')) {
-    function tfc_vanriti_product_url(string $slug): string
-    {
-        $baseUrl = rtrim(config('tfc.vanriti_store_url', 'https://vanriti.com'), '/');
-        return $baseUrl . '/products/' . $slug;
-    }
-}
 
 if (! function_exists('tfc_asset')) {
     function tfc_asset(string $path): string

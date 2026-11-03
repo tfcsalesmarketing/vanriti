@@ -11,6 +11,7 @@ class SearchService
         $q = trim($query);
 
         $queryBuilder = Product::query()
+            ->vanriti()
             ->active()
             ->with(['categories', 'images', 'variants', 'activeVariants', 'approvedReviews']);
 
@@ -77,6 +78,7 @@ class SearchService
         }
 
         return Product::query()
+            ->vanriti()
             ->active()
             ->inStock()
             ->with(['images'])

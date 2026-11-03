@@ -239,7 +239,7 @@ class MemberAuthController extends Controller
                 ->with('error', "A Direct Seller account is already registered with mobile number +91 {$mobile} ({$existingSeller->member_id}). Please sign in to your Member Portal.");
         }
 
-        // Check if existing VANRITI client account exists
+        // Check if existing user account exists
         $existingCustomer = User::where('phone', $mobile)->first();
 
         // Validate sponsor & placement parent against database
@@ -290,7 +290,7 @@ class MemberAuthController extends Controller
                     throw new \RuntimeException("The {$position} placement slot under {$parent->tfc_member_id} was just taken by another registration. Please select another placement parent or position.");
                 }
 
-                // 1. Resolve User account (reuse existing VANRITI customer or create new)
+                // 1. Resolve User account (reuse existing user or create new)
                 if ($existingCustomer) {
                     $user = $existingCustomer;
                     $updateData = [
@@ -396,13 +396,13 @@ class MemberAuthController extends Controller
             ], 200);
         }
 
-        // Check if existing VANRITI client
+        // Check if existing user account exists
         $existingCustomer = User::where('phone', $mobile)->first();
         if ($existingCustomer) {
             return response()->json([
                 'valid' => true,
                 'status' => 'existing_client',
-                'message' => "Existing VANRITI client found ({$existingCustomer->name}). Your account will be upgraded to Direct Seller.",
+                'message' => "Account record found ({$existingCustomer->name}). Your account will be linked as a Direct Seller.",
                 'name' => $existingCustomer->name,
                 'mobile' => $mobile,
             ], 200);
@@ -449,7 +449,7 @@ class MemberAuthController extends Controller
             return response()->json([
                 'valid' => true,
                 'status' => 'existing_client',
-                'message' => "VANRITI client found ({$existingCustomer->name}). Account will be upgraded.",
+                'message' => "Account record found ({$existingCustomer->name}). Account will be linked.",
                 'name' => $existingCustomer->name,
             ]);
         }

@@ -30,6 +30,7 @@ class HomeController extends Controller
 
         // 1. Featured Collection: strictly products with is_featured = true
         $featured = Product::query()
+            ->vanriti()
             ->active()
             ->featured()
             ->inStock()
@@ -43,6 +44,7 @@ class HomeController extends Controller
         // 2. Bestsellers: strictly products with is_bestseller = true
         // Avoid duplicate products already presented in Featured above
         $bestsellersBase = Product::query()
+            ->vanriti()
             ->active()
             ->bestsellers()
             ->inStock()
@@ -64,6 +66,7 @@ class HomeController extends Controller
         // 3. New Arrivals: strictly products with is_new_arrival = true
         // Avoid duplicate products already presented in Featured or Bestsellers
         $newArrivalsBase = Product::query()
+            ->vanriti()
             ->active()
             ->newArrivals()
             ->inStock()
