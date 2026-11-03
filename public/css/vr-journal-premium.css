@@ -1119,3 +1119,95 @@
 .col-lg-3 .vr-journal-card-body {
     padding: 1.15rem;
 }
+
+/* Homepage 5-card Desktop & 2-card Mobile Grid */
+.vr-home-blogs-grid .vr-journal-card {
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #ECE7DB;
+    display: flex;
+    flex-direction: column;
+}
+.vr-home-blogs-grid .vr-journal-card-body {
+    padding: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+.vr-home-blogs-grid .vr-journal-card-title {
+    font-size: 0.88rem;
+    line-height: 1.35;
+    height: 2.7em;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+.vr-home-blogs-grid .vr-journal-card-excerpt {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    height: 2.8em;
+    margin-bottom: 0.75rem;
+    color: #636e64;
+}
+.vr-home-blogs-grid .vr-journal-card-meta {
+    font-size: 0.7rem;
+    margin-bottom: 0.35rem;
+    gap: 0.35rem;
+}
+.vr-home-blogs-grid .vr-journal-card-cat {
+    bottom: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.62rem;
+    padding: 0.18rem 0.5rem;
+}
+.vr-home-blogs-grid .vr-journal-card-footer {
+    padding-top: 0.65rem;
+    font-size: 0.75rem;
+    margin-top: auto;
+}
+.vr-home-blogs-grid .vr-journal-card-author {
+    font-size: 0.72rem;
+    max-width: 90px;
+}
+.vr-home-blogs-grid .vr-journal-card-link {
+    font-size: 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+    .vr-home-blogs-grid .vr-journal-card {
+        border-radius: 12px;
+    }
+    .vr-home-blogs-grid .vr-journal-card-body {
+        padding: 0.75rem;
+    }
+    .vr-home-blogs-grid .vr-journal-card-title {
+        font-size: 0.8rem;
+        line-height: 1.3;
+        height: 2.6em;
+        margin-bottom: 0.3rem;
+    }
+    .vr-home-blogs-grid .vr-journal-card-excerpt {
+        font-size: 0.72rem;
+        line-height: 1.35;
+        height: 2.7em;
+        margin-bottom: 0.5rem;
+    }
+    .vr-home-blogs-grid .vr-journal-card-meta {
+        font-size: 0.65rem;
+        margin-bottom: 0.25rem;
+        gap: 0.25rem;
+    }
+    .vr-home-blogs-grid .vr-journal-card-cat {
+        bottom: 0.4rem;
+        left: 0.4rem;
+        font-size: 0.58rem;
+        padding: 0.15rem 0.45rem;
+    }
+    .vr-home-blogs-grid .vr-journal-card-footer {
+        padding-top: 0.5rem;
+        font-size: 0.7rem;
+    }
+    .vr-home-blogs-grid .vr-journal-card-author {
+        font-size: 0.68rem;
+        max-width: 70px;
+    }
+}

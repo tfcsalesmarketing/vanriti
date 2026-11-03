@@ -95,12 +95,12 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
 
-        // 5. Recent Editorial Journal Stories: 4 latest published articles
+        // 5. Recent Editorial Journal Stories: 5 latest published articles
         $recentBlogs = \App\Models\Blog::query()
             ->published()
             ->with(['category', 'author'])
             ->latest('published_at')
-            ->limit(4)
+            ->limit(5)
             ->get();
 
         return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories', 'reels', 'recentBlogs'));

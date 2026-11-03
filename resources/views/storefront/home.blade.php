@@ -479,9 +479,9 @@
                 </a>
             </div>
 
-            <div class="row g-3 g-md-4 vr-stagger">
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-2 g-md-3 g-lg-3 vr-stagger vr-home-blogs-grid">
                 @foreach ($recentBlogs as $post)
-                    <div class="col-12 col-sm-6 col-lg-3 d-flex">
+                    <div class="col d-flex">
                         <article class="vr-journal-card w-100">
                             <div class="vr-journal-card-img">
                                 <a href="{{ route('blog.show', $post->slug) }}" class="d-block w-100 h-100" aria-label="{{ $post->title }}">
