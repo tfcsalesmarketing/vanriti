@@ -42,6 +42,10 @@ class HomepageBlogsTest extends TestCase
         // 3. 6th and 7th articles omitted by limit(5)
         $this->assertStringNotContainsString('Botanical Care Story 6', $html);
         $this->assertStringNotContainsString('Botanical Care Story 7', $html);
+
+        // 4. Mobile version limits display to 2 blog cards (items 3, 4, 5 are hidden on mobile with d-none d-md-flex)
+        $this->assertStringContainsString('d-none d-md-flex', $html);
+        $this->assertSame(3, substr_count($html, 'd-none d-md-flex'));
     }
 
     public function test_homepage_omits_blog_section_when_no_published_blogs_exist(): void
