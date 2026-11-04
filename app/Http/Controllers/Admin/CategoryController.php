@@ -44,14 +44,20 @@ class CategoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 's3');
+            try {
+                $validated['image'] = $request->file('image')->store('categories', 's3');
+            } catch (\Throwable $e) {
+                report($e);
+                $validated['image'] = $request->file('image')->store('categories', 'public');
+            }
         }
 
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
+        $validated['slug'] = !empty($validated['slug'])
+            ? Category::uniqueSlugFromName($validated['slug'])
+            : Category::uniqueSlugFromName($validated['name']);
 
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['sort_order'] = !empty($validated['sort_order']) ? (int) $validated['sort_order'] : 0;
+        $validated['parent_id'] = !empty($validated['parent_id']) ? (int) $validated['parent_id'] : null;
 
         Category::create($validated);
 
@@ -82,14 +88,29 @@ class CategoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 's3');
+            try {
+                $validated['image'] = $request->file('image')->store('categories', 's3');
+            } catch (\Throwable $e) {
+                report($e);
+                $validated['image'] = $request->file('image')->store('categories', 'public');
+            }
         }
 
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
+        if (!empty($validated['slug'])) {
+            $validated['slug'] = Category::uniqueSlugFromName($validated['slug'], $category->id);
+        } elseif (!empty($category->slug)) {
+            // Keep existing slug when slug field is omitted, preserving URLs/SEO
+            $validated['slug'] = $category->slug;
+        } else {
+            $validated['slug'] = Category::uniqueSlugFromName($validated['name'], $category->id);
         }
 
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['sort_order'] = !empty($validated['sort_order']) ? (int) $validated['sort_order'] : 0;
+        $validated['parent_id'] = !empty($validated['parent_id']) ? (int) $validated['parent_id'] : null;
+
+        if ($validated['parent_id'] !== null && $validated['parent_id'] === $category->id) {
+            $validated['parent_id'] = null;
+        }
 
         $category->update($validated);
 

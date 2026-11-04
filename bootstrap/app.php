@@ -138,6 +138,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return;
             }
 
+            Log::error('Admin exception on ' . $request->method() . ' ' . $request->fullUrl() . ': ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
             $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
             $status = in_array($status, [400, 401, 402, 403, 404, 405, 419, 429, 500, 503], true)
                 ? $status

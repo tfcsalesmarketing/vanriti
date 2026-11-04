@@ -42,14 +42,19 @@ class MainCategoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 's3');
+            try {
+                $validated['image'] = $request->file('image')->store('categories', 's3');
+            } catch (\Throwable $e) {
+                report($e);
+                $validated['image'] = $request->file('image')->store('categories', 'public');
+            }
         }
 
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
+        $validated['slug'] = !empty($validated['slug'])
+            ? Category::uniqueSlugFromName($validated['slug'])
+            : Category::uniqueSlugFromName($validated['name']);
 
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['sort_order'] = !empty($validated['sort_order']) ? (int) $validated['sort_order'] : 0;
         $validated['parent_id'] = null;
 
         Category::create($validated);
@@ -77,14 +82,24 @@ class MainCategoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 's3');
+            try {
+                $validated['image'] = $request->file('image')->store('categories', 's3');
+            } catch (\Throwable $e) {
+                report($e);
+                $validated['image'] = $request->file('image')->store('categories', 'public');
+            }
         }
 
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
+        if (!empty($validated['slug'])) {
+            $validated['slug'] = Category::uniqueSlugFromName($validated['slug'], $main_category->id);
+        } elseif (!empty($main_category->slug)) {
+            $validated['slug'] = $main_category->slug;
+        } else {
+            $validated['slug'] = Category::uniqueSlugFromName($validated['name'], $main_category->id);
         }
 
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['sort_order'] = !empty($validated['sort_order']) ? (int) $validated['sort_order'] : 0;
+        $validated['parent_id'] = null;
 
         $main_category->update($validated);
 

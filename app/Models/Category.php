@@ -74,4 +74,33 @@ class Category extends Model
     {
         return 'slug';
     }
+
+    public static function uniqueSlugFromName(string $name, ?int $ignoreId = null): string
+    {
+        $base = \Illuminate\Support\Str::slug($name);
+        if ($base === '') {
+            $base = 'category';
+        }
+
+        $base = substr($base, 0, 240);
+        $slug = $base;
+        $suffix = 2;
+
+        while (static::slugIsTaken($slug, $ignoreId)) {
+            $slug = substr($base, 0, 230).'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    public static function slugIsTaken(string $slug, ?int $ignoreId = null): bool
+    {
+        $query = static::where('slug', $slug);
+        if ($ignoreId !== null) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return $query->exists();
+    }
 }

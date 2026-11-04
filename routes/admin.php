@@ -34,7 +34,11 @@ use App\Http\Controllers\Admin\WhatsAppCampaignController;
 use App\Http\Controllers\Admin\WhatsAppInboxController;
 use App\Http\Controllers\Admin\WhatsAppProfileController;
 use App\Http\Controllers\Admin\WhatsAppTemplateController;
+use App\Models\Category;
 use Illuminate\Support\Facades\Route;
+
+Route::model('category', Category::class);
+Route::model('main_category', Category::class);
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AdminAuthController::class, 'showLoginForm'])->name('login');
