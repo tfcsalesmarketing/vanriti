@@ -108,3 +108,4 @@ class SyncShipMojoTrackingCommand extends Command
         }
     }
 }
+

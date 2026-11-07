@@ -216,4 +216,40 @@ class WhatsAppOrderJourneyTest extends TestCase
         $job2 = new SendWhatsAppOrderStatusNotification($this->order, 'shipped');
         $job2->handle($mockApi, app(\App\Services\WhatsAppOtpService::class));
     }
+
+    public function test_delivery_notification_job_sends_review_template_and_sets_atomic_claim(): void
+    {
+        Shipment::create([
+            'order_id' => $this->order->id,
+            'courier' => 'Ekart Flat Price',
+            'awb_number' => 'EKART-DELIVERY-123',
+            'status' => 'delivered',
+            'delivered_at' => now(),
+        ]);
+
+        $mockApi = Mockery::mock(WhatsAppCloudApiService::class);
+        $mockApi->shouldReceive('sendTemplateMessage')
+            ->once()
+            ->withArgs(function ($phone, $templateName, $lang, $components) {
+                return $phone === '9876543210'
+                    && in_array($templateName, ['order_delivered', 'order_delivered_review'], true)
+                    && $lang === 'en';
+            })
+            ->andReturn([
+                'success' => true,
+                'message_id' => 'wamid.DELIVERED_REVIEW_7788',
+            ]);
+        $this->app->instance(WhatsAppCloudApiService::class, $mockApi);
+
+        $job = new SendWhatsAppOrderStatusNotification($this->order, 'delivered');
+        $job->handle($mockApi, app(\App\Services\WhatsAppOtpService::class));
+
+        $this->order->refresh();
+        $this->assertNotNull($this->order->whatsapp_delivered_sent_at);
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'direction' => 'outbound',
+            'meta_message_id' => 'wamid.DELIVERED_REVIEW_7788',
+        ]);
+    }
 }
