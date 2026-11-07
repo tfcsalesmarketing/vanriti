@@ -439,19 +439,18 @@ class ShipMojoService
         if (($response['result'] ?? '0') === '1') {
             $data = $response['data'] ?? [];
             $awb = $data['awb_number'] ?? null;
-            $trackingUrl = $data['tracking_url'] ?? $data['tracking_link'] ?? ($awb ? 'https://shipmojo.com/track/' . rawurlencode((string) $awb) : null);
+            $courier = $data['courier_company'] ?? null;
+            $carrierUrl = self::resolveCarrierTrackingUrl($courier, $awb);
 
             $shipment?->update([
                 'awb_number' => $awb,
-                'courier' => $data['courier_company'] ?? null,
+                'courier' => $courier,
                 'courier_service' => $data['courier_company_service'] ?? null,
-                'tracking_url' => $trackingUrl,
+                'tracking_url' => $carrierUrl,
                 'status' => 'packed',
             ]);
 
-            if ($trackingUrl) {
-                $order->update(['tracking_url' => $trackingUrl]);
-            }
+            $order->update(['tracking_url' => $order->trackingUrl()]);
 
             if ($this->syncOrderStatus($order, 'packed')) {
                 $this->notifyOrderStatus($order, 'packed');
@@ -590,11 +589,11 @@ class ShipMojoService
                 $lr = $shippingDetails['lr_number'] ?? $detailData['lr_number'] ?? null;
 
                 if (! empty($awb)) {
-                    $trackingUrl = 'https://shipmojo.com/track/' . rawurlencode((string) $awb);
+                    $carrierUrl = self::resolveCarrierTrackingUrl((string) $courier, (string) $awb);
                     $shipmentUpdates = [
                         'awb_number' => (string) $awb,
                         'tracking_number' => (string) $awb,
-                        'tracking_url' => $trackingUrl,
+                        'tracking_url' => $carrierUrl,
                     ];
                     if (! empty($courier)) {
                         $shipmentUpdates['courier'] = (string) $courier;
@@ -607,7 +606,7 @@ class ShipMojoService
                     }
 
                     $shipment->update($shipmentUpdates);
-                    $order->update(['tracking_url' => $trackingUrl]);
+                    $order->update(['tracking_url' => $order->trackingUrl()]);
                     $shipment->refresh();
                 }
             }
@@ -657,17 +656,15 @@ class ShipMojoService
                     $updates['estimated_delivery'] = $data['expected_delivery_date'];
                 }
 
-                if (empty($shipment->tracking_url) && ! empty($shipment->awb_number)) {
-                    $updates['tracking_url'] = 'https://shipmojo.com/track/' . rawurlencode((string) $shipment->awb_number);
+                $carrierUrl = self::resolveCarrierTrackingUrl($shipment->courier, $shipment->awb_number);
+                if ($carrierUrl && empty($shipment->tracking_url)) {
+                    $updates['tracking_url'] = $carrierUrl;
                 }
 
                 if ($updates !== []) {
                     $shipment->update($updates);
-
-                    if (! empty($updates['tracking_url'])) {
-                        $order->update(['tracking_url' => $updates['tracking_url']]);
-                    }
                 }
+                $order->update(['tracking_url' => $order->trackingUrl()]);
 
                 $orderStatus = $mappedStatus !== null ? $this->orderStatusForMapped($mappedStatus) : null;
                 if ($orderStatus !== null && $this->syncOrderStatus($order, $orderStatus)) {
@@ -924,10 +921,13 @@ class ShipMojoService
         }
 
         $trackingUrl = $this->extractFirst($payload, ['tracking_url', 'tracking_link', 'track_url', 'tracking_page', 'track_link', 'public_url']);
-        if ($trackingUrl !== null && filter_var($trackingUrl, FILTER_VALIDATE_URL)) {
+        if ($trackingUrl !== null && filter_var($trackingUrl, FILTER_VALIDATE_URL) && ! str_contains((string) $trackingUrl, 'shipmojo.com')) {
             $updates['tracking_url'] = (string) $trackingUrl;
         } elseif ($awb !== null && empty($shipment->tracking_url)) {
-            $updates['tracking_url'] = 'https://shipmojo.com/track/' . rawurlencode((string) $awb);
+            $carrierUrl = self::resolveCarrierTrackingUrl($courier ?? $shipment->courier, (string) $awb);
+            if ($carrierUrl) {
+                $updates['tracking_url'] = $carrierUrl;
+            }
         }
 
         $expected = $this->extractFirst($payload, ['expected_delivery_date', 'estimated_delivery', 'etd', 'expected_delivery']);
@@ -948,11 +948,8 @@ class ShipMojoService
 
         if ($updates !== []) {
             $shipment->update($updates);
-
-            if (! empty($updates['tracking_url'])) {
-                $order->update(['tracking_url' => $updates['tracking_url']]);
-            }
         }
+        $order->update(['tracking_url' => $order->trackingUrl()]);
 
         // Persist any scan / history events in the payload.
         $scans = $this->extractScans($payload);
@@ -1218,5 +1215,44 @@ class ShipMojoService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Resolve direct public carrier tracking URL based on carrier name and AWB.
+     * Returns null if no reliable direct carrier tracking URL pattern is known.
+     */
+    public static function resolveCarrierTrackingUrl(?string $courier, ?string $awb): ?string
+    {
+        if (empty($awb)) {
+            return null;
+        }
+
+        $c = strtolower(trim((string) $courier));
+        $awbClean = trim((string) $awb);
+        $awbEncoded = rawurlencode($awbClean);
+
+        if (str_contains($c, 'ekart')) {
+            return "https://ekartlogistics.com/shipmenttrack/{$awbEncoded}";
+        }
+        if (str_contains($c, 'delhivery')) {
+            return "https://www.delhivery.com/track/package/{$awbEncoded}";
+        }
+        if (str_contains($c, 'blue dart') || str_contains($c, 'bluedart')) {
+            return "https://www.bluedart.com/tracking";
+        }
+        if (str_contains($c, 'xpressbees') || str_contains($c, 'xpress bees')) {
+            return "https://www.xpressbees.com/shipment/tracking/{$awbEncoded}";
+        }
+        if (str_contains($c, 'smartr')) {
+            return "https://smartr.in/tracking/{$awbEncoded}";
+        }
+        if (str_contains($c, 'shadowfax')) {
+            return "https://tracker.shadowfax.in/#/track/{$awbEncoded}";
+        }
+        if (str_contains($c, 'dtdc')) {
+            return "https://www.dtdc.in/tracking/shipment-tracking.asp";
+        }
+
+        return null;
     }
 }

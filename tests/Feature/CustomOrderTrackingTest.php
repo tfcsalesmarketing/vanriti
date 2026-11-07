@@ -121,4 +121,76 @@ class CustomOrderTrackingTest extends TestCase
         $response->assertSee('Out for Delivery');
         $response->assertSee('Need Help? Chat on WhatsApp');
     }
+
+    public function test_unauthorized_user_cannot_access_order_tracking_without_signature_or_mobile(): void
+    {
+        $order = $this->createOrder([
+            'order_number' => 'VAN-2026-GUARDED',
+            'shipping_mobile' => '9877001122',
+            'order_status' => 'shipped',
+        ]);
+
+        $response = $this->get(route('track.order', ['order' => $order->order_number]));
+        $response->assertForbidden();
+    }
+
+    public function test_order_owner_can_access_tracking_page_without_signature(): void
+    {
+        $user = \App\Models\User::factory()->create();
+        $order = $this->createOrder([
+            'user_id' => $user->id,
+            'order_number' => 'VAN-2026-USEROWNED',
+            'shipping_mobile' => '9877001122',
+            'order_status' => 'shipped',
+        ]);
+
+        $response = $this->actingAs($user, 'web')
+            ->get(route('track.order', ['order' => $order->order_number]));
+
+        $response->assertOk();
+        $response->assertSee('VAN-2026-USEROWNED');
+    }
+
+    public function test_admin_can_access_tracking_page_directly(): void
+    {
+        $admin = \App\Models\Admin::factory()->create();
+        $order = $this->createOrder([
+            'order_number' => 'VAN-2026-ADMINVIEW',
+            'shipping_mobile' => '9877001122',
+            'order_status' => 'shipped',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('track.order', ['order' => $order->order_number]));
+
+        $response->assertOk();
+        $response->assertSee('VAN-2026-ADMINVIEW');
+    }
+
+    public function test_carrier_tracking_url_resolves_and_never_returns_shipmojo(): void
+    {
+        $order = $this->createOrder([
+            'order_number' => 'VAN-2026-EKART',
+            'shipping_mobile' => '9877001122',
+            'order_status' => 'shipped',
+            'tracking_url' => 'https://shipmojo.com/track/SPBP1000023877', // Legacy ShipMojo URL in DB
+        ]);
+
+        $shipment = Shipment::create([
+            'order_id' => $order->id,
+            'courier' => 'Ekart Flat Price',
+            'awb_number' => 'SPBP1000023877',
+            'status' => 'shipped',
+        ]);
+
+        // Model accessor should prevent returning ShipMojo URL
+        $this->assertStringNotContainsString('shipmojo.com', $order->tracking_url);
+        $this->assertStringContainsString('/track/VAN-2026-EKART', $order->tracking_url);
+
+        // externalTrackingUrl should point to real carrier website
+        $this->assertSame(
+            'https://ekartlogistics.com/shipmenttrack/SPBP1000023877',
+            $order->externalTrackingUrl()
+        );
+    }
 }

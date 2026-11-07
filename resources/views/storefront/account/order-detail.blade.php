@@ -251,17 +251,28 @@
                 </div>
             </div>
 
-            @if ($order->shipments->isNotEmpty())
+            @if ($order->shipments->isNotEmpty() || in_array($order->order_status, ['packed', 'shipped', 'out_for_delivery', 'delivered'], true))
                 <div class="card border-0 shadow-sm mb-3" style="border-radius: 14px;">
                     <div class="card-body p-3">
-                        <h6 class="fw-bold mb-2"><i class="bi bi-truck me-1"></i>Shipment</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0"><i class="bi bi-truck me-1"></i>Shipment</h6>
+                            <a href="{{ $order->trackingUrl() }}" class="btn btn-sm btn-outline-success py-0.5 px-2.5 rounded-pill" style="font-size: 0.76rem;">
+                                <i class="bi bi-geo-alt-fill me-1"></i>Track Live
+                            </a>
+                        </div>
                         @foreach ($order->shipments as $shipment)
                             <div class="small">
                                 <div class="d-flex justify-content-between"><span class="text-muted">Courier</span><span>{{ $shipment->courier ?? '—' }}</span></div>
-                                <div class="d-flex justify-content-between"><span class="text-muted">Tracking</span><span class="fw-semibold">{{ $shipment->tracking_number ?? '—' }}</span></div>
+                                <div class="d-flex justify-content-between"><span class="text-muted">Tracking</span><span class="fw-semibold">{{ $shipment->awb_number ?: ($shipment->tracking_number ?: '—') }}</span></div>
                                 <div class="d-flex justify-content-between"><span class="text-muted">Status</span><span>{{ ucwords(str_replace('_', ' ', $shipment->status)) }}</span></div>
                             </div>
                         @endforeach
+                        <div class="mt-2.5 pt-2 border-top">
+                            <a href="{{ $order->trackingUrl() }}" class="btn btn-sm w-100 d-flex align-items-center justify-content-center gap-1.5 py-1.5 text-white fw-semibold" style="border-radius: 8px; font-size: 0.8rem; background: #1C3C24;">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>Track Package Checkpoints</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             @endif

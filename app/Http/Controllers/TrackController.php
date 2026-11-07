@@ -72,10 +72,14 @@ class TrackController extends Controller
     public function show(Order $order, Request $request): View|RedirectResponse
     {
         $mobile = canonical_phone(trim((string) $request->query('mobile', '')));
-        $isOwner = auth('web')->check() && auth('web')->id() === $order->user_id;
+        $isAdmin = auth('admin')->check();
+        $isOwner = (auth('web')->check() && auth('web')->id() === $order->user_id) || $isAdmin;
 
         if (! $isOwner) {
-            if ($mobile === null || ! $this->mobileMatches($order, $mobile)) {
+            $hasValidSignature = $request->hasValidSignature();
+            $matchesMobile = $mobile !== null && $this->mobileMatches($order, $mobile);
+
+            if (! $hasValidSignature && ! $matchesMobile) {
                 abort(403, 'Unauthorized order tracking request.');
             }
         }

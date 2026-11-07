@@ -104,7 +104,7 @@
                             <a href="{{ route('account.order', $order) }}" class="btn vr-app-btn px-4 py-2">
                                 <i class="ri-file-list-3-line me-1"></i> View Order Details
                             </a>
-                            <a href="{{ route('track') }}" class="btn vr-app-outline-btn px-4 py-2">
+                            <a href="{{ $order->trackingUrl() }}" class="btn vr-app-outline-btn px-4 py-2">
                                 <i class="ri-map-pin-user-line me-1"></i> Track Delivery
                             </a>
                         </div>

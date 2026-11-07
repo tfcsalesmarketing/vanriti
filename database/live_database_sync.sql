@@ -586,7 +586,14 @@ CALL AddColumnIfMissing('whatsapp_quick_replies', 'channel', "VARCHAR(30) DEFAUL
 CALL AddColumnIfMissing('whatsapp_templates', 'channel', "VARCHAR(30) NULL AFTER `category`");
 
 -- ----------------------------------------------------------------------------
--- 5. CLEANUP TEMPORARY PROCEDURES & RESTORE CHECKS
+-- 5. CLEANUP LEGACY DATA & RESTORE CHECKS
+-- ----------------------------------------------------------------------------
+-- Clean up any legacy external ShipMojo tracking URLs in orders and shipments
+UPDATE `orders` SET `tracking_url` = NULL WHERE `tracking_url` LIKE '%shipmojo.com%';
+UPDATE `shipments` SET `tracking_url` = CONCAT('https://ekartlogistics.com/shipmenttrack/', `awb_number`) WHERE `courier` LIKE '%ekart%' AND `awb_number` IS NOT NULL AND (`tracking_url` LIKE '%shipmojo.com%' OR `tracking_url` IS NULL);
+
+-- ----------------------------------------------------------------------------
+-- 6. CLEANUP TEMPORARY PROCEDURES & RESTORE CHECKS
 -- ----------------------------------------------------------------------------
 DROP PROCEDURE IF EXISTS `AddColumnIfMissing`;
 DROP PROCEDURE IF EXISTS `AddIndexIfMissing`;

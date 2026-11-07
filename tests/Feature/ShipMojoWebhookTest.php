@@ -201,7 +201,8 @@ class ShipMojoWebhookTest extends TestCase
         $this->assertSame('Ekart Flat Price', $shipment->courier);
         $this->assertSame('shipped', $shipment->status);
         $this->assertSame('shipped', $order->fresh()->order_status);
-        $this->assertSame('https://shipmojo.com/track/AWB-TOKEN-TEST', $order->fresh()->tracking_url);
+        $this->assertStringContainsString('/track/' . $order->order_number, $order->fresh()->tracking_url);
+        $this->assertSame('https://ekartlogistics.com/shipmenttrack/AWB-TOKEN-TEST', $shipment->tracking_url);
     }
 
     public function test_webhook_handles_misspelled_refrence_id_and_nested_shipping_details(): void

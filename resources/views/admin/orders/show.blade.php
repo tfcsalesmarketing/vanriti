@@ -552,7 +552,12 @@
             </form>
             @endif
 
-            {{-- 6. Cancel --}}
+            {{-- 6. Branded Custom Tracking Page --}}
+            <a href="{{ $order->trackingUrl() }}" class="btn btn-sm btn-outline-success" target="_blank" title="View customer-facing branded live tracking page">
+                <i class="bi bi-box-arrow-up-right me-1"></i> View Live Tracking Page
+            </a>
+
+            {{-- 7. Cancel --}}
             @if ($hasAwb && ! in_array($shipment->status, ['delivered', 'returned']))
             <form method="POST" action="{{ route('admin.orders.shipmojo.cancel', $order) }}" class="d-inline" data-confirm="Cancel this shipment in ShipMojo? This cannot be undone.">
                 @csrf

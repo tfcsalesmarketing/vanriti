@@ -280,6 +280,19 @@ class Order extends Model
     }
 
     /**
+     * Customer-facing tracking URL.
+     * Always resolves to the custom branded tracking page, never ShipMojo.
+     */
+    public function getTrackingUrlAttribute(?string $value): string
+    {
+        if (empty($value) || str_contains($value, 'shipmojo.com')) {
+            return $this->trackingUrl();
+        }
+
+        return $value;
+    }
+
+    /**
      * Branded on-site tracking page for the customer (signed URL).
      */
     public function trackingUrl(): string
@@ -288,15 +301,22 @@ class Order extends Model
     }
 
     /**
-     * External carrier / ShipMojo tracking URL fallback (e.g. for direct carrier tracking).
+     * External direct carrier tracking URL (e.g. Ekart, Delhivery).
+     * Never returns ShipMojo or internal tracking routes.
      */
     public function externalTrackingUrl(): ?string
     {
-        if (! empty($this->tracking_url)) {
-            return $this->tracking_url;
+        $shipment = $this->shipments->first();
+        if (! $shipment) {
+            return null;
         }
 
-        return $this->shipments->first()?->tracking_url;
+        $url = $shipment->tracking_url;
+        if (! empty($url) && ! str_contains($url, 'shipmojo.com') && ! str_contains($url, '/track/')) {
+            return $url;
+        }
+
+        return \App\Services\ShipMojoService::resolveCarrierTrackingUrl($shipment->courier, $shipment->awb_number);
     }
 
     /**

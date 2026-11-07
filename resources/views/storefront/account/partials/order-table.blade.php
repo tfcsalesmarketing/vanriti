@@ -48,6 +48,11 @@
                                         </a>
                                     @endif
                                 @endif
+                                @if (in_array($order->order_status, ['packed', 'shipped', 'out_for_delivery', 'delivered'], true) || $order->shipments->isNotEmpty())
+                                    <a href="{{ $order->trackingUrl() }}" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1" style="font-size: 0.76rem;" title="Track live status and checkpoints">
+                                        <i class="bi bi-geo-alt-fill me-0.5"></i>Track
+                                    </a>
+                                @endif
                                 <a href="{{ route('account.order', $order) }}" class="btn btn-sm btn-vr-outline rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">View</a>
                             </div>
                         </td>

@@ -70,7 +70,7 @@
                             <div class="pt-3 mt-3 border-top d-flex flex-wrap align-items-center gap-1.5" style="border-color: #F3F4F6 !important;">
                                 <span class="text-muted small me-1" style="font-size: 0.78rem;">Recent Orders:</span>
                                 @foreach ($recentOrders as $ro)
-                                    <a href="{{ route('track.order', ['order' => $ro->order_number, 'mobile' => $ro->shipping_mobile ?: $ro->billing_mobile]) }}"
+                                    <a href="{{ $ro->trackingUrl() }}"
                                        class="badge text-decoration-none border text-dark fw-medium px-2.5 py-1.5"
                                        style="background: #F9FAFB; font-size: 0.76rem; border-radius: 6px;">
                                         {{ $ro->order_number }}
@@ -123,7 +123,7 @@
                         $progressPercent = 100;
                     }
 
-                    $courierName = $shipment?->courier ?: 'ShipMojo Express';
+                    $courierName = $shipment?->courier ?: 'Express Delivery';
                     $awb = $shipment?->awb_number ?: $shipment?->tracking_number;
                     $estDelivery = $shipment?->estimated_delivery;
                     $deliveredAt = $shipment?->delivered_at ?: ($isDelivered ? $order->updated_at : null);
@@ -342,8 +342,8 @@
                                                     <span>Live Checkpoints</span>
                                                 </h6>
                                                 @if ($order->externalTrackingUrl())
-                                                    <a href="{{ $order->externalTrackingUrl() }}" target="_blank" class="small text-decoration-none fw-semibold" style="font-size: 0.76rem; color: #1C3C24;">
-                                                        Track on carrier website <i class="bi bi-box-arrow-up-right ms-0.5"></i>
+                                                    <a href="{{ $order->externalTrackingUrl() }}" target="_blank" rel="noopener noreferrer" class="small text-decoration-none fw-semibold" style="font-size: 0.76rem; color: #1C3C24;">
+                                                        Track on {{ $courierName }} website <i class="bi bi-box-arrow-up-right ms-0.5"></i>
                                                     </a>
                                                 @endif
                                             </div>
