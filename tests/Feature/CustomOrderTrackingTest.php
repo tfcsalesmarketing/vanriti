@@ -122,16 +122,21 @@ class CustomOrderTrackingTest extends TestCase
         $response->assertSee('Need Help? Chat on WhatsApp');
     }
 
-    public function test_unauthorized_user_cannot_access_order_tracking_without_signature_or_mobile(): void
+    public function test_direct_order_tracking_link_renders_tracking_page(): void
     {
         $order = $this->createOrder([
-            'order_number' => 'VAN-2026-GUARDED',
+            'order_number' => 'VAN-2026-DIRECT',
             'shipping_mobile' => '9877001122',
             'order_status' => 'shipped',
         ]);
 
         $response = $this->get(route('track.order', ['order' => $order->order_number]));
-        $response->assertForbidden();
+        $response->assertOk();
+        $response->assertSee('VAN-2026-DIRECT');
+
+        $queryResponse = $this->get('/track?order=' . $order->order_number);
+        $queryResponse->assertOk();
+        $queryResponse->assertSee('VAN-2026-DIRECT');
     }
 
     public function test_order_owner_can_access_tracking_page_without_signature(): void

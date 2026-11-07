@@ -300,7 +300,8 @@ class WhatsAppChatService
         string $langCode = 'en',
         array $parameters = [],
         ?string $headerImageUrl = null,
-        mixed $sender = null
+        mixed $sender = null,
+        ?string $buttonUrlSuffix = null
     ): array {
         $components = [];
 
@@ -372,7 +373,38 @@ class WhatsAppChatService
             }
         }
 
-        // 3. Fallback language code from template if default
+        // 3. Dynamic URL Button Parameter
+        $buttonParam = $buttonUrlSuffix;
+        if ($buttonParam === null && $templateModel && ! empty($templateModel->buttons)) {
+            $buttons = is_array($templateModel->buttons) ? $templateModel->buttons : json_decode((string) $templateModel->buttons, true);
+            if (is_array($buttons)) {
+                foreach ($buttons as $btn) {
+                    $btnUrl = (string) ($btn['url'] ?? '');
+                    if (($btn['type'] ?? '') === 'URL' && (str_contains($btnUrl, '{{1}}') || str_contains($btnUrl, '%7B%7B1%7D%7D'))) {
+                        foreach ($parameters as $p) {
+                            $pVal = is_array($p) ? ($p['value'] ?? '') : (string) $p;
+                            if (str_starts_with($pVal, 'VAN-') || str_starts_with($pVal, 'VR-')) {
+                                $buttonParam = 'track?order=' . rawurlencode($pVal);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (! empty($buttonParam)) {
+            $components[] = [
+                'type' => 'button',
+                'sub_type' => 'url',
+                'index' => '0',
+                'parameters' => [
+                    ['type' => 'text', 'text' => $buttonParam],
+                ],
+            ];
+        }
+
+        // 4. Fallback language code from template if default
         if ($templateModel && ! empty($templateModel->language) && ($langCode === 'en' || empty($langCode))) {
             $langCode = $templateModel->language;
         }

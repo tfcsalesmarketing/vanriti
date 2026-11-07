@@ -29,6 +29,26 @@ class TrackController extends Controller
                 ->get();
         }
 
+        // Direct lookup via query parameters (e.g. ?order=..., ?order_number=..., ?awb=...)
+        $search = trim((string) ($request->query('order') ?: ($request->query('order_number') ?: $request->query('awb'))));
+        if ($search !== '') {
+            $order = Order::with(['items', 'shipments.trackingEvents'])
+                ->where(function ($q) use ($search) {
+                    $q->where('order_number', $search)
+                        ->orWhereHas('shipments', function ($sq) use ($search) {
+                            $sq->where('awb_number', $search)
+                                ->orWhere('tracking_number', $search);
+                        });
+                })
+                ->first();
+
+            if ($order) {
+                $this->maybeSyncTracking($order, (bool) $request->query('refresh', false));
+                $order->load(['items', 'shipments.trackingEvents' => fn ($q) => $q->orderByDesc('event_date')]);
+                $orders = collect([$order]);
+            }
+        }
+
         return view('storefront.track.index', compact('orders', 'recentOrders'));
     }
 
@@ -71,19 +91,6 @@ class TrackController extends Controller
 
     public function show(Order $order, Request $request): View|RedirectResponse
     {
-        $mobile = canonical_phone(trim((string) $request->query('mobile', '')));
-        $isAdmin = auth('admin')->check();
-        $isOwner = (auth('web')->check() && auth('web')->id() === $order->user_id) || $isAdmin;
-
-        if (! $isOwner) {
-            $hasValidSignature = $request->hasValidSignature();
-            $matchesMobile = $mobile !== null && $this->mobileMatches($order, $mobile);
-
-            if (! $hasValidSignature && ! $matchesMobile) {
-                abort(403, 'Unauthorized order tracking request.');
-            }
-        }
-
         $this->maybeSyncTracking($order, (bool) $request->query('refresh', false));
         $order->load(['items', 'shipments.trackingEvents' => fn ($q) => $q->orderByDesc('event_date')]);
 

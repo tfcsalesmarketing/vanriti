@@ -43,7 +43,9 @@ class OrderStatusNotification extends Notification implements ShouldQueue
                 'intro' => $this->emailIntro(),
                 'note' => $this->emailNote(),
                 'ctaText' => $this->ctaText(),
-                'ctaUrl' => route('account.order', $order),
+                'ctaUrl' => in_array($this->status, ['shipped', 'out_for_delivery'], true)
+                    ? $order->trackingUrl()
+                    : ($order->user_id ? route('account.order', $order) : $order->trackingUrl()),
             ]);
     }
 

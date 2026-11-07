@@ -116,13 +116,29 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
             'delivered' => [$customerName, $this->order->order_number, $productName],
         };
 
-        $buttonSuffix = ltrim((string) parse_url($actionUrl, PHP_URL_PATH), '/');
-        if ($query = parse_url($actionUrl, PHP_URL_QUERY)) {
-            $buttonSuffix .= '?' . $query;
+        // Resolve dynamic URL suffix for Meta template button (Meta button base URL is https://vanriti.com/{{1}})
+        $buttonSuffix = match ($status) {
+            'shipped', 'out_for_delivery' => 'track?order=' . rawurlencode($this->order->order_number),
+            'delivered' => (function () use ($reviewUrl) {
+                $path = ltrim((string) parse_url($reviewUrl, PHP_URL_PATH), '/');
+                $appPath = trim((string) parse_url(config('app.url'), PHP_URL_PATH), '/');
+                if ($appPath !== '' && str_starts_with($path, $appPath . '/')) {
+                    $path = substr($path, strlen($appPath) + 1);
+                }
+                if ($query = parse_url($reviewUrl, PHP_URL_QUERY)) {
+                    $path .= '?' . $query;
+                }
+
+                return $path;
+            })(),
+            default => 'track?order=' . rawurlencode($this->order->order_number),
+        };
+
+        $baseUrl = config('app.url');
+        if (str_contains($baseUrl, 'localhost') || str_contains($baseUrl, '127.0.0.1')) {
+            $baseUrl = 'https://vanriti.com';
         }
-        if ($buttonSuffix === '') {
-            $buttonSuffix = $actionUrl;
-        }
+        $publicTrackingUrl = rtrim($baseUrl, '/') . '/track?order=' . rawurlencode($this->order->order_number);
 
         $bodyComponent = [
             'type' => 'body',
@@ -168,8 +184,8 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
         // 2. If template failed and customer's 24hr session window is currently active, fall back to rich text
         if (! ($result['success'] ?? false) && $conversation->isWindowOpen()) {
             $fallbackText = match ($status) {
-                'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}. Tracking / AWB: {$trackingNumber}. Track here: {$trackingUrl}",
-                'out_for_delivery' => "🚚 Hi {$customerName}, your order #{$this->order->order_number} is out for delivery today with {$courier}! Please keep your phone handy.",
+                'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}. Tracking / AWB: {$trackingNumber}. Track here: {$publicTrackingUrl}",
+                'out_for_delivery' => "🚚 Hi {$customerName}, your order #{$this->order->order_number} is out for delivery today with {$courier}! Track here: {$publicTrackingUrl}",
                 'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} containing {$productName} has been delivered! We hope you love your Vanriti products. Please share your review here: {$reviewUrl}" . (! empty($invoiceUrl) ? "\n\n📄 Download Your Official Tax Invoice (PDF): {$invoiceUrl}" : ''),
             };
 

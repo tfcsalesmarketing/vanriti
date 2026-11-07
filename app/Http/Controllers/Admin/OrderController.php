@@ -541,7 +541,14 @@ class OrderController extends Controller
             default => [$firstName, $order->order_number],
         };
 
-        $res = $chatService->sendTemplateMessage($conversation, $tpl, 'en', $params, null, $admin);
+        $buttonSuffix = match ($tpl) {
+            'order_dispatched', 'order_out_for_delivery' => 'track?order=' . rawurlencode($order->order_number),
+            'order_confirmation' => 'account/orders/' . rawurlencode($order->order_number),
+            'order_delivered' => 'track?order=' . rawurlencode($order->order_number),
+            default => null,
+        };
+
+        $res = $chatService->sendTemplateMessage($conversation, $tpl, 'en', $params, null, $admin, $buttonSuffix);
 
         if ($res['success']) {
             $note = '[' . now()->format('d M Y H:i') . "] WhatsApp template '{$tpl}' sent via Meta Cloud API by {$admin?->name}";
