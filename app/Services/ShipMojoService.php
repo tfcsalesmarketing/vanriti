@@ -570,8 +570,51 @@ class ShipMojoService
     {
         $shipment = $order->shipments()->latest()->first();
 
-        if (! $shipment?->awb_number) {
-            throw new \RuntimeException('No AWB number found. Cannot track.');
+        if (! $shipment) {
+            throw new \RuntimeException('No shipment found for order.');
+        }
+
+        // If AWB is missing locally, query ShipMojo order details to retrieve it
+        // (handles orders dispatched or assigned directly in the ShipMojo portal)
+        if (empty($shipment->awb_number) && ! empty($shipment->shipmojo_order_id)) {
+            $orderDetail = $this->getOrderDetail((string) $shipment->shipmojo_order_id);
+            if (($orderDetail['result'] ?? '0') === '1') {
+                $detailData = $orderDetail['data'] ?? [];
+                if (isset($detailData[0]) && is_array($detailData[0])) {
+                    $detailData = $detailData[0];
+                }
+
+                $shippingDetails = $detailData['shipping_details'] ?? [];
+                $awb = $shippingDetails['awb_number'] ?? $detailData['awb_number'] ?? null;
+                $courier = $shippingDetails['courier_company'] ?? $detailData['courier_company'] ?? $detailData['courier'] ?? null;
+                $lr = $shippingDetails['lr_number'] ?? $detailData['lr_number'] ?? null;
+
+                if (! empty($awb)) {
+                    $trackingUrl = 'https://shipmojo.com/track/' . rawurlencode((string) $awb);
+                    $shipmentUpdates = [
+                        'awb_number' => (string) $awb,
+                        'tracking_number' => (string) $awb,
+                        'tracking_url' => $trackingUrl,
+                    ];
+                    if (! empty($courier)) {
+                        $shipmentUpdates['courier'] = (string) $courier;
+                    }
+                    if (! empty($lr)) {
+                        $shipmentUpdates['lr_number'] = (string) $lr;
+                    }
+                    if ($shipment->status === 'pending') {
+                        $shipmentUpdates['status'] = 'packed';
+                    }
+
+                    $shipment->update($shipmentUpdates);
+                    $order->update(['tracking_url' => $trackingUrl]);
+                    $shipment->refresh();
+                }
+            }
+        }
+
+        if (empty($shipment->awb_number)) {
+            throw new \RuntimeException('No AWB number assigned yet in ShipMojo. Please assign a courier first.');
         }
 
         $response = $this->trackOrder($shipment->awb_number);
@@ -614,8 +657,16 @@ class ShipMojoService
                     $updates['estimated_delivery'] = $data['expected_delivery_date'];
                 }
 
+                if (empty($shipment->tracking_url) && ! empty($shipment->awb_number)) {
+                    $updates['tracking_url'] = 'https://shipmojo.com/track/' . rawurlencode((string) $shipment->awb_number);
+                }
+
                 if ($updates !== []) {
                     $shipment->update($updates);
+
+                    if (! empty($updates['tracking_url'])) {
+                        $order->update(['tracking_url' => $updates['tracking_url']]);
+                    }
                 }
 
                 $orderStatus = $mappedStatus !== null ? $this->orderStatusForMapped($mappedStatus) : null;
@@ -961,7 +1012,7 @@ class ShipMojoService
     protected function resolveOrderFromWebhook(array $payload): ?Order
     {
         $orderId = $this->extractFirst($payload, [
-            'order_id', 'orderId', 'order_uuid', 'external_id', 'order_number', 'order_no', 'reference_id', 'merchant_order_id',
+            'order_id', 'orderId', 'order_uuid', 'external_id', 'order_number', 'order_no', 'reference_id', 'refrence_id', 'merchant_order_id',
         ]);
 
         if ($orderId !== null && (string) $orderId !== '') {
@@ -1083,9 +1134,9 @@ class ShipMojoService
     {
         $candidates = [$payload];
 
-        // Deep search the first nested object that looks like the carrier envelope.
+        // Deep search nested objects that look like carrier envelopes (data, shipping_details, etc.)
         foreach ($payload as $key => $value) {
-            if (is_array($value) && $key === 'data') {
+            if (is_array($value) && in_array($key, ['data', 'shipping_details', 'shipment', 'order'], true)) {
                 $candidates[] = $value;
             }
         }

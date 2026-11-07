@@ -292,15 +292,19 @@
                             @endforeach
 
                             <div class="col-12 mt-3">
+                                @php
+                                    $whToken = (string) (secret_setting('shipmojo_webhook_secret', '') ?: secret_setting('shipmojo_public_key', ''));
+                                    $whDisplayUrl = url('/shipmojo/webhook') . ($whToken !== '' ? '?token=' . urlencode($whToken) : '');
+                                @endphp
                                 <div class="alert alert-light border small mb-0 p-3 rounded-3">
                                     <div class="fw-semibold mb-1 text-dark"><i class="bi bi-broadcast me-1 text-primary"></i>ShipMojo Webhook Callback</div>
                                     <span class="text-muted" style="font-size:0.75rem;">Set this URL in your ShipMojo dashboard as the webhook callback:</span>
                                     <div class="d-flex align-items-center gap-2 mt-1.5">
-                                        <code class="bg-white px-2 py-1 rounded border w-100 font-monospace small" id="shipmojo-webhook-url">{{ url('/shipmojo/webhook') }}</code>
+                                        <code class="bg-white px-2 py-1 rounded border w-100 font-monospace small" id="shipmojo-webhook-url">{{ $whDisplayUrl }}</code>
                                         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('shipmojo-webhook-url').textContent)" title="Copy Webhook URL"><i class="bi bi-clipboard"></i></button>
                                     </div>
                                     <small class="text-muted d-block mt-1.5" style="font-size:0.72rem; line-height:1.3;">
-                                        ShipMojo must send the <code>public-key</code> header, an HMAC-SHA256 signature in <code>x-shipmojo-signature</code>, and the order reference ID. Statuses will update automatically.
+                                        Supports authentication via the <code>?token=</code> URL query parameter (recommended for ShipMojo), the <code>public-key</code> header, or body <code>webhook_secret</code>. Order tracking and status will update automatically on arrival.
                                     </small>
                                 </div>
                             </div>

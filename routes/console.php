@@ -18,3 +18,6 @@ Schedule::command('checkout:send-recovery-reminders --hours=1')->hourly();
 
 // Send Web Push notification reminders to anonymous & registered subscribers who abandoned their cart
 Schedule::command('push:send-abandoned-cart-reminders')->everyThirtyMinutes();
+
+// Sync active ShipMojo shipments (AWB, courier, tracking URL, in-transit & delivery scans)
+Schedule::command('shipmojo:sync-tracking')->everyThirtyMinutes();

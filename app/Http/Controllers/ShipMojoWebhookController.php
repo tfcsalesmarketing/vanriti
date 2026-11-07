@@ -56,16 +56,16 @@ class ShipMojoWebhookController extends Controller
     /**
      * Verify the callback actually came from ShipMojo.
      *
-     * ShipMojo deployments sign callbacks differently, so a few common
-     * mechanisms are accepted (whichever matches the configured secret):
-     *  - "public-key" request header equal to the secret
+     * ShipMojo deployments sign callbacks differently, so several mechanisms
+     * are supported:
+     *  - "token" / "secret" / "key" in the query string or JSON payload
+     *  - "public-key" / "public_key" / "x-api-key" / "api-key" request header
+     *  - Authorization: Bearer <token>
      *  - HMAC-SHA256 signature of the raw body (x-shipmojo-signature /
      *    x-webhook-signature / x-signature)
-     *  - a "webhook_secret" field inside the JSON body
      *
-     * Fails closed: when no secret is configured the callback is rejected so
-     * an unconfigured store never mutates orders or shipments from an
-     * unauthenticated HTTP request.
+     * Fails closed: when neither secret nor public key is configured the callback
+     * is rejected so an unconfigured store never mutates orders or shipments.
      */
     protected function authenticate(Request $request): bool
     {
@@ -77,32 +77,61 @@ class ShipMojoWebhookController extends Controller
             $secret = $publicKeySetting;
         }
 
-        if ($secret === '') {
+        if ($secret === '' && $publicKeySetting === '') {
             Log::warning('ShipMojo webhook received but no secret or public key configured; rejecting request.');
 
             return false;
         }
 
-        $publicKey = (string) $request->header('public-key', '');
+        $validTokens = array_values(array_filter(array_unique([$secret, $publicKeySetting])));
 
-        if ($publicKey !== '' && (hash_equals($secret, $publicKey) || ($publicKeySetting !== '' && hash_equals($publicKeySetting, $publicKey)))) {
-            return true;
+        // 1. Check Query Parameter or JSON/POST body token (e.g. ?token=... / ?secret=...)
+        $inputToken = (string) $request->input('token',
+            $request->input('webhook_secret',
+                $request->input('secret',
+                    $request->input('key',
+                        $request->input('public_key',
+                            $request->input('api_key', ''))))));
+
+        if ($inputToken !== '') {
+            foreach ($validTokens as $expected) {
+                if (hash_equals($expected, $inputToken)) {
+                    return true;
+                }
+            }
         }
 
+        // 2. Check Request Headers (public-key, public_key, x-api-key, api-key, Bearer token)
+        $headerToken = (string) ($request->header('public-key')
+            ?? $request->header('public_key')
+            ?? $request->header('x-api-key')
+            ?? $request->header('api-key')
+            ?? $request->bearerToken()
+            ?? '');
+
+        if ($headerToken !== '') {
+            foreach ($validTokens as $expected) {
+                if (hash_equals($expected, $headerToken)) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Check HMAC-SHA256 signature header if provided
         $signatureHeader = $request->header('x-shipmojo-signature')
             ?? $request->header('x-webhook-signature')
             ?? $request->header('x-signature');
 
         if ($signatureHeader) {
-            $computed = hash_hmac('sha256', (string) $request->getContent(), $secret);
+            foreach ($validTokens as $expected) {
+                $computed = hash_hmac('sha256', (string) $request->getContent(), $expected);
 
-            if (hash_equals($computed, (string) $signatureHeader)) {
-                return true;
+                if (hash_equals($computed, (string) $signatureHeader)) {
+                    return true;
+                }
             }
         }
 
-        $bodySecret = (string) $request->input('webhook_secret', $request->input('secret', ''));
-
-        return $bodySecret !== '' && (hash_equals($secret, $bodySecret) || ($publicKeySetting !== '' && hash_equals($publicKeySetting, $bodySecret)));
+        return false;
     }
 }

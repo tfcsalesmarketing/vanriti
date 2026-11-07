@@ -181,4 +181,48 @@ class ShipMojoWebhookTest extends TestCase
         $this->assertSame('confirmed', $order->fresh()->order_status);
         $this->assertSame('pending', $shipment->fresh()->status);
     }
+
+    public function test_webhook_authenticates_via_query_token(): void
+    {
+        $this->enableShipmojo(true, 'whsec_shipmojo_test');
+
+        $order = $this->createOrder(['order_status' => 'confirmed']);
+        $shipment = $this->createShipment($order);
+
+        $this->postJson(route('shipmojo.webhook', ['token' => 'whsec_shipmojo_test']), [
+            'order_id' => $shipment->shipmojo_order_id,
+            'status' => 'in transit',
+            'awb_number' => 'AWB-TOKEN-TEST',
+            'courier' => 'Ekart Flat Price',
+        ])->assertOk()->assertJson(['result' => '1']);
+
+        $shipment->refresh();
+        $this->assertSame('AWB-TOKEN-TEST', $shipment->awb_number);
+        $this->assertSame('Ekart Flat Price', $shipment->courier);
+        $this->assertSame('shipped', $shipment->status);
+        $this->assertSame('shipped', $order->fresh()->order_status);
+        $this->assertSame('https://shipmojo.com/track/AWB-TOKEN-TEST', $order->fresh()->tracking_url);
+    }
+
+    public function test_webhook_handles_misspelled_refrence_id_and_nested_shipping_details(): void
+    {
+        $this->enableShipmojo(true, 'whsec_shipmojo_test');
+
+        $order = $this->createOrder(['order_status' => 'confirmed']);
+        $shipment = $this->createShipment($order, ['shipmojo_reference_id' => $order->order_number]);
+
+        $this->postJson(route('shipmojo.webhook', ['token' => 'whsec_shipmojo_test']), [
+            'refrence_id' => $order->order_number, // ShipMojo misspelled key
+            'current_status' => 'in transit',
+            'shipping_details' => [
+                'awb_number' => 'AWB-NESTED-999',
+                'courier_company' => 'Delhivery',
+            ],
+        ])->assertOk()->assertJson(['result' => '1']);
+
+        $shipment->refresh();
+        $this->assertSame('AWB-NESTED-999', $shipment->awb_number);
+        $this->assertSame('Delhivery', $shipment->courier);
+        $this->assertSame('shipped', $shipment->status);
+    }
 }
