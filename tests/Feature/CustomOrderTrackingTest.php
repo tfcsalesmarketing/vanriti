@@ -155,6 +155,31 @@ class CustomOrderTrackingTest extends TestCase
         $follow->assertSee('VAN-2026-METAWAP');
     }
 
+    public function test_meta_whatsapp_double_encoded_url_redirects_and_renders_tracking(): void
+    {
+        $order = $this->createOrder([
+            'order_number' => 'VAN-2026-METAWAP2',
+            'shipping_mobile' => '9877001122',
+            'order_status' => 'shipped',
+        ]);
+
+        // Case: double-encoded question mark with duplicate query string (e.g. from broken Apache redirect)
+        $response = $this->get('/track%253Forder=' . $order->order_number . '?order=' . $order->order_number);
+        $response->assertRedirect('/track?order=' . $order->order_number);
+
+        // Case: double-encoded question mark standalone
+        $response2 = $this->get('/track%253Forder=' . $order->order_number);
+        $response2->assertRedirect('/track?order=' . $order->order_number);
+
+        // Case: single-encoded question mark in path
+        $response3 = $this->get('/track%3Forder=' . $order->order_number);
+        $response3->assertRedirect('/track?order=' . $order->order_number);
+
+        $follow = $this->get('/track?order=' . $order->order_number);
+        $follow->assertOk();
+        $follow->assertSee('VAN-2026-METAWAP2');
+    }
+
     public function test_order_owner_can_access_tracking_page_without_signature(): void
     {
         $user = \App\Models\User::factory()->create();
