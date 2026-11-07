@@ -30,6 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(\App\Http\Middleware\NormalizeMetaTemplateUrls::class);
+
         $middleware->alias([
             'admin.auth' => AdminAuthenticate::class,
             'role' => CheckRole::class,

@@ -139,6 +139,22 @@ class CustomOrderTrackingTest extends TestCase
         $queryResponse->assertSee('VAN-2026-DIRECT');
     }
 
+    public function test_meta_whatsapp_encoded_template_placeholder_url_redirects_and_renders_tracking(): void
+    {
+        $order = $this->createOrder([
+            'order_number' => 'VAN-2026-METAWAP',
+            'shipping_mobile' => '9877001122',
+            'order_status' => 'shipped',
+        ]);
+
+        $response = $this->get('/%7B%7B1%7D%7Dtrack?order=' . $order->order_number);
+        $response->assertRedirect('/track?order=' . $order->order_number);
+
+        $follow = $this->get('/track?order=' . $order->order_number);
+        $follow->assertOk();
+        $follow->assertSee('VAN-2026-METAWAP');
+    }
+
     public function test_order_owner_can_access_tracking_page_without_signature(): void
     {
         $user = \App\Models\User::factory()->create();

@@ -18,6 +18,10 @@
     RewriteCond %{HTTP_HOST} ^www\.vanriti\.com$ [NC]
     RewriteRule ^ https://vanriti.com%{REQUEST_URI} [L,R=301]
 
+    # Normalize Meta WhatsApp template placeholder tokens (e.g. /%7B%7B1%7D%7Dtrack?order=... -> /track?order=...)
+    RewriteCond %{THE_REQUEST} \s/+(%7B%7B|%7b%7b|\{\{)[^/\s\}]+(%7D%7D|%7d%7d|\}\})(.*)\s [NC]
+    RewriteRule ^ /%3 [R=301,L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
