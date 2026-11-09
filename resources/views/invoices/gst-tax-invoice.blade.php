@@ -43,14 +43,18 @@
 
     $couponDiscount = (float) ($order->coupon_discount ?? 0);
     $prepaidDiscount = (float) ($order->prepaid_discount ?? 0);
-    $orderDirectDiscounts = $couponDiscount + $prepaidDiscount;
-    $discountAmount = $orderDirectDiscounts > 0 ? $orderDirectDiscounts : (float) ($order->discount_amount ?? 0);
-    // Invoice Grand Total strictly excludes delivery charges as requested
-    $invoiceGrandTotal = max(0.0, $itemsGrossSubtotal - $discountAmount);
+    $orderDirectDiscounts = round($couponDiscount + $prepaidDiscount, 2);
+    $mrpSavings = (float) ($order->discount_amount ?? 0);
+    $shippingCharge = (float) ($order->shipping_charge ?? 0);
+    $paidAmount = (float) ($order->amount_paid ?? 0);
+
+    // Invoice Grand Total matches the payable order amount (subtotal - direct discounts + shipping)
+    $invoiceGrandTotal = (float) ($order->grand_total ?: max(0.0, $itemsGrossSubtotal - $orderDirectDiscounts + $shippingCharge));
+    $dueAmount = (float) ($order->amount_due ?? max(0.0, $invoiceGrandTotal - $paidAmount));
 
     // Proportionate discount factor to distribute order discount across items
-    $discountFactor = ($itemsGrossSubtotal > 0 && $discountAmount > 0)
-        ? max(0.0, ($itemsGrossSubtotal - $discountAmount) / $itemsGrossSubtotal)
+    $discountFactor = ($itemsGrossSubtotal > 0 && $orderDirectDiscounts > 0)
+        ? max(0.0, ($itemsGrossSubtotal - $orderDirectDiscounts) / $itemsGrossSubtotal)
         : 1.0;
 
     // Build row-level calculated items so table and totals reconcile 100%
@@ -89,8 +93,9 @@
         ];
     }
 
-    // Reconcile any rounding drift on the last item to match exact invoice grand total
-    $totalDrift = round($invoiceGrandTotal - $runningTotal, 2);
+    // Reconcile any rounding drift on items against the items net total
+    $itemsNetTarget = max(0.0, $itemsGrossSubtotal - $orderDirectDiscounts);
+    $totalDrift = round($itemsNetTarget - $runningTotal, 2);
     if ($totalDrift != 0.0 && !empty($tableRows)) {
         $lastIdx = count($tableRows) - 1;
         $tableRows[$lastIdx]['total'] = round($tableRows[$lastIdx]['total'] + $totalDrift, 2);
@@ -877,7 +882,7 @@
                     <td style="width:3%;"></td>
 
                     <td class="summary-right-cell">
-                        {{-- Totals Card (Delivery Charges Strictly Removed) --}}
+                        {{-- Totals Card --}}
                         <div class="totals-box">
                             <table class="summary-totals-table">
                                 <tr>
@@ -894,11 +899,6 @@
                                     <tr>
                                         <td style="color:#1B5628; font-weight:600;">Coupon Discount {{ $order->coupon_code ? '('.$order->coupon_code.')' : '' }}</td>
                                         <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($couponDiscount, 2) }}</td>
-                                    </tr>
-                                @elseif ($discountAmount > 0 && $prepaidDiscount <= 0)
-                                    <tr>
-                                        <td style="color:#1B5628; font-weight:600;">Discount</td>
-                                        <td class="total-val" style="color:#1B5628;">- ₹ {{ number_format($discountAmount, 2) }}</td>
                                     </tr>
                                 @endif
                                 <tr>
@@ -920,6 +920,10 @@
                                         <td class="total-val">₹ {{ number_format($igstAmount, 2) }}</td>
                                     </tr>
                                 @endif
+                                <tr>
+                                    <td>Shipping</td>
+                                    <td class="total-val">{{ $shippingCharge > 0 ? '₹ ' . number_format($shippingCharge, 2) : '₹ 0.00' }}</td>
+                                </tr>
                             </table>
 
                             <div class="grand-total-row">
@@ -930,6 +934,23 @@
                                     </tr>
                                 </table>
                             </div>
+
+                            <table class="summary-totals-table" style="margin-top:5px; border-top:1px dashed #d1e4d6; padding-top:4px;">
+                                <tr>
+                                    <td>Paid</td>
+                                    <td class="total-val">₹ {{ number_format($paidAmount, 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:700; color:#14361E;">Due</td>
+                                    <td class="total-val" style="font-weight:700; color:#14361E;">₹ {{ number_format($dueAmount, 2) }}</td>
+                                </tr>
+                            </table>
+
+                            @if ($mrpSavings > 0)
+                                <div style="font-size:8px; color:#1B5628; background:#E8F5EC; padding:3px 6px; border-radius:3px; margin-top:5px; text-align:center; font-weight:600;">
+                                    ✨ Total MRP Savings: ₹ {{ number_format($mrpSavings, 2) }}
+                                </div>
+                            @endif
                         </div>
                     </td>
                 </tr>
