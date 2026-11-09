@@ -69,6 +69,7 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
             return;
         }
 
+        $this->order->refresh();
         $this->order->loadMissing(['shipments', 'user', 'items.product']);
         $shipment = $this->order->shipments()->latest()->first();
 
@@ -93,6 +94,11 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+
+        if (! empty($invoiceUrl) && (str_contains($invoiceUrl, 'localhost') || str_contains($invoiceUrl, '127.0.0.1'))) {
+            $parsedPath = parse_url($invoiceUrl, PHP_URL_PATH);
+            $invoiceUrl = 'https://vanriti.com' . $parsedPath;
         }
 
         $actionUrl = match ($status) {

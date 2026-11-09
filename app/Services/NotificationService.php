@@ -23,10 +23,10 @@ class NotificationService
         }
 
         if (strtolower($status) === 'delivered') {
-            GenerateOrderInvoicePdf::dispatch($order);
-            SendWhatsAppOrderStatusNotification::dispatch($order, $status);
+            GenerateOrderInvoicePdf::dispatchSync($order);
+            SendWhatsAppOrderStatusNotification::dispatchSync($order, $status);
         } elseif (in_array(strtolower($status), ['shipped', 'out_for_delivery'], true)) {
-            SendWhatsAppOrderStatusNotification::dispatch($order, $status);
+            SendWhatsAppOrderStatusNotification::dispatchSync($order, $status);
         }
     }
 
