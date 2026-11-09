@@ -147,4 +147,76 @@ class ReviewTest extends TestCase
         $response->assertSessionHasErrors('rating');
         $this->assertDatabaseCount('reviews', 0);
     }
+
+    public function test_guest_can_access_and_submit_review_with_valid_mobile_link(): void
+    {
+        $user = User::factory()->create(['phone' => '9876543210']);
+        $product = Product::factory()->active()->create([
+            'selling_price' => 150.00, 'mrp' => 150.00, 'gst_rate' => 0, 'stock' => 10,
+        ]);
+
+        $order = $this->deliveredOrder($user, $product);
+        $orderItem = $order->items()->firstOrFail();
+
+        $reviewUrl = $order->guestReviewUrl($orderItem);
+
+        // 1. Show review page succeeds
+        $response = $this->get($reviewUrl);
+        $response->assertOk();
+        $response->assertSee($product->name);
+
+        // 2. Submit review succeeds
+        $submitResponse = $this->post(route('order.review.submit', [
+            'order' => $order->order_number,
+            'mobile' => '9876543210',
+        ]), [
+            'order_item_id' => $orderItem->id,
+            'rating' => 5,
+            'title' => 'Amazing quality',
+            'comment' => 'Very satisfied with the item.',
+        ]);
+
+        $submitResponse->assertSessionHas('success');
+        $this->assertDatabaseHas('reviews', [
+            'product_id' => $product->id,
+            'order_item_id' => $orderItem->id,
+            'rating' => 5,
+            'title' => 'Amazing quality',
+        ]);
+    }
+
+    public function test_guest_cannot_access_review_with_mismatched_mobile(): void
+    {
+        $user = User::factory()->create(['phone' => '9876543210']);
+        $product = Product::factory()->active()->create([
+            'selling_price' => 150.00, 'mrp' => 150.00, 'gst_rate' => 0, 'stock' => 10,
+        ]);
+
+        $order = $this->deliveredOrder($user, $product);
+
+        $response = $this->get(route('order.review', [
+            'order' => $order->order_number,
+            'mobile' => '9111111111',
+        ]));
+
+        $response->assertForbidden();
+    }
+
+    public function test_guest_cannot_access_review_with_expired_link(): void
+    {
+        $user = User::factory()->create(['phone' => '9876543210']);
+        $product = Product::factory()->active()->create([
+            'selling_price' => 150.00, 'mrp' => 150.00, 'gst_rate' => 0, 'stock' => 10,
+        ]);
+
+        $order = $this->deliveredOrder($user, $product);
+
+        $response = $this->get(route('order.review', [
+            'order' => $order->order_number,
+            'mobile' => '9876543210',
+            'expires' => now()->subDay()->timestamp,
+        ]));
+
+        $response->assertForbidden();
+    }
 }

@@ -181,8 +181,8 @@ Route::get('/%7B%7B1%7D%7Dtrack', [TrackController::class, 'index']);
 Route::get('/%7b%7b1%7d%7dtrack', [TrackController::class, 'index']);
 Route::get('/%7B%7B1%7D%7D/track', [TrackController::class, 'index']);
 Route::get('/%7b%7b1%7d%7d/track', [TrackController::class, 'index']);
-Route::get('/orders/{order:order_number}/review', [\App\Http\Controllers\OrderReviewController::class, 'show'])->name('order.review')->middleware('signed');
-Route::post('/orders/{order:order_number}/review', [\App\Http\Controllers\OrderReviewController::class, 'submit'])->name('order.review.submit')->middleware('signed');
+Route::get('/orders/{order:order_number}/review', [\App\Http\Controllers\OrderReviewController::class, 'show'])->name('order.review');
+Route::post('/orders/{order:order_number}/review', [\App\Http\Controllers\OrderReviewController::class, 'submit'])->name('order.review.submit');
 
 // ---------- Content ----------
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');

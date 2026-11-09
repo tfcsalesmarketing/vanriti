@@ -114,9 +114,11 @@
                                 </div>
                             @else
                                 {{-- Review Form --}}
-                                <form method="POST" action="{{ route('order.review.submit', ['order' => $order->order_number, 'mobile' => request('mobile'), 'signature' => request('signature')]) }}" enctype="multipart/form-data">
+                                <form method="POST" action="{{ route('order.review.submit', ['order' => $order->order_number, 'mobile' => request('mobile'), 'expires' => request('expires')]) }}" enctype="multipart/form-data">
                                     @csrf
                                     <input type="hidden" name="order_item_id" value="{{ $selectedItem->id }}">
+                                    <input type="hidden" name="mobile" value="{{ request('mobile') }}">
+                                    <input type="hidden" name="expires" value="{{ request('expires') }}">
 
                                     {{-- Star Rating --}}
                                     <div class="text-center mb-4">

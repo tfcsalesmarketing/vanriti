@@ -320,16 +320,18 @@ class Order extends Model
     }
 
     /**
-     * Guest-friendly signed review URL for the order or a specific line item.
+     * Guest-friendly review URL for the order or a specific line item.
+     * Protected by phone number verification and expiration timestamp.
      */
     public function guestReviewUrl(?OrderItem $item = null, int $expiresInDays = 30): string
     {
         $mobile = $this->shipping_mobile ?: ($this->billing_mobile ?: ($this->guest_mobile ?: $this->user?->phone));
 
-        return URL::temporarySignedRoute('order.review', now()->addDays($expiresInDays), [
+        return route('order.review', [
             'order' => $this->order_number,
             'mobile' => $mobile,
             'item' => $item?->id,
+            'expires' => now()->addDays($expiresInDays)->timestamp,
         ]);
     }
 

@@ -80,7 +80,23 @@ class OrderReviewController extends Controller
 
     protected function verifyCustomerMobile(Order $order, Request $request): void
     {
-        $mobile = canonical_phone(trim((string) $request->query('mobile', '')));
+        // Allow logged-in account owner
+        if (auth('web')->check() && (int) auth('web')->id() === (int) $order->user_id) {
+            return;
+        }
+
+        // Allow authenticated admins/staff to inspect
+        if (auth('admin')->check()) {
+            return;
+        }
+
+        // Validate expiration timestamp if present in query or body
+        $expires = $request->query('expires') ?: $request->input('expires');
+        if ($expires && is_numeric($expires) && (int) $expires < now()->timestamp) {
+            abort(403, 'Review link has expired.');
+        }
+
+        $mobile = canonical_phone(trim((string) ($request->query('mobile') ?: $request->input('mobile', ''))));
         $orderMobile = canonical_phone($order->shipping_mobile ?: ($order->billing_mobile ?: ($order->guest_mobile ?: $order->user?->phone)));
 
         if ($mobile === null || $orderMobile === null || $mobile !== $orderMobile) {
