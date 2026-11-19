@@ -286,6 +286,71 @@
                 </button>
             </form>
 
+            {{-- Alternative Marketplace Purchase Links (Amazon & Flipkart) --}}
+            @if ($product->hasMarketplaceLinks())
+                <div class="vr-pdp-marketplaces">
+                    <div class="vr-pdp-marketplaces-header">
+                        <span class="vr-pdp-marketplaces-title">
+                            <i class="ri-store-2-line"></i> Also Available On Marketplaces
+                        </span>
+                        <span class="vr-pdp-marketplaces-badge">
+                            <i class="ri-shield-check-fill"></i> Official Store
+                        </span>
+                    </div>
+
+                    <div class="row g-2">
+                        @if ($product->hasAmazonLink())
+                            <div class="{{ $product->hasAmazonLink() && $product->hasFlipkartLink() ? 'col-6' : 'col-12' }}">
+                                <a href="{{ $product->amazon_url }}" target="_blank" rel="noopener noreferrer nofollow" class="vr-mkt-btn vr-mkt-amazon js-marketplace-click" data-mkt="amazon" title="Buy {{ $product->name }} on Amazon India">
+                                    <div class="vr-mkt-btn-left">
+                                        <div class="vr-mkt-logo-wrap">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path d="M13.7 13.9c-.3.4-.8.7-1.4.9-.6.2-1.3.3-2 .3-.9 0-1.6-.2-2.1-.7-.5-.5-.8-1.2-.8-2 0-.9.4-1.6 1.1-2.1.7-.5 1.7-.8 3-.8h1.2v-.4c0-.4-.1-.7-.4-.9-.3-.2-.7-.3-1.2-.3-.5 0-1 .1-1.4.3-.4.2-.8.5-1.1.9l-1.3-1.1c.5-.6 1.1-1.1 1.8-1.4.7-.3 1.5-.5 2.4-.5 1.2 0 2.2.3 2.8.9.6.6 1 1.5 1 2.6v5.2c0 .5.1.9.3 1.1.2.2.5.3.8.3.2 0 .4 0 .6-.1v1.6c-.4.2-.9.3-1.4.3-.8 0-1.4-.2-1.9-.7-.4-.5-.6-1.2-.6-2.1v-.8zm0-1.6v-1.2h-1c-.7 0-1.2.1-1.5.4-.3.3-.5.7-.5 1.1 0 .4.1.7.4.9.3.2.7.4 1.2.4.4 0 .8-.1 1.1-.3.3-.2.5-.5.6-.9z" fill="#FFFFFF"/>
+                                                <path d="M4.5 18.5c3.5 2.2 8.5 2.2 12.8-.2.3-.2.6.1.4.4-4.2 3.1-9.9 2.9-13.6.4-.3-.2 0-.6.4-.6z" fill="#FF9900"/>
+                                                <path d="M17.7 17.5c-.2-.4-1.5-.8-3.1-.3-.2.1-.3-.1-.1-.3 1.4-1 3.1-.8 3.4-.4.3.4.1 1.7-1 2.9-.2.2-.3.1-.2-.1.2-.5.4-1.2.2-1.8z" fill="#FF9900"/>
+                                            </svg>
+                                        </div>
+                                        <div class="vr-mkt-copy">
+                                            <span class="vr-mkt-sub">Buy on</span>
+                                            <span class="vr-mkt-brand">Amazon</span>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-box-arrow-up-right vr-mkt-arrow"></i>
+                                </a>
+                            </div>
+                        @endif
+
+                        @if ($product->hasFlipkartLink())
+                            <div class="{{ $product->hasAmazonLink() && $product->hasFlipkartLink() ? 'col-6' : 'col-12' }}">
+                                <a href="{{ $product->flipkart_url }}" target="_blank" rel="noopener noreferrer nofollow" class="vr-mkt-btn vr-mkt-flipkart js-marketplace-click" data-mkt="flipkart" title="Buy {{ $product->name }} on Flipkart">
+                                    <div class="vr-mkt-btn-left">
+                                        <div class="vr-mkt-logo-wrap">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path d="M7 6.5C7 4 9.2 2 12 2s5 2 5 4.5V8h-2.2v-1.5c0-1.5-1.3-2.7-2.8-2.7S9.2 5 9.2 6.5V8H7V6.5z" fill="#FFE500"/>
+                                                <path d="M4 8h16l-1.6 13.5c-.1.8-.8 1.5-1.6 1.5H7.2c-.8 0-1.5-.7-1.6-1.5L4 8z" fill="#FFE500"/>
+                                                <path d="M12.5 11h3v2h-3v1.8h3.2v2H10V9.2h5.7V11h-3.2z" fill="#2874F0"/>
+                                                <path d="M9.8 10.5l-2.2 2.6h1.8l-1.3 3.1 3.1-3.5h-1.8l1.3-2.2h-.9z" fill="#2874F0"/>
+                                            </svg>
+                                        </div>
+                                        <div class="vr-mkt-copy">
+                                            <span class="vr-mkt-sub">Buy on</span>
+                                            <span class="vr-mkt-brand">Flipkart</span>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-box-arrow-up-right vr-mkt-arrow"></i>
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="vr-pdp-marketplaces-trust">
+                        <span><i class="ri-shield-star-line text-success"></i> Authentic VANRITI Formulations</span>
+                        <span>&bull;</span>
+                        <span><i class="ri-truck-line text-success"></i> Prime &amp; Assured Delivery Available</span>
+                    </div>
+                </div>
+            @endif
+
             <div class="mb-3">
                 @if ($out)
                     <div class="p-3 rounded-3 border mb-3" style="background: #fdf2f2; border-color: #fecaca !important;">
@@ -1524,6 +1589,26 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
             msg.textContent = 'Network error. Please try again.';
             btn.disabled = false;
             btn.textContent = 'Notify Me';
+        });
+    });
+})();
+
+// Marketplace Outbound Click Tracking (Amazon & Flipkart)
+(function () {
+    var mktBtns = document.querySelectorAll('.js-marketplace-click');
+    mktBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var mkt = btn.getAttribute('data-mkt');
+            if (window.dataLayer) {
+                window.dataLayer.push({
+                    event: 'marketplace_click',
+                    marketplace: mkt,
+                    product_id: {{ $product->id }},
+                    product_name: {!! json_encode($product->name, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
+                    product_sku: {!! json_encode($product->sku, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
+                    product_price: {{ (float) $product->selling_price }}
+                });
+            }
         });
     });
 })();

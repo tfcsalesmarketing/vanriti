@@ -176,6 +176,54 @@
         </div>
 
         <div class="card mb-3">
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-shop me-1 text-primary"></i> Marketplace Purchase Links</span>
+                <span class="badge bg-light text-muted border fw-normal" style="font-size:0.7rem;">Storefront Buy Buttons</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Provide direct product URLs to display <strong>&ldquo;Buy on Amazon&rdquo;</strong> and <strong>&ldquo;Buy on Flipkart&rdquo;</strong> buttons on the storefront product detail page. Ideal for shoppers who prefer purchasing on verified marketplaces. Leave empty to hide.
+                </p>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bag-check text-warning me-1"></i> Amazon Product URL</span>
+                            @if ($product && filled($product->amazon_url))
+                                <a href="{{ $product->amazon_url }}" target="_blank" rel="noopener noreferrer" class="small text-decoration-none" style="font-size:0.75rem;">
+                                    <i class="bi bi-box-arrow-up-right me-0.5"></i> Test link
+                                </a>
+                            @endif
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-dark fw-bold" style="font-size: 0.78rem;">
+                                Amazon.in
+                            </span>
+                            <input type="url" name="amazon_url" class="form-control form-control-sm" value="{{ old('amazon_url', $product->amazon_url ?? '') }}" placeholder="https://www.amazon.in/dp/B0...">
+                        </div>
+                        <div class="form-text">Direct product link on Amazon India (e.g. <code>https://www.amazon.in/dp/...</code>).</div>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bag-check-fill text-primary me-1"></i> Flipkart Product URL</span>
+                            @if ($product && filled($product->flipkart_url))
+                                <a href="{{ $product->flipkart_url }}" target="_blank" rel="noopener noreferrer" class="small text-decoration-none" style="font-size:0.75rem;">
+                                    <i class="bi bi-box-arrow-up-right me-0.5"></i> Test link
+                                </a>
+                            @endif
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-primary fw-bold" style="font-size: 0.78rem;">
+                                Flipkart
+                            </span>
+                            <input type="url" name="flipkart_url" class="form-control form-control-sm" value="{{ old('flipkart_url', $product->flipkart_url ?? '') }}" placeholder="https://www.flipkart.com/.../p/itm...">
+                        </div>
+                        <div class="form-text">Direct product link on Flipkart (e.g. <code>https://www.flipkart.com/...</code>).</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
             <div class="card-header fw-semibold">SEO</div>
             <div class="card-body">
                 <div class="row g-3">

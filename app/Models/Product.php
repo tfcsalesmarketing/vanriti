@@ -98,6 +98,8 @@ class Product extends Model
         'meta_keywords',
         'search_keywords',
         'video_url',
+        'amazon_url',
+        'flipkart_url',
         'status',
         'channel',
         'is_featured',
@@ -293,6 +295,21 @@ class Product extends Model
         $msg = "Hi Vanriti, I would like to order *{$this->name}* (SKU: {$this->sku}) at " . format_price($this->selling_price) . ". Link: " . route('product.show', $this->slug);
 
         return "https://wa.me/{$bizPhone}?text=" . rawurlencode($msg);
+    }
+
+    public function hasAmazonLink(): bool
+    {
+        return filled($this->amazon_url);
+    }
+
+    public function hasFlipkartLink(): bool
+    {
+        return filled($this->flipkart_url);
+    }
+
+    public function hasMarketplaceLinks(): bool
+    {
+        return $this->hasAmazonLink() || $this->hasFlipkartLink();
     }
 
     /**

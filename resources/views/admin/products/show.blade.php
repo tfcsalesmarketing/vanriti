@@ -91,6 +91,41 @@
                 @if (!$product->is_featured && !$product->is_bestseller && !$product->is_new_arrival)<span class="text-muted small">No flags set.</span>@endif
             </div>
         </div>
+
+        <div class="card mb-3">
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-shop me-1 text-primary"></i> Marketplace Purchase Links</span>
+                @if ($product->hasMarketplaceLinks())
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                @else
+                    <span class="badge bg-light text-muted border">None Configured</span>
+                @endif
+            </div>
+            <div class="card-body small">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <strong>Amazon:</strong>
+                        @if ($product->amazon_url)
+                            <a href="{{ $product->amazon_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-underline ms-1 d-inline-flex align-items-center gap-1">
+                                <span>Buy on Amazon</span><i class="bi bi-box-arrow-up-right" style="font-size:0.75rem;"></i>
+                            </a>
+                        @else
+                            <span class="text-muted ms-1">Not configured</span>
+                        @endif
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Flipkart:</strong>
+                        @if ($product->flipkart_url)
+                            <a href="{{ $product->flipkart_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-underline ms-1 d-inline-flex align-items-center gap-1">
+                                <span>Buy on Flipkart</span><i class="bi bi-box-arrow-up-right" style="font-size:0.75rem;"></i>
+                            </a>
+                        @else
+                            <span class="text-muted ms-1">Not configured</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="col-md-4">
