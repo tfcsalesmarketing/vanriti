@@ -106,7 +106,7 @@ class ProductMarketplaceLinksTest extends TestCase
         $response = $this->get(route('product.show', $this->product->slug));
 
         $response->assertOk();
-        $response->assertSee('Also Available On Marketplaces');
+        $response->assertSee('Also Available On');
         $response->assertSee('Buy on', false);
         $response->assertSee('Amazon', false);
         $response->assertSee('https://www.amazon.in/dp/B0EXAMPLE123', false);
@@ -124,7 +124,7 @@ class ProductMarketplaceLinksTest extends TestCase
         $response = $this->get(route('product.show', $this->product->slug));
 
         $response->assertOk();
-        $response->assertDontSee('Also Available On Marketplaces');
+        $response->assertDontSee('Also Available On');
         $response->assertDontSee('Buy on Amazon');
         $response->assertDontSee('Buy on Flipkart');
     }

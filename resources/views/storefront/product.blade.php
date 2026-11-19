@@ -288,63 +288,56 @@
 
             {{-- Alternative Marketplace Purchase Links (Amazon & Flipkart) --}}
             @if ($product->hasMarketplaceLinks())
+                @php
+                    $amazonUrl = $product->amazon_url ?: (setting('amazon_store_url') ?: 'https://www.amazon.in/s?k=' . rawurlencode('VANRITI ' . $product->name));
+                    $flipkartUrl = $product->flipkart_url ?: (setting('flipkart_store_url') ?: 'https://www.flipkart.com/search?q=' . rawurlencode('VANRITI ' . $product->name));
+                @endphp
                 <div class="vr-pdp-marketplaces">
                     <div class="vr-pdp-marketplaces-header">
                         <span class="vr-pdp-marketplaces-title">
-                            <i class="ri-store-2-line"></i> Also Available On Marketplaces
+                            <i class="ri-store-2-line"></i> Also Available On
                         </span>
                         <span class="vr-pdp-marketplaces-badge">
-                            <i class="ri-shield-check-fill"></i> Official Store
+                            <i class="ri-shield-check-fill"></i> Verified Store
                         </span>
                     </div>
 
-                    <div class="row g-2">
-                        @if ($product->hasAmazonLink())
-                            <div class="{{ $product->hasAmazonLink() && $product->hasFlipkartLink() ? 'col-6' : 'col-12' }}">
-                                <a href="{{ $product->amazon_url }}" target="_blank" rel="noopener noreferrer nofollow" class="vr-mkt-btn vr-mkt-amazon js-marketplace-click" data-mkt="amazon" title="Buy {{ $product->name }} on Amazon India">
-                                    <div class="vr-mkt-btn-left">
-                                        <div class="vr-mkt-logo-wrap">
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                                <path d="M13.7 13.9c-.3.4-.8.7-1.4.9-.6.2-1.3.3-2 .3-.9 0-1.6-.2-2.1-.7-.5-.5-.8-1.2-.8-2 0-.9.4-1.6 1.1-2.1.7-.5 1.7-.8 3-.8h1.2v-.4c0-.4-.1-.7-.4-.9-.3-.2-.7-.3-1.2-.3-.5 0-1 .1-1.4.3-.4.2-.8.5-1.1.9l-1.3-1.1c.5-.6 1.1-1.1 1.8-1.4.7-.3 1.5-.5 2.4-.5 1.2 0 2.2.3 2.8.9.6.6 1 1.5 1 2.6v5.2c0 .5.1.9.3 1.1.2.2.5.3.8.3.2 0 .4 0 .6-.1v1.6c-.4.2-.9.3-1.4.3-.8 0-1.4-.2-1.9-.7-.4-.5-.6-1.2-.6-2.1v-.8zm0-1.6v-1.2h-1c-.7 0-1.2.1-1.5.4-.3.3-.5.7-.5 1.1 0 .4.1.7.4.9.3.2.7.4 1.2.4.4 0 .8-.1 1.1-.3.3-.2.5-.5.6-.9z" fill="#FFFFFF"/>
-                                                <path d="M4.5 18.5c3.5 2.2 8.5 2.2 12.8-.2.3-.2.6.1.4.4-4.2 3.1-9.9 2.9-13.6.4-.3-.2 0-.6.4-.6z" fill="#FF9900"/>
-                                                <path d="M17.7 17.5c-.2-.4-1.5-.8-3.1-.3-.2.1-.3-.1-.1-.3 1.4-1 3.1-.8 3.4-.4.3.4.1 1.7-1 2.9-.2.2-.3.1-.2-.1.2-.5.4-1.2.2-1.8z" fill="#FF9900"/>
-                                            </svg>
-                                        </div>
-                                        <div class="vr-mkt-copy">
-                                            <span class="vr-mkt-sub">Buy on</span>
-                                            <span class="vr-mkt-brand">Amazon</span>
-                                        </div>
-                                    </div>
-                                    <i class="bi bi-box-arrow-up-right vr-mkt-arrow"></i>
-                                </a>
-                            </div>
-                        @endif
+                    <div class="vr-mkt-row">
+                        <!-- Amazon Button -->
+                        <a href="{{ $amazonUrl }}" target="_blank" rel="noopener noreferrer nofollow" class="vr-mkt-btn vr-mkt-amazon js-marketplace-click" data-mkt="amazon" title="Buy {{ $product->name }} on Amazon India">
+                            <span class="vr-mkt-label">Buy on</span>
+                            <svg class="vr-mkt-brand-svg vr-mkt-amazon-svg" viewBox="0 0 100 30" width="76" height="22" xmlns="http://www.w3.org/2000/svg" aria-label="Amazon">
+                                <path d="M12.9 14.8c-.4.5-1 .8-1.7 1-.7.2-1.5.3-2.3.3-1 0-1.9-.2-2.5-.7-.6-.5-.9-1.3-.9-2.2 0-1 .4-1.8 1.2-2.3.8-.5 1.9-.8 3.4-.8h1.4v-.5c0-.5-.1-.9-.4-1.1-.3-.3-.8-.4-1.4-.4-.6 0-1.1.1-1.6.3-.5.2-.9.5-1.2.9l-1.3-1.1c.5-.7 1.2-1.1 2-1.5.8-.3 1.7-.5 2.7-.5 1.3 0 2.3.3 3 .9.7.6 1 1.6 1 2.8v5.5c0 .5.1.9.3 1.1.2.2.5.3.8.3.2 0 .4 0 .6-.1v1.6c-.4.2-.9.3-1.4.3-.8 0-1.5-.2-2-.7-.4-.5-.6-1.2-.6-2.1v-.8zm0-1.7v-1.3h-1.2c-.8 0-1.4.1-1.7.4-.3.3-.5.7-.5 1.2 0 .5.2.8.5 1.1.3.2.8.4 1.3.4.5 0 .9-.1 1.2-.3.4-.3.6-.6.7-1.1z" fill="#131921"/>
+                                <path d="M17.4 6.5h2.3v1.8c.4-.7 1-1.2 1.7-1.5.7-.4 1.5-.6 2.4-.6 1.1 0 2 .3 2.7.9.7.6 1.1 1.4 1.2 2.5.5-.7 1.1-1.3 1.8-1.7.8-.5 1.7-.7 2.7-.7 1.3 0 2.3.4 3 1.1.7.7 1.1 1.8 1.1 3.2v9h-2.5v-8.2c0-.9-.2-1.6-.6-2-.4-.4-1-.7-1.8-.7-.7 0-1.3.2-1.8.7-.4.5-.7 1.1-.7 2v8.2h-2.5v-8.2c0-.9-.2-1.6-.6-2-.4-.4-1-.7-1.8-.7-.7 0-1.3.2-1.8.7-.5.5-.7 1.1-.7 2v8.2h-2.4V6.5z" fill="#131921"/>
+                                <path d="M48.2 14.8c-.4.5-1 .8-1.7 1-.7.2-1.5.3-2.3.3-1 0-1.9-.2-2.5-.7-.6-.5-.9-1.3-.9-2.2 0-1 .4-1.8 1.2-2.3.8-.5 1.9-.8 3.4-.8h1.4v-.5c0-.5-.1-.9-.4-1.1-.3-.3-.8-.4-1.4-.4-.6 0-1.1.1-1.6.3-.5.2-.9.5-1.2.9l-1.3-1.1c.5-.7 1.2-1.1 2-1.5.8-.3 1.7-.5 2.7-.5 1.3 0 2.3.3 3 .9.7.6 1 1.6 1 2.8v5.5c0 .5.1.9.3 1.1.2.2.5.3.8.3.2 0 .4 0 .6-.1v1.6c-.4.2-.9.3-1.4.3-.8 0-1.5-.2-2-.7-.4-.5-.6-1.2-.6-2.1v-.8zm0-1.7v-1.3H47c-.8 0-1.4.1-1.7.4-.3.3-.5.7-.5 1.2 0 .5.2.8.5 1.1.3.2.8.4 1.3.4.5 0 .9-.1 1.2-.3.4-.3.6-.6.7-1.1z" fill="#131921"/>
+                                <path d="M52.3 18.5l6.4-9.8h-6V6.5h9.4v2.1l-6.4 9.9h6.8v2.1h-10.2v-2.1z" fill="#131921"/>
+                                <path d="M64.2 13.5c0-2.3.6-4.1 1.9-5.3 1.3-1.2 2.9-1.8 4.9-1.8 2 0 3.6.6 4.9 1.8 1.3 1.2 1.9 3 1.9 5.3 0 2.3-.6 4.1-1.9 5.3-1.3 1.2-2.9 1.8-4.9 1.8-2 0-3.6-.6-4.9-1.8-1.3-1.2-1.9-3-1.9-5.3zm2.5 0c0 1.7.4 3 1.1 3.9.8.9 1.8 1.4 3.1 1.4 1.3 0 2.3-.5 3.1-1.4.8-.9 1.1-2.2 1.1-3.9s-.4-3-1.1-3.9c-.8-.9-1.8-1.4-3.1-1.4-1.3 0-2.3.5-3.1 1.4-.7.9-1.1 2.2-1.1 3.9z" fill="#131921"/>
+                                <path d="M80.2 6.5h2.3v1.9c.5-.7 1.1-1.2 1.8-1.5.7-.4 1.6-.6 2.6-.6 1.4 0 2.5.4 3.2 1.2.8.8 1.1 2 1.1 3.5v9.5h-2.5v-8.8c0-1-.2-1.8-.7-2.3-.5-.5-1.2-.7-2.1-.7-.8 0-1.5.3-2 .8-.5.5-.8 1.3-.8 2.3v8.7h-2.5V6.5z" fill="#131921"/>
+                                <path d="M8.6 22.8c14.2 7.8 36.8 7.3 54.8-1.3 1.3-.6 2.3.5 1.5 1.6-17.2 11.2-41.6 11.4-57.5 1.8-1.3-.8-.1-2.6 1.2-2.1z" fill="#FF9900"/>
+                                <path d="M66.4 20.8c-.7-1.5-5.3-3.1-11-1.3-.9.3-1.1-.6-.3-1.3 5.4-4.2 12-3.1 13.2-1.6 1.4 1.6.4 7.2-4.5 11.8-.8.7-1.5.3-1.1-.5 1.4-2.5 2.5-5.7 3.7-7.1z" fill="#FF9900"/>
+                            </svg>
+                            <i class="bi bi-arrow-up-right vr-mkt-arrow"></i>
+                        </a>
 
-                        @if ($product->hasFlipkartLink())
-                            <div class="{{ $product->hasAmazonLink() && $product->hasFlipkartLink() ? 'col-6' : 'col-12' }}">
-                                <a href="{{ $product->flipkart_url }}" target="_blank" rel="noopener noreferrer nofollow" class="vr-mkt-btn vr-mkt-flipkart js-marketplace-click" data-mkt="flipkart" title="Buy {{ $product->name }} on Flipkart">
-                                    <div class="vr-mkt-btn-left">
-                                        <div class="vr-mkt-logo-wrap">
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                                <path d="M7 6.5C7 4 9.2 2 12 2s5 2 5 4.5V8h-2.2v-1.5c0-1.5-1.3-2.7-2.8-2.7S9.2 5 9.2 6.5V8H7V6.5z" fill="#FFE500"/>
-                                                <path d="M4 8h16l-1.6 13.5c-.1.8-.8 1.5-1.6 1.5H7.2c-.8 0-1.5-.7-1.6-1.5L4 8z" fill="#FFE500"/>
-                                                <path d="M12.5 11h3v2h-3v1.8h3.2v2H10V9.2h5.7V11h-3.2z" fill="#2874F0"/>
-                                                <path d="M9.8 10.5l-2.2 2.6h1.8l-1.3 3.1 3.1-3.5h-1.8l1.3-2.2h-.9z" fill="#2874F0"/>
-                                            </svg>
-                                        </div>
-                                        <div class="vr-mkt-copy">
-                                            <span class="vr-mkt-sub">Buy on</span>
-                                            <span class="vr-mkt-brand">Flipkart</span>
-                                        </div>
-                                    </div>
-                                    <i class="bi bi-box-arrow-up-right vr-mkt-arrow"></i>
-                                </a>
-                            </div>
-                        @endif
+                        <!-- Flipkart Button -->
+                        <a href="{{ $flipkartUrl }}" target="_blank" rel="noopener noreferrer nofollow" class="vr-mkt-btn vr-mkt-flipkart js-marketplace-click" data-mkt="flipkart" title="Buy {{ $product->name }} on Flipkart">
+                            <span class="vr-mkt-label">Buy on</span>
+                            <svg class="vr-mkt-brand-svg vr-mkt-flipkart-svg" viewBox="0 0 115 30" width="85" height="22" xmlns="http://www.w3.org/2000/svg" aria-label="Flipkart">
+                                <g transform="translate(0, 2)">
+                                    <path d="M5.5 4.5C5.5 2.5 7.2.8 9.3.8s3.8 1.7 3.8 3.7v1.8h-1.8v-1.8c0-1-.9-1.9-2-1.9s-2 .9-2 1.9v1.8H5.5V4.5z" fill="#FFE500"/>
+                                    <path d="M2.5 5.5h13.8l-1.4 16.5c-.1.8-.7 1.4-1.5 1.4H5.2c-.8 0-1.4-.6-1.5-1.4L2.5 5.5z" fill="#FFE500"/>
+                                    <path d="M10.2 8.5h2.5v1.8h-2.5v1.5h2.7v1.8H8V6.8h4.9v1.7h-2.7z" fill="#2874F0"/>
+                                    <path d="M7.8 8.1l-1.8 2.2h1.5L6.4 13l2.6-3h-1.5l1.1-1.9h-.8z" fill="#2874F0"/>
+                                </g>
+                                <text x="21" y="20.5" font-family="'Inter', -apple-system, sans-serif" font-size="16" font-style="italic" font-weight="800" fill="#2874F0" letter-spacing="-0.5">Flipkart</text>
+                                <path d="M85 8l1.2 2.8L89 12l-2.8 1.2L85 16l-1.2-2.8L81 12l2.8-1.2L85 8z" fill="#FFE500"/>
+                            </svg>
+                            <i class="bi bi-arrow-up-right vr-mkt-arrow"></i>
+                        </a>
                     </div>
 
                     <div class="vr-pdp-marketplaces-trust">
-                        <span><i class="ri-shield-star-line text-success"></i> Authentic VANRITI Formulations</span>
+                        <span><i class="ri-shield-star-line text-success"></i> 100% Authentic Formulations</span>
                         <span>&bull;</span>
                         <span><i class="ri-truck-line text-success"></i> Prime &amp; Assured Delivery Available</span>
                     </div>

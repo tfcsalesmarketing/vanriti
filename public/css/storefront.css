@@ -6052,14 +6052,14 @@ img { max-width: 100%; height: auto; }
     }
 }
 
-/* ---------- PDP Marketplace Purchase Buttons (Amazon & Flipkart) ---------- */
+/* ---------- PDP Marketplace Purchase Buttons (Amazon & Flipkart in a Row) ---------- */
 .vr-pdp-marketplaces {
-    background: linear-gradient(180deg, #fbfdfa 0%, #f4f7f2 100%);
+    background: #ffffff;
     border: 1px solid rgba(38, 61, 37, 0.12);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 13px 15px;
     margin-bottom: 14px;
-    box-shadow: 0 2px 10px rgba(38, 61, 37, 0.03);
+    box-shadow: 0 4px 16px rgba(38, 61, 37, 0.04);
 }
 
 .vr-pdp-marketplaces-header {
@@ -6067,157 +6067,127 @@ img { max-width: 100%; height: auto; }
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 11px;
 }
 
 .vr-pdp-marketplaces-title {
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--vr-green-dark, #263D25);
+    letter-spacing: 0.05em;
+    color: var(--vr-green-dark, #1e3a24);
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .vr-pdp-marketplaces-title i {
     font-size: 0.95rem;
-    color: var(--vr-green, #6F8736);
+    color: var(--vr-green, #5c782b);
 }
 
 .vr-pdp-marketplaces-badge {
     font-size: 0.68rem;
     font-weight: 600;
     color: #166534;
-    background: #dcfce7;
+    background: #ecfdf5;
     border: 1px solid #bbf7d0;
     border-radius: 999px;
-    padding: 2px 8px;
+    padding: 2.5px 9px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     white-space: nowrap;
 }
 
+/* Two buttons in one row */
+.vr-mkt-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+}
+
 .vr-mkt-btn {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    border-radius: 10px;
-    text-decoration: none;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-    min-height: 48px;
-}
-
-.vr-mkt-btn:hover {
-    transform: translateY(-2px);
-    text-decoration: none;
-}
-
-.vr-mkt-btn-left {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-width: 0;
-}
-
-.vr-mkt-logo-wrap {
-    width: 26px;
-    height: 26px;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    gap: 7px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    text-decoration: none !important;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    min-height: 46px;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
-.vr-mkt-copy {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.15;
-    text-align: left;
-}
-
-.vr-mkt-sub {
-    font-size: 0.64rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    opacity: 0.85;
-}
-
-.vr-mkt-brand {
-    font-size: 0.92rem;
-    font-weight: 800;
+.vr-mkt-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #475569;
     letter-spacing: -0.01em;
 }
 
+.vr-mkt-brand-svg {
+    display: inline-block;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
 .vr-mkt-arrow {
-    font-size: 0.82rem;
-    opacity: 0.75;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-    margin-left: 4px;
-    flex-shrink: 0;
+    font-size: 0.74rem;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    margin-left: 2px;
 }
 
-.vr-mkt-btn:hover .vr-mkt-arrow {
-    transform: translate(2px, -2px);
-    opacity: 1;
-}
-
-/* Amazon Theme */
+/* Amazon Button */
 .vr-mkt-amazon {
-    background: #232F3E;
-    color: #ffffff !important;
-    border: 1px solid #131921;
-    box-shadow: 0 2px 6px rgba(35, 47, 62, 0.15);
+    border-color: #fbd38d;
+    background: #ffffff;
 }
 
 .vr-mkt-amazon:hover {
-    background: #131921;
-    color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(35, 47, 62, 0.3);
+    background: #fffdf5;
+    border-color: #ff9900;
+    box-shadow: 0 4px 14px rgba(255, 153, 0, 0.18);
+    transform: translateY(-2px);
 }
 
-.vr-mkt-amazon .vr-mkt-sub {
-    color: #d5dbdb;
+.vr-mkt-amazon:hover .vr-mkt-arrow {
+    color: #ff9900;
+    transform: translate(2px, -2px);
 }
 
-.vr-mkt-amazon .vr-mkt-brand {
-    color: #ffffff;
+.vr-mkt-amazon:hover .vr-mkt-brand-svg {
+    transform: scale(1.04);
 }
 
-.vr-mkt-amazon .vr-mkt-arrow {
-    color: #FF9900;
-}
-
-/* Flipkart Theme */
+/* Flipkart Button */
 .vr-mkt-flipkart {
-    background: #2874F0;
-    color: #ffffff !important;
-    border: 1px solid #1a65dc;
-    box-shadow: 0 2px 6px rgba(40, 116, 240, 0.2);
+    border-color: #bfdbfe;
+    background: #ffffff;
 }
 
 .vr-mkt-flipkart:hover {
-    background: #1259c7;
-    color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(40, 116, 240, 0.35);
+    background: #f8faff;
+    border-color: #2874f0;
+    box-shadow: 0 4px 14px rgba(40, 116, 240, 0.18);
+    transform: translateY(-2px);
 }
 
-.vr-mkt-flipkart .vr-mkt-sub {
-    color: #dbeafe;
+.vr-mkt-flipkart:hover .vr-mkt-arrow {
+    color: #2874f0;
+    transform: translate(2px, -2px);
 }
 
-.vr-mkt-flipkart .vr-mkt-brand {
-    color: #ffffff;
-}
-
-.vr-mkt-flipkart .vr-mkt-arrow {
-    color: #FFE500;
+.vr-mkt-flipkart:hover .vr-mkt-brand-svg {
+    transform: scale(1.04);
 }
 
 .vr-pdp-marketplaces-trust {
@@ -6228,19 +6198,20 @@ img { max-width: 100%; height: auto; }
     font-size: 0.69rem;
     font-weight: 500;
     color: #4b5563;
-    margin-top: 10px;
-    padding-top: 8px;
+    margin-top: 11px;
+    padding-top: 9px;
     border-top: 1px dashed rgba(38, 61, 37, 0.12);
 }
 
-@media (max-width: 420px) {
-    .vr-pdp-marketplaces-trust {
-        flex-direction: column;
-        gap: 3px;
-        text-align: center;
-    }
-    .vr-pdp-marketplaces-trust span:nth-child(2) {
+@media (max-width: 380px) {
+    .vr-mkt-label {
         display: none;
+    }
+    .vr-mkt-row {
+        gap: 6px;
+    }
+    .vr-mkt-btn {
+        padding: 8px 8px;
     }
 }
 
