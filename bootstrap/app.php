@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureDatabaseIsReachable;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\StorefrontMaintenanceMode;
 use App\Http\Middleware\TrackStorefrontPageView;
 use App\Providers\DadiServiceProvider;
 use Illuminate\Database\QueryException;
@@ -57,6 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             SecurityHeaders::class,
             TrackStorefrontPageView::class,
+            StorefrontMaintenanceMode::class,
         ]);
 
         // Runs before EncryptCookies/StartSession so a dead database surfaces as
