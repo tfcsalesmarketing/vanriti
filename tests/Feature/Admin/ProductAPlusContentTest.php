@@ -188,3 +188,4 @@ class ProductAPlusContentTest extends TestCase
         $response->assertSee('Clinical Results');
     }
 }
+
