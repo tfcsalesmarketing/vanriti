@@ -54,3 +54,4 @@ class StorefrontDownCommand extends Command
         return Command::SUCCESS;
     }
 }
+

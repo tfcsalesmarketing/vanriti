@@ -43,3 +43,4 @@ class StorefrontUpCommand extends Command
         return Command::SUCCESS;
     }
 }
+
