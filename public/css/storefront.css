@@ -6131,12 +6131,28 @@ img { max-width: 100%; height: auto; }
     font-weight: 600;
     color: #475569;
     letter-spacing: -0.01em;
+    line-height: 1;
 }
 
-.vr-mkt-brand-svg {
+.vr-mkt-brand-svg,
+.vr-mkt-brand-img {
     display: inline-block;
     vertical-align: middle;
+    object-fit: contain;
     transition: transform 0.2s ease;
+}
+
+.vr-mkt-amazon-img {
+    height: 20px;
+    width: auto;
+    max-width: 78px;
+    margin-top: 2px;
+}
+
+.vr-mkt-flipkart-img {
+    height: 19px;
+    width: auto;
+    max-width: 82px;
 }
 
 .vr-mkt-arrow {
@@ -6164,8 +6180,9 @@ img { max-width: 100%; height: auto; }
     transform: translate(2px, -2px);
 }
 
-.vr-mkt-amazon:hover .vr-mkt-brand-svg {
-    transform: scale(1.04);
+.vr-mkt-amazon:hover .vr-mkt-brand-svg,
+.vr-mkt-amazon:hover .vr-mkt-brand-img {
+    transform: scale(1.05);
 }
 
 /* Flipkart Button */
@@ -6186,8 +6203,9 @@ img { max-width: 100%; height: auto; }
     transform: translate(2px, -2px);
 }
 
-.vr-mkt-flipkart:hover .vr-mkt-brand-svg {
-    transform: scale(1.04);
+.vr-mkt-flipkart:hover .vr-mkt-brand-svg,
+.vr-mkt-flipkart:hover .vr-mkt-brand-img {
+    transform: scale(1.05);
 }
 
 .vr-pdp-marketplaces-trust {
@@ -6203,15 +6221,34 @@ img { max-width: 100%; height: auto; }
     border-top: 1px dashed rgba(38, 61, 37, 0.12);
 }
 
-@media (max-width: 380px) {
-    .vr-mkt-label {
-        display: none;
-    }
+@media (max-width: 420px) {
     .vr-mkt-row {
-        gap: 6px;
+        gap: 8px;
     }
     .vr-mkt-btn {
         padding: 8px 8px;
+        min-height: 42px;
+        gap: 5px;
+    }
+    .vr-mkt-label {
+        font-size: 0.68rem;
+    }
+    .vr-mkt-amazon-img {
+        height: 17px;
+        max-width: 66px;
+    }
+    .vr-mkt-flipkart-img {
+        height: 16px;
+        max-width: 70px;
+    }
+    .vr-mkt-arrow {
+        font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 340px) {
+    .vr-mkt-label {
+        display: none;
     }
 }
 
