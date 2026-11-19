@@ -104,6 +104,10 @@ class ProductController extends Controller
             'video_url' => 'nullable|string|max:500',
             'amazon_url' => 'nullable|url|max:1000',
             'flipkart_url' => 'nullable|url|max:1000',
+            'has_a_plus' => 'nullable',
+            'a_plus_modules' => 'nullable|array',
+            'a_plus_hero_file' => 'nullable|image|mimes:jpeg,png,webp|max:8192',
+            'a_plus_story_file' => 'nullable|image|mimes:jpeg,png,webp|max:8192',
             'video' => 'nullable|file|mimes:mp4,webm,ogg,ogv,mov,3gp|max:51200',
             'is_featured' => 'nullable',
             'is_bestseller' => 'nullable',
@@ -121,6 +125,9 @@ class ProductController extends Controller
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_bestseller'] = $request->boolean('is_bestseller');
         $validated['is_new_arrival'] = $request->boolean('is_new_arrival');
+        $validated['has_a_plus'] = $request->boolean('has_a_plus');
+        $validated['a_plus_content'] = $this->buildAPlusPayload($request);
+        unset($validated['a_plus_modules'], $validated['a_plus_hero_file'], $validated['a_plus_story_file']);
         $validated['channel'] = $request->input('channel') ?: 'vanriti';
         $validated['video_url'] = $this->resolveVideoUrl($request, $validated['video_url'] ?? null);
         unset($validated['video']);
@@ -200,6 +207,10 @@ class ProductController extends Controller
             'video_url' => 'nullable|string|max:500',
             'amazon_url' => 'nullable|url|max:1000',
             'flipkart_url' => 'nullable|url|max:1000',
+            'has_a_plus' => 'nullable',
+            'a_plus_modules' => 'nullable|array',
+            'a_plus_hero_file' => 'nullable|image|mimes:jpeg,png,webp|max:8192',
+            'a_plus_story_file' => 'nullable|image|mimes:jpeg,png,webp|max:8192',
             'video' => 'nullable|file|mimes:mp4,webm,ogg,ogv,mov,3gp|max:51200',
             'is_featured' => 'nullable',
             'is_bestseller' => 'nullable',
@@ -223,6 +234,9 @@ class ProductController extends Controller
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_bestseller'] = $request->boolean('is_bestseller');
         $validated['is_new_arrival'] = $request->boolean('is_new_arrival');
+        $validated['has_a_plus'] = $request->boolean('has_a_plus');
+        $validated['a_plus_content'] = $this->buildAPlusPayload($request);
+        unset($validated['a_plus_modules'], $validated['a_plus_hero_file'], $validated['a_plus_story_file']);
         $validated['channel'] = $request->input('channel') ?: 'vanriti';
 
         $categoryIds = $validated['category_ids'];
@@ -291,6 +305,147 @@ class ProductController extends Controller
         if (Storage::disk('s3')->exists($path)) {
             Storage::disk('s3')->delete($path);
         }
+    }
+
+    /**
+     * Assemble structured A+ modules payload from submitted form inputs and file uploads.
+     *
+     * @param  array<string, mixed>|null  $existing
+     * @return array<string, mixed>|null
+     */
+    protected function buildAPlusPayload(Request $request, ?array $existing = null): ?array
+    {
+        $rawModules = $request->input('a_plus_modules');
+        if (! is_array($rawModules)) {
+            return $existing;
+        }
+
+        $existingModules = collect($existing['modules'] ?? [])->keyBy('type');
+        $modules = [];
+        $sortOrder = 1;
+
+        // 1. Hero Banner
+        if (isset($rawModules['hero_banner'])) {
+            $hero = $rawModules['hero_banner'];
+            $heroImage = $hero['image'] ?? ($existingModules['hero_banner']['image'] ?? null);
+
+            if ($request->hasFile('a_plus_hero_file')) {
+                try {
+                    $heroImage = $request->file('a_plus_hero_file')->store('a-plus', 's3');
+                } catch (\Throwable $e) {
+                    report($e);
+                    $heroImage = $request->file('a_plus_hero_file')->store('a-plus', 'public');
+                }
+            }
+
+            if (! empty($hero['title']) || ! empty($heroImage)) {
+                $modules[] = [
+                    'type' => 'hero_banner',
+                    'sort_order' => $sortOrder++,
+                    'eyebrow' => $hero['eyebrow'] ?? 'Ayurvedic Formulations',
+                    'title' => $hero['title'] ?? '',
+                    'description' => $hero['description'] ?? '',
+                    'image' => $heroImage,
+                ];
+            }
+        }
+
+        // 2. Features Grid (4 Value Pillars)
+        if (isset($rawModules['features_grid'])) {
+            $feat = $rawModules['features_grid'];
+            $items = array_values(array_filter($feat['items'] ?? [], fn ($i) => ! empty($i['title']) || ! empty($i['description'])));
+            if (! empty($items)) {
+                $modules[] = [
+                    'type' => 'features_grid',
+                    'sort_order' => $sortOrder++,
+                    'title' => $feat['title'] ?? 'The Vanriti Purity Promise',
+                    'subtitle' => $feat['subtitle'] ?? '',
+                    'items' => $items,
+                ];
+            }
+        }
+
+        // 3. Split Story (Zig-Zag)
+        if (isset($rawModules['split_story'])) {
+            $story = $rawModules['split_story'];
+            $storyImage = $story['image'] ?? ($existingModules['split_story']['image'] ?? null);
+
+            if ($request->hasFile('a_plus_story_file')) {
+                try {
+                    $storyImage = $request->file('a_plus_story_file')->store('a-plus', 's3');
+                } catch (\Throwable $e) {
+                    report($e);
+                    $storyImage = $request->file('a_plus_story_file')->store('a-plus', 'public');
+                }
+            }
+
+            $bulletsRaw = $story['bullets_raw'] ?? '';
+            $bullets = array_values(array_filter(array_map('trim', explode("\n", (string) $bulletsRaw))));
+
+            if (! empty($story['title']) || ! empty($story['content']) || ! empty($storyImage)) {
+                $modules[] = [
+                    'type' => 'split_story',
+                    'sort_order' => $sortOrder++,
+                    'title' => $story['title'] ?? '',
+                    'subtitle' => $story['subtitle'] ?? '',
+                    'content' => $story['content'] ?? '',
+                    'image' => $storyImage,
+                    'bullets' => $bullets,
+                    'reverse' => false,
+                ];
+            }
+        }
+
+        // 4. Ingredients Spotlight
+        if (isset($rawModules['ingredients_spotlight'])) {
+            $ing = $rawModules['ingredients_spotlight'];
+            $items = array_values(array_filter($ing['items'] ?? [], fn ($h) => ! empty($h['name'])));
+            if (! empty($items) || ! empty($ing['title'])) {
+                $modules[] = [
+                    'type' => 'ingredients_spotlight',
+                    'sort_order' => $sortOrder++,
+                    'title' => $ing['title'] ?? 'Key Botanical Actives',
+                    'subtitle' => $ing['subtitle'] ?? '',
+                    'items' => $items,
+                ];
+            }
+        }
+
+        // 5. Daily Ritual (How to Use)
+        if (isset($rawModules['how_to_use_ritual'])) {
+            $rit = $rawModules['how_to_use_ritual'];
+            $steps = array_values(array_filter($rit['steps'] ?? [], fn ($s) => ! empty($s['title']) || ! empty($s['desc'])));
+            if (! empty($steps) || ! empty($rit['title'])) {
+                $modules[] = [
+                    'type' => 'how_to_use_ritual',
+                    'sort_order' => $sortOrder++,
+                    'title' => $rit['title'] ?? 'The Ayurvedic Daily Ritual',
+                    'subtitle' => $rit['subtitle'] ?? '',
+                    'tip' => $rit['tip'] ?? '',
+                    'steps' => $steps,
+                ];
+            }
+        }
+
+        // 6. Clinical Stats
+        if (isset($rawModules['clinical_stats'])) {
+            $statsMod = $rawModules['clinical_stats'];
+            $stats = array_values(array_filter($statsMod['stats'] ?? [], fn ($st) => ! empty($st['number'])));
+            if (! empty($stats)) {
+                $modules[] = [
+                    'type' => 'clinical_stats',
+                    'sort_order' => $sortOrder++,
+                    'title' => $statsMod['title'] ?? 'Real Formulations, Real Results',
+                    'subtitle' => $statsMod['subtitle'] ?? '',
+                    'stats' => $stats,
+                ];
+            }
+        }
+
+        return [
+            'status' => 'published',
+            'modules' => $modules,
+        ];
     }
 
     public function storeImage(Request $request, Product $product)

@@ -100,6 +100,8 @@ class Product extends Model
         'video_url',
         'amazon_url',
         'flipkart_url',
+        'a_plus_content',
+        'has_a_plus',
         'status',
         'channel',
         'is_featured',
@@ -120,6 +122,8 @@ class Product extends Model
             'selling_price' => 'decimal:2',
             'discount_percent' => 'decimal:2',
             'gst_rate' => 'decimal:2',
+            'a_plus_content' => 'array',
+            'has_a_plus' => 'boolean',
         ];
     }
 
@@ -310,6 +314,134 @@ class Product extends Model
     public function hasMarketplaceLinks(): bool
     {
         return $this->hasAmazonLink() || $this->hasFlipkartLink();
+    }
+
+    /**
+     * Determine whether custom A+ Content has been explicitly authored and enabled.
+     */
+    public function hasAPlusContent(): bool
+    {
+        return (bool) $this->has_a_plus && ! empty($this->a_plus_content['modules']);
+    }
+
+    /**
+     * Get explicitly configured A+ modules array.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAPlusModules(): array
+    {
+        return $this->a_plus_content['modules'] ?? [];
+    }
+
+    /**
+     * Get effective A+ modules: custom modules if enabled, otherwise synthesizes
+     * smart fallback modules from highlights, ingredients, benefits, and how_to_use.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getEffectiveAPlusModules(): array
+    {
+        if ($this->hasAPlusContent()) {
+            return $this->getAPlusModules();
+        }
+
+        $modules = [];
+
+        // 1. Core Ayurvedic Value Pillars (always present for authentic luxury experience)
+        $pillars = [
+            [
+                'icon' => 'ri-drop-line',
+                'title' => '100% Ayurvedic Kwath',
+                'description' => 'Prepared with authentic slow-brewing decoctions and bio-potent wildcrafted herbs.',
+            ],
+            [
+                'icon' => 'ri-leaf-line',
+                'title' => 'Pure & Toxin-Free',
+                'description' => 'Zero parabens, sulfates, silicones, synthetic fragrances, or harsh petrochemicals.',
+            ],
+            [
+                'icon' => 'ri-shield-check-line',
+                'title' => 'Ayush Certified & Tested',
+                'description' => 'Rigorously tested for heavy metal purity in GMP-certified laboratory facilities.',
+            ],
+            [
+                'icon' => 'ri-heart-3-line',
+                'title' => 'Ethical & Cruelty-Free',
+                'description' => 'Sustainably sourced botanicals with 100% vegetarian, compassionate formulations.',
+            ],
+        ];
+
+        $modules[] = [
+            'type' => 'features_grid',
+            'title' => 'The Vanriti Purity Promise',
+            'subtitle' => 'Classical Ayurvedic science formulated for modern cellular wellness.',
+            'items' => $pillars,
+        ];
+
+        // 2. Benefits / Story Block (if benefits or highlights exist)
+        if (filled($this->benefits) || filled($this->highlights)) {
+            $modules[] = [
+                'type' => 'split_story',
+                'title' => 'Formulated for Transformative Care',
+                'subtitle' => 'Root-cause Ayurvedic action that revitalizes from within.',
+                'content' => $this->benefits ?: $this->highlights,
+                'image' => $this->getPrimaryImage() ? image_url($this->getPrimaryImage()?->image_path, 'favicon.ico') : asset('images/logo.webp'),
+                'image_alt' => $this->name . ' Action',
+                'reverse' => false,
+            ];
+        }
+
+        // 3. Botanical Ingredients Spotlight (if ingredients exist)
+        if (filled($this->ingredients)) {
+            $modules[] = [
+                'type' => 'ingredients_spotlight',
+                'title' => 'Key Botanical Actives',
+                'subtitle' => 'Handpicked medicinal herbs working in synergistic harmony.',
+                'raw_content' => $this->ingredients,
+                'items' => [],
+            ];
+        }
+
+        // 4. Daily Ritual / How to Use (if how_to_use or directions exist)
+        if (filled($this->how_to_use) || filled($this->directions)) {
+            $modules[] = [
+                'type' => 'how_to_use_ritual',
+                'title' => 'The Ayurvedic Daily Ritual',
+                'subtitle' => 'Simple, mindful steps to maximize absorption and energetic benefits.',
+                'raw_content' => $this->how_to_use ?: $this->directions,
+                'steps' => [
+                    [
+                        'step' => '01',
+                        'title' => 'Mindful Preparation',
+                        'desc' => 'Cleanse with lukewarm water and gently pat skin dry.',
+                    ],
+                    [
+                        'step' => '02',
+                        'title' => 'Dispense & Activate',
+                        'desc' => 'Take the recommended amount and warm gently between your fingertips.',
+                    ],
+                    [
+                        'step' => '03',
+                        'title' => 'Upward Gentle Strokes',
+                        'desc' => 'Apply in mindful upward circular motions until fully absorbed.',
+                    ],
+                ],
+            ];
+        }
+
+        // 5. Clinical & Social Proof Metrics
+        $modules[] = [
+            'type' => 'clinical_stats',
+            'title' => 'Real Formulations, Real Results',
+            'stats' => [
+                ['number' => '100%', 'label' => 'Classical Ayurvedic Actives', 'sub' => 'Zero artificial fillers'],
+                ['number' => '96%', 'label' => 'Customer Satisfaction', 'sub' => 'Visible results in 21 days'],
+                ['number' => 'GMP', 'label' => 'Certified Manufacturing', 'sub' => 'Safe & standardized batches'],
+            ],
+        ];
+
+        return $modules;
     }
 
     /**

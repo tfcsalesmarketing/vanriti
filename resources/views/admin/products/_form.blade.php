@@ -223,6 +223,9 @@
             </div>
         </div>
 
+        {{-- Amazon A+ Brand Content Builder --}}
+        @include('admin.products._a_plus_builder')
+
         <div class="card mb-3">
             <div class="card-header fw-semibold">SEO</div>
             <div class="card-body">
@@ -498,6 +501,46 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = textarea.closest('form');
             if (form) {
                 form.addEventListener('submit', syncContent);
+            }
+        });
+    }
+
+    // 3. A+ Content Auto-Draft Helper
+    const autoDraftBtn = document.getElementById('btnAutoDraftAPlus');
+    if (autoDraftBtn) {
+        autoDraftBtn.addEventListener('click', function () {
+            const prodName = document.querySelector('input[name="name"]')?.value || 'Vanriti Formulation';
+            const heroTitle = document.querySelector('input[name="a_plus_modules[hero_banner][title]"]');
+            if (heroTitle && !heroTitle.value) {
+                heroTitle.value = 'Sacred Ayurvedic Care: ' + prodName;
+            }
+
+            const heroDesc = document.querySelector('textarea[name="a_plus_modules[hero_banner][description]"]');
+            const shortDesc = document.querySelector('textarea[name="short_description"]')?.value;
+            if (heroDesc && !heroDesc.value && shortDesc) {
+                heroDesc.value = shortDesc;
+            }
+
+            const storyTitle = document.querySelector('input[name="a_plus_modules[split_story][title]"]');
+            if (storyTitle && !storyTitle.value) {
+                storyTitle.value = 'Pure Plant Bio-Actives for Lasting Cellular Wellness';
+            }
+
+            const storyContent = document.querySelector('textarea[name="a_plus_modules[split_story][content]"]');
+            const benefitsVal = document.querySelector('textarea[name="benefits"]')?.value;
+            if (storyContent && !storyContent.value && benefitsVal) {
+                storyContent.value = benefitsVal.replace(/<[^>]*>?/gm, '').trim();
+            }
+
+            const switchEl = document.getElementById('hasAPlusSwitch');
+            if (switchEl) {
+                switchEl.checked = true;
+            }
+
+            const heroCol = document.getElementById('collapseModHero');
+            if (heroCol && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(heroCol);
+                bsCollapse.show();
             }
         });
     }
