@@ -453,8 +453,6 @@
                                     <div class="vr-cat-placeholder"><i class="bi bi-grid-3x3-gap"></i></div>
                                 @endif
                             </div>
-                            <span class="vr-cat-name">{{ $cat->name }}</span>
-                            <span class="vr-cat-explore d-none d-md-inline-block">Explore &rarr;</span>
                         </a>
                     </div>
                 @endforeach
