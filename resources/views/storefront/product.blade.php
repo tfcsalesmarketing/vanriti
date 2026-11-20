@@ -250,11 +250,7 @@
                 @endif
 
                 <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-                    <div class="vr-qty {{ $_pdpInCart ? 'd-none' : '' }}" id="vrPdpQtySelector">
-                        <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
-                        <input type="number" name="quantity" value="1" min="1" aria-label="Quantity" id="vrBuyQty">
-                        <button type="button" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
-                    </div>
+                    <input type="hidden" name="quantity" value="1" id="vrBuyQty">
                     <div class="js-pdp-add-wrap flex-grow-1 {{ $_pdpInCart ? 'd-none' : '' }}">
                         <button type="submit" class="btn btn-vr btn-lg w-100 js-pdp-add" {{ $out ? 'disabled' : '' }}>
                             <i class="bi bi-bag me-2"></i> Add to Cart
@@ -758,11 +754,7 @@
 
 <div class="vr-mobile-bar d-lg-none" id="vrMobileBar">
     <div class="container d-flex align-items-center gap-2">
-        <div class="vr-qty flex-shrink-0 js-bar-qty-selector {{ $_pdpInCart ? 'd-none' : '' }}">
-            <button type="button" class="qty-minus" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
-            <input type="number" value="1" min="1" aria-label="Quantity" id="vrBarQty">
-            <button type="button" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
-        </div>
+        <input type="hidden" value="1" id="vrBarQty">
         <button type="button" class="btn btn-vr-outline flex-grow-1 js-bar-btn js-bar-add {{ $_pdpInCart ? 'd-none' : '' }}" {{ $out ? 'disabled' : '' }}>
             <i class="bi bi-bag-plus me-1"></i> Add
         </button>
@@ -1062,7 +1054,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
         var plus = f.querySelector('.vr-card-qty-plus');
         if (plus) plus.disabled = qty >= stockLimit();
         var minus = f.querySelector('.vr-card-qty-minus');
-        if (minus) minus.disabled = qty < 2;
+        if (minus) minus.disabled = false;
     }
 
     function renderPdpLine(syncQty) {
@@ -1101,7 +1093,7 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
         var next = cur + step;
         var limit = stockLimit();
 
-        if (next < 1) { removePdpLine(f); return; }
+        if (next < 1) { removePdpLine(f, btn); return; }
         if (next > limit) {
             if (cur >= limit) { toast('Only ' + limit + ' unit(s) available in stock.', 'error'); return; }
             next = limit;
@@ -1130,22 +1122,26 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
           });
     }
 
-    function removePdpLine(f) {
+    function removePdpLine(f, btn) {
         var ukey = currentKey();
         var itemId = f.dataset.cartItem;
-        if (!itemId) { renderPdpLine(); return; }
+        if (!itemId) { renderPdpLine(true); return; }
         var url = (f.dataset.removeUrl || '').replace('__ITEM__', itemId);
         if (!url) return;
+        if (btn) btn.disabled = true;
         fetch(url, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
         }).then(function (r) { return r.json().catch(function () { return { success: false, message: 'Something went wrong.' }; }); })
           .then(function (data) {
+              if (btn) btn.disabled = false;
               if (!data.success) { toast(data.message || 'Could not remove item.', 'error'); return; }
               delete variantCart[ukey];
               if (typeof data.cartCount !== 'undefined') setCartCount(data.cartCount);
               renderPdpLine(true);
+              toast(data.message || 'Removed from cart.');
           }).catch(function () {
+              if (btn) btn.disabled = false;
               toast('Could not remove item.', 'error');
           });
     }
