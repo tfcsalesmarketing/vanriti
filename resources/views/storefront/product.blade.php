@@ -108,7 +108,7 @@
                         @if ($item['kind'] === 'video')
                             <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
                                 @if ($item['poster'])
-                                    <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; background: #f7f4ea;">
+                                    <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
                                 @else
                                     <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
                                 @endif
@@ -116,7 +116,7 @@
                             </div>
                         @else
                             <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
-                                <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: contain; background: #f7f4ea; padding: 0.25rem;">
+                                <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
                             </div>
                         @endif
                     @endforeach
@@ -126,7 +126,7 @@
                     <div id="vrMainImageWrap" class="vr-zoom d-block position-relative {{ $videoIsOnlyItem ? 'd-none' : '' }}" style="width: 100%; height: 100%;">
                         @if ($img)
                             <a href="#" class="d-block h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open>
-                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 h-100 vr-zoom-image" style="object-fit: contain; background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%); padding: 1.25rem;" fetchpriority="high">
+                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 h-100 vr-zoom-image" style="object-fit: cover; padding: 0;" fetchpriority="high">
                                 <span class="vr-main-zoom-badge" aria-hidden="true"><i class="bi bi-arrows-fullscreen"></i></span>
                             </a>
                         @else
@@ -167,7 +167,7 @@
                             <div class="col-3">
                                 <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="width: 100%; aspect-ratio: 1/1;">
                                     @if ($item['poster'])
-                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; background: #f7f4ea;">
+                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
                                     @else
                                         <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
                                     @endif
@@ -177,7 +177,7 @@
                         @else
                             <div class="col-3">
                                 <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="width: 100%; aspect-ratio: 1/1;">
-                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: contain; background: #f7f4ea; padding: 0.25rem;">
+                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
                                 </div>
                             </div>
                         @endif
@@ -741,7 +741,7 @@
                                         <i class="bi bi-play-fill position-absolute text-white" style="font-size: 0.9rem;"></i>
                                     </div>
                                 @else
-                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}">
+                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" style="object-fit: cover; width: 100%; height: 100%; padding: 0;">
                                 @endif
                             </div>
                         @endforeach

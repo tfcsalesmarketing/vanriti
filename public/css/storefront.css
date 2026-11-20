@@ -1527,16 +1527,29 @@ img { max-width: 100%; height: auto; }
 
 .vr-card .img-wrap {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
-    background: linear-gradient(180deg, #fbf9f3 0%, #f1ece1 100%);
+    background: #ffffff;
+}
+.vr-card .img-wrap > a,
+.vr-card .vr-card-img-link {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: hidden;
 }
 .vr-card .img-wrap img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
     padding: 0;
+    margin: 0;
+    border: none;
     transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .vr-card:hover .img-wrap img { transform: scale(1.04); }
@@ -1807,6 +1820,15 @@ img { max-width: 100%; height: auto; }
 }
 .vr-gallery-thumb:hover { border-color: rgba(111, 135, 54, 0.5); }
 .vr-gallery-thumb.active { border-color: var(--vr-green); box-shadow: 0 0 0 3px rgba(111, 135, 54, 0.12); }
+.vr-gallery-thumb img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block;
+}
 
 .vr-gallery-thumb-video { position: relative; }
 .vr-gallery-thumb-play {
@@ -2096,13 +2118,25 @@ img { max-width: 100%; height: auto; }
     max-height: 560px;
     margin-bottom: 10px;
     border-radius: var(--vr-radius);
-    background: linear-gradient(180deg,#fbf9f3 0%,#f1ece1 100%);
+    background: #ffffff;
     overflow: hidden;
 }
 .vr-zoom-container .vr-zoom {
     cursor: zoom-in;
     width: 100%;
     height: 100%;
+}
+#vrMainImage,
+.vr-zoom-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    display: block;
+    background: #ffffff;
 }
 .vr-main-zoom-badge {
     position: absolute;
@@ -2307,9 +2341,9 @@ img { max-width: 100%; height: auto; }
 .vr-lightbox-thumb img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     background: #f7f4ea;
-    padding: 2px;
+    padding: 0;
 }
 
 /* Rating Stars */
@@ -3601,8 +3635,8 @@ img { max-width: 100%; height: auto; }
 .vr-wishlist-img img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    padding: 0.45rem;
+    object-fit: cover;
+    padding: 0;
     transition: transform 0.4s ease;
 }
 
@@ -4059,16 +4093,33 @@ img { max-width: 100%; height: auto; }
 /* ---------- Secondary Image Hover Swap & Premium Cards ---------- */
 .vr-card .img-wrap {
     position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.vr-card .img-wrap > a,
+.vr-card .vr-card-img-link {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
     overflow: hidden;
 }
 
 .vr-card .img-wrap img.img-primary,
 .vr-card .img-wrap img.img-secondary {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    padding: 0;
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    display: block;
     transition: opacity 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
@@ -4076,16 +4127,23 @@ img { max-width: 100%; height: auto; }
     position: absolute;
     inset: 0;
     opacity: 0;
+    pointer-events: none;
 }
 
-.vr-card:hover .img-wrap img.img-primary {
+.vr-card .img-wrap.has-secondary:hover img.img-primary,
+.vr-card .img-wrap:has(.img-secondary):hover img.img-primary {
     opacity: 0;
     transform: scale(1.06);
 }
 
-.vr-card:hover .img-wrap img.img-secondary {
+.vr-card .img-wrap.has-secondary:hover img.img-secondary,
+.vr-card .img-wrap:has(.img-secondary):hover img.img-secondary {
     opacity: 1;
     transform: scale(1.06);
+}
+
+.vr-card .img-wrap:not(.has-secondary):hover img.img-primary {
+    transform: scale(1.04);
 }
 
 /* Utility classes */
@@ -4931,7 +4989,7 @@ img { max-width: 100%; height: auto; }
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.35rem;
+    padding: 0;
     overflow: hidden;
     text-decoration: none;
     transition: transform 0.25s ease;
@@ -4944,7 +5002,7 @@ img { max-width: 100%; height: auto; }
 .vr-cart-item-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
 }
 
@@ -5568,15 +5626,15 @@ img { max-width: 100%; height: auto; }
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 0;
     overflow: hidden;
     text-decoration: none;
     flex-shrink: 0;
 }
 .vr-thumb-img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 .vr-card-info {
     flex: 1 1 auto;

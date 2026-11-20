@@ -32,7 +32,7 @@
 @endphp
 
 <div class="vr-card">
-    <div class="img-wrap">
+    <div class="img-wrap {{ $secondaryImg ? 'has-secondary' : '' }}">
         {{-- Badges Stack (Top Left) --}}
         <div class="vr-card-badges-stack">
             @if ($cardFlag === 'bestseller')
@@ -69,11 +69,11 @@
             </button>
         </form>
 
-        <a href="{{ route('product.show', $product) }}" class="d-block h-100 w-100 position-relative overflow-hidden" aria-label="{{ $product->name }}">
+        <a href="{{ route('product.show', $product) }}" class="vr-card-img-link d-block w-100 h-100 overflow-hidden" aria-label="{{ $product->name }}">
             @if ($img)
-                <img src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-primary" loading="lazy" decoding="async" width="300" height="300">
+                <img src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-primary" loading="lazy" decoding="async">
                 @if ($secondaryImg)
-                    <img src="{{ image_url($secondaryImg) }}" alt="{{ $product->name }}" class="img-secondary" loading="lazy" decoding="async" width="300" height="300">
+                    <img src="{{ image_url($secondaryImg) }}" alt="{{ $product->name }}" class="img-secondary" loading="lazy" decoding="async">
                 @endif
             @else
                 <div class="d-flex align-items-center justify-content-center h-100 w-100" style="background:var(--vr-green-soft);">
