@@ -633,7 +633,7 @@
                 @foreach ($reviews as $review)
                     <div class="p-3" style="border-radius:var(--vr-radius);background:#fff;box-shadow:var(--vr-shadow-xs);">
                         <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="fw-semibold small">{{ $review->user?->name ?: 'Verified Buyer' }}</span>
+                            <span class="fw-semibold small">{{ $review->reviewer_name }}</span>
                             @if ($review->is_verified_purchase)
                                 <span class="vr-pill-badge ps-paid" style="font-size:0.62rem;">Verified Purchase</span>
                             @endif
@@ -656,7 +656,7 @@
                                     <button type="button" class="vr-review-gallery__thumb"
                                             data-bs-toggle="modal"
                                             data-bs-target="#vrReviewImage{{ $review->id }}_{{ $image->id }}">
-                                        <img src="{{ image_url($image->path) }}" alt="Photo from {{ $review->user?->name ?: 'a customer' }}" loading="lazy">
+                                        <img src="{{ image_url($image->path) }}" alt="Photo from {{ $review->reviewer_name }}" loading="lazy">
                                     </button>
                                 @endforeach
                             </div>
@@ -672,7 +672,7 @@
                             <div class="modal-content">
                                 <div class="modal-header border-0">
                                     <h6 class="modal-title small">
-                                        Photo by {{ $review->user?->name ?: 'Verified Buyer' }}
+                                        Photo by {{ $review->reviewer_name }}
                                         @if ($review->is_verified_purchase)
                                             <span class="vr-pill-badge ps-paid ms-1" style="font-size:0.62rem;">Verified Purchase</span>
                                         @endif

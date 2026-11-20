@@ -12,6 +12,7 @@ class Review extends Model
     protected $fillable = [
         'product_id',
         'user_id',
+        'user_name',
         'order_item_id',
         'rating',
         'title',
@@ -19,6 +20,15 @@ class Review extends Model
         'status',
         'is_verified_purchase',
     ];
+
+    public function getReviewerNameAttribute(): string
+    {
+        if (filled($this->user_name)) {
+            return $this->user_name;
+        }
+
+        return $this->user?->name ?: 'Verified Buyer';
+    }
 
     protected function casts(): array
     {

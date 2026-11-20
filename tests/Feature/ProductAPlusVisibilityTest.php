@@ -63,3 +63,4 @@ class ProductAPlusVisibilityTest extends TestCase
         $response->assertSee('Pure Bhringraj Herbal Hair Nourishment');
     }
 }
+

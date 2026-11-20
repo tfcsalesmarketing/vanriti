@@ -191,6 +191,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Reviews
         Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index')->middleware('permission:view-reviews,manage-reviews');
         Route::middleware('permission:manage-reviews')->group(function () {
+            Route::post('reviews/import', [ReviewController::class, 'import'])->name('reviews.import');
             Route::post('reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');
             Route::post('reviews/{review}/reject', [ReviewController::class, 'reject'])->name('reviews.reject');
             Route::delete('reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
