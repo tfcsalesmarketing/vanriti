@@ -106,3 +106,4 @@ class ReviewImportTest extends TestCase
         $this->assertEquals(4.5, (float) $this->product->review_rating);
     }
 }
+
