@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\PushOrderToShipMojo;
 use App\Models\Order;
+use App\Services\WhatsAppChatService;
 use Illuminate\Support\Facades\Log;
 
 class CodConfirmationService
@@ -94,6 +95,27 @@ class CodConfirmationService
             $order->update([
                 'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . $note),
             ]);
+
+            // Record in WhatsApp conversation stream so it shows in admin live chat
+            try {
+                $promptBody = "📋 [COD Confirmation Prompt]\n\n{$bodyText}\n\nButtons: [Confirm Order]  [Cancel Order]";
+                app(WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $promptBody,
+                    messageType: ! empty($res['template_name']) ? 'template' : 'interactive',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: [
+                        'order_number' => $orderNumber,
+                        'order_id' => $order->id,
+                        'type' => 'cod_prompt',
+                        'buttons' => $buttons,
+                    ],
+                    channel: 'vanriti',
+                    contactName: $order->shipping_name
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Failed to log COD confirmation prompt message in chat', ['error' => $e->getMessage()]);
+            }
         }
 
         return $res;
@@ -111,10 +133,19 @@ class CodConfirmationService
         }
 
         if (in_array($order->order_status, ['shipped', 'delivered', 'cancelled'])) {
-            $this->apiService->sendTextMessage(
-                $phone,
-                "Your Vanriti order #{$orderNumber} is already {$order->order_status}."
-            );
+            $msg = "Your Vanriti order #{$orderNumber} is already {$order->order_status}.";
+            $res = $this->apiService->sendTextMessage($phone, $msg);
+            try {
+                app(WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $msg,
+                    messageType: 'text',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: ['order_number' => $orderNumber, 'type' => 'cod_already_status'],
+                    channel: 'vanriti',
+                    contactName: $order->shipping_name
+                );
+            } catch (\Throwable $e) {}
             return true;
         }
 
@@ -132,7 +163,21 @@ class CodConfirmationService
         }
 
         $reply = "🎉 Thank you, {$name}!\n\nYour Cash on Delivery order #{$orderNumber} is now *CONFIRMED*. Our warehouse team is packing your luxury items. We will send you live tracking details as soon as it is dispatched! 🌿";
-        $this->apiService->sendTextMessage($phone, $reply);
+        $sendRes = $this->apiService->sendTextMessage($phone, $reply);
+
+        try {
+            app(WhatsAppChatService::class)->recordOutboundSystemMessage(
+                phone: $phone,
+                body: $reply,
+                messageType: 'text',
+                metaMessageId: $sendRes['message_id'] ?? null,
+                metadata: ['order_number' => $orderNumber, 'type' => 'cod_confirmed'],
+                channel: 'vanriti',
+                contactName: $order->shipping_name
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to log COD confirmation reply in chat', ['error' => $e->getMessage()]);
+        }
 
         Log::info('COD order confirmed via WhatsApp', ['order_number' => $orderNumber, 'phone' => $phone]);
 
@@ -150,15 +195,36 @@ class CodConfirmationService
         }
 
         if ($order->order_status === 'cancelled') {
-            $this->apiService->sendTextMessage($phone, "Your order #{$orderNumber} is already cancelled.");
+            $msg = "Your order #{$orderNumber} is already cancelled.";
+            $res = $this->apiService->sendTextMessage($phone, $msg);
+            try {
+                app(WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $msg,
+                    messageType: 'text',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: ['order_number' => $orderNumber, 'type' => 'cod_already_cancelled'],
+                    channel: 'vanriti',
+                    contactName: $order->shipping_name
+                );
+            } catch (\Throwable $e) {}
             return true;
         }
 
         if (! in_array($order->order_status, ['pending', 'on_hold', 'processing'])) {
-            $this->apiService->sendTextMessage(
-                $phone,
-                "Your order #{$orderNumber} has already progressed to '{$order->order_status}' and cannot be cancelled automatically. Please contact our support team at care@vanriti.com."
-            );
+            $msg = "Your order #{$orderNumber} has already progressed to '{$order->order_status}' and cannot be cancelled automatically. Please contact our support team at care@vanriti.com.";
+            $res = $this->apiService->sendTextMessage($phone, $msg);
+            try {
+                app(WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $msg,
+                    messageType: 'text',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: ['order_number' => $orderNumber, 'type' => 'cod_cannot_cancel'],
+                    channel: 'vanriti',
+                    contactName: $order->shipping_name
+                );
+            } catch (\Throwable $e) {}
             return false;
         }
 
@@ -170,7 +236,21 @@ class CodConfirmationService
         }
 
         $reply = "Your Vanriti order #{$orderNumber} has been *CANCELLED* as requested. No parcel will be dispatched. Thank you for letting us know! 🌿";
-        $this->apiService->sendTextMessage($phone, $reply);
+        $sendRes = $this->apiService->sendTextMessage($phone, $reply);
+
+        try {
+            app(WhatsAppChatService::class)->recordOutboundSystemMessage(
+                phone: $phone,
+                body: $reply,
+                messageType: 'text',
+                metaMessageId: $sendRes['message_id'] ?? null,
+                metadata: ['order_number' => $orderNumber, 'type' => 'cod_cancelled'],
+                channel: 'vanriti',
+                contactName: $order->shipping_name
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to log COD cancellation reply in chat', ['error' => $e->getMessage()]);
+        }
 
         Log::info('COD order cancelled via WhatsApp', ['order_number' => $orderNumber, 'phone' => $phone]);
 

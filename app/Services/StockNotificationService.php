@@ -148,6 +148,17 @@ class StockNotificationService
                             'notified_at' => now(),
                         ]);
                         $count++;
+
+                        try {
+                            app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                                phone: $notification->phone,
+                                body: $text,
+                                messageType: 'text',
+                                metaMessageId: $res['message_id'] ?? null,
+                                metadata: ['product_id' => $item->id, 'type' => 'back_in_stock'],
+                                channel: 'vanriti'
+                            );
+                        } catch (\Throwable $e) {}
                     }
                 } catch (\Throwable $e) {
                     Log::warning('Stock notification dispatch failed', [

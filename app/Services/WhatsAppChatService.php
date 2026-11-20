@@ -225,9 +225,63 @@ class WhatsAppChatService
             case 'interactive':
                 $interactive = $metaMsg['interactive'] ?? [];
                 $btnTitle = $interactive['button_reply']['title']
-                    ?? ($interactive['list_reply']['title'] ?? ($interactive['nfm_reply']['response_json'] ?? null));
+                    ?? ($interactive['list_reply']['title']
+                    ?? ($interactive['button_reply']['id']
+                    ?? ($interactive['list_reply']['id']
+                    ?? ($interactive['nfm_reply']['response_json'] ?? null))));
                 $body = $btnTitle ?: '[Interactive selection]';
                 $metadata = $interactive;
+                break;
+
+            case 'button':
+                $btnText = (string) ($metaMsg['button']['text'] ?? '');
+                $btnPayload = (string) ($metaMsg['button']['payload'] ?? '');
+                $body = $btnText !== '' ? $btnText : ($btnPayload !== '' ? $btnPayload : '[Button reply]');
+                $metadata = $metaMsg['button'] ?? [];
+                break;
+
+            case 'location':
+                $loc = $metaMsg['location'] ?? [];
+                $locName = $loc['name'] ?? ($loc['address'] ?? null);
+                if ($locName) {
+                    $body = "📍 Location: {$locName}";
+                } elseif (isset($loc['latitude'], $loc['longitude'])) {
+                    $body = "📍 Location: {$loc['latitude']}, {$loc['longitude']}";
+                } else {
+                    $body = '📍 Shared Location';
+                }
+                $metadata = $loc;
+                break;
+
+            case 'contacts':
+                $contacts = $metaMsg['contacts'] ?? [];
+                $firstContact = $contacts[0] ?? [];
+                $cName = $firstContact['name']['formatted_name'] ?? 'Contact';
+                $cPhone = $firstContact['phones'][0]['phone'] ?? '';
+                $body = "👤 Contact: {$cName}" . ($cPhone ? " ({$cPhone})" : '');
+                $metadata = $contacts;
+                break;
+
+            case 'reaction':
+                $reaction = $metaMsg['reaction'] ?? [];
+                $emoji = $reaction['emoji'] ?? '👍';
+                $body = "Reacted {$emoji}";
+                $metadata = $reaction;
+                break;
+
+            case 'sticker':
+                $mediaId = $metaMsg['sticker']['id'] ?? null;
+                $mediaMime = $metaMsg['sticker']['mime_type'] ?? 'image/webp';
+                $body = '🏷️ [Sticker]';
+                $metadata = $metaMsg['sticker'] ?? [];
+                break;
+
+            case 'unsupported':
+                $errDetail = $metaMsg['errors'][0]['title'] ?? ($metaMsg['errors'][0]['message'] ?? null);
+                $body = $errDetail
+                    ? "⚠️ [Unsupported message: {$errDetail}]"
+                    : '⚠️ [Unsupported message format (e.g. Poll, Live Location, or Payment)]';
+                $metadata = $metaMsg['errors'] ?? [];
                 break;
 
             case 'order':
@@ -265,6 +319,13 @@ class WhatsAppChatService
             'document' => '📄 ' . ($mediaFilename ?: 'Document'),
             'audio' => '🎵 Voice Note',
             'order' => $body ?: '🛒 Cart',
+            'button' => '🔘 ' . ($body ?: 'Button reply'),
+            'interactive' => '🔘 ' . ($body ?: 'Option selected'),
+            'location' => $body ?: '📍 Location',
+            'contacts' => $body ?: '👤 Contact card',
+            'reaction' => $body ?: 'Reaction',
+            'sticker' => '🏷️ Sticker',
+            'unsupported' => '⚠️ Unsupported message',
             default => $body ?: '[New message]',
         };
 
@@ -485,6 +546,57 @@ class WhatsAppChatService
             'message' => $message,
             'error' => $errorMsg,
         ];
+    }
+
+    /**
+     * Record an automated outbound system message (e.g. COD prompt, order confirmation, welcome, bot reply)
+     * into the conversation stream so it shows in the live chat inbox.
+     */
+    public function recordOutboundSystemMessage(
+        string $phone,
+        string $body,
+        string $messageType = 'text',
+        ?string $metaMessageId = null,
+        array $metadata = [],
+        string $channel = 'vanriti',
+        ?string $mediaUrl = null,
+        ?string $contactName = null
+    ): WhatsAppMessage {
+        $conversation = WhatsAppConversation::findOrCreateForPhone($phone, $contactName, null, $channel);
+
+        $status = 'sent';
+        if (! empty($metaMessageId)) {
+            $exists = WhatsAppMessage::where('meta_message_id', $metaMessageId)->exists();
+            $metaMsgId = $exists ? ($metaMessageId . '_' . uniqid('', true)) : $metaMessageId;
+        } else {
+            $metaMsgId = 'out_sys_' . uniqid('', true);
+        }
+
+        $message = WhatsAppMessage::create([
+            'whatsapp_conversation_id' => $conversation->id,
+            'direction' => 'outbound',
+            'message_type' => $messageType,
+            'body' => $body,
+            'media_url' => $mediaUrl,
+            'meta_message_id' => $metaMsgId,
+            'status' => $status,
+            'metadata' => ! empty($metadata) ? $metadata : null,
+            'sent_at' => now(),
+        ]);
+
+        $preview = match ($messageType) {
+            'image' => '📷 ' . ($body ?: 'Photo'),
+            'document' => '📄 Document',
+            'template' => '📋 ' . Str::limit($body, 60),
+            default => Str::limit($body, 60),
+        };
+
+        $conversation->update([
+            'last_message_at' => now(),
+            'last_message_preview' => $preview,
+        ]);
+
+        return $message;
     }
 
     /**

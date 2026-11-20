@@ -318,39 +318,24 @@ class WhatsAppOtpService
 
             // Record in conversation stream so it shows in chat with customer
             try {
-                $cleanPhone = ltrim($phone, '+');
-                $conversation = \App\Models\WhatsAppConversation::firstOrCreate(
-                    ['phone' => $cleanPhone],
-                    [
-                        'contact_name' => $name !== 'Customer' ? $name : null,
-                        'status' => 'active',
-                    ]
-                );
-
                 $templateModel = \App\Models\WhatsAppTemplate::where('name', $template)->first();
                 $renderedBody = $templateModel && ! empty($templateModel->body_text)
                     ? str_replace(['{{1}}', '{1}'], $name, $templateModel->body_text)
                     : "🌿 Welcome to VANRITI! Hello {$name}, welcome to pure Ayurvedic skincare and wellness.";
 
-                \App\Models\WhatsAppMessage::create([
-                    'whatsapp_conversation_id' => $conversation->id,
-                    'direction' => 'outbound',
-                    'message_type' => 'template',
-                    'body' => $renderedBody,
-                    'meta_message_id' => $body['messages'][0]['id'] ?? null,
-                    'status' => 'sent',
-                    'metadata' => [
+                app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $renderedBody,
+                    messageType: 'template',
+                    metaMessageId: $body['messages'][0]['id'] ?? null,
+                    metadata: [
                         'template_name' => $template,
                         'parameters' => [$name],
                         'is_welcome' => true,
                     ],
-                    'sent_at' => now(),
-                ]);
-
-                $conversation->update([
-                    'last_message_at' => now(),
-                    'last_message_preview' => Str::limit($renderedBody, 90),
-                ]);
+                    channel: 'vanriti',
+                    contactName: $name !== 'Customer' ? $name : null
+                );
             } catch (\Throwable $ex) {
                 Log::warning('Failed to record welcome WhatsApp message in inbox conversation', [
                     'phone' => $phone,
@@ -453,6 +438,40 @@ class WhatsAppOtpService
                 ]);
 
                 return $this->failure('WhatsApp order confirmation could not be sent right now. Please try again.');
+            }
+
+            // Record in conversation stream so it shows in chat with customer
+            try {
+                $templateModel = \App\Models\WhatsAppTemplate::where('name', $template)->first();
+                $renderedBody = $templateModel && ! empty($templateModel->body_text)
+                    ? str_replace(
+                        ['{{1}}', '{1}', '{{2}}', '{2}', '{{3}}', '{3}'],
+                        [$name, $orderNumber, $deliveryDate],
+                        $templateModel->body_text
+                    )
+                    : "🛍️ Order Confirmation (#{$orderNumber})\nDear {$name}, thank you for ordering with VANRITI! Your order is confirmed. Estimated delivery by {$deliveryDate}.\nTrack your order: {$orderUrl}";
+
+                app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $renderedBody,
+                    messageType: 'template',
+                    metaMessageId: $body['messages'][0]['id'] ?? null,
+                    metadata: [
+                        'template_name' => $template,
+                        'order_number' => $orderNumber,
+                        'delivery_date' => $deliveryDate,
+                        'order_url' => $orderUrl,
+                        'is_order_confirmation' => true,
+                    ],
+                    channel: 'vanriti',
+                    contactName: $name
+                );
+            } catch (\Throwable $ex) {
+                Log::warning('Failed to record order confirmation WhatsApp message in inbox conversation', [
+                    'phone' => $phone,
+                    'order' => $orderNumber,
+                    'error' => $ex->getMessage(),
+                ]);
             }
 
             return ['result' => '1', 'message' => 'WhatsApp order confirmation sent.', 'data' => ['phone' => $phone, 'order' => $orderNumber]];
@@ -613,6 +632,32 @@ class WhatsAppOtpService
                 $lastBody = $body;
 
                 if ($resp->successful() && empty($body['error'])) {
+                    // Record in conversation stream
+                    try {
+                        $recoveryBody = "🛒 Cart Recovery: Hello {$name}, we noticed you left items in your VANRITI cart! Complete your order here: {$checkoutUrl}";
+                        app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                            phone: $phone,
+                            body: $recoveryBody,
+                            messageType: 'template',
+                            metaMessageId: $body['messages'][0]['id'] ?? null,
+                            metadata: [
+                                'template_name' => $template,
+                                'order_number' => $orderNumber,
+                                'total_amount' => $totalAmount,
+                                'checkout_url' => $checkoutUrl,
+                                'is_recovery' => true,
+                            ],
+                            channel: 'vanriti',
+                            contactName: $name !== 'Customer' ? $name : null
+                        );
+                    } catch (\Throwable $ex) {
+                        Log::warning('Failed to record checkout recovery in inbox conversation', [
+                            'phone' => $phone,
+                            'order' => $orderNumber,
+                            'error' => $ex->getMessage(),
+                        ]);
+                    }
+
                     return [
                         'result' => '1',
                         'message' => 'WhatsApp checkout recovery sent.',

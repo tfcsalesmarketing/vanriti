@@ -86,7 +86,7 @@ class WhatsAppMessage extends Model
         }
 
         $disk = config('filesystems.whatsapp_disk', 's3');
-        if (config('filesystems.disks.s3.key') || $disk === 's3') {
+        if ($disk === 's3' && config('filesystems.disks.s3.key')) {
             return Storage::disk('s3')->url($this->media_url);
         }
 

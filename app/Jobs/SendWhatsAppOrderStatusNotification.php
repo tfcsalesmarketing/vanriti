@@ -222,8 +222,7 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
 
             $conversation->update([
                 'last_message_at' => now(),
-                'last_message_snippet' => $previewSnippet,
-                'last_message_direction' => 'outbound',
+                'last_message_preview' => $previewSnippet,
             ]);
 
             // If delivered, invoice URL is available, and session window is active, deliver PDF document directly

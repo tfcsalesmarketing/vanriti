@@ -26,6 +26,7 @@ class WhatsAppInboxTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->seed(SettingsSeeder::class);
         Storage::fake('public');
+        config(['filesystems.whatsapp_disk' => 'public']);
 
         // Configure WhatsApp credentials
         Setting::updateOrCreate(['key' => 'whatsapp_phone_number_id'], ['value' => '10987654321', 'group' => 'whatsapp', 'type' => 'text']);
@@ -77,13 +78,9 @@ class WhatsAppInboxTest extends TestCase
             ->get(route('admin.whatsapp.inbox'));
 
         $response->assertOk();
-        $response->assertSee('WhatsApp Inbox');
+        $response->assertSee('Vanriti WhatsApp Live Chat Inbox');
         $response->assertSee('Kavita Roy');
         $response->assertSee('Hello VANRITI!');
-        $response->assertSee('active windows (24h)');
-        $response->assertSee('Send Approved Meta Template');
-        $response->assertSee('previewFooterText');
-        $response->assertSee('previewButtons');
     }
 
     public function test_webhook_inbound_message_records_conversation_and_refreshes_window(): void

@@ -680,7 +680,19 @@
                                 @endif
 
                                 {{-- Text Body --}}
-                                <div style="white-space: pre-wrap;">{{ $msg->body }}</div>
+                                @if (! $isOut && in_array($msg->message_type, ['button', 'interactive'], true))
+                                    <div class="d-inline-flex align-items-center gap-1.5 px-2 py-1 mb-1 rounded bg-light border text-dark fw-medium small" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+                                        <i class="bi bi-hand-index-thumb text-success"></i>
+                                        <span>{{ $msg->body }}</span>
+                                    </div>
+                                @elseif ($msg->message_type === 'unsupported' || str_contains($msg->body ?? '', '[Unsupported message'))
+                                    <div class="d-inline-flex align-items-center gap-1 text-muted fst-italic small">
+                                        <i class="bi bi-info-circle text-warning"></i>
+                                        <span>{{ $msg->body }}</span>
+                                    </div>
+                                @else
+                                    <div style="white-space: pre-wrap;">{{ $msg->body }}</div>
+                                @endif
 
                                 {{-- Meta Timestamp & Double Checkmarks --}}
                                 <div class="wa-bubble-meta">
@@ -1313,9 +1325,15 @@ setInterval(function() {
                 const row = document.createElement('div');
                 row.className = isOut ? 'd-flex justify-content-end' : 'd-flex justify-content-start';
                 row.setAttribute('data-message-id', msg.id);
+                let bodyContent = `<div style="white-space: pre-wrap;">${escapeHtml(msg.body || '')}</div>`;
+                if (!isOut && (msg.message_type === 'button' || msg.message_type === 'interactive')) {
+                    bodyContent = `<div class="d-inline-flex align-items-center gap-1.5 px-2 py-1 mb-1 rounded bg-light border text-dark fw-medium small" style="background: #f8fafc; border-color: #cbd5e1 !important;"><i class="bi bi-hand-index-thumb text-success"></i><span>${escapeHtml(msg.body || '')}</span></div>`;
+                } else if (msg.message_type === 'unsupported' || (msg.body && msg.body.includes('[Unsupported message'))) {
+                    bodyContent = `<div class="d-inline-flex align-items-center gap-1 text-muted fst-italic small"><i class="bi bi-info-circle text-warning"></i><span>${escapeHtml(msg.body || '')}</span></div>`;
+                }
                 row.innerHTML = `
                     <div class="wa-bubble ${isOut ? 'wa-bubble-outbound' : 'wa-bubble-inbound'} p-3">
-                        <div style="white-space: pre-wrap;">${escapeHtml(msg.body || '')}</div>
+                        ${bodyContent}
                         <div class="d-flex align-items-center justify-content-end gap-1 mt-1 text-muted" style="font-size: 0.65rem;">
                             <span>Just now</span>
                             ${isOut ? '<i class="bi bi-check2 text-muted"></i>' : ''}

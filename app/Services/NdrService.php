@@ -93,6 +93,25 @@ class NdrService
             $order->update([
                 'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . $note),
             ]);
+
+            try {
+                $promptBody = "⚠️ [Delivery Issue Alert]\n\n{$bodyText}\n\nButtons: [Reattempt Tomorrow]  [Update Address / Landmark]";
+                app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $promptBody,
+                    messageType: ! empty($res['template_name']) ? 'template' : 'interactive',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: [
+                        'order_number' => $order->order_number,
+                        'reason' => $reason,
+                        'type' => 'ndr_prompt',
+                    ],
+                    channel: 'vanriti',
+                    contactName: $order->shipping_name
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Failed to record NDR prompt in chat', ['error' => $e->getMessage()]);
+            }
         }
 
         return $res;
@@ -114,7 +133,21 @@ class NdrService
         ]);
 
         $reply = "✅ Thank you! We have requested our delivery partner to reattempt delivery of order #{$orderNumber} tomorrow. The rider will contact you prior to arrival. 🌿";
-        $this->apiService->sendTextMessage($phone, $reply);
+        $sendRes = $this->apiService->sendTextMessage($phone, $reply);
+
+        try {
+            app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                phone: $phone,
+                body: $reply,
+                messageType: 'text',
+                metaMessageId: $sendRes['message_id'] ?? null,
+                metadata: ['order_number' => $orderNumber, 'type' => 'ndr_reattempt'],
+                channel: 'vanriti',
+                contactName: $order->shipping_name
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to record NDR reattempt in chat', ['error' => $e->getMessage()]);
+        }
 
         Log::info('NDR reattempt requested via WhatsApp', ['order' => $orderNumber, 'phone' => $phone]);
 
@@ -126,8 +159,23 @@ class NdrService
      */
     public function handleCustomerLandmarkPrompt(string $orderNumber, string $phone): bool
     {
+        $order = Order::where('order_number', $orderNumber)->first();
         $reply = "📍 Please type your updated landmark or delivery instructions for order #{$orderNumber}. Our logistics support team will forward it directly to the delivery rider.";
-        $this->apiService->sendTextMessage($phone, $reply);
+        $sendRes = $this->apiService->sendTextMessage($phone, $reply);
+
+        try {
+            app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                phone: $phone,
+                body: $reply,
+                messageType: 'text',
+                metaMessageId: $sendRes['message_id'] ?? null,
+                metadata: ['order_number' => $orderNumber, 'type' => 'ndr_landmark_prompt'],
+                channel: 'vanriti',
+                contactName: $order?->shipping_name
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to record NDR landmark prompt in chat', ['error' => $e->getMessage()]);
+        }
 
         return true;
     }

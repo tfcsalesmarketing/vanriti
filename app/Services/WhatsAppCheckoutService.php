@@ -35,7 +35,7 @@ class WhatsAppCheckoutService
 
         if (empty($incomingItems)) {
             $msg = "Your cart is empty. Please select products from our catalogue to place an order. 🌿";
-            $this->apiService->sendTextMessage($phone, $msg);
+            $this->sendTextMessage($phone, $msg);
             return ['success' => false, 'message' => $msg];
         }
 
@@ -104,7 +104,7 @@ class WhatsAppCheckoutService
                 . implode("\n", array_map(fn($e) => "• " . $e, $errors))
                 . "\n\nPlease update your selection or browse our catalogue again. 🌿";
 
-            $sendRes = $this->apiService->sendTextMessage($phone, $errorMsg);
+            $sendRes = $this->sendTextMessage($phone, $errorMsg);
             if (! ($sendRes['success'] ?? false)) {
                 Log::error('Failed to send WhatsApp cart error message to customer', [
                     'phone' => $phone,
@@ -145,7 +145,7 @@ class WhatsAppCheckoutService
                 $existingSession->transitionTo(WhatsAppCheckoutSession::STATUS_AWAITING_ORDER_CONFIRMATION);
 
                 $updatedMsg = "🌿 *Your order has been updated!*\nYour cart now contains only the new item(s).";
-                $this->apiService->sendTextMessage($phone, $updatedMsg);
+                $this->sendTextMessage($phone, $updatedMsg);
 
                 $this->sendOrderReviewMessage($existingSession);
 
@@ -154,18 +154,18 @@ class WhatsAppCheckoutService
 
             if (empty($existingSession->customer_name)) {
                 $prompt = "Welcome to VANRITI! 🌿\nPlease enter your full name to continue with your order.";
-                $this->apiService->sendTextMessage($phone, $prompt);
+                $this->sendTextMessage($phone, $prompt);
                 return ['success' => true, 'session' => $existingSession, 'action' => 'name_requested'];
             }
 
             if (empty($existingSession->pincode)) {
                 $prompt = "Please enter your 6-digit delivery PIN code.";
-                $this->apiService->sendTextMessage($phone, $prompt);
+                $this->sendTextMessage($phone, $prompt);
                 return ['success' => true, 'session' => $existingSession, 'action' => 'pincode_requested'];
             }
 
             $prompt = "Please enter your complete delivery address.";
-            $this->apiService->sendTextMessage($phone, $prompt);
+            $this->sendTextMessage($phone, $prompt);
             return ['success' => true, 'session' => $existingSession, 'action' => 'address_requested'];
         }
 
@@ -181,7 +181,7 @@ class WhatsAppCheckoutService
 
         // Prompt for customer name (Step 4)
         $prompt = "Welcome to VANRITI! 🌿\nPlease enter your full name to continue with your order.";
-        $sendRes = $this->apiService->sendTextMessage($phone, $prompt);
+        $sendRes = $this->sendTextMessage($phone, $prompt);
         if (! ($sendRes['success'] ?? false)) {
             Log::error('Failed to send WhatsApp name prompt to customer', [
                 'phone' => $phone,
@@ -236,7 +236,7 @@ class WhatsAppCheckoutService
             if (setting('whatsapp_away_message_enabled', false) && $this->shouldSendAwayMessage()) {
                 $awayText = (string) setting('whatsapp_away_message_text', '');
                 if ($awayText !== '') {
-                    $this->apiService->sendTextMessage($phone, $awayText);
+                    $this->sendTextMessage($phone, $awayText);
                     return ['success' => true, 'action' => 'away_message_sent'];
                 }
             }
@@ -255,7 +255,7 @@ class WhatsAppCheckoutService
         if (in_array($action, ['CANCEL', 'CANCEL_ORDER', 'STOP', 'EXIT', 'QUIT'], true)) {
             $session->transitionTo(WhatsAppCheckoutSession::STATUS_CANCELLED);
             $msg = "Your VANRITI order has been cancelled. Feel free to browse our catalogue anytime! 🌿";
-            $this->apiService->sendTextMessage($phone, $msg);
+            $this->sendTextMessage($phone, $msg);
             return ['success' => true, 'action' => 'cancelled'];
         }
 
@@ -280,7 +280,7 @@ class WhatsAppCheckoutService
                 return $this->handlePaymentPendingInquiry($session, $action, $messageId);
 
             default:
-                $this->apiService->sendTextMessage(
+                $this->sendTextMessage(
                     $phone,
                     "Your session has ended. Send *SHOP* to explore products and start a new order. 🌿"
                 );
@@ -295,7 +295,7 @@ class WhatsAppCheckoutService
     {
         $cleanName = preg_replace('/[^\p{L}\s\.\'-]/u', '', $text);
         if (mb_strlen(trim($cleanName)) < 2) {
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Please enter a valid full name to continue with your order."
             );
@@ -310,7 +310,7 @@ class WhatsAppCheckoutService
         $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE);
 
         // Step 5: Ask for PIN code
-        $sendRes = $this->apiService->sendTextMessage(
+        $sendRes = $this->sendTextMessage(
             $session->phone,
             "Please enter your 6-digit delivery PIN code."
         );
@@ -334,7 +334,7 @@ class WhatsAppCheckoutService
         $pincode = preg_replace('/[^0-9]/', '', $text);
 
         if (! $this->shippingService->isValidPincodeFormat($pincode)) {
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Please enter a valid 6-digit Indian delivery PIN code."
             );
@@ -342,7 +342,7 @@ class WhatsAppCheckoutService
         }
 
         if (! $this->shippingService->isServiceable($pincode)) {
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Sorry, we currently do not deliver to PIN code {$pincode}. Please provide an alternative delivery PIN code."
             );
@@ -367,7 +367,7 @@ class WhatsAppCheckoutService
 
         // Step 6: Collect complete delivery address
         $cityNote = ! empty($postal['city']) ? " (City: {$postal['city']}, State: {$postal['state']})" : '';
-        $this->apiService->sendTextMessage(
+        $this->sendTextMessage(
             $session->phone,
             "Please enter your complete delivery address, including house/flat number, building, street, locality and landmark{$cityNote}."
         );
@@ -381,7 +381,7 @@ class WhatsAppCheckoutService
     protected function handleCollectingAddress(WhatsAppCheckoutSession $session, string $text, string $messageId): array
     {
         if (strlen($text) < 6) {
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Please provide a complete address with house/flat number and street name so we can deliver your order smoothly."
             );
@@ -470,7 +470,7 @@ class WhatsAppCheckoutService
             $footerText = 'Reply CONFIRM, EDIT, or CANCEL';
         }
 
-        $res = $this->apiService->sendInteractiveButtonMessage(
+        $res = $this->sendInteractiveButtonMessage(
             $session->phone,
             $summaryBody,
             $buttons,
@@ -483,7 +483,7 @@ class WhatsAppCheckoutService
                 ? "\n\nReply *CONFIRM* to proceed, *ADD* to add more items, or *EDIT* to change address."
                 : "\n\nReply *CONFIRM* to proceed, *EDIT* to change address, or *CANCEL*.";
 
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 $summaryBody . $textPrompt
             );
@@ -505,7 +505,7 @@ class WhatsAppCheckoutService
                 . ($diff > 0 ? "You need just *" . format_price($diff) . "* more to unlock *FREE Delivery*!\n\n" : "")
                 . "Browse our catalogue below and send your cart with the items you'd like in your order. 🌿";
 
-            $this->apiService->sendTextMessage($session->phone, $prompt);
+            $this->sendTextMessage($session->phone, $prompt);
             $this->apiService->sendCatalogueMessage($session->phone);
 
             return ['success' => true, 'action' => 'catalogue_sent_for_add_items'];
@@ -513,7 +513,7 @@ class WhatsAppCheckoutService
 
         if (in_array($action, ['EDIT_ADDRESS', 'EDIT', 'CHANGE'], true)) {
             $session->transitionTo(WhatsAppCheckoutSession::STATUS_COLLECTING_PINCODE);
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Please enter your 6-digit delivery PIN code to update your address."
             );
@@ -530,7 +530,7 @@ class WhatsAppCheckoutService
                 ['id' => 'PAY_ONLINE', 'title' => 'Online Payment'],
             ];
 
-            $res = $this->apiService->sendInteractiveButtonMessage(
+            $res = $this->sendInteractiveButtonMessage(
                 $session->phone,
                 $paymentBody,
                 $buttons,
@@ -539,7 +539,7 @@ class WhatsAppCheckoutService
             );
 
             if (! $res['success']) {
-                $this->apiService->sendTextMessage(
+                $this->sendTextMessage(
                     $session->phone,
                     $paymentBody . "\n\nReply with *COD* for Cash on Delivery or *ONLINE* for Razorpay/UPI/Cards."
                 );
@@ -548,7 +548,7 @@ class WhatsAppCheckoutService
             return ['success' => true, 'action' => 'payment_method_prompted'];
         }
 
-        $this->apiService->sendTextMessage(
+        $this->sendTextMessage(
             $session->phone,
             "Please confirm your order by tapping *Confirm Order* (or reply *CONFIRM*), reply *ADD* to add more items, or *EDIT* to update your address."
         );
@@ -575,7 +575,7 @@ class WhatsAppCheckoutService
             return $this->initializeRazorpayOrder($session);
         }
 
-        $this->apiService->sendTextMessage(
+        $this->sendTextMessage(
             $session->phone,
             "Please choose a payment method:\nReply *COD* for Cash on Delivery or *ONLINE* for secure Razorpay payment."
         );
@@ -613,13 +613,13 @@ class WhatsAppCheckoutService
                 . "We'll keep you updated on your order.\n"
                 . "Thank you for shopping with VANRITI! 🌿";
 
-            $this->apiService->sendTextMessage($session->phone, $confirmation);
+            $this->sendTextMessage($session->phone, $confirmation);
 
             return ['success' => true, 'order' => $order];
         } catch (\Throwable $e) {
             Log::error('WhatsApp COD order placement error: ' . $e->getMessage(), ['session_id' => $session->id]);
 
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Could not finalize your order: {$e->getMessage()}\nPlease try again or contact support."
             );
@@ -661,13 +661,13 @@ class WhatsAppCheckoutService
                 . "👉 {$paymentUrl}\n\n"
                 . "Click the link above to open Razorpay and pay directly via UPI (GPay, PhonePe, Paytm), Cards, or NetBanking. Once paid, your order will be confirmed immediately. 🌿";
 
-            $this->apiService->sendTextMessage($session->phone, $msg);
+            $this->sendTextMessage($session->phone, $msg);
 
             return ['success' => true, 'order' => $order, 'payment_url' => $paymentUrl];
         } catch (\Throwable $e) {
             Log::error('WhatsApp Razorpay initialization error: ' . $e->getMessage(), ['session_id' => $session->id]);
 
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Could not initialize online payment: {$e->getMessage()}\nYou can reply *COD* to place your order with Cash on Delivery instead."
             );
@@ -728,7 +728,7 @@ class WhatsAppCheckoutService
             . "Payment reference: {$safeRef}\n\n"
             . "Thank you for choosing VANRITI! 🌿";
 
-        $this->apiService->sendTextMessage($session->phone, $msg);
+        $this->sendTextMessage($session->phone, $msg);
     }
 
     /**
@@ -745,7 +745,7 @@ class WhatsAppCheckoutService
             . "👉 {$retryUrl}\n\n"
             . "Or reply *COD* to switch your order to Cash on Delivery. 🌿";
 
-        $this->apiService->sendTextMessage($session->phone, $msg);
+        $this->sendTextMessage($session->phone, $msg);
     }
 
     /**
@@ -759,7 +759,7 @@ class WhatsAppCheckoutService
 
         $order = $session->order;
         if ($order && $order->payment_status === 'paid') {
-            $this->apiService->sendTextMessage(
+            $this->sendTextMessage(
                 $session->phone,
                 "Your VANRITI order {$order->order_number} is already paid and confirmed! 🌿"
             );
@@ -772,7 +772,7 @@ class WhatsAppCheckoutService
             . "Complete your payment directly with Razorpay here:\n👉 {$paymentUrl}\n\n"
             . "Or reply *COD* if you'd like to switch to Cash on Delivery.";
 
-        $this->apiService->sendTextMessage($session->phone, $msg);
+        $this->sendTextMessage($session->phone, $msg);
 
         return ['success' => true, 'action' => 'pending_reminder_sent'];
     }
@@ -982,5 +982,56 @@ class WhatsAppCheckoutService
         }
 
         return false; // Currently within business hours
+    }
+
+    /**
+     * Send outbound text message and log into conversation so it appears in live chat.
+     */
+    protected function sendTextMessage(string $phone, string $text, array $metadata = []): array
+    {
+        $res = $this->apiService->sendTextMessage($phone, $text);
+        if ($res['success'] ?? false) {
+            try {
+                app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $text,
+                    messageType: 'text',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: array_merge(['source' => 'whatsapp_checkout'], $metadata),
+                    channel: 'vanriti'
+                );
+            } catch (\Throwable $e) {}
+        }
+
+        return $res;
+    }
+
+    /**
+     * Send interactive button message and log into conversation.
+     */
+    protected function sendInteractiveButtonMessage(
+        string $to,
+        string $bodyText,
+        array $buttons,
+        ?string $headerText = null,
+        ?string $footerText = null
+    ): array {
+        $res = $this->apiService->sendInteractiveButtonMessage($to, $bodyText, $buttons, $headerText, $footerText);
+        if ($res['success'] ?? false) {
+            try {
+                $btnTitles = array_column($buttons, 'title');
+                $body = $bodyText . "\n\n[" . implode('] [', $btnTitles) . ']';
+                app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $to,
+                    body: $body,
+                    messageType: 'interactive',
+                    metaMessageId: $res['message_id'] ?? null,
+                    metadata: ['buttons' => $buttons, 'source' => 'whatsapp_checkout'],
+                    channel: 'vanriti'
+                );
+            } catch (\Throwable $e) {}
+        }
+
+        return $res;
     }
 }
