@@ -1,6 +1,6 @@
 @php
-    $title = $data['title'] ?? 'Key Botanical Actives';
-    $subtitle = $data['subtitle'] ?? 'Handpicked medicinal herbs working in synergistic harmony.';
+    $title = $data['title'] ?? 'Featured Botanical Ingredients';
+    $subtitle = $data['subtitle'] ?? 'Key plant botanicals present in this formulation.';
     $items = $data['items'] ?? [];
     $rawContent = $data['raw_content'] ?? ($product->ingredients ?? '');
 @endphp
@@ -44,8 +44,11 @@
                 </div>
             @endforeach
         </div>
-    @elseif ($rawContent)
-        <div class="vr-aplus-raw-ingredients-box">
+    @endif
+
+    @if ($rawContent)
+        <div class="vr-aplus-raw-ingredients-box {{ !empty($items) ? 'mt-4' : '' }}">
+            <div class="small fw-semibold text-muted mb-2">Declared Product Ingredients:</div>
             <div class="vr-aplus-raw-content">
                 {!! Str::contains($rawContent, ['<p', '<ul', '<ol', '<li', '<b', '<strong', '<div']) ? clean_html($rawContent) : nl2br(e($rawContent)) !!}
             </div>

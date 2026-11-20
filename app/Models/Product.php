@@ -336,7 +336,7 @@ class Product extends Model
 
     /**
      * Get effective A+ modules: custom modules if enabled, otherwise synthesizes
-     * smart fallback modules from highlights, ingredients, benefits, and how_to_use.
+     * compliant smart fallback modules from verified product data.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -348,96 +348,387 @@ class Product extends Model
 
         $modules = [];
 
-        // 1. Core Ayurvedic Value Pillars (always present for authentic luxury experience)
-        $pillars = [
-            [
-                'icon' => 'ri-drop-line',
-                'title' => '100% Ayurvedic Kwath',
-                'description' => 'Prepared with authentic slow-brewing decoctions and bio-potent wildcrafted herbs.',
+        // 1. Detect Category Profile & Classification
+        $categorySlugs = $this->relationLoaded('categories')
+            ? $this->categories->pluck('slug')->all()
+            : $this->categories()->pluck('slug')->all();
+        $allCats = implode(' ', $categorySlugs);
+        $nameLower = strtolower($this->name ?? '');
+
+        $isHairCleansing = str_contains($allCats, 'hair-cleansing')
+            || str_contains($nameLower, 'cleansing')
+            || str_contains($nameLower, 'reetha')
+            || str_contains($nameLower, 'shikakai');
+
+        $isFacePack = str_contains($allCats, 'face-packs-masks')
+            || str_contains($allCats, 'skin-care')
+            || str_contains($nameLower, 'face')
+            || str_contains($nameLower, 'multani')
+            || str_contains($nameLower, 'rose')
+            || str_contains($nameLower, 'skin');
+
+        $isHairMask = str_contains($allCats, 'hair-care')
+            || str_contains($nameLower, 'hair')
+            || str_contains($nameLower, 'bhringraj')
+            || str_contains($nameLower, 'brahmi')
+            || str_contains($nameLower, 'hibiscus')
+            || str_contains($nameLower, 'methi');
+
+        $isCombo = str_contains($nameLower, 'combo')
+            || str_contains($nameLower, 'pack of 2')
+            || str_contains($nameLower, 'pack of 3')
+            || str_contains($nameLower, 'kit')
+            || str_contains($nameLower, ' and ');
+
+        // Weight resolution
+        $weightVal = (int) $this->weight;
+        $unit = $this->unit ?? 'g';
+        if ($unit === 'gm') {
+            $unit = 'g';
+        }
+        $weightStr = $weightVal > 0 ? "{$weightVal}{$unit}" : 'Standard Pack';
+
+        // Verified botanical dictionary for featured ingredients
+        $herbDictionary = [
+            'amla' => [
+                'name' => 'Amla (Indian Gooseberry)',
+                'botanical' => 'Phyllanthus emblica',
+                'benefit' => 'Rich in natural fruit acids and antioxidants, traditionally used to condition hair and refresh scalp.',
             ],
-            [
-                'icon' => 'ri-leaf-line',
-                'title' => 'Pure & Toxin-Free',
-                'description' => 'Zero parabens, sulfates, silicones, synthetic fragrances, or harsh petrochemicals.',
+            'reetha' => [
+                'name' => 'Reetha (Soapnut)',
+                'botanical' => 'Sapindus mukorossi',
+                'benefit' => 'Natural saponin-rich botanical traditionally utilized as a gentle, foaming herbal hair and scalp cleanser.',
             ],
-            [
-                'icon' => 'ri-shield-check-line',
-                'title' => 'Ayush Certified & Tested',
-                'description' => 'Rigorously tested for heavy metal purity in GMP-certified laboratory facilities.',
+            'shikakai' => [
+                'name' => 'Shikakai',
+                'botanical' => 'Acacia concinna',
+                'benefit' => 'Traditional fruit pod powder renowned for gentle low-pH scalp cleansing and detangling care.',
             ],
-            [
-                'icon' => 'ri-heart-3-line',
-                'title' => 'Ethical & Cruelty-Free',
-                'description' => 'Sustainably sourced botanicals with 100% vegetarian, compassionate formulations.',
+            'bhringraj' => [
+                'name' => 'Bhringraj',
+                'botanical' => 'Eclipta alba',
+                'benefit' => 'Classical false daisy herb celebrated in traditional Ayurvedic routines for strengthening hair roots.',
+            ],
+            'hibiscus' => [
+                'name' => 'Hibiscus Flower',
+                'botanical' => 'Hibiscus rosa-sinensis',
+                'benefit' => 'Naturally conditioning petal powder rich in botanical mucilage that leaves hair silky and manageable.',
+            ],
+            'multani' => [
+                'name' => 'Multani Mitti (Fuller’s Earth)',
+                'botanical' => 'Solum Fullonum',
+                'benefit' => 'Naturally absorbent mineral clay traditionally used in deep-cleansing facial and scalp packs.',
+            ],
+            'rose' => [
+                'name' => 'Rose Petal',
+                'botanical' => 'Rosa centifolia',
+                'benefit' => 'Aromatic petal powder traditionally prized for cooling, toning, and softening delicate facial skin.',
+            ],
+            'neem' => [
+                'name' => 'Neem Leaf',
+                'botanical' => 'Azadirachta indica',
+                'benefit' => 'Clarifying and purifying botanical powder widely incorporated in home scalp and skin packs.',
+            ],
+            'moringa' => [
+                'name' => 'Moringa Leaf',
+                'botanical' => 'Moringa oleifera',
+                'benefit' => 'Botanical powder rich in plant nutrients, traditionally utilized for revitalizing hair and skin masks.',
+            ],
+            'beetroot' => [
+                'name' => 'Beetroot',
+                'botanical' => 'Beta vulgaris',
+                'benefit' => 'Naturally pigmented root botanical traditionally blended into DIY conditioning pastes.',
+            ],
+            'methi' => [
+                'name' => 'Fenugreek (Methi)',
+                'botanical' => 'Trigonella foenum-graecum',
+                'benefit' => 'Protein-rich seeds traditionally ground into rich, slip-enhancing botanical hair masks.',
+            ],
+            'brahmi' => [
+                'name' => 'Brahmi',
+                'botanical' => 'Bacopa monnieri',
+                'benefit' => 'Time-honored rejuvenating botanical traditionally used in hair packs to soothe and nourish the scalp.',
             ],
         ];
 
+        $ingredientText = strtolower(strip_tags($this->ingredients ?? '') . ' ' . ($this->name ?? ''));
+        $matchedHerbs = [];
+        foreach ($herbDictionary as $key => $herbData) {
+            if (str_contains($ingredientText, $key)) {
+                $matchedHerbs[] = $herbData;
+                if (count($matchedHerbs) >= 3) {
+                    break;
+                }
+            }
+        }
+
+        // Helper to detect and exclude food/dietary/ingestion text from cosmetic A+ content
+        $isIngestionText = function (?string $text): bool {
+            if (blank($text)) {
+                return false;
+            }
+            return (bool) preg_match('/serving|recipe|intake|dietary|beverage|drink|food\s*[-_]?grade|consume|consumption/i', $text);
+        };
+
+        // Primary Image
+        $primaryImgPath = $this->getPrimaryImage()?->image_path;
+        $primaryImgUrl = $primaryImgPath ? image_url($primaryImgPath, 'favicon.ico') : asset('images/logo.webp');
+
+        // Clean Description Narrative for Hero
+        $heroDesc = strip_tags($this->short_description ?? '');
+        if (blank($heroDesc) || $isIngestionText($heroDesc)) {
+            $heroDesc = strip_tags($this->benefits ?? '');
+        }
+        if (blank($heroDesc) || $isIngestionText($heroDesc)) {
+            $heroDesc = 'Carefully processed pure botanical powder formulated for traditional personal care routines.';
+        }
+        $heroDesc = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $heroDesc)), 300);
+
+        // Single powder detection
+        $isSinglePowder = str_contains($nameLower, 'pure ')
+            || (! $isCombo && count($matchedHerbs) <= 1);
+
+        // Eyebrow determination
+        if ($isCombo) {
+            $eyebrow = 'Botanical Combination Pack';
+        } elseif ($isSinglePowder) {
+            $eyebrow = 'Pure Botanical Powder';
+        } elseif ($isHairCleansing) {
+            $eyebrow = 'Botanical Hair Cleansing';
+        } elseif ($isFacePack) {
+            $eyebrow = 'Botanical Skin Care';
+        } elseif ($isHairMask) {
+            $eyebrow = 'Botanical Hair Care';
+        } else {
+            $eyebrow = 'Pure Botanical Powder';
+        }
+
+        // -------------------------------------------------------------
+        // MODULE 1: Product Hero Banner (Mandatory Fallback)
+        // -------------------------------------------------------------
+        $modules[] = [
+            'type' => 'hero_banner',
+            'eyebrow' => $eyebrow,
+            'title' => $this->name,
+            'description' => $heroDesc,
+            'image' => $primaryImgUrl,
+            'image_alt' => $this->name,
+        ];
+
+        // -------------------------------------------------------------
+        // MODULE 2: Four-Column Product Value Pillars
+        // -------------------------------------------------------------
         $modules[] = [
             'type' => 'features_grid',
-            'title' => 'The Vanriti Purity Promise',
-            'subtitle' => 'Classical Ayurvedic science formulated for modern cellular wellness.',
-            'items' => $pillars,
+            'title' => 'Botanical Standards & Product Attributes',
+            'subtitle' => 'Factual, transparent product attributes for mindful home care routines.',
+            'items' => [
+                [
+                    'icon' => 'ri-leaf-line',
+                    'title' => 'Traditional Botanicals',
+                    'description' => 'Formulated with dried plant botanicals traditionally utilized in hair and skincare routines.',
+                ],
+                [
+                    'icon' => 'ri-drop-line',
+                    'title' => 'Fresh Powder Format',
+                    'description' => 'Clean, dry powder format allowing fresh custom preparation with water or oils right before use.',
+                ],
+                [
+                    'icon' => 'ri-scales-3-line',
+                    'title' => 'Declared Net Weight',
+                    'description' => 'Packaged in sealed ' . $weightStr . ' packaging to preserve botanical freshness and purity.',
+                ],
+                [
+                    'icon' => 'ri-shield-check-line',
+                    'title' => 'External Personal Care',
+                    'description' => 'Formulated specifically for topical cosmetic application on hair, scalp, or skin.',
+                ],
+            ],
         ];
 
-        // 2. Benefits / Story Block (if benefits or highlights exist)
-        if (filled($this->benefits) || filled($this->highlights)) {
-            $modules[] = [
-                'type' => 'split_story',
-                'title' => 'Formulated for Transformative Care',
-                'subtitle' => 'Root-cause Ayurvedic action that revitalizes from within.',
-                'content' => $this->benefits ?: $this->highlights,
-                'image' => $this->getPrimaryImage() ? image_url($this->getPrimaryImage()?->image_path, 'favicon.ico') : asset('images/logo.webp'),
-                'image_alt' => $this->name . ' Action',
-                'reverse' => false,
-            ];
+        // -------------------------------------------------------------
+        // MODULE 3: Split Story Block
+        // -------------------------------------------------------------
+        $storyContent = strip_tags($this->benefits ?? ($this->highlights ?? ''));
+        if (blank($storyContent) || $isIngestionText($storyContent)) {
+            $storyContent = 'Carefully selected botanical powders brought together to support your traditional beauty rituals with pure, plant-based preparation.';
         }
+        $storyContent = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $storyContent)), 450);
 
-        // 3. Botanical Ingredients Spotlight (if ingredients exist)
-        if (filled($this->ingredients)) {
-            $modules[] = [
-                'type' => 'ingredients_spotlight',
-                'title' => 'Key Botanical Actives',
-                'subtitle' => 'Handpicked medicinal herbs working in synergistic harmony.',
-                'raw_content' => $this->ingredients,
-                'items' => [],
-            ];
-        }
+        $modules[] = [
+            'type' => 'split_story',
+            'title' => 'Time-Honored Botanical Care',
+            'subtitle' => 'Traditional Botanical Heritage',
+            'content' => $storyContent,
+            'image' => $primaryImgUrl,
+            'image_alt' => $this->name . ' Botanical Story',
+            'reverse' => false,
+            'bullets' => [
+                'Dry powder format allows fresh preparation without synthetic liquid preservatives',
+                'Traditional plant ingredients suitable for DIY masks, pastes, and rinses',
+                'Intended strictly for topical personal care and external cosmetic use',
+            ],
+        ];
 
-        // 4. Daily Ritual / How to Use (if how_to_use or directions exist)
-        if (filled($this->how_to_use) || filled($this->directions)) {
-            $modules[] = [
-                'type' => 'how_to_use_ritual',
-                'title' => 'The Ayurvedic Daily Ritual',
-                'subtitle' => 'Simple, mindful steps to maximize absorption and energetic benefits.',
-                'raw_content' => $this->how_to_use ?: $this->directions,
-                'steps' => [
-                    [
-                        'step' => '01',
-                        'title' => 'Mindful Preparation',
-                        'desc' => 'Cleanse with lukewarm water and gently pat skin dry.',
-                    ],
-                    [
-                        'step' => '02',
-                        'title' => 'Dispense & Activate',
-                        'desc' => 'Take the recommended amount and warm gently between your fingertips.',
-                    ],
-                    [
-                        'step' => '03',
-                        'title' => 'Upward Gentle Strokes',
-                        'desc' => 'Apply in mindful upward circular motions until fully absorbed.',
-                    ],
+        // -------------------------------------------------------------
+        // MODULE 4: Botanical Ingredients Spotlight
+        // -------------------------------------------------------------
+        $modules[] = [
+            'type' => 'ingredients_spotlight',
+            'title' => 'Featured Botanical Ingredients',
+            'subtitle' => 'Selected plant actives present in this formulation.',
+            'raw_content' => $this->ingredients,
+            'items' => $matchedHerbs,
+        ];
+
+        // -------------------------------------------------------------
+        // MODULE 5: Three-Step Usage Ritual (Category-Aware)
+        // -------------------------------------------------------------
+        if ($isHairCleansing && ! $isSinglePowder) {
+            $ritualTitle = 'Three-Step Hair Cleansing Ritual';
+            $ritualSubtitle = 'Mindful botanical cleansing for hair and scalp.';
+            $steps = [
+                [
+                    'step' => '01',
+                    'title' => 'Mix with Warm Water',
+                    'desc' => 'Measure the required powder into a bowl and gradually stir in lukewarm water to create a smooth, fluid paste.',
+                ],
+                [
+                    'step' => '02',
+                    'title' => 'Massage into Wet Scalp',
+                    'desc' => 'Apply gently onto wet scalp and hair lengths, massaging in gentle circular motions without harsh scrubbing.',
+                ],
+                [
+                    'step' => '03',
+                    'title' => 'Rinse Thoroughly',
+                    'desc' => 'Rinse out completely with running water until the rinse water runs clear. Avoid contact with eyes.',
                 ],
             ];
+            $ritualTip = 'Botanical cleansing powders produce a gentle natural cleansing emulsion rather than chemical foam. Focus on scalp massage and thorough rinsing.';
+        } elseif ($isFacePack && ! $isSinglePowder) {
+            $ritualTitle = 'Three-Step Face Pack Ritual';
+            $ritualSubtitle = 'Mindful application steps for traditional clay and botanical packs.';
+            $steps = [
+                [
+                    'step' => '01',
+                    'title' => 'Measure & Blend',
+                    'desc' => 'Take the required powder in a clean bowl. Blend with clean water or rose water to achieve a smooth, lump-free paste.',
+                ],
+                [
+                    'step' => '02',
+                    'title' => 'Apply Evenly',
+                    'desc' => 'Gently smooth an even layer over face and neck, keeping completely clear of the delicate eye and lip contours.',
+                ],
+                [
+                    'step' => '03',
+                    'title' => 'Rinse Before Dry',
+                    'desc' => 'Rinse off gently with lukewarm water before the mask dries completely. Pat dry and follow with your regular moisturizer.',
+                ],
+            ];
+            $ritualTip = 'Always perform a 24-hour patch test behind your ear before initial facial use. Do not allow clay or botanical packs to dry to cracking stage.';
+        } elseif ($isHairMask && ! $isSinglePowder) {
+            $ritualTitle = 'Three-Step Hair Mask Ritual';
+            $ritualSubtitle = 'Traditional botanical conditioning for hair and scalp.';
+            $steps = [
+                [
+                    'step' => '01',
+                    'title' => 'Prepare Smooth Paste',
+                    'desc' => 'Mix the desired amount of powder with warm water, curd, or aloe vera gel in a clean bowl until smooth.',
+                ],
+                [
+                    'step' => '02',
+                    'title' => 'Coat Roots to Ends',
+                    'desc' => 'Part damp hair in sections and apply the paste evenly from scalp and roots through to the tips.',
+                ],
+                [
+                    'step' => '03',
+                    'title' => 'Rinse Thoroughly',
+                    'desc' => 'Leave on for the duration indicated on product packaging, then rinse out thoroughly with plain water.',
+                ],
+            ];
+            $ritualTip = 'Conduct a patch test prior to first use. Covering hair with a damp towel or shower cap helps keep the paste moist during application.';
+        } elseif ($isCombo) {
+            $ritualTitle = 'Three-Step Dual Powder Ritual';
+            $ritualSubtitle = 'Mindful application steps for multi-powder beauty rituals.';
+            $steps = [
+                [
+                    'step' => '01',
+                    'title' => 'Review Individual Pouches',
+                    'desc' => 'Check packaging directions for each individual pouch before mixing, ensuring ingredients suit your intended application.',
+                ],
+                [
+                    'step' => '02',
+                    'title' => 'Measure & Blend',
+                    'desc' => 'Measure the powders as instructed by packaging and blend gradually with water to form a smooth paste.',
+                ],
+                [
+                    'step' => '03',
+                    'title' => 'Apply & Rinse',
+                    'desc' => 'Apply to targeted hair or skin areas as directed on the packaging, then rinse thoroughly with running water.',
+                ],
+            ];
+            $ritualTip = 'Always conduct a patch test prior to combining botanical powders for the first time. For external cosmetic use only.';
+        } else {
+            $ritualTitle = 'Three-Step Application Ritual';
+            $ritualSubtitle = 'Simple, mindful preparation according to product label directions.';
+            $steps = [
+                [
+                    'step' => '01',
+                    'title' => 'Check Label Directions',
+                    'desc' => 'Review package instructions for recommended quantity and suitable mixing liquid (water, hydrosol, or oil) for your chosen routine.',
+                ],
+                [
+                    'step' => '02',
+                    'title' => 'Mix Fresh Paste',
+                    'desc' => 'Blend the dry powder gradually with clean water in a non-metallic bowl until smooth and lump-free.',
+                ],
+                [
+                    'step' => '03',
+                    'title' => 'Apply & Rinse',
+                    'desc' => 'Apply smoothly to target hair, scalp, or skin areas as directed on packaging, then rinse thoroughly with water.',
+                ],
+            ];
+            $ritualTip = 'Always conduct a patch test on a small area of skin 24 hours prior to full application. For external cosmetic personal care use only.';
         }
 
-        // 5. Clinical & Social Proof Metrics
+        $rawRitualContent = $this->how_to_use ?: $this->directions;
+        if ($isIngestionText($rawRitualContent)) {
+            $rawRitualContent = null;
+        }
+
+        $modules[] = [
+            'type' => 'how_to_use_ritual',
+            'title' => $ritualTitle,
+            'subtitle' => $ritualSubtitle,
+            'raw_content' => $rawRitualContent,
+            'steps' => $steps,
+            'tip' => $ritualTip,
+        ];
+
+        // -------------------------------------------------------------
+        // MODULE 6: Trust & Quality Section (Factual Declarations)
+        // -------------------------------------------------------------
         $modules[] = [
             'type' => 'clinical_stats',
-            'title' => 'Real Formulations, Real Results',
+            'title' => 'Botanical Standards & Declarations',
+            'subtitle' => 'Factual product specifications for transparent consumer trust.',
             'stats' => [
-                ['number' => '100%', 'label' => 'Classical Ayurvedic Actives', 'sub' => 'Zero artificial fillers'],
-                ['number' => '96%', 'label' => 'Customer Satisfaction', 'sub' => 'Visible results in 21 days'],
-                ['number' => 'GMP', 'label' => 'Certified Manufacturing', 'sub' => 'Safe & standardized batches'],
+                [
+                    'number' => $weightStr,
+                    'label' => 'Declared Net Weight',
+                    'sub' => 'Net quantity as declared on packaging',
+                ],
+                [
+                    'number' => 'Botanical',
+                    'label' => 'Plant-Based Powder',
+                    'sub' => 'Traditional personal care botanicals',
+                ],
+                [
+                    'number' => 'Cosmetic',
+                    'label' => 'External Use Only',
+                    'sub' => 'Formulated for topical hair & skin care',
+                ],
             ],
         ];
 

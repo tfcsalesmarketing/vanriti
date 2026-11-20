@@ -1,6 +1,6 @@
 @php
-    $title = $data['title'] ?? 'Real Formulations, Real Results';
-    $subtitle = $data['subtitle'] ?? 'Clinically tested and validated by authentic Ayurvedic practitioners.';
+    $title = $data['title'] ?? 'Botanical Standards & Declarations';
+    $subtitle = $data['subtitle'] ?? 'Factual product specifications for transparent consumer trust.';
     $stats = $data['stats'] ?? [];
 @endphp
 
@@ -10,7 +10,7 @@
         @if ($title)
             <div class="vr-aplus-stats-header text-center mb-4">
                 <span class="vr-aplus-stats-pill">
-                    <i class="ri-shield-star-fill"></i> Proven Ayurvedic Performance
+                    <i class="ri-shield-check-line"></i> Authentic Botanical Standards
                 </span>
                 <h3 class="vr-aplus-stats-title">{{ $title }}</h3>
                 @if ($subtitle)

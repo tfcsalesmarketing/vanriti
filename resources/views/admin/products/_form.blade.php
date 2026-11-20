@@ -505,33 +505,199 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 3. A+ Content Auto-Draft Helper
+    // 3. Category-Aware A+ Content Auto-Draft Helper
     const autoDraftBtn = document.getElementById('btnAutoDraftAPlus');
     if (autoDraftBtn) {
         autoDraftBtn.addEventListener('click', function () {
             const prodName = document.querySelector('input[name="name"]')?.value || 'Vanriti Formulation';
+            const nameLower = prodName.toLowerCase();
+
+            // Extract weight string
+            const weightInput = document.querySelector('input[name="weight"]')?.value;
+            const unitSelect = document.querySelector('select[name="unit"]')?.value || 'g';
+            const weightUnit = (unitSelect === 'gm' ? 'g' : unitSelect);
+            const weightStr = (weightInput ? parseInt(weightInput, 10) : 100) + weightUnit;
+
+            // Detect category from checked categories and name
+            const checkedCatElements = Array.from(document.querySelectorAll('input[name="category_ids[]"]:checked'));
+            const catNames = checkedCatElements.map(el => (el.closest('.form-check')?.textContent || '').toLowerCase()).join(' ');
+
+            const isCleansing = catNames.includes('cleansing') || nameLower.includes('cleansing') || nameLower.includes('reetha') || nameLower.includes('shikakai');
+            const isFacePack = catNames.includes('face') || catNames.includes('skin') || nameLower.includes('face') || nameLower.includes('multani') || nameLower.includes('rose') || nameLower.includes('skin');
+            const isHairMask = catNames.includes('hair') || nameLower.includes('hair') || nameLower.includes('bhringraj') || nameLower.includes('brahmi') || nameLower.includes('hibiscus') || nameLower.includes('methi');
+            const isCombo = nameLower.includes('combo') || nameLower.includes('pack of 2') || nameLower.includes('pack of 3') || nameLower.includes('kit') || nameLower.includes(' and ');
+
+            // Module 1: Hero Banner
+            const heroEyebrow = document.querySelector('input[name="a_plus_modules[hero_banner][eyebrow]"]');
+            if (heroEyebrow && !heroEyebrow.value) {
+                if (isCombo) heroEyebrow.value = 'Botanical Combination Pack';
+                else if (isCleansing) heroEyebrow.value = 'Botanical Hair Cleansing';
+                else if (isFacePack) heroEyebrow.value = 'Botanical Skin Care';
+                else if (isHairMask) heroEyebrow.value = 'Botanical Hair Care';
+                else heroEyebrow.value = 'Pure Botanical Powder';
+            }
+
             const heroTitle = document.querySelector('input[name="a_plus_modules[hero_banner][title]"]');
             if (heroTitle && !heroTitle.value) {
-                heroTitle.value = 'Sacred Ayurvedic Care: ' + prodName;
+                heroTitle.value = prodName;
             }
 
             const heroDesc = document.querySelector('textarea[name="a_plus_modules[hero_banner][description]"]');
             const shortDesc = document.querySelector('textarea[name="short_description"]')?.value;
-            if (heroDesc && !heroDesc.value && shortDesc) {
-                heroDesc.value = shortDesc;
+            const benefitsVal = document.querySelector('textarea[name="benefits"]')?.value;
+            if (heroDesc && !heroDesc.value) {
+                if (shortDesc) {
+                    heroDesc.value = shortDesc.replace(/<[^>]*>?/gm, '').trim().substring(0, 300);
+                } else if (benefitsVal) {
+                    heroDesc.value = benefitsVal.replace(/<[^>]*>?/gm, '').trim().substring(0, 300);
+                } else {
+                    heroDesc.value = 'Carefully processed pure botanical powder formulated for traditional personal care routines.';
+                }
             }
+
+            // Module 2: Value Pillars
+            const featTitle = document.querySelector('input[name="a_plus_modules[features_grid][title]"]');
+            if (featTitle && !featTitle.value) {
+                featTitle.value = 'Botanical Standards & Product Attributes';
+            }
+            const featSub = document.querySelector('input[name="a_plus_modules[features_grid][subtitle]"]');
+            if (featSub && !featSub.value) {
+                featSub.value = 'Factual, transparent product attributes for mindful home care routines.';
+            }
+
+            const pillarTitles = ['Traditional Botanicals', 'Fresh Powder Format', 'Declared Net Weight', 'External Personal Care'];
+            const pillarDescs = [
+                'Formulated with dried plant botanicals traditionally utilized in hair and skincare routines.',
+                'Clean, dry powder format allowing fresh custom preparation with water or oils right before use.',
+                'Packaged in sealed ' + weightStr + ' packaging to preserve botanical freshness and purity.',
+                'Formulated specifically for topical cosmetic application on hair, scalp, or skin.'
+            ];
+            for (let i = 0; i < 4; i++) {
+                const pTitle = document.querySelector(`input[name="a_plus_modules[features_grid][items][${i}][title]"]`);
+                if (pTitle && !pTitle.value) pTitle.value = pillarTitles[i];
+                const pDesc = document.querySelector(`textarea[name="a_plus_modules[features_grid][items][${i}][description]"]`);
+                if (pDesc && !pDesc.value) pDesc.value = pillarDescs[i];
+            }
+
+            // Module 3: Split Story
+            const storyEyebrow = document.querySelector('input[name="a_plus_modules[split_story][subtitle]"]');
+            if (storyEyebrow && !storyEyebrow.value) storyEyebrow.value = 'Traditional Botanical Heritage';
 
             const storyTitle = document.querySelector('input[name="a_plus_modules[split_story][title]"]');
-            if (storyTitle && !storyTitle.value) {
-                storyTitle.value = 'Pure Plant Bio-Actives for Lasting Cellular Wellness';
-            }
+            if (storyTitle && !storyTitle.value) storyTitle.value = 'Time-Honored Botanical Care';
 
             const storyContent = document.querySelector('textarea[name="a_plus_modules[split_story][content]"]');
-            const benefitsVal = document.querySelector('textarea[name="benefits"]')?.value;
-            if (storyContent && !storyContent.value && benefitsVal) {
-                storyContent.value = benefitsVal.replace(/<[^>]*>?/gm, '').trim();
+            if (storyContent && !storyContent.value) {
+                if (benefitsVal) {
+                    storyContent.value = benefitsVal.replace(/<[^>]*>?/gm, '').trim().substring(0, 450);
+                } else {
+                    storyContent.value = 'Carefully selected botanical powders brought together to support your traditional beauty rituals with pure, plant-based preparation.';
+                }
             }
 
+            const storyBullets = document.querySelector('textarea[name="a_plus_modules[split_story][bullets_raw]"]');
+            if (storyBullets && !storyBullets.value) {
+                storyBullets.value = "Dry powder format allows fresh preparation without synthetic liquid preservatives\nTraditional plant ingredients suitable for DIY masks, pastes, and rinses\nIntended strictly for topical personal care and external cosmetic use";
+            }
+
+            // Module 4: Botanical Ingredients Spotlight
+            const herbDict = [
+                { key: 'amla', name: 'Amla (Indian Gooseberry)', botanical: 'Phyllanthus emblica', benefit: 'Rich in natural fruit acids and antioxidants, traditionally used to condition hair and refresh scalp.' },
+                { key: 'reetha', name: 'Reetha (Soapnut)', botanical: 'Sapindus mukorossi', benefit: 'Natural saponin-rich botanical traditionally utilized as a gentle, foaming herbal hair and scalp cleanser.' },
+                { key: 'shikakai', name: 'Shikakai', botanical: 'Acacia concinna', benefit: 'Traditional fruit pod powder renowned for gentle low-pH scalp cleansing and detangling care.' },
+                { key: 'bhringraj', name: 'Bhringraj', botanical: 'Eclipta alba', benefit: 'Classical false daisy herb celebrated in traditional Ayurvedic routines for strengthening hair roots.' },
+                { key: 'hibiscus', name: 'Hibiscus Flower', botanical: 'Hibiscus rosa-sinensis', benefit: 'Naturally conditioning petal powder rich in botanical mucilage that leaves hair silky and manageable.' },
+                { key: 'multani', name: 'Multani Mitti (Fuller’s Earth)', botanical: 'Solum Fullonum', benefit: 'Naturally absorbent mineral clay traditionally used in deep-cleansing facial and scalp packs.' },
+                { key: 'rose', name: 'Rose Petal', botanical: 'Rosa centifolia', benefit: 'Aromatic petal powder traditionally prized for cooling, toning, and softening delicate facial skin.' },
+                { key: 'neem', name: 'Neem Leaf', botanical: 'Azadirachta indica', benefit: 'Clarifying and purifying botanical powder widely incorporated in home scalp and skin packs.' },
+                { key: 'moringa', name: 'Moringa Leaf', botanical: 'Moringa oleifera', benefit: 'Botanical powder rich in plant nutrients, traditionally utilized for revitalizing hair and skin masks.' },
+                { key: 'beetroot', name: 'Beetroot', botanical: 'Beta vulgaris', benefit: 'Naturally pigmented root botanical traditionally blended into DIY conditioning pastes.' },
+                { key: 'methi', name: 'Fenugreek (Methi)', botanical: 'Trigonella foenum-graecum', benefit: 'Protein-rich seeds traditionally ground into rich, slip-enhancing botanical hair masks.' },
+                { key: 'brahmi', name: 'Brahmi', botanical: 'Bacopa monnieri', benefit: 'Time-honored rejuvenating botanical traditionally used in hair packs to soothe and nourish the scalp.' }
+            ];
+
+            const ingText = (document.querySelector('textarea[name="ingredients"]')?.value || '') + ' ' + prodName;
+            const ingTextLower = ingText.toLowerCase();
+            const matchedHerbs = herbDict.filter(h => ingTextLower.includes(h.key)).slice(0, 3);
+
+            matchedHerbs.forEach((herb, idx) => {
+                const nameInput = document.querySelector(`input[name="a_plus_modules[ingredients_spotlight][items][${idx}][name]"]`);
+                if (nameInput && !nameInput.value) nameInput.value = herb.name;
+                const botInput = document.querySelector(`input[name="a_plus_modules[ingredients_spotlight][items][${idx}][botanical]"]`);
+                if (botInput && !botInput.value) botInput.value = herb.botanical;
+                const benInput = document.querySelector(`textarea[name="a_plus_modules[ingredients_spotlight][items][${idx}][benefit]"]`);
+                if (benInput && !benInput.value) benInput.value = herb.benefit;
+            });
+
+            // Module 5: Three-Step Usage Ritual (Category-Aware)
+            const ritualTitle = document.querySelector('input[name="a_plus_modules[how_to_use_ritual][title]"]');
+            const ritualTip = document.querySelector('input[name="a_plus_modules[how_to_use_ritual][tip]"]');
+            let stepsData = [];
+
+            if (isCleansing) {
+                if (ritualTitle && !ritualTitle.value) ritualTitle.value = 'Three-Step Hair Cleansing Ritual';
+                if (ritualTip && !ritualTip.value) ritualTip.value = 'Botanical cleansing powders produce a gentle natural cleansing emulsion rather than chemical foam. Focus on scalp massage and thorough rinsing.';
+                stepsData = [
+                    { title: 'Mix with Warm Water', desc: 'Measure the required powder into a bowl and gradually stir in lukewarm water to create a smooth, fluid paste.' },
+                    { title: 'Massage into Wet Scalp', desc: 'Apply gently onto wet scalp and hair lengths, massaging in gentle circular motions without harsh scrubbing.' },
+                    { title: 'Rinse Thoroughly', desc: 'Rinse out completely with running water until the rinse water runs clear. Avoid contact with eyes.' }
+                ];
+            } else if (isFacePack) {
+                if (ritualTitle && !ritualTitle.value) ritualTitle.value = 'Three-Step Face Pack Ritual';
+                if (ritualTip && !ritualTip.value) ritualTip.value = 'Always perform a 24-hour patch test behind your ear before initial facial use. Do not allow clay or botanical packs to dry to cracking stage.';
+                stepsData = [
+                    { title: 'Measure & Blend', desc: 'Take the required powder in a clean bowl. Blend with clean water or rose water to achieve a smooth, lump-free paste.' },
+                    { title: 'Apply Evenly', desc: 'Gently smooth an even layer over face and neck, keeping completely clear of the delicate eye and lip contours.' },
+                    { title: 'Rinse Before Dry', desc: 'Rinse off gently with lukewarm water before the mask dries completely. Pat dry and follow with your regular moisturizer.' }
+                ];
+            } else if (isHairMask) {
+                if (ritualTitle && !ritualTitle.value) ritualTitle.value = 'Three-Step Hair Mask Ritual';
+                if (ritualTip && !ritualTip.value) ritualTip.value = 'Conduct a patch test prior to first use. Covering hair with a damp towel or shower cap helps keep the paste moist during application.';
+                stepsData = [
+                    { title: 'Prepare Smooth Paste', desc: 'Mix the desired amount of powder with warm water, curd, or aloe vera gel in a clean bowl until smooth.' },
+                    { title: 'Coat Roots to Ends', desc: 'Part damp hair in sections and apply the paste evenly from scalp and roots through to the tips.' },
+                    { title: 'Rinse Thoroughly', desc: 'Leave on for the duration indicated on product packaging, then rinse out thoroughly with plain water.' }
+                ];
+            } else if (isCombo) {
+                if (ritualTitle && !ritualTitle.value) ritualTitle.value = 'Three-Step Dual Powder Ritual';
+                if (ritualTip && !ritualTip.value) ritualTip.value = 'Always conduct a patch test prior to combining botanical powders for the first time. For external cosmetic use only.';
+                stepsData = [
+                    { title: 'Review Individual Pouches', desc: 'Check packaging directions for each individual pouch before mixing, ensuring ingredients suit your intended application.' },
+                    { title: 'Measure & Blend', desc: 'Measure the powders as instructed by packaging and blend gradually with water to form a smooth paste.' },
+                    { title: 'Apply & Rinse', desc: 'Apply to targeted hair or skin areas as directed on the packaging, then rinse thoroughly with running water.' }
+                ];
+            } else {
+                if (ritualTitle && !ritualTitle.value) ritualTitle.value = 'Three-Step Application Ritual';
+                if (ritualTip && !ritualTip.value) ritualTip.value = 'Always conduct a patch test on a small area of skin 24 hours prior to full application. For external cosmetic use only.';
+                stepsData = [
+                    { title: 'Check Label Directions', desc: 'Review package instructions for recommended quantity and suitable mixing liquid for your chosen routine.' },
+                    { title: 'Mix Fresh Paste', desc: 'Blend the dry powder gradually with clean water in a non-metallic bowl until smooth and lump-free.' },
+                    { title: 'Apply & Rinse', desc: 'Apply smoothly to target hair or skin areas as directed on packaging, then rinse thoroughly with water.' }
+                ];
+            }
+
+            stepsData.forEach((st, sIdx) => {
+                const sTitle = document.querySelector(`input[name="a_plus_modules[how_to_use_ritual][steps][${sIdx}][title]"]`);
+                if (sTitle && !sTitle.value) sTitle.value = st.title;
+                const sDesc = document.querySelector(`textarea[name="a_plus_modules[how_to_use_ritual][steps][${sIdx}][desc]"]`);
+                if (sDesc && !sDesc.value) sDesc.value = st.desc;
+            });
+
+            // Module 6: Trust Section
+            const statNumbers = [weightStr, 'Botanical', 'Cosmetic'];
+            const statLabels = ['Declared Net Weight', 'Plant-Based Powder', 'External Use Only'];
+            const statSubs = ['Net contents as declared on packaging', 'Traditional personal care botanicals', 'Formulated for topical hair & skin care'];
+
+            for (let m = 0; m < 3; m++) {
+                const numInput = document.querySelector(`input[name="a_plus_modules[clinical_stats][stats][${m}][number]"]`);
+                if (numInput && !numInput.value) numInput.value = statNumbers[m];
+                const lblInput = document.querySelector(`input[name="a_plus_modules[clinical_stats][stats][${m}][label]"]`);
+                if (lblInput && !lblInput.value) lblInput.value = statLabels[m];
+                const subInput = document.querySelector(`input[name="a_plus_modules[clinical_stats][stats][${m}][sub]"]`);
+                if (subInput && !subInput.value) subInput.value = statSubs[m];
+            }
+
+            // Enable switch and expand Module 1
             const switchEl = document.getElementById('hasAPlusSwitch');
             if (switchEl) {
                 switchEl.checked = true;

@@ -8,8 +8,8 @@
         <span class="vr-aplus-master-badge">
             <i class="ri-sparkling-fill"></i> Enhanced Ayurvedic Experience
         </span>
-        <h2 class="vr-aplus-master-title">From Sacred Scriptures to Modern Wellness</h2>
-        <p class="vr-aplus-master-subtitle">Explore the craftsmanship, potent botanicals, and mindful rituals behind {{ $product->name }}.</p>
+        <h2 class="vr-aplus-master-title">Botanical Care &amp; Formulation Details</h2>
+        <p class="vr-aplus-master-subtitle">Explore the botanicals, careful preparation, and traditional beauty rituals behind {{ $product->name }}.</p>
     </div>
 
     <div class="vr-aplus-container">

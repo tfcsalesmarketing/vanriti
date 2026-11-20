@@ -166,11 +166,12 @@ class ProductAPlusContentTest extends TestCase
         $response = $this->get(route('product.show', $this->product->slug));
 
         $response->assertOk();
-        $response->assertSee('The Vanriti Purity Promise');
-        $response->assertSee('100% Ayurvedic Kwath');
-        $response->assertSee('Formulated for Transformative Care');
-        $response->assertSee('Key Botanical Actives');
-        $response->assertSee('The Ayurvedic Daily Ritual');
+        $response->assertSee('Enhanced Ayurvedic Experience');
+        $response->assertSee('Botanical Standards & Product Attributes');
+        $response->assertSee('Traditional Botanicals');
+        $response->assertSee('Time-Honored Botanical Care');
+        $response->assertSee('Featured Botanical Ingredients');
+        $response->assertSee('Botanical Standards & Declarations');
     }
 
     public function test_admin_edit_form_displays_a_plus_builder_card(): void
