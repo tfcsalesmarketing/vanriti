@@ -1816,18 +1816,25 @@ img { max-width: 100%; height: auto; }
     border-radius: var(--vr-radius-sm);
     overflow: hidden;
     cursor: pointer;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all var(--vr-transition-fast);
 }
 .vr-gallery-thumb:hover { border-color: rgba(111, 135, 54, 0.5); }
 .vr-gallery-thumb.active { border-color: var(--vr-green); box-shadow: 0 0 0 3px rgba(111, 135, 54, 0.12); }
 .vr-gallery-thumb img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
     object-position: center !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: auto !important;
     display: block;
+    background: #ffffff;
 }
 
 .vr-gallery-thumb-video { position: relative; }
@@ -2109,6 +2116,8 @@ img { max-width: 100%; height: auto; }
 
 /* Image Zoom & Gallery Column */
 #vrGalleryColumn {
+    position: relative;
+    z-index: 50;
     margin-bottom: 10px;
 }
 .vr-zoom-container {
@@ -2119,21 +2128,24 @@ img { max-width: 100%; height: auto; }
     margin-bottom: 10px;
     border-radius: var(--vr-radius);
     background: #ffffff;
-    overflow: hidden;
+    overflow: visible !important;
+    z-index: 50;
 }
 .vr-zoom-container .vr-zoom {
-    cursor: zoom-in;
+    cursor: crosshair;
     width: 100%;
     height: 100%;
 }
 #vrMainImage,
 .vr-zoom-image {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
     object-position: center !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: auto !important;
     border: none !important;
     display: block;
     background: #ffffff;
@@ -2154,7 +2166,7 @@ img { max-width: 100%; height: auto; }
     font-size: 0.9rem;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     pointer-events: none;
-    z-index: 3;
+    z-index: 5;
     transition: transform var(--vr-transition-fast), background var(--vr-transition-fast);
 }
 .vr-zoom-container:hover .vr-main-zoom-badge {
@@ -2165,28 +2177,28 @@ img { max-width: 100%; height: auto; }
     position: absolute;
     width: 180px;
     height: 180px;
-    border: 2px solid rgba(111, 135, 54, 0.35);
-    background: rgba(111, 135, 54, 0.06);
+    border: 2px solid rgba(111, 135, 54, 0.45);
+    background: rgba(111, 135, 54, 0.08);
     border-radius: 4px;
     cursor: crosshair;
     pointer-events: none;
     display: none;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    z-index: 30;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 .vr-zoom-result {
     position: absolute;
     top: 0;
     left: calc(100% + 16px);
-    width: 420px;
-    height: 420px;
+    width: 440px;
+    height: 440px;
     border: 1px solid var(--vr-border);
     border-radius: var(--vr-radius);
     background-repeat: no-repeat;
-    background-color: #fff;
-    box-shadow: var(--vr-shadow);
+    background-color: #ffffff;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
     display: none;
-    z-index: 20;
+    z-index: 9999 !important;
     pointer-events: none;
 }
 @media (max-width: 1200px) {

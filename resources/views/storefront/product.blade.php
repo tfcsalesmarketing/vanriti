@@ -101,36 +101,36 @@
 
     <div class="row g-4 g-lg-5">
         <div class="col-lg-5">
-            <div class="d-flex gap-3 align-items-start h-lg-100" id="vrGalleryColumn" style="margin-bottom: 10px;">
+            <div class="d-flex gap-3 align-items-start h-lg-100 position-relative" id="vrGalleryColumn" style="margin-bottom: 10px; z-index: 50;">
                 <div class="d-flex flex-column gap-2 vr-gallery-thumbs-vertical d-none d-lg-flex"
                      style="flex: 0 0 auto; width: 90px; max-height: 560px; overflow-y: auto; padding-right: 2px; scroll-snap-type: y mandatory;">
                     @foreach ($galleryItems as $index => $item)
                         @if ($item['kind'] === 'video')
-                            <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
+                            <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #ffffff;">
                                 @if ($item['poster'])
-                                    <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
+                                    <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; padding: 0;">
                                 @else
                                     <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
                                 @endif
                                 <span class="vr-gallery-thumb-play"><i class="bi bi-play-fill"></i></span>
                             </div>
                         @else
-                            <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1;">
-                                <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
+                            <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="scroll-snap-align: start; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #ffffff;">
+                                <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; padding: 0;">
                             </div>
                         @endif
                     @endforeach
                 </div>
 
-                <div class="vr-zoom-container flex-grow-1 position-relative" id="vrZoomContainer" style="width: 100%; aspect-ratio: 1 / 1; max-height: 560px;">
+                <div class="vr-zoom-container flex-grow-1 position-relative" id="vrZoomContainer" style="width: 100%; aspect-ratio: 1 / 1; max-height: 560px; overflow: visible;">
                     <div id="vrMainImageWrap" class="vr-zoom d-block position-relative {{ $videoIsOnlyItem ? 'd-none' : '' }}" style="width: 100%; height: 100%;">
                         @if ($img)
-                            <a href="#" class="d-block h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open>
-                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 w-100 h-100 vr-zoom-image" style="object-fit: cover; padding: 0;" fetchpriority="high">
+                            <a href="#" class="d-flex align-items-center justify-content-center h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open style="overflow: hidden; border-radius: var(--vr-radius); background: #ffffff;">
+                                <img id="vrMainImage" src="{{ image_url($img) }}" alt="{{ $product->name }}" class="img-fluid rounded-3 vr-zoom-image" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; padding: 0;" fetchpriority="high">
                                 <span class="vr-main-zoom-badge" aria-hidden="true"><i class="bi bi-arrows-fullscreen"></i></span>
                             </a>
                         @else
-                            <a href="#" class="d-block h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open>
+                            <a href="#" class="d-flex align-items-center justify-content-center h-100 w-100 position-relative" role="button" aria-label="Zoom product image" data-vr-lightbox-open style="overflow: hidden; border-radius: var(--vr-radius); background: #ffffff;">
                                 <div id="vrMainImage" class="bg-light rounded-3 d-flex align-items-center justify-content-center w-100 h-100">
                                     <i class="bi bi-image text-secondary display-4"></i>
                                 </div>
@@ -165,9 +165,9 @@
                     @foreach ($galleryItems as $index => $item)
                         @if ($item['kind'] === 'video')
                             <div class="col-3">
-                                <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="width: 100%; aspect-ratio: 1/1;">
+                                <div class="vr-gallery-thumb vr-gallery-thumb-video {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-video data-video-url="{{ $item['url'] }}" data-video-provider="{{ $item['provider'] }}" data-video-embed-id="{{ $item['embed_id'] }}" role="button" aria-label="Play product video" style="width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #ffffff;">
                                     @if ($item['poster'])
-                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
+                                        <img src="{{ $item['poster'] }}" alt="{{ $product->name }} video" class="img-fluid" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; padding: 0;">
                                     @else
                                         <span class="d-flex align-items-center justify-content-center h-100 w-100" style="aspect-ratio:1/1;background:#f7f4ea;"><i class="bi bi-play-circle fs-4"></i></span>
                                     @endif
@@ -176,8 +176,8 @@
                             </div>
                         @else
                             <div class="col-3">
-                                <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="width: 100%; aspect-ratio: 1/1;">
-                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid h-100 w-100" style="object-fit: cover; padding: 0;">
+                                <div class="vr-gallery-thumb {{ $index === 0 ? 'active' : '' }}" data-gallery-index="{{ $index }}" data-image="{{ $item['url'] }}" style="width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #ffffff;">
+                                    <img src="{{ $item['url'] }}" alt="{{ $item['alt'] ?: $product->name }}" class="img-fluid" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; padding: 0;">
                                 </div>
                             </div>
                         @endif
@@ -1359,10 +1359,10 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 
     function activateZoom() {
         if (container.classList.contains('is-video')) return;
-        var src = img.src;
+        var src = img.currentSrc || img.src;
         if (!src) return;
 
-        result.style.backgroundImage = 'url(' + src + ')';
+        result.style.backgroundImage = 'url("' + src + '")';
         var bgW = img.offsetWidth * zoomFactor;
         var bgH = img.offsetHeight * zoomFactor;
         result.style.backgroundSize = bgW + 'px ' + bgH + 'px';
@@ -1378,31 +1378,51 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 
     function moveLens(e) {
         if (container.classList.contains('is-video')) return;
-        var rect = img.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
+        var src = img.currentSrc || img.src;
+        if (!src) return;
 
-        var lensW = lens.offsetWidth / 2;
-        var lensH = lens.offsetHeight / 2;
+        var containerRect = container.getBoundingClientRect();
+        var imgRect = img.getBoundingClientRect();
 
-        var left = x - lensW;
-        var top = y - lensH;
+        var mouseX = e.clientX - imgRect.left;
+        var mouseY = e.clientY - imgRect.top;
+
+        if (mouseX < 0 || mouseX > img.offsetWidth || mouseY < 0 || mouseY > img.offsetHeight) {
+            deactivateZoom();
+            return;
+        }
+
+        var lensW = lens.offsetWidth || 180;
+        var lensH = lens.offsetHeight || 180;
+
+        var left = mouseX - lensW / 2;
+        var top = mouseY - lensH / 2;
 
         if (left < 0) left = 0;
         if (top < 0) top = 0;
-        if (left > img.offsetWidth - lens.offsetWidth) left = img.offsetWidth - lens.offsetWidth;
-        if (top > img.offsetHeight - lens.offsetHeight) top = img.offsetHeight - lens.offsetHeight;
+        if (left > img.offsetWidth - lensW) left = Math.max(0, img.offsetWidth - lensW);
+        if (top > img.offsetHeight - lensH) top = Math.max(0, img.offsetHeight - lensH);
 
-        lens.style.left = left + 'px';
-        lens.style.top = top + 'px';
+        var imgOffsetX = imgRect.left - containerRect.left;
+        var imgOffsetY = imgRect.top - containerRect.top;
 
-        var ratioX = left / (img.offsetWidth - lens.offsetWidth);
-        var ratioY = top / (img.offsetHeight - lens.offsetHeight);
+        lens.style.left = (imgOffsetX + left) + 'px';
+        lens.style.top = (imgOffsetY + top) + 'px';
+        lens.style.display = 'block';
+        result.style.display = 'block';
 
+        result.style.backgroundImage = 'url("' + src + '")';
         var bgW = img.offsetWidth * zoomFactor;
         var bgH = img.offsetHeight * zoomFactor;
-        var bgX = -(ratioX * (bgW - result.offsetWidth));
-        var bgY = -(ratioY * (bgH - result.offsetHeight));
+        result.style.backgroundSize = bgW + 'px ' + bgH + 'px';
+
+        var maxLeft = img.offsetWidth - lensW;
+        var maxTop = img.offsetHeight - lensH;
+        var ratioX = maxLeft > 0 ? (left / maxLeft) : 0.5;
+        var ratioY = maxTop > 0 ? (top / maxTop) : 0.5;
+
+        var bgX = -(ratioX * Math.max(0, bgW - result.offsetWidth));
+        var bgY = -(ratioY * Math.max(0, bgH - result.offsetHeight));
 
         result.style.backgroundPosition = bgX + 'px ' + bgY + 'px';
     }
@@ -1410,6 +1430,11 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
     container.addEventListener('mouseenter', activateZoom);
     container.addEventListener('mouseleave', deactivateZoom);
     container.addEventListener('mousemove', moveLens);
+    img.addEventListener('load', function () {
+        if (result.style.display === 'block') {
+            activateZoom();
+        }
+    });
 })();
 </script>
 <script nonce="{{ $cspNonce }}">
