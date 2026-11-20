@@ -357,6 +357,10 @@ class Product extends Model
      */
     public function getEffectiveAPlusModules(): array
     {
+        if (! (bool) $this->has_a_plus) {
+            return [];
+        }
+
         if ($this->hasAPlusContent()) {
             return $this->getAPlusModules();
         }

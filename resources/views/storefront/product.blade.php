@@ -611,7 +611,9 @@
     </div>
 
     {{-- Amazon-style A+ Content (Enhanced Brand Content) --}}
-    @include('storefront.products.a-plus.index')
+    @if (!empty($product->has_a_plus))
+        @include('storefront.products.a-plus.index')
+    @endif
 
     <section class="mt-5 vr-animate-in">
         <h2 class="h5 fw-bold mb-3" style="color:var(--vr-green-dark);">Customer Reviews</h2>

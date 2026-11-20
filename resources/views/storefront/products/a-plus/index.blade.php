@@ -1,3 +1,4 @@
+@if (!empty($product->has_a_plus))
 @php
     $modules = $product->getEffectiveAPlusModules();
 @endphp
@@ -27,5 +28,6 @@
         @endforeach
     </div>
 </section>
+@endif
 @endif
 
