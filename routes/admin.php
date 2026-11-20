@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\MainCategoryController;
+use App\Http\Controllers\Admin\MarketplaceClickController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NewsletterController;
 use App\Http\Controllers\Admin\OrderController;
@@ -58,6 +59,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::middleware('permission:view-products,manage-products')->group(function () {
+            Route::get('marketplace-clicks/export', [MarketplaceClickController::class, 'export'])->name('marketplace-clicks.export');
+            Route::get('marketplace-clicks', [MarketplaceClickController::class, 'index'])->name('marketplace-clicks.index');
             Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
             Route::get('products', [ProductController::class, 'index'])->name('products.index');
             Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');

@@ -9,6 +9,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DadiController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MarketplaceClickController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\Auth\OtpController;
@@ -46,6 +47,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/category/{category:slug}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('product.show');
+Route::post('/marketplace-clicks', [MarketplaceClickController::class, 'record'])->name('marketplace.click')->middleware('throttle:120,1');
 
 // ---------- Cart & Slide-Over Drawer ----------
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');

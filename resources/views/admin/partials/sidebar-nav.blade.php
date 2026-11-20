@@ -2,7 +2,7 @@
     $admin = auth('admin')->user();
     $_waUnreadCount = \App\Models\WhatsAppConversation::sum('unread_count');
 
-    $catActive = request()->routeIs('admin.products.*', 'admin.categories.*', 'admin.main-categories.*', 'admin.inventory.*', 'admin.dadi.product-profiles.*');
+    $catActive = request()->routeIs('admin.products.*', 'admin.marketplace-clicks.*', 'admin.categories.*', 'admin.main-categories.*', 'admin.inventory.*', 'admin.dadi.product-profiles.*');
     $ordersActive = request()->routeIs('admin.orders.*', 'admin.shipments.*', 'admin.returns.*', 'admin.refunds.*');
     $waActive = request()->routeIs('admin.whatsapp.*');
     $custActive = request()->routeIs('admin.customers.*', 'admin.carts.*', 'admin.wishlists.*', 'admin.push.*', 'admin.coupons.*', 'admin.reviews.*', 'admin.newsletters.*', 'admin.contact-messages.*');
@@ -51,6 +51,12 @@
                     <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
                        href="{{ route('admin.products.index') }}">
                         <i class="bi bi-box-seam"></i><span>Products</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.marketplace-clicks.*') ? 'active' : '' }}"
+                       href="{{ route('admin.marketplace-clicks.index') }}">
+                        <i class="bi bi-cursor"></i><span>Marketplace Clicks</span>
                     </a>
                 </li>
                 @endif

@@ -1595,6 +1595,12 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
 // Marketplace Outbound Click Tracking (Amazon & Flipkart)
 (function () {
     var mktBtns = document.querySelectorAll('.js-marketplace-click');
+    if (!mktBtns.length) return;
+
+    var trackUrl = @json(route('marketplace.click'));
+    var prodId = {{ (int) $product->id }};
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
     mktBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
             var mkt = btn.getAttribute('data-mkt');
@@ -1602,11 +1608,40 @@ window.dataLayer.push({!! json_encode($viewItemPayload, JSON_HEX_TAG | JSON_HEX_
                 window.dataLayer.push({
                     event: 'marketplace_click',
                     marketplace: mkt,
-                    product_id: {{ $product->id }},
+                    product_id: prodId,
                     product_name: {!! json_encode($product->name, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
                     product_sku: {!! json_encode($product->sku, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!},
                     product_price: {{ (float) $product->selling_price }}
                 });
+            }
+
+            try {
+                if (navigator.sendBeacon) {
+                    var formData = new FormData();
+                    formData.append('product_id', String(prodId));
+                    formData.append('marketplace', mkt);
+                    if (csrfToken) {
+                        formData.append('_token', csrfToken);
+                    }
+                    navigator.sendBeacon(trackUrl, formData);
+                } else if (window.fetch) {
+                    fetch(trackUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            product_id: prodId,
+                            marketplace: mkt,
+                            _token: csrfToken
+                        }),
+                        keepalive: true
+                    }).catch(function () {});
+                }
+            } catch (e) {
+                // Non-blocking
             }
         });
     });

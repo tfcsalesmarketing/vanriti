@@ -182,6 +182,21 @@ class Product extends Model
         return $this->hasMany(Review::class)->where('status', 'approved')->orderByDesc('created_at');
     }
 
+    public function marketplaceClicks(): HasMany
+    {
+        return $this->hasMany(MarketplaceClick::class);
+    }
+
+    public function amazonClicks(): HasMany
+    {
+        return $this->hasMany(MarketplaceClick::class)->where('marketplace', 'amazon');
+    }
+
+    public function flipkartClicks(): HasMany
+    {
+        return $this->hasMany(MarketplaceClick::class)->where('marketplace', 'flipkart');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
