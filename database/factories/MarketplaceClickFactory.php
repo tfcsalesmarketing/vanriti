@@ -42,3 +42,4 @@ class MarketplaceClickFactory extends Factory
         ]);
     }
 }
+

@@ -55,3 +55,4 @@ class MarketplaceClickController extends Controller
         ], 200);
     }
 }
+

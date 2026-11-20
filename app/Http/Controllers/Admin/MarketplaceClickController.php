@@ -378,3 +378,4 @@ class MarketplaceClickController extends Controller
         return $query;
     }
 }
+

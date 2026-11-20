@@ -61,3 +61,4 @@ class MarketplaceClick extends Model
         return $query;
     }
 }
+
