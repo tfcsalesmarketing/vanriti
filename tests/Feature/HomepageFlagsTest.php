@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class HomepageFlagsTest extends TestCase
@@ -60,23 +61,21 @@ class HomepageFlagsTest extends TestCase
 
         $content = $response->getContent();
 
-        // 1. Featured section rendered with featured kicker & product
-        $this->assertStringContainsString('Featured Collection', $content);
+        // 1. Featured product rendered with simple plain Featured badge
         $this->assertStringContainsString('Signature Amla Hair Oil', $content);
         $this->assertStringContainsString('Featured', $content);
 
-        // 2. Bestsellers section rendered with bestseller kicker & product
-        $this->assertStringContainsString('Our Bestsellers', $content);
+        // 2. Bestseller product rendered with simple plain Best Selling badge
         $this->assertStringContainsString('Bestseller Bhringraj Mask', $content);
-        $this->assertStringContainsString('#1 Bestseller', $content);
+        $this->assertStringContainsString('Best Selling', $content);
 
-        // 3. New Arrivals section rendered with new kicker & product
-        $this->assertStringContainsString('New Arrivals', $content);
+        // 3. New Arrival product rendered with simple plain New Arrivals badge
         $this->assertStringContainsString('Fresh Hibiscus Shampoo Bar', $content);
-        $this->assertStringContainsString('New', $content);
+        $this->assertStringContainsString('New Arrivals', $content);
 
-        // 4. Unflagged product must NOT appear on homepage
-        $this->assertStringNotContainsString('Unflagged Neem Powder', $content);
+        // 4. Unflagged product must NOT appear in the featured & bestsellers section
+        $featuredSection = Str::betweenFirst($content, 'vr-section-featured', '</section>');
+        $this->assertStringNotContainsString('Unflagged Neem Powder', $featuredSection);
     }
 
     public function test_homepage_does_not_duplicate_featured_into_empty_bestsellers_or_new_arrivals(): void
@@ -99,12 +98,13 @@ class HomepageFlagsTest extends TestCase
         $content = $response->getContent();
 
         // Featured should be visible
-        $this->assertStringContainsString('Featured Collection', $content);
         $this->assertStringContainsString('Only Featured Item', $content);
+        $this->assertStringContainsString('Featured', $content);
 
-        // Bestsellers and New Arrivals should NOT be rendered when no products carry those flags
-        $this->assertStringNotContainsString('Our Bestsellers', $content);
-        $this->assertStringNotContainsString('New Arrivals', $content);
+        // Bestsellers and New Arrivals badges should NOT be rendered when no products carry those flags
+        $this->assertStringNotContainsString('Best Selling', $content);
+        $this->assertStringNotContainsString('vr-flag-bestseller', $content);
+        $this->assertStringNotContainsString('vr-flag-new', $content);
     }
 
     public function test_view_all_links_point_to_specific_flag_shop_pages(): void

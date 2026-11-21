@@ -37,6 +37,7 @@ class CategoryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:2048',
             'status' => 'required|in:active,inactive',
             'sort_order' => 'nullable|integer',
+            'show_on_homepage' => 'nullable|boolean',
             'parent_id' => 'nullable|exists:categories,id',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
@@ -57,6 +58,7 @@ class CategoryController extends Controller
             : Category::uniqueSlugFromName($validated['name']);
 
         $validated['sort_order'] = !empty($validated['sort_order']) ? (int) $validated['sort_order'] : 0;
+        $validated['show_on_homepage'] = $request->boolean('show_on_homepage');
         $validated['parent_id'] = !empty($validated['parent_id']) ? (int) $validated['parent_id'] : null;
 
         Category::create($validated);
@@ -81,6 +83,7 @@ class CategoryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:2048',
             'status' => 'required|in:active,inactive',
             'sort_order' => 'nullable|integer',
+            'show_on_homepage' => 'nullable|boolean',
             'parent_id' => 'nullable|exists:categories,id',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
@@ -106,6 +109,7 @@ class CategoryController extends Controller
         }
 
         $validated['sort_order'] = !empty($validated['sort_order']) ? (int) $validated['sort_order'] : 0;
+        $validated['show_on_homepage'] = $request->boolean('show_on_homepage');
         $validated['parent_id'] = !empty($validated['parent_id']) ? (int) $validated['parent_id'] : null;
 
         if ($validated['parent_id'] !== null && $validated['parent_id'] === $category->id) {

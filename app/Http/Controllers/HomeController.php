@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Review;
 
 class HomeController extends Controller
 {
@@ -28,69 +29,79 @@ class HomeController extends Controller
             ->groupBy('position')
             ->map->first();
 
-        // 1. Featured Collection: strictly products with is_featured = true
-        $featured = Product::query()
+        // 1. Tagged Products: Single unified collection for Bestsellers, Featured, & New Arrivals
+        $taggedProducts = Product::query()
             ->vanriti()
             ->active()
-            ->featured()
             ->inStock()
-            ->with(['images', 'categories', 'approvedReviews'])
-            ->orderByDesc('id')
-            ->limit(10)
-            ->get();
-
-        $featuredIds = $featured->pluck('id');
-
-        // 2. Bestsellers: strictly products with is_bestseller = true
-        // Avoid duplicate products already presented in Featured above
-        $bestsellersBase = Product::query()
-            ->vanriti()
-            ->active()
-            ->bestsellers()
-            ->inStock()
-            ->with(['images', 'categories', 'approvedReviews'])
+            ->where(function ($q) {
+                $q->where('is_bestseller', true)
+                    ->orWhere('is_featured', true)
+                    ->orWhere('is_new_arrival', true);
+            })
+            ->with(['images', 'categories', 'approvedReviews', 'activeVariants'])
+            ->orderByDesc('is_bestseller')
+            ->orderByDesc('is_featured')
             ->orderByDesc('total_sold')
-            ->orderByDesc('id');
-
-        $bestsellers = (clone $bestsellersBase)
-            ->when($featuredIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $featuredIds))
-            ->limit(10)
+            ->orderByDesc('id')
+            ->limit(24)
             ->get();
 
-        if ($bestsellers->isEmpty()) {
-            $bestsellers = $bestsellersBase->limit(10)->get();
-        }
+        // Keep individual collections for backward compatibility with existing tests
+        $featured = $taggedProducts->filter(fn ($p) => (bool) $p->is_featured)->values();
+        $bestsellers = $taggedProducts->filter(fn ($p) => (bool) $p->is_bestseller)->values();
+        $newArrivals = $taggedProducts->filter(fn ($p) => (bool) $p->is_new_arrival)->values();
 
-        $shownIds = $featuredIds->concat($bestsellers->pluck('id'))->unique();
-
-        // 3. New Arrivals: strictly products with is_new_arrival = true
-        // Avoid duplicate products already presented in Featured or Bestsellers
-        $newArrivalsBase = Product::query()
-            ->vanriti()
-            ->active()
-            ->newArrivals()
-            ->inStock()
-            ->with(['images', 'categories', 'approvedReviews'])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
-
-        $newArrivals = (clone $newArrivalsBase)
-            ->when($shownIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $shownIds))
-            ->limit(10)
+        // 2. Category Image Showcase: 3 categories selected from admin (or fallback to top 3 active root)
+        $showcaseCategories = Category::query()
+            ->where('show_on_homepage', true)
+            ->where('status', 'active')
+            ->orderBy('sort_order')
+            ->take(3)
             ->get();
 
-        if ($newArrivals->isEmpty()) {
-            $newArrivals = $newArrivalsBase->limit(10)->get();
+        if ($showcaseCategories->isEmpty()) {
+            $showcaseCategories = Category::query()
+                ->whereNull('parent_id')
+                ->where('status', 'active')
+                ->orderBy('sort_order')
+                ->take(3)
+                ->get();
         }
 
-        $categories = Category::query()
-            ->with(['children'])
+        // 3. Multi-Category Sections: Active root categories with in-stock products for horizontal sliders
+        $categorySections = Category::query()
             ->whereNull('parent_id')
-            ->active()
+            ->where('status', 'active')
+            ->whereHas('products', fn ($q) => $q->vanriti()->active()->inStock())
+            ->with([
+                'products' => fn ($q) => $q->vanriti()
+                    ->active()
+                    ->inStock()
+                    ->with(['images', 'categories', 'approvedReviews', 'activeVariants'])
+                    ->orderBy('sort_order')
+                    ->orderByDesc('id')
+                    ->limit(10),
+            ])
             ->orderBy('sort_order')
             ->get();
 
-        // 4. Shoppable Instagram Reels: curated reels active on website
+        $categories = $categorySections;
+
+        // 4. Distinct Product Reviews Section: 20 approved reviews, distinct per product
+        $homepageReviews = Review::query()
+            ->where('status', 'approved')
+            ->where('rating', '>=', 4)
+            ->whereNotNull('comment')
+            ->whereHas('product', fn ($q) => $q->vanriti()->active())
+            ->with(['product.images'])
+            ->latest('id')
+            ->get()
+            ->unique('product_id')
+            ->take(20)
+            ->values();
+
+        // 5. Shoppable Instagram Reels: curated reels active on website
         $reels = \App\Models\InstagramReel::query()
             ->active()
             ->ordered()
@@ -98,7 +109,7 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
 
-        // 5. Recent Editorial Journal Stories: 5 latest published articles
+        // 6. Recent Editorial Journal Stories: 5 latest published articles
         $recentBlogs = \App\Models\Blog::query()
             ->published()
             ->with(['category', 'author'])
@@ -106,6 +117,19 @@ class HomeController extends Controller
             ->limit(5)
             ->get();
 
-        return view('storefront.home', compact('banners', 'sectionBanners', 'featured', 'bestsellers', 'newArrivals', 'categories', 'reels', 'recentBlogs'));
+        return view('storefront.home', compact(
+            'banners',
+            'sectionBanners',
+            'taggedProducts',
+            'featured',
+            'bestsellers',
+            'newArrivals',
+            'showcaseCategories',
+            'categorySections',
+            'categories',
+            'homepageReviews',
+            'reels',
+            'recentBlogs'
+        ));
     }
 }

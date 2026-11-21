@@ -46,6 +46,13 @@
                         <label class="form-label small fw-semibold">Sort Order</label>
                         <input type="number" name="sort_order" class="form-control form-control-sm" value="{{ old('sort_order', $category->sort_order ?? 0) }}" min="0">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Homepage Showcase</label>
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" name="show_on_homepage" id="showOnHomepage" value="1" {{ old('show_on_homepage', $category->show_on_homepage ?? false) ? 'checked' : '' }}>
+                            <label class="form-check-label small text-muted" for="showOnHomepage">Feature in 3-category image grid on homepage</label>
+                        </div>
+                    </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-semibold">Description</label>
                         <textarea name="description" class="form-control form-control-sm" rows="3">{{ old('description', $category->description ?? '') }}</textarea>

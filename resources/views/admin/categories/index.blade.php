@@ -20,6 +20,7 @@
                     <th>Slug</th>
                     <th class="text-center">Products</th>
                     <th>Status</th>
+                    <th class="text-center">Home Showcase</th>
                     <th class="text-center">Sort</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -35,6 +36,13 @@
                         <td class="text-center">{{ $cat->products_count }}</td>
                         <td>
                             <span class="badge {{ $cat->status === 'active' ? 'badge-soft-success' : 'badge-soft-secondary' }}">{{ ucfirst($cat->status) }}</span>
+                        </td>
+                        <td class="text-center">
+                            @if ($cat->show_on_homepage)
+                                <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check2"></i> Showcase</span>
+                            @else
+                                <span class="text-muted small">&mdash;</span>
+                            @endif
                         </td>
                         <td class="text-center">{{ $cat->sort_order }}</td>
                         <td class="text-end">
@@ -58,6 +66,13 @@
                             <td class="text-center">{{ $child->products_count }}</td>
                             <td>
                                 <span class="badge {{ $child->status === 'active' ? 'badge-soft-success' : 'badge-soft-secondary' }}">{{ ucfirst($child->status) }}</span>
+                            </td>
+                            <td class="text-center">
+                                @if ($child->show_on_homepage)
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check2"></i> Showcase</span>
+                                @else
+                                    <span class="text-muted small">&mdash;</span>
+                                @endif
                             </td>
                             <td class="text-center">{{ $child->sort_order }}</td>
                             <td class="text-end">

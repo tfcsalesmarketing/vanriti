@@ -23,7 +23,15 @@ class Category extends Model
         'meta_keywords',
         'status',
         'sort_order',
+        'show_on_homepage',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'show_on_homepage' => 'boolean',
+        ];
+    }
 
     public function parent(): BelongsTo
     {

@@ -121,31 +121,46 @@
     </div>
 </section>
 
-@if ($featured->isNotEmpty())
-<section class="vr-section vr-section-featured">
+@php
+    $slot1Banner = $sectionBanners->get('home_slot_1') ?? $sectionBanners->get('after_featured');
+    $slot2Banner = $sectionBanners->get('home_slot_2') ?? $sectionBanners->get('after_bestsellers');
+    $slot3Banner = $sectionBanners->get('home_slot_3') ?? $sectionBanners->get('after_new_arrivals');
+@endphp
+
+{{-- 1. SINGLE UNIFIED ROW / SLIDER FOR ALL 3 FEATURED TAGS (BESTSELLER, FEATURED, NEW ARRIVALS) --}}
+@if (isset($taggedProducts) && $taggedProducts->isNotEmpty())
+<section class="vr-section vr-section-featured py-4 py-md-5">
     <div class="container">
-        <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
+        <div class="d-flex align-items-end justify-content-between mb-3 mb-md-4 vr-animate-in">
             <div>
-                <div class="vr-section-kicker vr-kicker-featured">
-                    <i class="ri-sparkling-fill"></i> CURATED FORMULATIONS
+                <div class="vr-section-kicker" style="color: var(--vr-pink);">
+                    <i class="ri-sparkling-fill"></i> FEATURED COLLECTION &amp; BESTSELLERS
                 </div>
-                <h2 class="vr-section-title mb-1">Featured Collection</h2>
-                <p class="vr-section-sub mb-0">Handpicked favourites from our authentic Ayurvedic collection</p>
+                <h2 class="vr-section-title mb-1">Featured &amp; Bestsellers</h2>
+                <p class="vr-section-sub mb-0">Handpicked favourites, bestsellers, and fresh batches</p>
             </div>
-            <a href="{{ route('shop.index', ['is_featured' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
+            <div class="d-flex align-items-center gap-2 gap-md-3">
+                <a href="{{ route('shop.index', ['is_featured' => 1]) }}" class="vr-link-more d-none d-md-inline-flex">Featured</a>
+                <a href="{{ route('shop.index', ['is_bestseller' => 1]) }}" class="vr-link-more d-none d-md-inline-flex">Our Bestsellers</a>
+                <a href="{{ route('shop.index', ['is_new_arrival' => 1]) }}" class="vr-link-more d-none d-md-inline-flex">New Arrivals</a>
+                <a href="{{ route('shop.index') }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
         </div>
         <div class="vr-slider-wrapper position-relative">
-            <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous featured products">
+            <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous products">
                 <i class="bi bi-chevron-left"></i>
             </button>
             <div class="vr-product-slider">
-                @foreach ($featured as $product)
+                @foreach ($taggedProducts as $product)
+                    @php
+                        $tag = $product->is_bestseller ? 'bestseller' : ($product->is_featured ? 'featured' : ($product->is_new_arrival ? 'new_arrival' : null));
+                    @endphp
                     <div class="vr-slider-item">
-                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'featured'])
+                        @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => $tag])
                     </div>
                 @endforeach
             </div>
-            <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next featured products">
+            <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next products">
                 <i class="bi bi-chevron-right"></i>
             </button>
         </div>
@@ -153,41 +168,158 @@
 </section>
 @endif
 
-@include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_featured')])
+{{-- BANNER SLOT 1: AFTER FEATURED / BESTSELLERS ROW --}}
+@include('storefront.partials.section-banner', ['banner' => $slot1Banner])
 
-@if ($bestsellers->isNotEmpty())
-    <section class="vr-section vr-section-bestsellers py-5">
-        <div class="container">
-            <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
-                <div>
-                    <div class="vr-section-kicker vr-kicker-bestsellers">
-                        <i class="ri-fire-fill"></i> MOST LOVED BY CUSTOMERS
-                    </div>
-                    <h2 class="vr-section-title mb-1">Our Bestsellers</h2>
-                    <p class="vr-section-sub mb-0">Loved &amp; trusted by thousands of happy Ayurvedic routines</p>
-                </div>
-                <a href="{{ route('shop.index', ['is_bestseller' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
+{{-- 2. 3-CATEGORY IMAGE SHOWCASE (3 IN DESKTOP, 3 IN MOBILE) --}}
+@if (isset($showcaseCategories) && $showcaseCategories->isNotEmpty())
+<section class="vr-home-cat-showcase">
+    <div class="container">
+        <div class="mb-3 mb-md-4 text-center vr-animate-in">
+            <div class="vr-section-kicker justify-content-center" style="color: var(--vr-pink);">
+                <i class="ri-grid-fill"></i> TOP CATEGORIES
             </div>
-            <div class="vr-slider-wrapper position-relative">
-                <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous bestsellers">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <div class="vr-product-slider">
-                    @foreach ($bestsellers as $product)
-                        <div class="vr-slider-item">
-                            @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'bestseller', 'rank' => $loop->iteration])
-                        </div>
-                    @endforeach
-                </div>
-                <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next bestsellers">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-            </div>
+            <h2 class="vr-section-title mb-1">Shop by Category</h2>
+            <p class="vr-section-sub mb-0">Pure botanical formulations crafted for your routine</p>
         </div>
-    </section>
+        <div class="row g-2 g-md-4 justify-content-center vr-stagger">
+            @foreach ($showcaseCategories as $showCat)
+                <div class="col-4">
+                    <a href="{{ route('shop.category', $showCat->slug) }}" class="vr-cat-card-showcase" aria-label="Shop {{ $showCat->name }}">
+                        <div class="vr-cat-img-box">
+                            @if ($showCat->image)
+                                <img src="{{ image_url($showCat->image) }}" alt="{{ $showCat->name }}" loading="lazy" width="160" height="160">
+                            @else
+                                <div class="vr-cat-img-placeholder"><i class="bi bi-grid-3x3-gap"></i></div>
+                            @endif
+                        </div>
+                        <h3 class="vr-cat-name-showcase">{{ $showCat->name }}</h3>
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</section>
 @endif
 
-@include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_bestsellers')])
+{{-- BANNER SLOT 2: AFTER CATEGORY IMAGES SHOWCASE --}}
+@include('storefront.partials.section-banner', ['banner' => $slot2Banner])
+
+{{-- 3. MULTIPLE SECTIONS FOR EACH CATEGORY WITH PRODUCT SLIDERS (LIKE KHETIKA) --}}
+@if (isset($categorySections) && $categorySections->isNotEmpty())
+    @foreach ($categorySections as $catSection)
+        @if ($catSection->products->isNotEmpty())
+            <section class="vr-section vr-category-shelf py-4 py-md-5">
+                <div class="container">
+                    <div class="d-flex align-items-end justify-content-between mb-3 mb-md-4 vr-animate-in">
+                        <div>
+                            <div class="vr-section-kicker" style="color: var(--vr-pink);">
+                                <i class="ri-leaf-line"></i> BOTANICAL ESSENTIALS
+                            </div>
+                            <h2 class="vr-section-title mb-1">{{ $catSection->name }}</h2>
+                            <p class="vr-section-sub mb-0">{{ $catSection->description ?: 'Explore authentic handcrafted herbal formulations' }}</p>
+                        </div>
+                        <a href="{{ route('shop.category', $catSection->slug) }}" class="vr-link-more">
+                            View all <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="vr-slider-wrapper position-relative">
+                        <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous products in {{ $catSection->name }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <div class="vr-product-slider">
+                            @foreach ($catSection->products as $catProduct)
+                                <div class="vr-slider-item">
+                                    @include('storefront.partials.product-card', ['product' => $catProduct])
+                                </div>
+                            @endforeach
+                        </div>
+                        <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next products in {{ $catSection->name }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        @endif
+    @endforeach
+@endif
+
+{{-- BANNER SLOT 3: BEFORE REVIEWS SECTION --}}
+@include('storefront.partials.section-banner', ['banner' => $slot3Banner])
+
+{{-- 4. REVIEWS SECTION WITH PRODUCT "SHOP NOW" (5 ON DESKTOP, 3 ON MOBILE, DISTINCT PRODUCTS) --}}
+@if (isset($homepageReviews) && $homepageReviews->isNotEmpty())
+<section class="vr-section vr-section-reviews">
+    <div class="container">
+        <div class="d-flex align-items-end justify-content-between mb-3 mb-md-4 vr-animate-in">
+            <div>
+                <div class="vr-section-kicker" style="color: var(--vr-pink);">
+                    <i class="ri-heart-fill"></i> VERIFIED EXPERIENCES
+                </div>
+                <h2 class="vr-section-title mb-1">Customer Reviews &amp; Stories</h2>
+                <p class="vr-section-sub mb-0">Genuine testimonials from verified buyers of our Ayurvedic range</p>
+            </div>
+            <a href="{{ route('shop.index') }}" class="vr-link-more">Shop all products <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="vr-slider-wrapper position-relative">
+            <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous customer reviews">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <div class="vr-reviews-slider-track">
+                @foreach ($homepageReviews as $rev)
+                    @php
+                        $revProduct = $rev->product;
+                        $revThumb = $revProduct?->getPrimaryImage()?->image_path;
+                    @endphp
+                    <div class="vr-review-card">
+                        <div>
+                            <div class="vr-review-header">
+                                <div class="vr-review-author">{{ $rev->reviewer_name }}</div>
+                                <div class="vr-review-verified">
+                                    <i class="bi bi-patch-check-fill"></i> Verified Buyer
+                                </div>
+                                <div class="vr-review-stars">
+                                    @for ($s = 1; $s <= 5; $s++)
+                                        <i class="bi bi-star{{ $s <= (int) $rev->rating ? '-fill' : '' }}"></i>
+                                    @endfor
+                                </div>
+                            </div>
+                            <div class="vr-review-comment" title="{{ $rev->comment }}">
+                                &ldquo;{{ $rev->comment }}&rdquo;
+                            </div>
+                        </div>
+
+                        @if ($revProduct)
+                            <div class="vr-review-product-box">
+                                <img src="{{ $revThumb ? image_url($revThumb) : asset('images/placeholder.png') }}"
+                                     alt="{{ $revProduct->name }}"
+                                     class="vr-review-prod-thumb"
+                                     loading="lazy"
+                                     width="44"
+                                     height="44">
+                                <div class="vr-review-prod-info">
+                                    <a href="{{ route('product.show', $revProduct) }}" class="vr-review-prod-title" title="{{ $revProduct->name }}">
+                                        {{ $revProduct->name }}
+                                    </a>
+                                    <div class="vr-review-prod-price">
+                                        {{ format_price($revProduct->selling_price) }}
+                                    </div>
+                                </div>
+                                <a href="{{ route('product.show', $revProduct) }}" class="vr-review-shop-btn" aria-label="Shop {{ $revProduct->name }}">
+                                    Shop Now <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next customer reviews">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+@endif
 
 @if (isset($reels) && $reels->isNotEmpty())
     <section class="vr-section vr-section-reels py-5" id="vrReelsSection">
@@ -398,69 +530,6 @@
     <div class="vr-reel-toast d-none" id="vrReelToast">Link copied to clipboard!</div>
 @endif
 
-@if ($newArrivals->isNotEmpty())
-    <section class="vr-section vr-section-newarrivals py-5">
-        <div class="container">
-            <div class="d-flex align-items-end justify-content-between mb-4 vr-animate-in">
-                <div>
-                    <div class="vr-section-kicker vr-kicker-newarrivals">
-                        <i class="ri-leaf-line"></i> FRESH BATCH DROPS
-                    </div>
-                    <h2 class="vr-section-title mb-1">New Arrivals</h2>
-                    <p class="vr-section-sub mb-0">Fresh botanical herbs &amp; new formulations crafted with care</p>
-                </div>
-                <a href="{{ route('shop.index', ['is_new_arrival' => 1]) }}" class="vr-link-more">View all <i class="bi bi-arrow-right"></i></a>
-            </div>
-            <div class="vr-slider-wrapper position-relative">
-                <button type="button" class="vr-slider-nav prev js-slider-prev" aria-label="Previous new arrivals">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <div class="vr-product-slider">
-                    @foreach ($newArrivals as $product)
-                        <div class="vr-slider-item">
-                            @include('storefront.partials.product-card', ['product' => $product, 'cardFlag' => 'new_arrival'])
-                        </div>
-                    @endforeach
-                </div>
-                <button type="button" class="vr-slider-nav next js-slider-next" aria-label="Next new arrivals">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-    </section>
-@endif
-
-@include('storefront.partials.section-banner', ['banner' => $sectionBanners->get('after_new_arrivals')])
-
-@if ($categories->isNotEmpty())
-    <section class="vr-section vr-section-categories py-5">
-        <div class="container">
-            <div class="mb-4 text-center vr-animate-in">
-                <div class="vr-section-kicker vr-kicker-categories justify-content-center">
-                    <i class="ri-grid-fill"></i> EXPLORE BY CONCERN
-                </div>
-                <h2 class="vr-section-title mb-1">Shop by Category</h2>
-                <p class="vr-section-sub mb-0">Explore our specialized botanical ranges</p>
-            </div>
-            <div class="row g-3 justify-content-center vr-stagger">
-                @foreach ($categories as $cat)
-                    <div class="col-4 col-md-3">
-                        <a href="{{ route('shop.category', $cat->slug) }}" class="vr-cat-card d-block text-center" aria-label="Shop {{ $cat->name }}">
-                            <div class="vr-cat-img-wrap">
-                                @if ($cat->image)
-                                    <img src="{{ image_url($cat->image) }}" alt="{{ $cat->name }}" loading="lazy" width="80" height="80">
-                                @else
-                                    <div class="vr-cat-placeholder"><i class="bi bi-grid-3x3-gap"></i></div>
-                                @endif
-                            </div>
-                        </a>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-@endif
-
 @if (isset($recentBlogs) && $recentBlogs->isNotEmpty())
     <section class="vr-section vr-section-journal py-5">
         <div class="container">
@@ -557,14 +626,14 @@
     // 0. Initialize horizontal carousels and sliders
     var sliderWrappers = document.querySelectorAll('.vr-slider-wrapper');
     sliderWrappers.forEach(function (wrapper) {
-        var slider = wrapper.querySelector('.vr-product-slider, .vr-reels-carousel');
+        var slider = wrapper.querySelector('.vr-product-slider, .vr-reels-carousel, .vr-reviews-slider-track');
         var prevBtn = wrapper.querySelector('.js-slider-prev');
         var nextBtn = wrapper.querySelector('.js-slider-next');
 
         if (!slider || !prevBtn || !nextBtn) return;
 
         function getCardStep() {
-            var card = slider.querySelector('.vr-slider-item, .vr-reel-card');
+            var card = slider.querySelector('.vr-slider-item, .vr-reel-card, .vr-review-card');
             if (!card) return 320;
             var gap = 16;
             var width = card.offsetWidth;
@@ -619,7 +688,7 @@
         });
 
         function updateArrows() {
-            var items = slider.querySelectorAll('.vr-slider-item, .vr-reel-card');
+            var items = slider.querySelectorAll('.vr-slider-item, .vr-reel-card, .vr-review-card');
             var maxScroll = slider.scrollWidth - slider.clientWidth;
             var canScroll = maxScroll > 8 || items.length > 5;
 

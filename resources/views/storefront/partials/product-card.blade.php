@@ -36,29 +36,11 @@
         {{-- Badges Stack (Top Left) --}}
         <div class="vr-card-badges-stack">
             @if ($cardFlag === 'bestseller')
-                @if ($rank && $rank <= 3)
-                    <span class="vr-flag-badge vr-flag-bestseller rank-{{ $rank }}">
-                        @if ($rank === 1)
-                            <i class="ri-trophy-fill"></i> #1 Bestseller
-                        @elseif ($rank === 2)
-                            <i class="ri-medal-fill"></i> #2 Bestseller
-                        @else
-                            <i class="ri-fire-fill"></i> #3 Bestseller
-                        @endif
-                    </span>
-                @else
-                    <span class="vr-flag-badge vr-flag-bestseller">
-                        <i class="ri-fire-fill"></i> Bestseller
-                    </span>
-                @endif
+                <span class="vr-flag-badge vr-flag-bestseller">Best Selling</span>
             @elseif ($cardFlag === 'featured')
-                <span class="vr-flag-badge vr-flag-featured">
-                    <i class="ri-sparkling-fill"></i> Featured
-                </span>
+                <span class="vr-flag-badge vr-flag-featured">Featured</span>
             @elseif ($cardFlag === 'new_arrival')
-                <span class="vr-flag-badge vr-flag-new">
-                    <i class="ri-sparkles-line"></i> New
-                </span>
+                <span class="vr-flag-badge vr-flag-new">New Arrivals</span>
             @endif
         </div>
 

@@ -21,6 +21,9 @@ class Banner extends Model
         'after_featured' => 'After Featured section',
         'after_bestsellers' => 'After Bestsellers section',
         'after_new_arrivals' => 'After New Arrivals section',
+        'home_slot_1' => 'Homepage Slot 1 (After Featured / Bestsellers Row)',
+        'home_slot_2' => 'Homepage Slot 2 (After Category Images Showcase)',
+        'home_slot_3' => 'Homepage Slot 3 (Before Reviews Section)',
     ];
 
     /**

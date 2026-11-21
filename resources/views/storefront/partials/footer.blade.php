@@ -41,10 +41,10 @@
                 @php
                     $_socials = array_filter([
                         'whatsapp' => 'https://wa.me/919211946606?text=' . urlencode('Hi Vanriti, I would like to inquire about your products.'),
-                        'instagram' => setting('instagram_url'),
-                        'facebook' => setting('facebook_url'),
+                        'instagram' => setting('instagram_url') ?: 'https://instagram.com',
+                        'facebook' => setting('facebook_url') ?: 'https://facebook.com',
+                        'youtube' => setting('youtube_url') ?: 'https://youtube.com',
                         'twitter' => setting('twitter_url'),
-                        'youtube' => setting('youtube_url'),
                         'linkedin' => setting('linkedin_url'),
                     ]);
                 @endphp
