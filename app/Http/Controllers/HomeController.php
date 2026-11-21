@@ -84,7 +84,7 @@ class HomeController extends Controller
                 ->inStock()
                 ->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $ids)->active())
                 ->with(['images', 'categories', 'approvedReviews', 'activeVariants'])
-                ->orderBy('sort_order')
+                ->orderByDesc('total_sold')
                 ->orderByDesc('id')
                 ->limit(10)
                 ->get();
