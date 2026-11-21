@@ -337,14 +337,17 @@ class EcommerceDataService
             return false;
         }
 
-        if (in_array($order->payment_status, ['failed', 'refunded', 'partially_refunded'], true)) {
+        if (in_array($order->payment_status, ['refunded', 'partially_refunded'], true)) {
             return false;
         }
 
-        return match ($order->payment_method) {
-            'cod' => in_array($order->order_status, ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered'], true),
-            default => $order->payment_status === 'paid',
-        };
+        // Paid online orders are confirmed purchases
+        if ($order->payment_status === 'paid') {
+            return true;
+        }
+
+        // For unpaid / COD orders, the order must have an explicitly confirmed status (not pending or on_hold)
+        return in_array($order->order_status, ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered'], true);
     }
 
     protected function refundItems(Refund $refund): array
