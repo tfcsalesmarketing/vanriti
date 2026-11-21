@@ -295,6 +295,7 @@ class MetaMatchingReadinessTest extends TestCase
 
         $user = User::factory()->create(['email' => 'buyer@example.com', 'phone' => '9876543210']);
         $order = $this->placeOrderFor($user, '9876543210');
+        $order->update(['order_status' => 'confirmed']);
 
         $html = $this->actingAs($user, 'web')
             ->get(route('checkout.success', $order))

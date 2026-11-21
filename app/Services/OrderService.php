@@ -307,7 +307,49 @@ class OrderService
 
         $this->recordStatus($order, $newStatus, $description, $oldStatus);
 
+        $this->dispatchPurchaseIfEligible($order);
+
         return $order;
+    }
+
+    /**
+     * Dispatch purchase conversions (Meta CAPI, OpenAI CAPI) if the order has transitioned
+     * to a confirmed / eligible state and has not already been sent.
+     */
+    public function dispatchPurchaseIfEligible(Order $order): void
+    {
+        try {
+            $ecommerce = app(\App\Services\Analytics\EcommerceDataService::class);
+            if (! $ecommerce->purchaseEligible($order)) {
+                return;
+            }
+
+            $conversionService = app(\App\Services\Analytics\ConversionService::class);
+            $conversion = $conversionService->recordPurchase($order);
+            if ($conversion && $conversion->meta_state !== 'sent') {
+                $metaCapi = app(\App\Services\Analytics\MetaCapiService::class);
+                if ($metaCapi->isConfigured()) {
+                    $metaCapi->deliver($order, [
+                        'event_source_url' => route('checkout.success', $order),
+                    ]);
+                }
+            }
+
+            $openAiConversion = $conversionService->recordOpenAiOrderCreated($order);
+            if ($openAiConversion && $openAiConversion->openai_state !== 'sent') {
+                $openAiCapi = app(\App\Services\Analytics\OpenAiCapiService::class);
+                if ($openAiCapi->isConfigured()) {
+                    $openAiCapi->deliver($order, [
+                        'oppref' => $order->oppref,
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to dispatch CAPI purchase on order eligibility change', [
+                'order' => $order->order_number,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function recordStatus(Order $order, string $status, ?string $description = null, ?string $oldStatus = null, ?int $adminId = null): void
@@ -635,6 +677,10 @@ class OrderService
 
             return $order->fresh(['items', 'payments', 'user', 'statusHistories']);
         });
+
+        $this->dispatchPurchaseIfEligible($order);
+
+        return $order;
     }
 
     /**
@@ -975,6 +1021,10 @@ class OrderService
 
             return $order->fresh(['payments', 'statusHistories']);
         });
+
+        $this->dispatchPurchaseIfEligible($order);
+
+        return $order;
     }
 
     public function cancelOrder(Order $order, ?string $reason = null): void

@@ -226,7 +226,11 @@ class EcommerceDataServiceTest extends TestCase
         $order = app(OrderService::class)->placeOrder($user, $this->makeCart($user, $product, 1), $this->orderData());
 
         $this->assertSame('cod', $order->payment_method);
-        $this->assertTrue(app(EcommerceDataService::class)->purchaseEligible($order));
+        $this->assertSame('pending', $order->order_status);
+        $this->assertFalse(app(EcommerceDataService::class)->purchaseEligible($order));
+
+        $order->update(['order_status' => 'processing']);
+        $this->assertTrue(app(EcommerceDataService::class)->purchaseEligible($order->fresh()));
     }
 
     public function test_razorpay_order_only_eligible_once_paid(): void

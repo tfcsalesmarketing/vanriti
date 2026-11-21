@@ -299,12 +299,14 @@ class CheckoutController extends Controller
                 }
             }
 
-            // COD conversion is recorded when the order is successfully placed.
-            $this->conversionService->recordPurchase($order);
-            $this->conversionService->recordOpenAiOrderCreated($order);
+            // Only record purchase conversions and dispatch CAPI if order is confirmed / eligible upon placement.
+            if ($this->ecommerceDataService->purchaseEligible($order)) {
+                $this->conversionService->recordPurchase($order);
+                $this->conversionService->recordOpenAiOrderCreated($order);
 
-            $this->dispatchMetaCapiPurchase($order, $request);
-            $this->dispatchOpenAiCapiOrder($order, $request);
+                $this->dispatchMetaCapiPurchase($order, $request);
+                $this->dispatchOpenAiCapiOrder($order, $request);
+            }
 
             $this->notifyCustomer($order, 'orderPlaced');
 

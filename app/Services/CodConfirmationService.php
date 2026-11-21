@@ -151,9 +151,9 @@ class CodConfirmationService
 
         $name = $order->shipping_name ?: 'there';
 
-        // Update status to processing / confirmed
+        // Update status to processing / confirmed and trigger CAPI purchase conversion
+        $this->orderService->updateOrderStatus($order, 'processing', 'COD confirmed by customer via WhatsApp 1-Tap button.');
         $order->update([
-            'order_status' => 'processing',
             'internal_notes' => trim(($order->internal_notes ? $order->internal_notes . "\n" : '') . '[' . now()->format('d M Y H:i') . '] COD confirmed by customer via WhatsApp 1-Tap button.'),
         ]);
 

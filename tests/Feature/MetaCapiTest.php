@@ -77,6 +77,13 @@ class MetaCapiTest extends TestCase
 
         $order = Order::where('user_id', $user->id)->firstOrFail();
 
+        // Placed COD order is pending -> NO CAPI purchase delivered upon placement
+        $this->assertSame(0, AnalyticsConversion::where('event_type', 'purchase')->where('order_number', $order->order_number)->count());
+        $this->assertCount(0, $this->graphRecorded());
+
+        // Once confirmed (e.g. via WhatsApp confirmation prompt), CAPI delivers exactly once
+        app(\App\Services\CodConfirmationService::class)->handleCustomerConfirm($order->order_number, '9876543210');
+
         $this->assertSame(1, AnalyticsConversion::where('event_type', 'purchase')->where('order_number', $order->order_number)->count());
 
         $this->assertCount(1, $this->graphRecorded());
@@ -237,6 +244,9 @@ class MetaCapiTest extends TestCase
         $order = Order::where('user_id', $user->id)->firstOrFail();
         $expected = $this->meta->eventId($order);
 
+        // When confirmed, Browser Pixel and CAPI carry matching event IDs
+        app(\App\Services\CodConfirmationService::class)->handleCustomerConfirm($order->order_number, '9876543210');
+
         // Browser Pixel Purchase carries the identical event_id.
         $content = $this->actingAs($user, 'web')->get(route('checkout.success', $order))->getContent();
         $this->assertStringContainsString('{eventID: "'.$expected.'"}', $content);
@@ -383,10 +393,14 @@ class MetaCapiTest extends TestCase
         $this->seedCart($user, $product, 2);
 
         $response = $this->actingAs($user, 'web')->post(route('checkout.store'), $this->addressData('cod'));
-        $response->assertRedirect(route('checkout.success', Order::where('user_id', $user->id)->where('payment_method', 'cod')->firstOrFail()));
-
         $order = Order::where('user_id', $user->id)->where('payment_method', 'cod')->firstOrFail();
+        $response->assertRedirect(route('checkout.success', $order));
+
         $this->assertSame('pending', $order->fresh()->payment_status);
+        $this->assertSame('pending', $order->fresh()->order_status);
+
+        // Customer confirms COD during Meta outage -> order remains confirmed, ledger records failed CAPI
+        app(\App\Services\CodConfirmationService::class)->handleCustomerConfirm($order->order_number, '9876543210');
         $ledger = AnalyticsConversion::where('event_type', 'purchase')->where('order_number', $order->order_number)->firstOrFail();
         $this->assertSame('failed', $ledger->meta_state);
 
@@ -590,7 +604,7 @@ class MetaCapiTest extends TestCase
         Setting::updateOrCreate(['key' => 'razorpay_key_secret'], ['value' => \Illuminate\Support\Facades\Crypt::encryptString('rzp_test_secret')]);
     }
 
-    protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus): Order
+    protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus, string $orderStatus = 'confirmed'): Order
     {
         $product = Product::factory()->active()->create([
             'sku' => 'VNRT2'.str_pad((string) mt_rand(10, 99), 2, '0', STR_PAD_LEFT),
@@ -620,7 +634,7 @@ class MetaCapiTest extends TestCase
             'amount_due' => 1600,
             'payment_method' => $paymentMethod,
             'payment_status' => $paymentStatus,
-            'order_status' => 'pending',
+            'order_status' => $orderStatus,
         ]);
 
         $order->items()->create([

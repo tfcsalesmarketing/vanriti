@@ -66,6 +66,7 @@ class WhatsAppPaymentController extends Controller
 
                 $order = $order->refresh();
                 $order->update(['order_status' => 'confirmed']);
+                app(\App\Services\OrderService::class)->dispatchPurchaseIfEligible($order);
 
                 $this->checkoutService->handlePaymentSuccess($session, $payment, $order);
             }
@@ -194,6 +195,7 @@ class WhatsAppPaymentController extends Controller
         $order->update([
             'order_status' => 'confirmed',
         ]);
+        app(\App\Services\OrderService::class)->dispatchPurchaseIfEligible($order);
 
         // 4. Send WhatsApp confirmation message
         $this->checkoutService->handlePaymentSuccess($session, $payment, $order);

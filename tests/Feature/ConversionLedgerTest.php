@@ -44,6 +44,13 @@ class ConversionLedgerTest extends TestCase
         $order = Order::where('user_id', $user->id)->firstOrFail();
         $this->assertSame('cod', $order->payment_method);
         $this->assertSame('pending', $order->payment_status);
+        $this->assertSame('pending', $order->order_status);
+
+        // Pending COD order has no purchase conversion row yet
+        $this->assertSame(0, AnalyticsConversion::where('event_type', 'purchase')->where('order_number', $order->order_number)->count());
+
+        // Once confirmed (e.g. customer confirms COD via WhatsApp or admin confirms), purchase conversion is recorded
+        app(\App\Services\CodConfirmationService::class)->handleCustomerConfirm($order->order_number, '9876543210');
 
         $rows = AnalyticsConversion::where('event_type', 'purchase')
             ->where('order_number', $order->order_number)
@@ -287,6 +294,8 @@ class ConversionLedgerTest extends TestCase
         $this->actingAs($user, 'web')->post(route('checkout.store'), $this->addressData('cod'))->assertRedirect();
 
         $order = Order::where('user_id', $user->id)->firstOrFail();
+        $order->update(['order_status' => 'confirmed']);
+        app(\App\Services\OrderService::class)->dispatchPurchaseIfEligible($order);
 
         $this->actingAs($user, 'web')->get(route('checkout.success', $order))->assertOk();
         $this->actingAs($user, 'web')->get(route('checkout.success', $order))->assertOk();
@@ -358,6 +367,8 @@ class ConversionLedgerTest extends TestCase
         $this->actingAs($user, 'web')->post(route('checkout.store'), $this->addressData('cod'))->assertRedirect();
 
         $order = Order::where('user_id', $user->id)->firstOrFail();
+        $order->update(['order_status' => 'confirmed']);
+        app(\App\Services\OrderService::class)->dispatchPurchaseIfEligible($order);
 
         // Server-side authoritative ledger row exists alongside the browser event.
         $this->assertSame(
@@ -426,7 +437,7 @@ class ConversionLedgerTest extends TestCase
         ];
     }
 
-    protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus): Order
+    protected function makeOrder(User $user, string $paymentMethod, string $paymentStatus, string $orderStatus = 'confirmed'): Order
     {
         $product = Product::factory()->active()->create([
             'sku' => 'VNRT'.str_pad((string) mt_rand(100, 999), 3, '0', STR_PAD_LEFT),
@@ -456,7 +467,7 @@ class ConversionLedgerTest extends TestCase
             'amount_due' => 1600,
             'payment_method' => $paymentMethod,
             'payment_status' => $paymentStatus,
-            'order_status' => 'pending',
+            'order_status' => $orderStatus,
         ]);
 
         $order->items()->create([

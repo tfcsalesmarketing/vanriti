@@ -324,10 +324,12 @@ class EcommerceDataService
     }
 
     /**
-     * Whether a placed order counts as a purchase conversion for analytics.
+     * Whether an order counts as a purchase conversion for analytics.
      *
-     * COD is a conversion at order creation; online payments only once the
-     * server has verified and marked the payment as paid. Read-only.
+     * Orders only count as a purchase once confirmed:
+     * - Online orders once payment is verified and marked 'paid'.
+     * - COD orders once explicitly confirmed (order_status is confirmed, processing, packed, shipped, out_for_delivery, delivered).
+     * Pending, cancelled, failed, and refunded orders are never purchase-eligible.
      */
     public function purchaseEligible(Order $order): bool
     {
@@ -335,12 +337,12 @@ class EcommerceDataService
             return false;
         }
 
-        if (in_array($order->payment_status, ['refunded', 'partially_refunded'], true)) {
+        if (in_array($order->payment_status, ['failed', 'refunded', 'partially_refunded'], true)) {
             return false;
         }
 
         return match ($order->payment_method) {
-            'cod' => true,
+            'cod' => in_array($order->order_status, ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered'], true),
             default => $order->payment_status === 'paid',
         };
     }
