@@ -187,54 +187,72 @@ class SendWhatsAppOrderStatusNotification implements ShouldQueue
             $result = $apiService->sendTemplateMessage($phone, $templateName, 'en', $components);
         }
 
-        // 2. If template failed and customer's 24hr session window is currently active, fall back to rich text
-        if (! ($result['success'] ?? false) && $conversation->isWindowOpen()) {
-            $fallbackText = match ($status) {
-                'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}. Tracking / AWB: {$trackingNumber}. Track here: {$publicTrackingUrl}",
-                'out_for_delivery' => "🚚 Hi {$customerName}, your order #{$this->order->order_number} is out for delivery today with {$courier}! Track here: {$publicTrackingUrl}",
-                'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} containing {$productName} has been delivered! We hope you love your Vanriti products. Please share your review here: {$reviewUrl}" . (! empty($invoiceUrl) ? "\n\n📄 Download Your Official Tax Invoice (PDF): {$invoiceUrl}" : ''),
-            };
+        // Build rich human-readable message body for live chat and notifications
+        $statusLabel = ucwords(str_replace('_', ' ', $status));
+        $readableBody = match ($status) {
+            'shipped' => "📦 Great news, {$customerName}! Your order #{$this->order->order_number} has been dispatched via {$courier}.\nTracking / AWB: {$trackingNumber}\nTrack your parcel: {$publicTrackingUrl}",
+            'out_for_delivery' => "🚚 Hi {$customerName}, your order #{$this->order->order_number} is out for delivery today with {$courier}!\nTrack your parcel: {$publicTrackingUrl}",
+            'delivered' => "🎉 Hooray {$customerName}! Your order #{$this->order->order_number} containing {$productName} has been delivered! We hope you love your Vanriti products.\nReview your items: {$reviewUrl}" . (! empty($invoiceUrl) ? "\n\n📄 Download Tax Invoice (PDF): {$invoiceUrl}" : ''),
+            default => "📋 Order {$statusLabel}: Order #{$this->order->order_number} status updated to {$statusLabel}.",
+        };
 
-            $result = $apiService->sendTextMessage($phone, $fallbackText);
-            $previewSnippet = $fallbackText;
-        } else {
-            $previewSnippet = "📋 Template: {$templateName} (#{$this->order->order_number})";
+        // 2. If template failed and customer's 24hr session window is currently active, fall back to rich text
+        $isFallbackText = false;
+        if (! ($result['success'] ?? false) && $conversation->isWindowOpen()) {
+            $result = $apiService->sendTextMessage($phone, $readableBody);
+            $isFallbackText = true;
         }
 
         if ($result['success'] ?? false) {
-            // Record in conversation stream
-            WhatsAppMessage::create([
-                'whatsapp_conversation_id' => $conversation->id,
-                'direction' => 'outbound',
-                'message_type' => 'text',
-                'body' => $previewSnippet,
-                'meta_message_id' => $result['message_id'] ?? null,
-                'status' => 'sent',
-                'metadata' => [
-                    'order_number' => $this->order->order_number,
-                    'event' => $status,
-                    'courier' => $courier,
-                    'awb' => $trackingNumber,
-                    'invoice_url' => $invoiceUrl,
-                ],
-                'sent_at' => now(),
-            ]);
-
-            $conversation->update([
-                'last_message_at' => now(),
-                'last_message_preview' => $previewSnippet,
-            ]);
+            // Record in conversation stream using WhatsAppChatService
+            try {
+                app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                    phone: $phone,
+                    body: $readableBody,
+                    messageType: $isFallbackText ? 'text' : 'template',
+                    metaMessageId: $result['message_id'] ?? null,
+                    metadata: [
+                        'order_number' => $this->order->order_number,
+                        'event' => $status,
+                        'courier' => $courier,
+                        'awb' => $trackingNumber,
+                        'invoice_url' => $invoiceUrl,
+                        'template_name' => $templateName,
+                    ],
+                    channel: 'vanriti',
+                    contactName: $customerName
+                );
+            } catch (\Throwable $e) {
+                Log::warning('SendWhatsAppOrderStatusNotification: Failed to record outbound message in chat', ['error' => $e->getMessage()]);
+            }
 
             // If delivered, invoice URL is available, and session window is active, deliver PDF document directly
             if ($status === 'delivered' && ! empty($invoiceUrl) && $conversation->isWindowOpen()) {
                 try {
-                    $apiService->sendMediaMessage(
+                    $docRes = $apiService->sendMediaMessage(
                         $phone,
                         'document',
                         $invoiceUrl,
                         "Official Tax Invoice for Order #{$this->order->order_number}",
                         ($this->order->invoice_number ?: "INV-{$this->order->order_number}") . '.pdf'
                     );
+
+                    if ($docRes['success'] ?? false) {
+                        app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                            phone: $phone,
+                            body: "📄 Official Tax Invoice for Order #{$this->order->order_number}",
+                            messageType: 'document',
+                            metaMessageId: $docRes['message_id'] ?? null,
+                            metadata: [
+                                'order_number' => $this->order->order_number,
+                                'invoice_url' => $invoiceUrl,
+                                'type' => 'invoice_pdf',
+                            ],
+                            channel: 'vanriti',
+                            mediaUrl: $invoiceUrl,
+                            contactName: $customerName
+                        );
+                    }
                 } catch (\Throwable $e) {
                     Log::warning('SendWhatsAppOrderStatusNotification: Document send exception: ' . $e->getMessage());
                 }

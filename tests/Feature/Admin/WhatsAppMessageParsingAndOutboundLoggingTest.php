@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Jobs\SendWhatsAppOrderConfirmation;
+use App\Jobs\SendWhatsAppOrderStatusNotification;
 use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Role;
@@ -42,9 +43,11 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         Setting::updateOrCreate(['key' => 'whatsapp_otp_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean']);
         Setting::updateOrCreate(['key' => 'whatsapp_orders_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean']);
         Setting::updateOrCreate(['key' => 'whatsapp_order_notifications_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean']);
+        Setting::updateOrCreate(['key' => 'whatsapp_shipping_notifications_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean']);
         Setting::updateOrCreate(['key' => 'whatsapp_template_name'], ['value' => 'otp_template', 'group' => 'whatsapp', 'type' => 'text']);
         Setting::updateOrCreate(['key' => 'whatsapp_welcome_template_name'], ['value' => 'vanriti_welcome', 'group' => 'whatsapp', 'type' => 'text']);
         Setting::updateOrCreate(['key' => 'whatsapp_order_template_name'], ['value' => 'order_confirmation', 'group' => 'whatsapp', 'type' => 'text']);
+        Setting::updateOrCreate(['key' => 'whatsapp_dispatch_template_name'], ['value' => 'order_dispatched', 'group' => 'whatsapp', 'type' => 'text']);
 
         Http::fake([
             'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.fake_123456']]], 200),
@@ -61,7 +64,7 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         return $admin;
     }
 
-    public function test_inbound_button_click_parses_button_text_not_placeholder(): void
+    public function test_inbound_button_click_parses_action_and_order_number(): void
     {
         $phone = '919664023036';
         $metaMsg = [
@@ -77,16 +80,17 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         $message = $this->chatService->recordInboundMessage($phone, $metaMsg, $phone, 'Lakshita Galani');
 
         $this->assertInstanceOf(WhatsAppMessage::class, $message);
-        $this->assertEquals('Confirm Order', $message->body);
+        $this->assertEquals('✅ Confirmed Order (#VAN-2026-000028)', $message->body);
+        $this->assertEquals('✅ Confirmed Order (#VAN-2026-000028)', $message->display_body);
         $this->assertNotEquals('[Message: button]', $message->body);
         $this->assertEquals('button', $message->message_type);
 
         $convo = WhatsAppConversation::where('phone', $phone)->first();
         $this->assertNotNull($convo);
-        $this->assertStringContainsString('Confirm Order', $convo->last_message_preview);
+        $this->assertStringContainsString('✅ Confirmed Order', $convo->last_message_preview);
     }
 
-    public function test_inbound_interactive_button_reply_parses_title(): void
+    public function test_inbound_interactive_button_reply_parses_cancel_action(): void
     {
         $phone = '919876543210';
         $metaMsg = [
@@ -104,8 +108,28 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
 
         $message = $this->chatService->recordInboundMessage($phone, $metaMsg, $phone, 'John Doe');
 
-        $this->assertEquals('Cancel Order', $message->body);
+        $this->assertEquals('❌ Cancelled Order (#VAN-2026-000029)', $message->body);
+        $this->assertEquals('❌ Cancelled Order (#VAN-2026-000029)', $message->display_body);
         $this->assertEquals('interactive', $message->message_type);
+    }
+
+    public function test_inbound_ndr_reattempt_button_parses_delivery_action(): void
+    {
+        $phone = '919876543219';
+        $metaMsg = [
+            'from' => $phone,
+            'id' => 'wamid.btn_reattempt_001',
+            'type' => 'button',
+            'button' => [
+                'text' => 'Reattempt Delivery',
+                'payload' => 'NDR_REATTEMPT_VAN-2026-000030',
+            ],
+        ];
+
+        $message = $this->chatService->recordInboundMessage($phone, $metaMsg, $phone, 'Rohit Mehra');
+
+        $this->assertEquals('🚚 Reattempt Delivery (#VAN-2026-000030)', $message->body);
+        $this->assertEquals('🚚 Reattempt Delivery (#VAN-2026-000030)', $message->display_body);
     }
 
     public function test_inbound_unsupported_type_parses_cleanly_not_raw_developer_tag(): void
@@ -127,8 +151,45 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         $message = $this->chatService->recordInboundMessage($phone, $metaMsg, $phone, 'Customer 3632');
 
         $this->assertNotEquals('[Message: unsupported]', $message->body);
-        $this->assertStringContainsString('Unsupported message', $message->body);
+        $this->assertStringContainsString('Unsupported message format', $message->body);
         $this->assertEquals('unsupported', $message->message_type);
+        $this->assertStringContainsString('Unsupported message format', $message->display_body);
+    }
+
+    public function test_historical_placeholder_messages_display_properly_via_accessor(): void
+    {
+        $convo = WhatsAppConversation::create([
+            'phone' => '919811122334',
+            'contact_name' => 'Legacy Customer',
+            'channel' => 'vanriti',
+            'status' => 'active',
+        ]);
+
+        // Historical raw [Message: button] with metadata
+        $msg1 = WhatsAppMessage::create([
+            'whatsapp_conversation_id' => $convo->id,
+            'direction' => 'inbound',
+            'message_type' => 'button',
+            'body' => '[Message: button]',
+            'metadata' => [
+                'payload' => 'COD_CONFIRM_VAN-2026-000031',
+                'text' => 'Confirm Order',
+            ],
+            'meta_message_id' => 'wamid.hist_01',
+            'status' => 'delivered',
+        ]);
+        $this->assertEquals('✅ Confirmed Order (#VAN-2026-000031)', $msg1->display_body);
+
+        // Historical raw [Message: unsupported]
+        $msg2 = WhatsAppMessage::create([
+            'whatsapp_conversation_id' => $convo->id,
+            'direction' => 'inbound',
+            'message_type' => 'unsupported',
+            'body' => '[Message: unsupported]',
+            'meta_message_id' => 'wamid.hist_02',
+            'status' => 'delivered',
+        ]);
+        $this->assertEquals('ℹ️ [Unsupported message format (e.g. Poll, Live Location, or Flow Reply)]', $msg2->display_body);
     }
 
     public function test_inbound_location_contacts_reaction_parse_properly(): void
@@ -253,6 +314,55 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         $this->assertStringContainsString('*CONFIRMED*', $confirmReplyMsg->body);
     }
 
+    public function test_whatsapp_order_status_notification_job_records_outbound_in_chat_stream(): void
+    {
+        $user = User::factory()->create(['phone' => '919876543220']);
+        $order = Order::create([
+            'user_id' => $user->id,
+            'order_number' => 'VAN-2026-SHIP01',
+            'payment_method' => 'prepaid',
+            'payment_status' => 'paid',
+            'order_status' => 'shipped',
+            'subtotal' => 999.00,
+            'grand_total' => 999.00,
+            'billing_name' => 'Kavita Das',
+            'billing_mobile' => '919876543220',
+            'billing_address_line1' => '45 Marine Drive',
+            'billing_city' => 'Mumbai',
+            'billing_state' => 'Maharashtra',
+            'billing_pincode' => '400020',
+            'billing_country' => 'India',
+            'shipping_name' => 'Kavita Das',
+            'shipping_mobile' => '919876543220',
+            'shipping_address_line1' => '45 Marine Drive',
+            'shipping_city' => 'Mumbai',
+            'shipping_state' => 'Maharashtra',
+            'shipping_pincode' => '400020',
+            'shipping_country' => 'India',
+        ]);
+
+        $order->shipments()->create([
+            'courier' => 'Ekart Express',
+            'awb_number' => 'EKART998877',
+            'status' => 'shipped',
+        ]);
+
+        SendWhatsAppOrderStatusNotification::dispatchSync($order, 'shipped');
+
+        $convo = WhatsAppConversation::where('phone', '919876543220')->first();
+        $this->assertNotNull($convo);
+
+        $shipMsg = WhatsAppMessage::where('whatsapp_conversation_id', $convo->id)
+            ->where('direction', 'outbound')
+            ->where('metadata->event', 'shipped')
+            ->first();
+
+        $this->assertNotNull($shipMsg);
+        $this->assertStringContainsString('dispatched via Ekart Express', $shipMsg->body);
+        $this->assertStringContainsString('EKART998877', $shipMsg->body);
+        $this->assertStringContainsString('VAN-2026-SHIP01', $shipMsg->body);
+    }
+
     public function test_whatsapp_welcome_message_records_in_conversation_stream(): void
     {
         $phone = '919793039774';
@@ -300,6 +410,47 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         $this->assertStringContainsString('VAN-2026-TEST02', $orderConfMsg->body);
     }
 
+    public function test_send_whatsapp_order_confirmation_job_ensures_outbound_message_recorded(): void
+    {
+        $user = User::factory()->create(['phone' => '919822334455']);
+        $order = Order::create([
+            'user_id' => $user->id,
+            'order_number' => 'VAN-2026-CONF01',
+            'payment_method' => 'razorpay',
+            'payment_status' => 'paid',
+            'order_status' => 'processing',
+            'subtotal' => 1499.00,
+            'grand_total' => 1499.00,
+            'billing_name' => 'Meera Patel',
+            'billing_mobile' => '919822334455',
+            'billing_address_line1' => '10 Ring Road',
+            'billing_city' => 'Ahmedabad',
+            'billing_state' => 'Gujarat',
+            'billing_pincode' => '380001',
+            'billing_country' => 'India',
+            'shipping_name' => 'Meera Patel',
+            'shipping_mobile' => '919822334455',
+            'shipping_address_line1' => '10 Ring Road',
+            'shipping_city' => 'Ahmedabad',
+            'shipping_state' => 'Gujarat',
+            'shipping_pincode' => '380001',
+            'shipping_country' => 'India',
+        ]);
+
+        SendWhatsAppOrderConfirmation::dispatchSync($order);
+
+        $convo = WhatsAppConversation::where('phone', '919822334455')->first();
+        $this->assertNotNull($convo);
+
+        $confMsg = WhatsAppMessage::where('whatsapp_conversation_id', $convo->id)
+            ->where('direction', 'outbound')
+            ->where('metadata->order_number', 'VAN-2026-CONF01')
+            ->first();
+
+        $this->assertNotNull($confMsg);
+        $this->assertStringContainsString('VAN-2026-CONF01', $confMsg->body);
+    }
+
     public function test_inbox_ui_renders_button_message_with_icon_badge(): void
     {
         $admin = $this->superAdmin();
@@ -315,7 +466,7 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
             'whatsapp_conversation_id' => $convo->id,
             'direction' => 'inbound',
             'message_type' => 'button',
-            'body' => 'Confirm Order',
+            'body' => '✅ Confirmed Order (#VAN-2026-000028)',
             'meta_message_id' => 'wamid.btn_ui_001',
             'status' => 'delivered',
         ]);
@@ -323,8 +474,8 @@ class WhatsAppMessageParsingAndOutboundLoggingTest extends TestCase
         $response = $this->actingAs($admin, 'admin')->get(route('admin.whatsapp.inbox', ['conversation' => $convo->id]));
 
         $response->assertOk();
-        $response->assertSee('Confirm Order');
-        $response->assertDontSee('[Message: button]');
+        $response->assertSee('✅ Confirmed Order (#VAN-2026-000028)');
+        $response->assertDontSeeText('[Message: button]');
         $response->assertSee('bi-hand-index-thumb');
     }
 }

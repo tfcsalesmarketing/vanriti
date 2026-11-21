@@ -102,7 +102,7 @@ class CodConfirmationService
                 app(WhatsAppChatService::class)->recordOutboundSystemMessage(
                     phone: $phone,
                     body: $promptBody,
-                    messageType: ! empty($res['template_name']) ? 'template' : 'interactive',
+                    messageType: ($useTemplate && $templateName !== '' && ! empty($res['success'])) ? 'template' : 'interactive',
                     metaMessageId: $res['message_id'] ?? null,
                     metadata: [
                         'order_number' => $orderNumber,

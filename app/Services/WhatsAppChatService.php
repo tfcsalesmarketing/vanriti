@@ -162,6 +162,76 @@ class WhatsAppChatService
     }
 
     /**
+     * Resolve incoming button and quick reply clicks to clean human-readable action text.
+     * Maps COD confirm/cancel, NDR reattempts, stock notifications, and generic button clicks.
+     */
+    public static function parseButtonAction(string $payload = '', string $text = ''): string
+    {
+        $payload = trim($payload);
+        $text = trim($text);
+
+        // 1. Order confirmation (COD or generic)
+        if (str_starts_with($payload, 'COD_CONFIRM_')) {
+            $orderNo = trim(substr($payload, strlen('COD_CONFIRM_')));
+            return '✅ Confirmed Order' . ($orderNo !== '' ? " (#{$orderNo})" : '');
+        }
+
+        // 2. Order cancellation (COD or generic)
+        if (str_starts_with($payload, 'COD_CANCEL_')) {
+            $orderNo = trim(substr($payload, strlen('COD_CANCEL_')));
+            return '❌ Cancelled Order' . ($orderNo !== '' ? " (#{$orderNo})" : '');
+        }
+
+        // 3. NDR Reattempt delivery
+        if (str_starts_with($payload, 'NDR_REATTEMPT_')) {
+            $orderNo = trim(substr($payload, strlen('NDR_REATTEMPT_')));
+            return '🚚 Reattempt Delivery' . ($orderNo !== '' ? " (#{$orderNo})" : '');
+        }
+
+        // 4. NDR Update Address / Landmark
+        if (str_starts_with($payload, 'NDR_UPDATE_') || str_starts_with($payload, 'NDR_LANDMARK_')) {
+            $orderNo = trim(preg_replace('/^NDR_(?:UPDATE|LANDMARK)_/', '', $payload));
+            return '📍 Update Delivery Address' . ($orderNo !== '' ? " (#{$orderNo})" : '');
+        }
+
+        // 5. Stock alert
+        if (str_starts_with($payload, 'NOTIFY_STOCK_')) {
+            $sku = trim(substr($payload, strlen('NOTIFY_STOCK_')));
+            return '🔔 Stock Alert Requested' . ($sku !== '' ? " ({$sku})" : '');
+        }
+
+        // 6. Quick Buy
+        if (str_starts_with($payload, 'QUICK_BUY_')) {
+            return '⚡ Quick Buy Requested';
+        }
+
+        // 7. Check by text content if payload didn't match specific action
+        if ($text !== '') {
+            $lowerText = strtolower($text);
+            if (str_contains($lowerText, 'confirm')) {
+                return '✅ ' . $text;
+            }
+            if (str_contains($lowerText, 'cancel')) {
+                return '❌ ' . $text;
+            }
+            if (str_contains($lowerText, 'reattempt')) {
+                return '🚚 ' . $text;
+            }
+            if (str_contains($lowerText, 'update') || str_contains($lowerText, 'address')) {
+                return '📍 ' . $text;
+            }
+            return '🔘 ' . $text;
+        }
+
+        // 8. Fallback to payload if present
+        if ($payload !== '') {
+            return '🔘 ' . $payload;
+        }
+
+        return '🔘 Button Reply';
+    }
+
+    /**
      * Process incoming webhook message and attach to conversation.
      */
     public function recordInboundMessage(
@@ -224,20 +294,32 @@ class WhatsAppChatService
 
             case 'interactive':
                 $interactive = $metaMsg['interactive'] ?? [];
-                $btnTitle = $interactive['button_reply']['title']
+                $btnId = (string) ($interactive['button_reply']['id']
+                    ?? ($interactive['list_reply']['id']
+                    ?? ($interactive['button_reply']['title']
+                    ?? ($interactive['list_reply']['title']
+                    ?? ($interactive['nfm_reply']['response_json'] ?? '')))));
+                $btnTitle = (string) ($interactive['button_reply']['title']
                     ?? ($interactive['list_reply']['title']
                     ?? ($interactive['button_reply']['id']
-                    ?? ($interactive['list_reply']['id']
-                    ?? ($interactive['nfm_reply']['response_json'] ?? null))));
-                $body = $btnTitle ?: '[Interactive selection]';
-                $metadata = $interactive;
+                    ?? ($interactive['list_reply']['id'] ?? ''))));
+                $body = self::parseButtonAction($btnId, $btnTitle);
+                $metadata = array_merge($interactive, [
+                    'raw_title' => $btnTitle,
+                    'raw_id' => $btnId,
+                    'action_body' => $body,
+                ]);
                 break;
 
             case 'button':
                 $btnText = (string) ($metaMsg['button']['text'] ?? '');
                 $btnPayload = (string) ($metaMsg['button']['payload'] ?? '');
-                $body = $btnText !== '' ? $btnText : ($btnPayload !== '' ? $btnPayload : '[Button reply]');
-                $metadata = $metaMsg['button'] ?? [];
+                $body = self::parseButtonAction($btnPayload, $btnText);
+                $metadata = array_merge($metaMsg['button'] ?? [], [
+                    'raw_text' => $btnText,
+                    'raw_payload' => $btnPayload,
+                    'action_body' => $body,
+                ]);
                 break;
 
             case 'location':
@@ -279,8 +361,8 @@ class WhatsAppChatService
             case 'unsupported':
                 $errDetail = $metaMsg['errors'][0]['title'] ?? ($metaMsg['errors'][0]['message'] ?? null);
                 $body = $errDetail
-                    ? "⚠️ [Unsupported message: {$errDetail}]"
-                    : '⚠️ [Unsupported message format (e.g. Poll, Live Location, or Payment)]';
+                    ? "ℹ️ [Unsupported message format: {$errDetail}]"
+                    : 'ℹ️ [Unsupported message format (e.g. Poll, Live Location, or Flow Reply)]';
                 $metadata = $metaMsg['errors'] ?? [];
                 break;
 
@@ -292,7 +374,7 @@ class WhatsAppChatService
                 break;
 
             default:
-                $body = "[Message: {$type}]";
+                $body = "ℹ️ [Unsupported message: " . ucfirst($type) . "]";
                 break;
         }
 
@@ -319,13 +401,12 @@ class WhatsAppChatService
             'document' => '📄 ' . ($mediaFilename ?: 'Document'),
             'audio' => '🎵 Voice Note',
             'order' => $body ?: '🛒 Cart',
-            'button' => '🔘 ' . ($body ?: 'Button reply'),
-            'interactive' => '🔘 ' . ($body ?: 'Option selected'),
+            'button', 'interactive' => $body ?: '🔘 Button reply',
             'location' => $body ?: '📍 Location',
             'contacts' => $body ?: '👤 Contact card',
             'reaction' => $body ?: 'Reaction',
             'sticker' => '🏷️ Sticker',
-            'unsupported' => '⚠️ Unsupported message',
+            'unsupported' => 'ℹ️ Unsupported message',
             default => $body ?: '[New message]',
         };
 

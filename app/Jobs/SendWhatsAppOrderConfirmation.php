@@ -61,13 +61,16 @@ class SendWhatsAppOrderConfirmation implements ShouldQueue
         }
 
         $etaDays = max(0, (int) setting('whatsapp_delivery_eta_days', 5));
+        $deliveryDate = now()->addDays($etaDays)->toDateString();
+        $orderUrl = route('account.order', $order);
+        $customerName = $this->resolveName();
 
         $result = $whatsapp->sendOrderConfirmation(
             $phone,
-            $this->resolveName(),
+            $customerName,
             $order->order_number,
-            now()->addDays($etaDays)->toDateString(),
-            route('account.order', $order),
+            $deliveryDate,
+            $orderUrl,
         );
 
         if (($result['result'] ?? '0') !== '1') {
@@ -79,6 +82,36 @@ class SendWhatsAppOrderConfirmation implements ShouldQueue
                 'order' => $order->order_number,
                 'message' => $result['message'] ?? 'Unknown error',
             ]);
+        } else {
+            // Guarantee conversation stream has the order confirmation recorded
+            try {
+                $alreadyLogged = \App\Models\WhatsAppMessage::where('metadata->order_number', $order->order_number)
+                    ->where('metadata->is_order_confirmation', true)
+                    ->exists();
+
+                if (! $alreadyLogged) {
+                    $amountFormatted = format_price($order->grand_total);
+                    $renderedBody = "🛍️ Order Confirmation (#{$order->order_number})\nDear {$customerName}, thank you for ordering with VANRITI! Your order of {$amountFormatted} is confirmed. Estimated delivery by {$deliveryDate}.\nTrack your order: {$orderUrl}";
+
+                    app(\App\Services\WhatsAppChatService::class)->recordOutboundSystemMessage(
+                        phone: $phone,
+                        body: $renderedBody,
+                        messageType: 'template',
+                        metaMessageId: $result['message_id'] ?? null,
+                        metadata: [
+                            'order_number' => $order->order_number,
+                            'delivery_date' => $deliveryDate,
+                            'order_url' => $orderUrl,
+                            'amount' => $order->grand_total,
+                            'is_order_confirmation' => true,
+                        ],
+                        channel: 'vanriti',
+                        contactName: $customerName
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('SendWhatsAppOrderConfirmation: Failed to log message in chat', ['error' => $e->getMessage()]);
+            }
         }
     }
 

@@ -680,18 +680,27 @@
                                 @endif
 
                                 {{-- Text Body --}}
-                                @if (! $isOut && in_array($msg->message_type, ['button', 'interactive'], true))
-                                    <div class="d-inline-flex align-items-center gap-1.5 px-2 py-1 mb-1 rounded bg-light border text-dark fw-medium small" style="background: #f8fafc; border-color: #cbd5e1 !important;">
-                                        <i class="bi bi-hand-index-thumb text-success"></i>
-                                        <span>{{ $msg->body }}</span>
+                                @if (! $isOut && (in_array($msg->message_type, ['button', 'interactive'], true) || str_contains($msg->body ?? '', '[Message: button]')))
+                                    <div class="d-inline-flex align-items-center gap-2 px-3 py-2 mb-1 rounded bg-white border text-dark fw-semibold small shadow-sm" style="border-color: #cbd5e1 !important;">
+                                        <i class="bi bi-hand-index-thumb text-success fs-6"></i>
+                                        <span>{{ $msg->display_body }}</span>
                                     </div>
-                                @elseif ($msg->message_type === 'unsupported' || str_contains($msg->body ?? '', '[Unsupported message'))
-                                    <div class="d-inline-flex align-items-center gap-1 text-muted fst-italic small">
-                                        <i class="bi bi-info-circle text-warning"></i>
-                                        <span>{{ $msg->body }}</span>
+                                @elseif ($msg->message_type === 'unsupported' || str_contains($msg->body ?? '', '[Message: unsupported]') || str_contains($msg->body ?? '', '[Unsupported message'))
+                                    <div class="d-inline-flex align-items-center gap-2 px-3 py-2 mb-1 rounded text-dark small border bg-warning-subtle" style="border-color: #fde68a !important;">
+                                        <i class="bi bi-info-circle text-warning-emphasis fs-6"></i>
+                                        <span>{{ $msg->display_body }}</span>
                                     </div>
                                 @else
-                                    <div style="white-space: pre-wrap;">{{ $msg->body }}</div>
+                                    <div style="white-space: pre-wrap;">{{ $msg->display_body }}</div>
+                                    @if ($isOut && ! empty($msg->metadata['buttons']) && is_array($msg->metadata['buttons']))
+                                        <div class="mt-2 pt-2 border-top border-light-subtle d-flex flex-wrap gap-1">
+                                            @foreach ($msg->metadata['buttons'] as $btn)
+                                                <span class="badge bg-white text-primary border shadow-sm px-2 py-1 small fw-medium">
+                                                    <i class="bi bi-cursor-fill me-1"></i>{{ is_array($btn) ? ($btn['title'] ?? $btn['id'] ?? 'Button') : $btn }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 @endif
 
                                 {{-- Meta Timestamp & Double Checkmarks --}}
@@ -1325,11 +1334,23 @@ setInterval(function() {
                 const row = document.createElement('div');
                 row.className = isOut ? 'd-flex justify-content-end' : 'd-flex justify-content-start';
                 row.setAttribute('data-message-id', msg.id);
-                let bodyContent = `<div style="white-space: pre-wrap;">${escapeHtml(msg.body || '')}</div>`;
-                if (!isOut && (msg.message_type === 'button' || msg.message_type === 'interactive')) {
-                    bodyContent = `<div class="d-inline-flex align-items-center gap-1.5 px-2 py-1 mb-1 rounded bg-light border text-dark fw-medium small" style="background: #f8fafc; border-color: #cbd5e1 !important;"><i class="bi bi-hand-index-thumb text-success"></i><span>${escapeHtml(msg.body || '')}</span></div>`;
-                } else if (msg.message_type === 'unsupported' || (msg.body && msg.body.includes('[Unsupported message'))) {
-                    bodyContent = `<div class="d-inline-flex align-items-center gap-1 text-muted fst-italic small"><i class="bi bi-info-circle text-warning"></i><span>${escapeHtml(msg.body || '')}</span></div>`;
+                const textBody = msg.display_body || msg.body || '';
+                let bodyContent = `<div style="white-space: pre-wrap;">${escapeHtml(textBody)}</div>`;
+                const isBtnPlaceholder = textBody.indexOf('[' + 'Message: button]') !== -1;
+                const isUnsuppPlaceholder = textBody.indexOf('[' + 'Message: unsupported]') !== -1;
+                if (!isOut && (msg.message_type === 'button' || msg.message_type === 'interactive' || isBtnPlaceholder)) {
+                    bodyContent = `<div class="d-inline-flex align-items-center gap-2 px-3 py-2 mb-1 rounded bg-white border text-dark fw-semibold small shadow-sm" style="border-color: #cbd5e1 !important;"><i class="bi bi-hand-index-thumb text-success fs-6"></i><span>${escapeHtml(textBody)}</span></div>`;
+                } else if (msg.message_type === 'unsupported' || isUnsuppPlaceholder || textBody.includes('[Unsupported message')) {
+                    bodyContent = `<div class="d-inline-flex align-items-center gap-2 px-3 py-2 mb-1 rounded text-dark small border bg-warning-subtle" style="border-color: #fde68a !important;"><i class="bi bi-info-circle text-warning-emphasis fs-6"></i><span>${escapeHtml(textBody)}</span></div>`;
+                }
+                if (isOut && msg.metadata && Array.isArray(msg.metadata.buttons) && msg.metadata.buttons.length > 0) {
+                    let btnHtml = '<div class="mt-2 pt-2 border-top border-light-subtle d-flex flex-wrap gap-1">';
+                    msg.metadata.buttons.forEach(b => {
+                        const bTitle = (typeof b === 'object' && b !== null) ? (b.title || b.id || 'Button') : b;
+                        btnHtml += `<span class="badge bg-white text-primary border shadow-sm px-2 py-1 small fw-medium"><i class="bi bi-cursor-fill me-1"></i>${escapeHtml(bTitle)}</span>`;
+                    });
+                    btnHtml += '</div>';
+                    bodyContent += btnHtml;
                 }
                 row.innerHTML = `
                     <div class="wa-bubble ${isOut ? 'wa-bubble-outbound' : 'wa-bubble-inbound'} p-3">
