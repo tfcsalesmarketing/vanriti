@@ -171,29 +171,37 @@
 {{-- BANNER SLOT 1: AFTER FEATURED / BESTSELLERS ROW --}}
 @include('storefront.partials.section-banner', ['banner' => $slot1Banner])
 
-{{-- 2. 3-CATEGORY IMAGE SHOWCASE (3 IN DESKTOP, 3 IN MOBILE) --}}
+{{-- 2. 3-CATEGORY IMAGE SHOWCASE (KHETIKA-INSPIRED ALIGNED CARDS) --}}
 @if (isset($showcaseCategories) && $showcaseCategories->isNotEmpty())
-<section class="vr-home-cat-showcase">
+<section class="vr-home-cat-showcase py-4 py-md-5">
     <div class="container">
-        <div class="mb-3 mb-md-4 text-center vr-animate-in">
+        <div class="mb-4 text-center vr-animate-in">
             <div class="vr-section-kicker justify-content-center" style="color: var(--vr-pink);">
                 <i class="ri-grid-fill"></i> TOP CATEGORIES
             </div>
             <h2 class="vr-section-title mb-1">Shop by Category</h2>
             <p class="vr-section-sub mb-0">Pure botanical formulations crafted for your routine</p>
         </div>
-        <div class="row g-2 g-md-4 justify-content-center vr-stagger">
-            @foreach ($showcaseCategories as $showCat)
-                <div class="col-4">
-                    <a href="{{ route('shop.category', $showCat->slug) }}" class="vr-cat-card-showcase" aria-label="Shop {{ $showCat->name }}">
+        <div class="vr-cat-showcase-row justify-content-center vr-stagger">
+            @foreach ($showcaseCategories as $index => $showCat)
+                <div class="vr-cat-showcase-col">
+                    <a href="{{ route('shop.category', $showCat->slug) }}" class="vr-cat-card-showcase vr-cat-card-theme-{{ ($index % 3) + 1 }}" aria-label="Shop {{ $showCat->name }}">
                         <div class="vr-cat-img-box">
                             @if ($showCat->image)
-                                <img src="{{ image_url($showCat->image) }}" alt="{{ $showCat->name }}" loading="lazy" width="160" height="160">
+                                <img src="{{ image_url($showCat->image) }}" alt="{{ $showCat->name }}" loading="lazy">
                             @else
                                 <div class="vr-cat-img-placeholder"><i class="bi bi-grid-3x3-gap"></i></div>
                             @endif
                         </div>
-                        <h3 class="vr-cat-name-showcase">{{ $showCat->name }}</h3>
+                        <div class="vr-cat-content-box">
+                            <h3 class="vr-cat-name-showcase">{{ $showCat->name }}</h3>
+                            <p class="vr-cat-desc-showcase">
+                                {{ Str::before($showCat->description ?? '', '.') ?: ($showCat->description ?: 'Pure handcrafted botanical formulations crafted for your routine') }}.
+                            </p>
+                            <div class="vr-cat-btn-wrap">
+                                <span class="vr-cat-btn-showcase">SHOP NOW</span>
+                            </div>
+                        </div>
                     </a>
                 </div>
             @endforeach
