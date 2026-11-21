@@ -112,11 +112,19 @@
             <ul class="sidebar-submenu">
                 @if ($admin->hasPermission(['view-orders', 'manage-orders']))
                 <li class="nav-item">
-                    <a class="nav-link {{ (request()->routeIs('admin.orders.*') && !request()->routeIs('admin.orders.label-cropper')) ? 'active' : '' }}"
+                    <a class="nav-link {{ (request()->routeIs('admin.orders.*') && !request()->routeIs('admin.orders.label-cropper') && !request()->routeIs('admin.orders.create')) ? 'active' : '' }}"
                        href="{{ route('admin.orders.index') }}">
                         <i class="bi bi-receipt"></i><span>All Orders</span>
                     </a>
                 </li>
+                @if ($admin->hasPermission('manage-orders'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.orders.create') ? 'active' : '' }}"
+                       href="{{ route('admin.orders.create') }}">
+                        <i class="bi bi-plus-circle"></i><span>Create Order</span>
+                    </a>
+                </li>
+                @endif
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.orders.label-cropper') ? 'active' : '' }}"
                        href="{{ route('admin.orders.label-cropper') }}">

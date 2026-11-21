@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Address;
+use App\Models\Admin;
 use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -308,15 +310,331 @@ class OrderService
         return $order;
     }
 
-    public function recordStatus(Order $order, string $status, ?string $description = null, ?string $oldStatus = null): void
+    public function recordStatus(Order $order, string $status, ?string $description = null, ?string $oldStatus = null, ?int $adminId = null): void
     {
         OrderStatusHistory::create([
             'order_id' => $order->id,
             'status' => $status,
             'old_status' => $oldStatus,
             'description' => $description,
-            'admin_id' => auth('admin')->id(),
+            'admin_id' => $adminId ?? auth('admin')->id(),
         ]);
+    }
+
+    /**
+     * Create a manual order directly from the Admin Panel.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  Admin|null  $admin
+     * @return Order
+     */
+    public function createManualOrder(array $data, ?Admin $admin = null): Order
+    {
+        return DB::transaction(function () use ($data, $admin) {
+            // 1. Resolve or create customer User
+            $user = null;
+            if (! empty($data['user_id'])) {
+                $user = User::find($data['user_id']);
+            }
+
+            $rawPhone = preg_replace('/\D/', '', (string) ($data['customer_phone'] ?? ''));
+            $cleanPhone = strlen($rawPhone) >= 10 ? substr($rawPhone, -10) : $rawPhone;
+            $email = ! empty($data['customer_email']) ? strtolower(trim((string) $data['customer_email'])) : null;
+            $name = trim((string) ($data['customer_name'] ?? 'Customer'));
+
+            if (! $user && $cleanPhone !== '') {
+                $user = User::where(function ($q) use ($cleanPhone) {
+                    $q->where('phone', $cleanPhone)
+                        ->orWhere('phone', '+91'.$cleanPhone)
+                        ->orWhere('phone', '0'.$cleanPhone);
+                })->first();
+            }
+
+            if (! $user && $email !== null) {
+                $user = User::where('email', $email)->first();
+            }
+
+            if (! $user) {
+                $user = User::create([
+                    'name' => $name,
+                    'phone' => $cleanPhone ?: null,
+                    'email' => $email,
+                    'phone_verified_at' => now(),
+                    'password' => bcrypt(Str::random(16)),
+                    'status' => 'active',
+                ]);
+            }
+
+            // 2. Format Addresses
+            $shipping = [
+                'full_name' => $data['shipping_name'] ?? $name,
+                'mobile' => $data['shipping_mobile'] ?? $cleanPhone,
+                'address_line1' => $data['shipping_address_line1'] ?? '',
+                'address_line2' => $data['shipping_address_line2'] ?? null,
+                'landmark' => $data['shipping_landmark'] ?? null,
+                'city' => $data['shipping_city'] ?? '',
+                'state' => $data['shipping_state'] ?? '',
+                'pincode' => $data['shipping_pincode'] ?? '',
+                'country' => $data['shipping_country'] ?? 'India',
+            ];
+
+            $isBillingSame = ! empty($data['is_billing_same']);
+            if ($isBillingSame) {
+                $billing = $shipping;
+            } else {
+                $billing = [
+                    'full_name' => $data['billing_name'] ?? ($data['shipping_name'] ?? $name),
+                    'mobile' => $data['billing_mobile'] ?? ($data['shipping_mobile'] ?? $cleanPhone),
+                    'address_line1' => $data['billing_address_line1'] ?? ($data['shipping_address_line1'] ?? ''),
+                    'address_line2' => $data['billing_address_line2'] ?? null,
+                    'landmark' => $data['billing_landmark'] ?? null,
+                    'city' => $data['billing_city'] ?? ($data['shipping_city'] ?? ''),
+                    'state' => $data['billing_state'] ?? ($data['shipping_state'] ?? ''),
+                    'pincode' => $data['billing_pincode'] ?? ($data['shipping_pincode'] ?? ''),
+                    'country' => $data['billing_country'] ?? 'India',
+                ];
+            }
+
+            // Save address to customer's address book if requested or if user has none
+            if (! empty($data['save_customer_address']) || $user->addresses()->count() === 0) {
+                $user->addresses()->firstOrCreate([
+                    'address_line1' => $shipping['address_line1'],
+                    'pincode' => $shipping['pincode'],
+                ], [
+                    'full_name' => $shipping['full_name'],
+                    'mobile' => $shipping['mobile'],
+                    'address_line2' => $shipping['address_line2'],
+                    'landmark' => $shipping['landmark'],
+                    'city' => $shipping['city'],
+                    'state' => $shipping['state'],
+                    'country' => $shipping['country'],
+                    'type' => 'home',
+                    'is_default' => $user->addresses()->count() === 0,
+                ]);
+            }
+
+            // 3. Process Line Items
+            $itemsData = $data['items'] ?? [];
+            if (empty($itemsData)) {
+                throw new \InvalidArgumentException('Please add at least one product item to create an order.');
+            }
+
+            $rows = [];
+            $subtotal = 0.0;
+            $discountAmount = 0.0;
+
+            foreach ($itemsData as $item) {
+                $productId = (int) ($item['product_id'] ?? 0);
+                $variantId = ! empty($item['product_variant_id']) ? (int) $item['product_variant_id'] : null;
+                $qty = max(1, (int) ($item['quantity'] ?? 1));
+
+                $product = Product::with('images', 'categories')->findOrFail($productId);
+                $variant = $variantId ? ProductVariant::with('images')->findOrFail($variantId) : null;
+
+                $defaultMrp = (float) ($variant?->mrp ?? $product->mrp ?? 0);
+                $mrp = isset($item['mrp']) && (float) $item['mrp'] > 0 ? (float) $item['mrp'] : $defaultMrp;
+
+                $defaultPrice = (float) ($variant?->selling_price ?? $product->selling_price ?? 0);
+                $price = isset($item['unit_price']) && is_numeric($item['unit_price']) && (float) $item['unit_price'] >= 0
+                    ? (float) $item['unit_price']
+                    : $defaultPrice;
+
+                $gst = (float) ($variant?->gst_rate ?? $product->gst_rate ?? 0);
+
+                $lineTotal = round($price * $qty, 2);
+                $lineDiscount = max(0, ($mrp - $price) * $qty);
+
+                $subtotal += $lineTotal;
+                $discountAmount += $lineDiscount;
+
+                $rows[] = [
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variant?->id,
+                    'product_name' => $product->name,
+                    'variant_name' => $variant?->name,
+                    'sku' => $variant?->sku ?? $product->sku,
+                    'image' => $product->getPrimaryImage()?->image_path,
+                    'category_name' => $product->primaryCategory()?->name,
+                    'quantity' => $qty,
+                    'mrp' => $mrp,
+                    'unit_price' => $price,
+                    'discount' => round($lineDiscount, 2),
+                    'gst_rate' => $gst,
+                    'total_price' => $lineTotal,
+                ];
+            }
+
+            $subtotal = round($subtotal, 2);
+
+            // 4. Discounts & Coupons
+            $coupon = null;
+            $couponDiscount = 0.0;
+            if (! empty($data['coupon_code'])) {
+                $coupon = Coupon::where('code', strtoupper(trim((string) $data['coupon_code'])))->first();
+                if ($coupon && $coupon->is_active) {
+                    if ($coupon->discount_type === 'percent') {
+                        $couponDiscount = round(($subtotal * (float) $coupon->discount_value) / 100, 2);
+                        if ($coupon->max_discount && $couponDiscount > (float) $coupon->max_discount) {
+                            $couponDiscount = (float) $coupon->max_discount;
+                        }
+                    } else {
+                        $couponDiscount = min($subtotal, (float) $coupon->discount_value);
+                    }
+                }
+            }
+
+            $manualDiscount = 0.0;
+            if (! empty($data['discount_type']) && ! empty($data['discount_value'])) {
+                $discVal = (float) $data['discount_value'];
+                if ($data['discount_type'] === 'percent') {
+                    $manualDiscount = round(($subtotal * $discVal) / 100, 2);
+                } elseif ($data['discount_type'] === 'fixed') {
+                    $manualDiscount = min($subtotal, $discVal);
+                }
+            }
+
+            $totalOrderDiscount = round($couponDiscount + $manualDiscount, 2);
+            $totalOrderDiscount = min($subtotal, $totalOrderDiscount);
+
+            // Apportion discounts across items
+            if ($subtotal > 0 && $totalOrderDiscount > 0) {
+                $factor = max(0.0, ($subtotal - $totalOrderDiscount) / $subtotal);
+                foreach ($rows as &$row) {
+                    $row['net'] = round($row['total_price'] * $factor, 2);
+                }
+                unset($row);
+
+                $reducedSubtotal = round(array_sum(array_column($rows, 'net')), 2);
+                $drift = round((float) $subtotal - $totalOrderDiscount - $reducedSubtotal, 2);
+                if ($drift != 0.0 && $rows) {
+                    $largest = collect($rows)->sortByDesc('total_price')->keys()->first();
+                    $rows[$largest]['net'] = round($rows[$largest]['net'] + $drift, 2);
+                }
+            } else {
+                foreach ($rows as &$row) {
+                    $row['net'] = $row['total_price'];
+                }
+                unset($row);
+            }
+
+            $taxableAmount = 0.0;
+            $taxAmount = 0.0;
+            foreach ($rows as &$row) {
+                $row['taxable_amount'] = $this->gstService->taxableAmount($row['net'], $row['gst_rate']);
+                $row['tax_amount'] = $this->gstService->taxAmount($row['net'], $row['gst_rate']);
+                $taxableAmount += $row['taxable_amount'];
+                $taxAmount += $row['tax_amount'];
+            }
+            unset($row);
+
+            $taxableAmount = round($taxableAmount, 2);
+            $taxAmount = round($taxAmount, 2);
+
+            $shippingCharge = isset($data['shipping_charge']) ? max(0.0, (float) $data['shipping_charge']) : 0.0;
+            $grandTotal = round(max(0, $subtotal + $shippingCharge - $totalOrderDiscount), 2);
+
+            $intraState = $this->gstService->isIntraState($shipping['state'] ?? '');
+            $taxSplit = $this->gstService->splitTax($taxAmount, $intraState);
+
+            $paymentMethod = $data['payment_method'] ?? 'cod';
+            $paymentStatus = $data['payment_status'] ?? ($paymentMethod === 'cod' ? 'pending' : 'paid');
+            $orderStatus = $data['order_status'] ?? ($paymentStatus === 'paid' ? 'confirmed' : 'pending');
+
+            $order = Order::create([
+                'user_id' => $user->id,
+                'coupon_id' => $coupon?->id,
+                'order_number' => 'TMP-'.Str::upper(Str::random(16)),
+                ...$this->mapAddress('billing', $billing),
+                ...$this->mapAddress('shipping', $shipping),
+                'is_billing_same' => $isBillingSame,
+                'subtotal' => $subtotal,
+                'discount_amount' => round($discountAmount + $manualDiscount, 2),
+                'coupon_discount' => $couponDiscount,
+                'prepaid_discount' => 0.0,
+                'shipping_charge' => $shippingCharge,
+                'shipping_method' => $data['shipping_method'] ?? 'standard',
+                'checkout_source' => 'admin',
+                'taxable_amount' => $taxableAmount,
+                'tax_amount' => $taxAmount,
+                'cgst_amount' => $taxSplit['cgst'],
+                'sgst_amount' => $taxSplit['sgst'],
+                'igst_amount' => $taxSplit['igst'],
+                'coupon_code' => $coupon ? strtoupper($coupon->code) : null,
+                'coupon_type' => $coupon?->discount_type,
+                'coupon_value' => $coupon ? (float) $coupon->discount_value : null,
+                'grand_total' => $grandTotal,
+                'amount_due' => $paymentStatus === 'paid' ? 0.0 : $grandTotal,
+                'amount_paid' => $paymentStatus === 'paid' ? $grandTotal : 0.0,
+                'payment_method' => $paymentMethod,
+                'payment_status' => $paymentStatus,
+                'order_status' => $orderStatus,
+                'internal_notes' => trim(
+                    ($data['notes'] ?? '').
+                    ($admin ? "\n[Created manually by Admin: {$admin->name}]" : '')
+                ),
+            ]);
+
+            $order->update(['order_number' => generate_order_number($order->id)]);
+
+            $reduceStock = ! isset($data['reduce_stock']) || (bool) $data['reduce_stock'];
+
+            foreach ($rows as $row) {
+                $row = Arr::except($row, 'net');
+                OrderItem::create([...$row, 'order_id' => $order->id]);
+
+                if ($reduceStock) {
+                    $stockable = $row['product_variant_id']
+                        ? ProductVariant::find($row['product_variant_id'])
+                        : Product::find($row['product_id']);
+
+                    if ($stockable) {
+                        $this->inventoryService->withReference(
+                            'sale',
+                            $stockable,
+                            $order,
+                            -$row['quantity'],
+                            "Manual Order {$order->order_number}"
+                        );
+                    }
+                }
+            }
+
+            // Record payment if paid
+            if ($paymentStatus === 'paid') {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'payment_reference' => ! empty($data['payment_reference'])
+                        ? trim($data['payment_reference'])
+                        : ('MANUAL-'.strtoupper(Str::random(10))),
+                    'gateway' => in_array($paymentMethod, ['upi', 'bank_transfer', 'razorpay'], true) ? $paymentMethod : 'manual',
+                    'method' => $paymentMethod,
+                    'amount' => $grandTotal,
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'gateway_response' => [
+                        'created_by' => 'admin',
+                        'admin_id' => $admin?->id,
+                        'admin_name' => $admin?->name,
+                        'reference' => $data['payment_reference'] ?? null,
+                    ],
+                ]);
+            }
+
+            // Record status history
+            $this->recordStatus(
+                $order,
+                $orderStatus,
+                'Manual order created by '.($admin ? "admin {$admin->name}" : 'admin'),
+                null,
+                $admin?->id
+            );
+
+            if ($coupon) {
+                $this->couponService->recordUsage($coupon, $user, $order->id, $couponDiscount);
+            }
+
+            return $order->fresh(['items', 'payments', 'user', 'statusHistories']);
+        });
     }
 
     public function cancelOrder(Order $order, ?string $reason = null): void

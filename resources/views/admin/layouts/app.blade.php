@@ -238,6 +238,9 @@
                         <i class="bi bi-grid-1x2"></i><span>Dashboard</span><span class="item-meta">Main Overview</span>
                     </a>
                     @if (auth('admin')->user()->hasPermission('manage-orders'))
+                    <a href="{{ route('admin.orders.create') }}" class="command-palette-item" data-keywords="create manual order booking new">
+                        <i class="bi bi-cart-plus"></i><span>Create Manual Order</span><span class="item-meta">New Order</span>
+                    </a>
                     <a href="{{ route('admin.orders.index') }}" class="command-palette-item" data-keywords="orders shipmojo shipments sales">
                         <i class="bi bi-cart-check"></i><span>Orders</span><span class="item-meta">Manage & Ship</span>
                     </a>

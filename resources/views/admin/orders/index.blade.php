@@ -36,6 +36,11 @@
         <div class="text-muted small mt-0.5">Showing {{ $orders->total() }} order(s) in <span class="fw-semibold text-dark">{{ $tabs[$activeTab] }}</span></div>
     </div>
     <div class="d-flex align-items-center gap-2">
+        @if (auth('admin')->user()->hasPermission('manage-orders'))
+        <a href="{{ route('admin.orders.create') }}" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-plus-circle-fill"></i><span>Create Order</span>
+        </a>
+        @endif
         <a href="{{ route('admin.orders.manifest') }}" target="_blank" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1" title="Print courier handover manifest for dispatched orders">
             <i class="bi bi-file-earmark-spreadsheet text-success"></i><span>Handover Manifest</span>
         </a>

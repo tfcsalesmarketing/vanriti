@@ -3,13 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\GstService;
 use App\Services\InvoiceService;
 use App\Services\NotificationService;
 use App\Services\OrderService;
+use App\Services\PincodeService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -661,5 +668,268 @@ class OrderController extends Controller
         }
 
         return back()->with('error', 'Failed to dispatch WhatsApp prompt: ' . ($res['message'] ?? ($res['error'] ?? 'API error')));
+    }
+
+    /**
+     * Show the form to create a new manual order.
+     */
+    public function create(Request $request): View
+    {
+        $selectedUser = null;
+        if ($request->filled('user_id')) {
+            $selectedUser = User::with('addresses')->find($request->input('user_id'));
+        }
+
+        $states = GstService::STATES;
+        $coupons = Coupon::where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now());
+            })
+            ->orderBy('code')
+            ->get();
+
+        return view('admin.orders.create', [
+            'selectedUser' => $selectedUser,
+            'states' => $states,
+            'coupons' => $coupons,
+            'orderStatuses' => ['confirmed' => 'Confirmed', 'pending' => 'Pending', 'processing' => 'Processing'],
+            'paymentStatuses' => ['paid' => 'Paid (Payment Collected)', 'pending' => 'Pending (Collect on Delivery / Unsettled)'],
+            'paymentMethods' => [
+                'cod' => 'Cash on Delivery (COD)',
+                'prepaid' => 'Prepaid / UPI',
+                'bank_transfer' => 'Bank Transfer / NEFT / IMPS',
+                'razorpay' => 'Razorpay / Online',
+            ],
+        ]);
+    }
+
+    /**
+     * Search customers for autocomplete in manual order creation.
+     */
+    public function searchCustomers(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->input('q'));
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $cleanPhone = preg_replace('/\D/', '', $q);
+
+        $users = User::query()
+            ->where(function ($query) use ($q, $cleanPhone) {
+                $query->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+                if (strlen($cleanPhone) >= 3) {
+                    $query->orWhere('phone', 'like', "%{$cleanPhone}%");
+                }
+            })
+            ->with(['addresses' => function ($sq) {
+                $sq->orderByDesc('is_default')->orderByDesc('id');
+            }])
+            ->limit(15)
+            ->get();
+
+        return response()->json($users->map(fn (User $user) => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'phone' => $user->phone,
+            'email' => $user->email,
+            'orders_count' => $user->orders()->count(),
+            'addresses' => $user->addresses->map(fn ($addr) => [
+                'id' => $addr->id,
+                'full_name' => $addr->full_name,
+                'mobile' => $addr->mobile,
+                'address_line1' => $addr->address_line1,
+                'address_line2' => $addr->address_line2,
+                'landmark' => $addr->landmark,
+                'city' => $addr->city,
+                'state' => $addr->state,
+                'pincode' => $addr->pincode,
+                'country' => $addr->country,
+                'is_default' => $addr->is_default,
+                'full_address' => $addr->full_address,
+            ]),
+        ]));
+    }
+
+    /**
+     * Search products & variants for manual order item addition.
+     */
+    public function searchProducts(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->input('q'));
+        if (strlen($q) < 1) {
+            return response()->json([]);
+        }
+
+        $products = Product::query()
+            ->where('status', 'active')
+            ->where(function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhereHas('variants', function ($vq) use ($q) {
+                        $vq->where('name', 'like', "%{$q}%")
+                            ->orWhere('sku', 'like', "%{$q}%");
+                    });
+            })
+            ->with([
+                'variants' => fn ($vq) => $vq->where('status', 'active')->orderBy('sort_order'),
+                'images',
+            ])
+            ->limit(20)
+            ->get();
+
+        return response()->json($products->map(function (Product $product) {
+            $primaryImage = $product->getPrimaryImage()?->image_path;
+            $imageUrl = $primaryImage ? image_url($primaryImage) : asset('images/placeholder.svg');
+
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'mrp' => (float) $product->mrp,
+                'selling_price' => (float) $product->selling_price,
+                'stock' => (int) $product->stock,
+                'gst_rate' => (float) $product->gst_rate,
+                'image_url' => $imageUrl,
+                'has_variants' => $product->variants->isNotEmpty(),
+                'variants' => $product->variants->map(fn (ProductVariant $variant) => [
+                    'id' => $variant->id,
+                    'name' => $variant->name,
+                    'sku' => $variant->sku,
+                    'mrp' => (float) $variant->mrp,
+                    'selling_price' => (float) $variant->selling_price,
+                    'stock' => (int) $variant->stock,
+                    'gst_rate' => (float) ($variant->gst_rate ?: $product->gst_rate),
+                ]),
+            ];
+        }));
+    }
+
+    /**
+     * Fast pincode lookup to auto-populate City and State.
+     */
+    public function lookupPincode(Request $request): JsonResponse
+    {
+        $pincode = trim((string) $request->input('pincode'));
+        if (strlen($pincode) !== 6 || ! ctype_digit($pincode)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please provide a valid 6-digit postal pincode.',
+            ], 422);
+        }
+
+        $pincodeService = app(PincodeService::class);
+        $location = $pincodeService->resolveLocation($pincode);
+
+        return response()->json([
+            'success' => true,
+            'pincode' => $pincode,
+            'city' => $location['city'] ?? '',
+            'state' => $location['state'] ?? '',
+        ]);
+    }
+
+    /**
+     * Store a manually created order in the database.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'customer_type' => 'required|in:new,existing',
+            'user_id' => 'nullable|required_if:customer_type,existing|exists:users,id',
+            'customer_name' => 'required|string|max:150',
+            'customer_phone' => ['required', 'string', 'regex:/^[0-9+ -]{10,15}$/'],
+            'customer_email' => 'nullable|email|max:150',
+            'save_customer_address' => 'nullable|boolean',
+
+            'shipping_name' => 'required|string|max:150',
+            'shipping_mobile' => ['required', 'string', 'regex:/^[0-9+ -]{10,15}$/'],
+            'shipping_address_line1' => 'required|string|max:255',
+            'shipping_address_line2' => 'nullable|string|max:255',
+            'shipping_landmark' => 'nullable|string|max:150',
+            'shipping_city' => 'required|string|max:100',
+            'shipping_state' => 'required|string|max:100',
+            'shipping_pincode' => ['required', 'string', 'size:6', 'regex:/^[1-9][0-9]{5}$/'],
+            'shipping_country' => 'nullable|string|max:100',
+
+            'is_billing_same' => 'nullable|boolean',
+            'billing_name' => 'nullable|required_if:is_billing_same,0|string|max:150',
+            'billing_mobile' => 'nullable|required_if:is_billing_same,0|string|max:15',
+            'billing_address_line1' => 'nullable|required_if:is_billing_same,0|string|max:255',
+            'billing_address_line2' => 'nullable|string|max:255',
+            'billing_landmark' => 'nullable|string|max:150',
+            'billing_city' => 'nullable|required_if:is_billing_same,0|string|max:100',
+            'billing_state' => 'nullable|required_if:is_billing_same,0|string|max:100',
+            'billing_pincode' => 'nullable|required_if:is_billing_same,0|string|size:6',
+
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'nullable|numeric|min:0',
+            'items.*.mrp' => 'nullable|numeric|min:0',
+
+            'discount_type' => 'nullable|in:none,fixed,percent',
+            'discount_value' => 'nullable|numeric|min:0',
+            'coupon_code' => 'nullable|string|max:50',
+            'shipping_charge' => 'nullable|numeric|min:0',
+
+            'payment_method' => 'required|in:cod,prepaid,upi,bank_transfer,razorpay',
+            'payment_status' => 'required|in:pending,paid',
+            'payment_reference' => 'nullable|string|max:100',
+            'order_status' => 'required|in:pending,confirmed,processing,packed',
+            'notes' => 'nullable|string|max:1000',
+
+            'reduce_stock' => 'nullable|boolean',
+            'send_whatsapp' => 'nullable|boolean',
+            'push_shipmojo' => 'nullable|boolean',
+        ]);
+
+        $admin = auth('admin')->user();
+
+        try {
+            $order = $this->orderService->createManualOrder($validated, $admin);
+
+            $this->logger->log(
+                action: 'order_created',
+                entity: $order,
+                description: "Manual order #{$order->order_number} created by admin ".($admin?->name ?? 'Admin').'.',
+                newValues: [
+                    'order_number' => $order->order_number,
+                    'grand_total' => $order->grand_total,
+                    'payment_method' => $order->payment_method,
+                    'payment_status' => $order->payment_status,
+                ],
+                actor: $admin
+            );
+
+            // Trigger WhatsApp confirmation if requested
+            if ($request->boolean('send_whatsapp', true)) {
+                try {
+                    \App\Jobs\SendWhatsAppOrderConfirmation::dispatch($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Failed to dispatch WhatsApp confirmation for manual order #{$order->order_number}: ".$e->getMessage());
+                }
+            }
+
+            // Push to ShipMojo if requested
+            if ($request->boolean('push_shipmojo', false)) {
+                try {
+                    \App\Jobs\PushOrderToShipMojo::dispatch($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Failed to push manual order #{$order->order_number} to ShipMojo: ".$e->getMessage());
+                }
+            }
+
+            return redirect()
+                ->route('admin.orders.show', $order)
+                ->with('success', "Manual Order #{$order->order_number} created successfully!");
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Error creating manual order: '.$e->getMessage());
+        }
     }
 }

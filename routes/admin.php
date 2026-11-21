@@ -102,9 +102,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index')->middleware('permission:view-inventory,manage-inventory');
 
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index')->middleware('permission:view-orders,manage-orders');
-        Route::post('orders', function () {
-            return redirect()->route('admin.orders.index')->with('warning', 'Please select one or more orders and use the action buttons to proceed.');
-        })->middleware('permission:view-orders,manage-orders');
+        Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create')->middleware('permission:manage-orders');
+        Route::post('orders', [OrderController::class, 'store'])->name('orders.store')->middleware('permission:manage-orders');
+        Route::get('orders-search-customers', [OrderController::class, 'searchCustomers'])->name('orders.search-customers')->middleware('permission:manage-orders');
+        Route::get('orders-search-products', [OrderController::class, 'searchProducts'])->name('orders.search-products')->middleware('permission:manage-orders');
+        Route::get('orders-lookup-pincode', [OrderController::class, 'lookupPincode'])->name('orders.lookup-pincode')->middleware('permission:manage-orders');
         Route::get('orders/label-cropper', [ShippingLabelCropperController::class, 'index'])->name('orders.label-cropper')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/manifest', [OrderController::class, 'manifest'])->name('orders.manifest')->middleware('permission:view-orders,manage-orders');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->middleware('permission:view-orders,manage-orders');
