@@ -637,6 +637,346 @@ class OrderService
         });
     }
 
+    /**
+     * Update items in an existing order (add, remove, change quantities or prices),
+     * adjust stock inventory, and recompute all taxes and totals.
+     *
+     * @param  Order  $order
+     * @param  array<int, array<string, mixed>>  $itemsData
+     * @param  bool  $adjustStock
+     * @param  Admin|null  $admin
+     * @return Order
+     */
+    public function updateOrderItems(Order $order, array $itemsData, bool $adjustStock = true, ?Admin $admin = null): Order
+    {
+        return DB::transaction(function () use ($order, $itemsData, $adjustStock, $admin) {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            if (empty($itemsData)) {
+                throw new \InvalidArgumentException('An order must contain at least one item.');
+            }
+
+            $existingItems = $order->items()->get()->keyBy('id');
+            $processedItemIds = [];
+            $auditNotes = [];
+
+            $rows = [];
+            $subtotal = 0.0;
+            $totalDiscountAmount = 0.0;
+
+            foreach ($itemsData as $itemData) {
+                $itemId = ! empty($itemData['id']) ? (int) $itemData['id'] : null;
+                $productId = (int) ($itemData['product_id'] ?? 0);
+                $variantId = ! empty($itemData['product_variant_id']) ? (int) $itemData['product_variant_id'] : null;
+                $newQty = max(1, (int) ($itemData['quantity'] ?? 1));
+
+                $product = Product::with('images', 'categories')->findOrFail($productId);
+                $variant = $variantId ? ProductVariant::with('images')->findOrFail($variantId) : null;
+
+                $defaultMrp = (float) ($variant?->mrp ?? $product->mrp ?? 0);
+                $mrp = isset($itemData['mrp']) && (float) $itemData['mrp'] > 0 ? (float) $itemData['mrp'] : $defaultMrp;
+
+                $defaultPrice = (float) ($variant?->selling_price ?? $product->selling_price ?? 0);
+                $price = isset($itemData['unit_price']) && is_numeric($itemData['unit_price']) && (float) $itemData['unit_price'] >= 0
+                    ? (float) $itemData['unit_price']
+                    : $defaultPrice;
+
+                $gst = (float) ($variant?->gst_rate ?? $product->gst_rate ?? 0);
+
+                $lineTotal = round($price * $newQty, 2);
+                $lineDiscount = max(0, ($mrp - $price) * $newQty);
+
+                $subtotal += $lineTotal;
+                $totalDiscountAmount += $lineDiscount;
+
+                $stockable = $variant ?? $product;
+
+                if ($itemId && isset($existingItems[$itemId])) {
+                    // Existing item
+                    $existingItem = $existingItems[$itemId];
+                    $oldQty = (int) $existingItem->quantity;
+                    $processedItemIds[] = $itemId;
+
+                    if ($adjustStock && $stockable) {
+                        $qtyDiff = $newQty - $oldQty;
+                        if ($qtyDiff > 0) {
+                            $this->inventoryService->withReference('sale', $stockable, $order, -$qtyDiff, "Qty increased in Order #{$order->order_number}");
+                        } elseif ($qtyDiff < 0) {
+                            $this->inventoryService->withReference('reversal', $stockable, $order, abs($qtyDiff), "Qty decreased in Order #{$order->order_number}");
+                        }
+                    }
+
+                    if ($oldQty !== $newQty || (float) $existingItem->unit_price !== $price) {
+                        $auditNotes[] = "Updated {$product->name}".($variant ? " ({$variant->name})" : '').": qty {$oldQty}→{$newQty}, price ₹{$existingItem->unit_price}→₹{$price}";
+                    }
+
+                    $rows[] = [
+                        'model' => $existingItem,
+                        'is_new' => false,
+                        'data' => [
+                            'product_id' => $product->id,
+                            'product_variant_id' => $variant?->id,
+                            'product_name' => $product->name,
+                            'variant_name' => $variant?->name,
+                            'sku' => $variant?->sku ?? $product->sku,
+                            'image' => $product->getPrimaryImage()?->image_path,
+                            'category_name' => $product->primaryCategory()?->name,
+                            'quantity' => $newQty,
+                            'mrp' => $mrp,
+                            'unit_price' => $price,
+                            'discount' => round($lineDiscount, 2),
+                            'gst_rate' => $gst,
+                            'total_price' => $lineTotal,
+                        ],
+                    ];
+                } else {
+                    // New item added to order
+                    if ($adjustStock && $stockable) {
+                        $this->inventoryService->withReference('sale', $stockable, $order, -$newQty, "Added to Order #{$order->order_number}");
+                    }
+
+                    $auditNotes[] = "Added {$product->name}".($variant ? " ({$variant->name})" : '')." (qty {$newQty}, ₹{$price})";
+
+                    $rows[] = [
+                        'model' => null,
+                        'is_new' => true,
+                        'data' => [
+                            'order_id' => $order->id,
+                            'product_id' => $product->id,
+                            'product_variant_id' => $variant?->id,
+                            'product_name' => $product->name,
+                            'variant_name' => $variant?->name,
+                            'sku' => $variant?->sku ?? $product->sku,
+                            'image' => $product->getPrimaryImage()?->image_path,
+                            'category_name' => $product->primaryCategory()?->name,
+                            'quantity' => $newQty,
+                            'mrp' => $mrp,
+                            'unit_price' => $price,
+                            'discount' => round($lineDiscount, 2),
+                            'gst_rate' => $gst,
+                            'total_price' => $lineTotal,
+                        ],
+                    ];
+                }
+            }
+
+            // Handle removed items
+            foreach ($existingItems as $existingId => $existingItem) {
+                if (! in_array($existingId, $processedItemIds, true)) {
+                    $stockable = $existingItem->product_variant_id
+                        ? ProductVariant::find($existingItem->product_variant_id)
+                        : Product::find($existingItem->product_id);
+
+                    if ($adjustStock && $stockable) {
+                        $this->inventoryService->withReference('reversal', $stockable, $order, (int) $existingItem->quantity, "Removed from Order #{$order->order_number}");
+                    }
+
+                    $auditNotes[] = "Removed {$existingItem->product_name}".($existingItem->variant_name ? " ({$existingItem->variant_name})" : '')." (qty {$existingItem->quantity})";
+                    $existingItem->delete();
+                }
+            }
+
+            $subtotal = round($subtotal, 2);
+
+            // Adjust discounts
+            $couponDiscount = min($subtotal, (float) $order->coupon_discount);
+            $manualDiscount = max(0.0, (float) $order->discount_amount - (float) $order->coupon_discount);
+            $totalOrderDiscount = min($subtotal, round($couponDiscount + $manualDiscount, 2));
+
+            // Apportion discounts across items
+            if ($subtotal > 0 && $totalOrderDiscount > 0) {
+                $factor = max(0.0, ($subtotal - $totalOrderDiscount) / $subtotal);
+                foreach ($rows as &$r) {
+                    $r['data']['net'] = round($r['data']['total_price'] * $factor, 2);
+                }
+                unset($r);
+
+                $reducedSubtotal = round(array_sum(array_column(array_column($rows, 'data'), 'net')), 2);
+                $drift = round((float) $subtotal - $totalOrderDiscount - $reducedSubtotal, 2);
+                if ($drift != 0.0 && $rows) {
+                    $largest = collect($rows)->sortByDesc('data.total_price')->keys()->first();
+                    $rows[$largest]['data']['net'] = round($rows[$largest]['data']['net'] + $drift, 2);
+                }
+            } else {
+                foreach ($rows as &$r) {
+                    $r['data']['net'] = $r['data']['total_price'];
+                }
+                unset($r);
+            }
+
+            $taxableAmount = 0.0;
+            $taxAmount = 0.0;
+            foreach ($rows as &$r) {
+                $r['data']['taxable_amount'] = $this->gstService->taxableAmount($r['data']['net'], $r['data']['gst_rate']);
+                $r['data']['tax_amount'] = $this->gstService->taxAmount($r['data']['net'], $r['data']['gst_rate']);
+                $taxableAmount += $r['data']['taxable_amount'];
+                $taxAmount += $r['data']['tax_amount'];
+            }
+            unset($r);
+
+            $taxableAmount = round($taxableAmount, 2);
+            $taxAmount = round($taxAmount, 2);
+
+            $grandTotal = round(max(0, $subtotal + (float) $order->shipping_charge - $totalOrderDiscount), 2);
+            $intraState = $this->gstService->isIntraState($order->shipping_state ?? '');
+            $taxSplit = $this->gstService->splitTax($taxAmount, $intraState);
+
+            // Save / update items in DB
+            foreach ($rows as $r) {
+                $itemPayload = Arr::except($r['data'], 'net');
+                if ($r['is_new']) {
+                    OrderItem::create($itemPayload);
+                } else {
+                    $r['model']->update($itemPayload);
+                }
+            }
+
+            // Outstanding & Paid adjustments
+            $amountPaid = (float) $order->amount_paid;
+            $amountDue = max(0.0, round($grandTotal - $amountPaid, 2));
+
+            if ($order->payment_status === 'paid' && $amountPaid >= $grandTotal) {
+                $amountDue = 0.0;
+            }
+
+            $oldGrandTotal = $order->grand_total;
+            $order->update([
+                'subtotal' => $subtotal,
+                'discount_amount' => round($totalOrderDiscount, 2),
+                'coupon_discount' => $couponDiscount,
+                'taxable_amount' => $taxableAmount,
+                'tax_amount' => $taxAmount,
+                'cgst_amount' => $taxSplit['cgst'],
+                'sgst_amount' => $taxSplit['sgst'],
+                'igst_amount' => $taxSplit['igst'],
+                'grand_total' => $grandTotal,
+                'amount_due' => $amountDue,
+                'invoice_url' => null,
+                'invoice_generated_at' => null,
+                'internal_notes' => trim(
+                    ($order->internal_notes ? $order->internal_notes."\n" : '').
+                    '['.now()->format('d M Y H:i').'] Items modified by '.($admin?->name ?? 'Admin').': '.
+                    implode(', ', $auditNotes).". Total: ₹{$oldGrandTotal} → ₹{$grandTotal}."
+                ),
+            ]);
+
+            $this->recordStatus(
+                $order,
+                $order->order_status,
+                'Order items modified by '.($admin?->name ?? 'Admin').': '.implode('; ', $auditNotes),
+                null,
+                $admin?->id
+            );
+
+            return $order->fresh(['items', 'payments', 'statusHistories']);
+        });
+    }
+
+    /**
+     * Update the payment method, payment status, and transaction reference for an existing order.
+     *
+     * @param  Order  $order
+     * @param  array<string, mixed>  $paymentData
+     * @param  Admin|null  $admin
+     * @return Order
+     */
+    public function updatePaymentDetails(Order $order, array $paymentData, ?Admin $admin = null): Order
+    {
+        return DB::transaction(function () use ($order, $paymentData, $admin) {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            $oldMethod = $order->payment_method;
+            $oldStatus = $order->payment_status;
+
+            $newMethod = $paymentData['payment_method'] ?? $oldMethod;
+            $newStatus = $paymentData['payment_status'] ?? $oldStatus;
+            $reference = ! empty($paymentData['payment_reference']) ? trim($paymentData['payment_reference']) : null;
+            $reason = ! empty($paymentData['reason']) ? trim($paymentData['reason']) : 'Payment details updated by admin';
+
+            $grandTotal = (float) $order->grand_total;
+            $customAmount = isset($paymentData['amount_paid']) && is_numeric($paymentData['amount_paid'])
+                ? (float) $paymentData['amount_paid']
+                : null;
+
+            $amountPaid = (float) $order->amount_paid;
+            $amountDue = (float) $order->amount_due;
+
+            $payment = $order->payments()->latest()->first();
+
+            if ($newStatus === 'paid') {
+                $amountPaid = $customAmount !== null ? $customAmount : $grandTotal;
+                $amountDue = max(0.0, round($grandTotal - $amountPaid, 2));
+
+                if ($payment) {
+                    $payment->update([
+                        'method' => $newMethod,
+                        'gateway' => in_array($newMethod, ['upi', 'bank_transfer', 'razorpay'], true) ? $newMethod : 'manual',
+                        'status' => 'paid',
+                        'amount' => $amountPaid,
+                        'payment_reference' => $reference ?: ($payment->payment_reference ?: ('MANUAL-'.strtoupper(Str::random(10)))),
+                        'paid_at' => $payment->paid_at ?? now(),
+                    ]);
+                } else {
+                    $payment = Payment::create([
+                        'order_id' => $order->id,
+                        'method' => $newMethod,
+                        'gateway' => in_array($newMethod, ['upi', 'bank_transfer', 'razorpay'], true) ? $newMethod : 'manual',
+                        'status' => 'paid',
+                        'amount' => $amountPaid,
+                        'payment_reference' => $reference ?: ('MANUAL-'.strtoupper(Str::random(10))),
+                        'paid_at' => now(),
+                        'gateway_response' => [
+                            'updated_by' => 'admin',
+                            'admin_name' => $admin?->name,
+                            'reason' => $reason,
+                        ],
+                    ]);
+                }
+            } elseif ($newStatus === 'pending') {
+                $amountPaid = 0.0;
+                $amountDue = $grandTotal;
+
+                if ($payment) {
+                    $payment->update([
+                        'method' => $newMethod,
+                        'status' => 'pending',
+                        'payment_reference' => $reference ?: $payment->payment_reference,
+                    ]);
+                }
+            } else {
+                if ($payment) {
+                    $payment->update([
+                        'method' => $newMethod,
+                        'status' => $newStatus,
+                        'failed_at' => now(),
+                    ]);
+                }
+            }
+
+            $order->update([
+                'payment_method' => $newMethod,
+                'payment_status' => $newStatus,
+                'amount_paid' => $amountPaid,
+                'amount_due' => $amountDue,
+                'internal_notes' => trim(
+                    ($order->internal_notes ? $order->internal_notes."\n" : '').
+                    '['.now()->format('d M Y H:i').'] Payment updated by '.($admin?->name ?? 'Admin').': '.
+                    "Method: {$oldMethod} → {$newMethod}, Status: {$oldStatus} → {$newStatus}. Reason: {$reason}"
+                ),
+            ]);
+
+            $this->recordStatus(
+                $order,
+                $order->order_status,
+                "Payment method/status updated from {$oldMethod}/{$oldStatus} to {$newMethod}/{$newStatus} by ".($admin?->name ?? 'Admin').". Reason: {$reason}",
+                null,
+                $admin?->id
+            );
+
+            return $order->fresh(['payments', 'statusHistories']);
+        });
+    }
+
     public function cancelOrder(Order $order, ?string $reason = null): void
     {
         // The cancellability check must happen atomically with the cancellation

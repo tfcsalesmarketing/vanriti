@@ -115,6 +115,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:manage-orders')->group(function () {
             Route::get('orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
             Route::post('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+            Route::post('orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');
+            Route::post('orders/{order}/items', [OrderController::class, 'updateItems'])->name('orders.items');
+            Route::delete('orders/{order}/items/{item}', [OrderController::class, 'removeItem'])->name('orders.items.remove');
             Route::post('orders/{order}/notes', [OrderController::class, 'addNote'])->name('orders.notes');
             Route::post('orders/{order}/confirm-cod', [OrderController::class, 'confirmCod'])->name('orders.confirm-cod');
             Route::post('orders/{order}/resend-cod', [OrderController::class, 'resendCodPrompt'])->name('orders.resend-cod');

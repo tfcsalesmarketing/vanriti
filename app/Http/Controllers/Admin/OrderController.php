@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -262,7 +263,127 @@ class OrderController extends Controller
             'order' => $order,
             'orderStatuses' => $this->orderStatuses,
             'paymentStatuses' => $this->paymentStatuses,
+            'paymentMethods' => [
+                'cod' => 'Cash on Delivery (COD)',
+                'prepaid' => 'Prepaid / UPI',
+                'bank_transfer' => 'Bank Transfer / NEFT / IMPS',
+                'razorpay' => 'Razorpay / Online',
+            ],
         ]);
+    }
+
+    /**
+     * Update payment method, payment status, and transaction reference for an existing order.
+     */
+    public function updatePayment(Request $request, Order $order): RedirectResponse
+    {
+        $admin = auth('admin')->user();
+        if (! $admin?->hasPermission('manage-orders') && ! $admin?->hasPermission('manage-payments')) {
+            abort(403, 'You do not have permission to perform this action.');
+        }
+
+        $validated = $request->validate([
+            'payment_method' => 'required|in:cod,prepaid,upi,bank_transfer,razorpay',
+            'payment_status' => 'required|in:paid,pending,failed,cancelled',
+            'payment_reference' => 'nullable|string|max:100',
+            'amount_paid' => 'nullable|numeric|min:0',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $this->orderService->updatePaymentDetails($order, $validated, $admin);
+
+            $this->logger->log(
+                action: 'payment_updated',
+                entity: $order,
+                description: "Payment details updated for order #{$order->order_number} by {$admin->name}.",
+                newValues: $validated,
+                actor: $admin
+            );
+
+            return redirect()->back()->with('success', "Payment details for order #{$order->order_number} updated successfully!");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to update payment details: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update items in an existing order (add new, remove, change quantities or unit prices).
+     */
+    public function updateItems(Request $request, Order $order): RedirectResponse
+    {
+        $admin = auth('admin')->user();
+        if (! $admin?->hasPermission('manage-orders')) {
+            abort(403, 'You do not have permission to perform this action.');
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'nullable|exists:order_items,id',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'nullable|numeric|min:0',
+            'items.*.mrp' => 'nullable|numeric|min:0',
+            'adjust_stock' => 'nullable|boolean',
+        ]);
+
+        try {
+            $adjustStock = $request->boolean('adjust_stock', true);
+            $this->orderService->updateOrderItems($order, $validated['items'], $adjustStock, $admin);
+
+            $this->logger->log(
+                action: 'order_items_updated',
+                entity: $order,
+                description: "Order items modified for order #{$order->order_number} by {$admin->name}.",
+                actor: $admin
+            );
+
+            return redirect()->back()->with('success', "Order items for #{$order->order_number} updated successfully! Financials and stock have been recalculated.");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to update order items: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Remove a single item from an existing order.
+     */
+    public function removeItem(Request $request, Order $order, OrderItem $item): RedirectResponse
+    {
+        $admin = auth('admin')->user();
+        if (! $admin?->hasPermission('manage-orders')) {
+            abort(403, 'You do not have permission to perform this action.');
+        }
+
+        if ($item->order_id !== $order->id) {
+            abort(404, 'Item does not belong to this order.');
+        }
+
+        if ($order->items()->count() <= 1) {
+            return redirect()->back()->with('error', 'Cannot remove the last item from an order. If you want to cancel the entire order, please use Cancel Order instead.');
+        }
+
+        try {
+            $adjustStock = $request->boolean('adjust_stock', true);
+            $remainingItems = $order->items()
+                ->where('id', '!=', $item->id)
+                ->get()
+                ->map(fn ($i) => [
+                    'id' => $i->id,
+                    'product_id' => $i->product_id,
+                    'product_variant_id' => $i->product_variant_id,
+                    'quantity' => (int) $i->quantity,
+                    'unit_price' => (float) $i->unit_price,
+                    'mrp' => (float) $i->mrp,
+                ])
+                ->all();
+
+            $this->orderService->updateOrderItems($order, $remainingItems, $adjustStock, $admin);
+
+            return redirect()->back()->with('success', "Item {$item->product_name} removed from order #{$order->order_number}.");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to remove item: '.$e->getMessage());
+        }
     }
 
     public function updateStatus(Request $request, Order $order)

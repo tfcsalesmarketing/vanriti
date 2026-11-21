@@ -183,7 +183,14 @@
     <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
-                <div class="text-muted small">Payment</div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">Payment</div>
+                    @if (auth('admin')->user()?->hasPermission(['manage-orders', 'manage-payments']))
+                        <a href="{{ route('admin.orders.edit', $order) }}#paymentCard" class="btn btn-xs btn-outline-primary py-0 px-1" style="font-size:0.7rem;" title="Change Payment Method or Status">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                    @endif
+                </div>
                 <div class="fw-bold small">{{ ucwords(str_replace('_', ' ', $order->payment_status)) }}</div>
                 <div class="text-muted small mt-2">Method</div>
                 <div class="fw-semibold small text-uppercase">{{ $order->payment_method }}</div>
@@ -294,7 +301,14 @@
 @endif
 
 <div class="card mb-3">
-    <div class="card-header">Items</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Items</span>
+        @if (auth('admin')->user()?->hasPermission('manage-orders'))
+            <a href="{{ route('admin.orders.edit', $order) }}#itemsCard" class="btn btn-xs btn-outline-primary py-0 px-1.5" style="font-size:0.72rem;">
+                <i class="bi bi-pencil-square me-1"></i>Add / Remove Products
+            </a>
+        @endif
+    </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
