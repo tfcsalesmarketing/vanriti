@@ -69,22 +69,30 @@ class HomeController extends Controller
                 ->get();
         }
 
-        // 3. Multi-Category Sections: Active root categories with in-stock products for horizontal sliders
-        $categorySections = Category::query()
+        // 3. Multi-Category Sections: Active root categories with in-stock products (including subcategories)
+        $rootCategories = Category::query()
             ->whereNull('parent_id')
             ->where('status', 'active')
-            ->whereHas('products', fn ($q) => $q->vanriti()->active()->inStock())
-            ->with([
-                'products' => fn ($q) => $q->vanriti()
-                    ->active()
-                    ->inStock()
-                    ->with(['images', 'categories', 'approvedReviews', 'activeVariants'])
-                    ->orderBy('sort_order')
-                    ->orderByDesc('id')
-                    ->limit(10),
-            ])
             ->orderBy('sort_order')
             ->get();
+
+        $categorySections = $rootCategories->map(function ($cat) {
+            $ids = $cat->descendants();
+            $products = Product::query()
+                ->vanriti()
+                ->active()
+                ->inStock()
+                ->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $ids)->active())
+                ->with(['images', 'categories', 'approvedReviews', 'activeVariants'])
+                ->orderBy('sort_order')
+                ->orderByDesc('id')
+                ->limit(10)
+                ->get();
+
+            $cat->setRelation('products', $products);
+
+            return $cat;
+        })->filter(fn ($cat) => $cat->products->isNotEmpty())->values();
 
         $categories = $categorySections;
 
