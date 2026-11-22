@@ -183,24 +183,15 @@
             <p class="vr-section-sub mb-0">Pure botanical formulations crafted for your routine</p>
         </div>
         <div class="vr-cat-showcase-row justify-content-center vr-stagger">
-            @foreach ($showcaseCategories as $index => $showCat)
-                <div class="vr-cat-showcase-col">
-                    <a href="{{ route('shop.category', $showCat->slug) }}" class="vr-cat-card-showcase vr-cat-card-theme-{{ ($index % 3) + 1 }}" aria-label="Shop {{ $showCat->name }}">
+            @foreach ($showcaseCategories as $showCat)
+                <div class="vr-cat-showcase-col col-4">
+                    <a href="{{ route('shop.category', $showCat->slug) }}" class="vr-cat-card-showcase" aria-label="Shop {{ $showCat->name }}">
                         <div class="vr-cat-img-box">
                             @if ($showCat->image)
-                                <img src="{{ image_url($showCat->image) }}" alt="{{ $showCat->name }}" loading="lazy">
+                                <img src="{{ image_url($showCat->image) }}" alt="{{ $showCat->name }}" loading="lazy" class="vr-cat-pure-img">
                             @else
                                 <div class="vr-cat-img-placeholder"><i class="bi bi-grid-3x3-gap"></i></div>
                             @endif
-                        </div>
-                        <div class="vr-cat-content-box">
-                            <h3 class="vr-cat-name-showcase">{{ $showCat->name }}</h3>
-                            <p class="vr-cat-desc-showcase">
-                                {{ Str::before($showCat->description ?? '', '.') ?: ($showCat->description ?: 'Pure handcrafted botanical formulations crafted for your routine') }}.
-                            </p>
-                            <div class="vr-cat-btn-wrap">
-                                <span class="vr-cat-btn-showcase">SHOP NOW</span>
-                            </div>
                         </div>
                     </a>
                 </div>
