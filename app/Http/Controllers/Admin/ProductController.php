@@ -38,10 +38,6 @@ class ProductController extends Controller
             $query->where('status', $status);
         }
 
-        if ($channel = $request->input('channel')) {
-            $query->where('channel', $channel);
-        }
-
         if ($categoryId = $request->input('category_id')) {
             $query->whereHas('categories', fn ($q) => $q->where('categories.id', $categoryId));
         }
@@ -74,7 +70,6 @@ class ProductController extends Controller
             'slug' => 'nullable|unique:products,slug',
             'sku' => 'required|string|max:255|unique:products,sku',
             'status' => 'required|in:draft,active,inactive',
-            'channel' => 'nullable|string|in:vanriti,tfc',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'highlights' => 'nullable|string',
@@ -128,7 +123,6 @@ class ProductController extends Controller
         $validated['has_a_plus'] = $request->boolean('has_a_plus');
         $validated['a_plus_content'] = $this->buildAPlusPayload($request);
         unset($validated['a_plus_modules'], $validated['a_plus_hero_file'], $validated['a_plus_story_file']);
-        $validated['channel'] = $request->input('channel') ?: 'vanriti';
         $validated['video_url'] = $this->resolveVideoUrl($request, $validated['video_url'] ?? null);
         unset($validated['video']);
 
@@ -177,7 +171,6 @@ class ProductController extends Controller
             'slug' => 'nullable|unique:products,slug,'.$product->id,
             'sku' => 'required|string|max:255|unique:products,sku,'.$product->id,
             'status' => 'required|in:draft,active,inactive',
-            'channel' => 'nullable|string|in:vanriti,tfc',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'highlights' => 'nullable|string',
@@ -237,7 +230,6 @@ class ProductController extends Controller
         $validated['has_a_plus'] = $request->boolean('has_a_plus');
         $validated['a_plus_content'] = $this->buildAPlusPayload($request);
         unset($validated['a_plus_modules'], $validated['a_plus_hero_file'], $validated['a_plus_story_file']);
-        $validated['channel'] = $request->input('channel') ?: 'vanriti';
 
         $categoryIds = $validated['category_ids'];
         $primaryCategoryId = $validated['primary_category_id'] ?? $categoryIds[0];

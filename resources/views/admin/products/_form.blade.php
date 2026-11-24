@@ -25,7 +25,6 @@
                             <option value="active" {{ old('status', $product->status ?? '') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ old('status', $product->status ?? '') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
-                        <input type="hidden" name="channel" value="vanriti">
                     </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-semibold">Short Description</label>

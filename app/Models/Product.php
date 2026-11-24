@@ -35,9 +35,6 @@ class Product extends Model
 
         static::creating(function (Product $product): void {
             $product->slug = static::uniqueSlugFromName((string) $product->name);
-            if (empty($product->channel)) {
-                $product->channel = 'vanriti';
-            }
         });
 
         static::updating(function (Product $product): void {
@@ -204,14 +201,12 @@ class Product extends Model
 
     public function scopeVanriti(Builder $query): Builder
     {
-        return $query->where(function ($q) {
-            $q->where('channel', 'vanriti')->orWhereNull('channel');
-        });
+        return $query;
     }
 
     public function scopeForChannel(Builder $query, string $channel): Builder
     {
-        return $query->where('channel', $channel);
+        return $query;
     }
 
     public function scopeFeatured(Builder $query): Builder
