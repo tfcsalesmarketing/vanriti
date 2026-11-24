@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $backUrl = request()->routeIs('admin.tfc.*') ? route('admin.tfc.customers.index') : route('admin.customers.index');
+    $backUrl = route('admin.customers.index');
 @endphp
 
 {{-- Header Bar --}}
@@ -16,11 +16,6 @@
         <div>
             <h5 class="mb-0 fw-bold d-inline-flex align-items-center gap-2">
                 <span>{{ $user->name }}</span>
-                @if ($user->isDirectSeller() && $user->directSellingMember)
-                    <span class="badge text-bg-warning text-dark font-monospace" style="font-size:0.75rem;">
-                        <i class="bi bi-diagram-3-fill me-1"></i>{{ $user->directSellingMember->member_id }}
-                    </span>
-                @endif
                 <span class="badge bg-{{ $stats['segment']['badge'] }}-subtle text-{{ $stats['segment']['badge'] }} border border-{{ $stats['segment']['badge'] }}-subtle rounded-pill small py-1 px-2.5" style="font-size:0.75rem;">
                     <i class="bi {{ $stats['segment']['icon'] }} me-1"></i>{{ $stats['segment']['label'] }}
                 </span>

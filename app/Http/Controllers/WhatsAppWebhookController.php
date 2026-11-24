@@ -110,26 +110,7 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['status' => 'no change']);
         }
 
-        // Determine destination channel (TFC vs VANRITI)
-        $businessAccountId = (string) ($entry['id'] ?? '');
-        $recipientPhoneId = (string) ($changes['metadata']['phone_number_id'] ?? '');
-
-        $tfcPhoneId = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_phone_number_id', '') : '');
-        $tfcWabaId = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_waba_id', '') : '');
-        if ($tfcPhoneId === '') {
-            $tfcPhoneId = (string) setting('tfc_whatsapp_phone_number_id', '');
-        }
-        if ($tfcWabaId === '') {
-            $tfcWabaId = (string) setting('tfc_whatsapp_waba_id', '');
-        }
-
         $channel = 'vanriti';
-        if (
-            ($tfcPhoneId !== '' && $recipientPhoneId === $tfcPhoneId) ||
-            ($tfcWabaId !== '' && $businessAccountId === $tfcWabaId)
-        ) {
-            $channel = 'tfc';
-        }
 
         // Process status delivery notifications (sent, delivered, read, failed)
         if (! empty($changes['statuses'])) {
@@ -176,9 +157,8 @@ class WhatsAppWebhookController extends Controller
                 Log::warning('WhatsApp chat message recording exception', ['error' => $e->getMessage()]);
             }
 
-            // E-commerce catalog and cart processing is only for Vanriti store
-            if ($channel !== 'tfc') {
-                try {
+            // E-commerce catalog and cart processing for Vanriti store
+            try {
                 // Check if user clicked "Message Business" on a product card or shared an item
                 $referredProduct = $msg['context']['referred_product']
                     ?? ($msg['referral']['product'] ?? ($msg['referral'] ?? null));
@@ -255,7 +235,6 @@ class WhatsAppWebhookController extends Controller
                 ]);
             }
         }
-    }
 
         return response()->json(['status' => 'ok']);
     }
