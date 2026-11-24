@@ -27,15 +27,8 @@ class WhatsAppBotService
             return false;
         }
 
-        // Fetch active rules ordered by priority for this channel
-        $channel = $conversation->channel ?: 'vanriti';
+        // Fetch active rules ordered by priority
         $rules = WhatsAppBotRule::where('is_active', true)
-            ->where(function ($q) use ($channel) {
-                $q->where('channel', $channel);
-                if ($channel === 'vanriti') {
-                    $q->orWhereNull('channel');
-                }
-            })
             ->orderByDesc('priority')
             ->orderBy('id')
             ->get();

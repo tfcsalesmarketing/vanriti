@@ -244,11 +244,7 @@ class OrderController extends Controller
         }
 
         $conversation = $cleanPhone
-            ? \App\Models\WhatsAppConversation::where('phone', $cleanPhone)
-                ->where(function ($q) {
-                    $q->where('channel', 'vanriti')->orWhereNull('channel');
-                })
-                ->first()
+            ? \App\Models\WhatsAppConversation::where('phone', $cleanPhone)->first()
             : null;
         $approvedTemplates = \App\Models\WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get();
 

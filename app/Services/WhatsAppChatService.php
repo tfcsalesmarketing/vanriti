@@ -805,12 +805,10 @@ class WhatsAppChatService
             Log::warning('Failed deleting WhatsApp webhook logs during conversation purge', ['error' => $e->getMessage()]);
         }
 
-        // 5. If Vanriti channel: delete checkout sessions
-        if ($channel === 'vanriti') {
-            try {
-                \App\Models\WhatsAppCheckoutSession::whereIn('phone', $phoneVariants)->delete();
-            } catch (\Throwable) {}
-        }
+        // 5. Delete checkout sessions
+        try {
+            \App\Models\WhatsAppCheckoutSession::whereIn('phone', $phoneVariants)->delete();
+        } catch (\Throwable) {}
 
         // 6. Delete the conversation row itself
         $conversation->delete();

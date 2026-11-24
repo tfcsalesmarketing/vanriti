@@ -19,7 +19,6 @@ class WhatsAppConversation extends Model
         'wa_id',
         'contact_name',
         'user_id',
-        'channel',
         'unread_count',
         'last_message_at',
         'last_message_preview',
@@ -124,9 +123,7 @@ class WhatsAppConversation extends Model
             $cleanPhone = '91' . $cleanPhone;
         }
 
-        $conversation = static::where('phone', $cleanPhone)
-            ->where('channel', $channel)
-            ->first();
+        $conversation = static::where('phone', $cleanPhone)->first();
 
         if (! $conversation) {
             // Check if there is an existing User with this phone
@@ -137,7 +134,6 @@ class WhatsAppConversation extends Model
                 'wa_id' => $waId ?: $cleanPhone,
                 'contact_name' => $contactName ?: ($user?->name ?: 'Customer ' . substr($cleanPhone, -4)),
                 'user_id' => $user?->id,
-                'channel' => $channel,
                 'status' => 'active',
                 'unread_count' => 0,
             ]);
