@@ -25,16 +25,7 @@
                             <option value="active" {{ old('status', $product->status ?? '') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ old('status', $product->status ?? '') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Platform / Channel <span class="text-danger">*</span></label>
-                        @php
-                            $defaultChannel = request('channel') ?: ($product->channel ?? 'vanriti');
-                        @endphp
-                        <select name="channel" class="form-select form-select-sm" required>
-                            <option value="vanriti" {{ old('channel', $defaultChannel) === 'vanriti' ? 'selected' : '' }}>VANRITI Retail Store</option>
-                            <option value="tfc" {{ old('channel', $defaultChannel) === 'tfc' ? 'selected' : '' }}>TFC Sales &amp; Marketing</option>
-                        </select>
+                        <input type="hidden" name="channel" value="vanriti">
                     </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-semibold">Short Description</label>

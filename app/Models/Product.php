@@ -209,11 +209,6 @@ class Product extends Model
         });
     }
 
-    public function scopeTfc(Builder $query): Builder
-    {
-        return $query->where('channel', 'tfc');
-    }
-
     public function scopeForChannel(Builder $query, string $channel): Builder
     {
         return $query->where('channel', $channel);

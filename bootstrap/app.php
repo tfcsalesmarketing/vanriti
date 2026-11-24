@@ -38,7 +38,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'active' => EnsureUserIsActive::class,
             'guest' => RedirectIfAuthenticated::class,
-            'tfc.member' => \App\Http\Middleware\EnsureTfcMember::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -46,12 +45,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'shipmojo/webhook',
             'whatsapp/webhook',
             'push/track-click/*',
-            'member/ajax/*',
-            'tfc/member/ajax/*',
-            '*/ajax/verify-sponsor',
-            '*/ajax/verify-placement',
-            '*/ajax/check-mobile',
-            '*/ajax/check-login',
         ]);
 
         $middleware->appendToGroup('web', [
@@ -77,10 +70,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $appHost = parse_url((string) env('APP_URL', ''), PHP_URL_HOST);
         if ($appHost !== null && $appHost !== '') {
             $trustedHosts[] = $appHost;
-        }
-        $tfcHost = parse_url((string) env('TFC_DOMAIN', 'tfcsalesmarketing.com'), PHP_URL_HOST) ?: env('TFC_DOMAIN', 'tfcsalesmarketing.com');
-        if ($tfcHost !== null && $tfcHost !== '') {
-            $trustedHosts[] = $tfcHost;
         }
         $trustedHosts = array_values(array_unique($trustedHosts));
 

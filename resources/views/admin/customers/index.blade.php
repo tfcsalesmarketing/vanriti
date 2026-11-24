@@ -9,11 +9,6 @@
         <div class="text-muted small mt-0.5">Verified storefront retail customers, segmentation, lifetime values, and WhatsApp engagements</div>
     </div>
     <div class="d-flex align-items-center gap-2">
-        @if (auth('admin')->user()->hasPermission('manage-tfc') && ($kpis['direct_sellers_count'] ?? 0) > 0)
-            <a href="{{ route('admin.tfc.customers.index') }}" class="btn btn-sm d-inline-flex align-items-center gap-1.5 text-white shadow-sm" style="background: linear-gradient(135deg, #0A1D37, #132D54); border: 1px solid #D49B24; border-radius: 6px;" title="View TFC Direct Sellers Directory">
-                <i class="bi bi-diagram-3-fill text-warning"></i><span>TFC Direct Sellers ({{ number_format($kpis['direct_sellers_count']) }})</span>
-            </a>
-        @endif
         <a href="{{ route('admin.whatsapp.inbox') }}" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 shadow-sm">
             <i class="bi bi-whatsapp"></i><span>WhatsApp Live Inbox</span>
         </a>

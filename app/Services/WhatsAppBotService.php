@@ -93,15 +93,14 @@ class WhatsAppBotService
 
                 case 'text':
                 default:
-                    $brandName = ($conversation->channel === 'tfc') ? 'TFC Sales & Marketing' : 'Vanriti';
+                    $brandName = 'Vanriti';
                     $body = str_replace(
                         ['{name}', '{phone}', '{site_url}'],
                         [$name, $phone, url('/')],
                         $rule->response_text ?: "Hello {name}, thank you for contacting {$brandName}! 🌿"
                     );
 
-                    $api = ($conversation->channel === 'tfc') ? $this->cloudApi->forChannel('tfc') : $this->cloudApi;
-                    $res = $api->sendTextMessage($phone, $body);
+                    $res = $this->cloudApi->sendTextMessage($phone, $body);
                     if ($res['success']) {
                         $this->recordBotMessage($conversation, 'text', $body, $res['message_id'] ?? null);
                         return true;

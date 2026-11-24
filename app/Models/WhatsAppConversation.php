@@ -20,8 +20,6 @@ class WhatsAppConversation extends Model
         'contact_name',
         'user_id',
         'channel',
-        'tfc_inquiry_id',
-        'tfc_grievance_id',
         'unread_count',
         'last_message_at',
         'last_message_preview',
@@ -53,16 +51,6 @@ class WhatsAppConversation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function tfcInquiry(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Tfc\TfcInquiry::class, 'tfc_inquiry_id');
-    }
-
-    public function tfcGrievance(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Tfc\TfcGrievanceTicket::class, 'tfc_grievance_id');
     }
 
     public function assignedAgent(): BelongsTo
@@ -129,9 +117,7 @@ class WhatsAppConversation extends Model
         string $phone,
         ?string $contactName = null,
         ?string $waId = null,
-        string $channel = 'vanriti',
-        ?int $tfcInquiryId = null,
-        ?int $tfcGrievanceId = null
+        string $channel = 'vanriti'
     ): self {
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
         if (strlen($cleanPhone) === 10) {
@@ -141,31 +127,6 @@ class WhatsAppConversation extends Model
         $conversation = static::where('phone', $cleanPhone)
             ->where('channel', $channel)
             ->first();
-
-        if ($channel === 'tfc' && ! $tfcInquiryId) {
-            $inq = \App\Models\Tfc\TfcInquiry::where('phone', $cleanPhone)
-                ->orWhere('phone', substr($cleanPhone, 2))
-                ->latest()
-                ->first();
-            if ($inq) {
-                $tfcInquiryId = $inq->id;
-                if (! $contactName) {
-                    $contactName = $inq->applicant_name;
-                }
-            }
-        }
-        if ($channel === 'tfc' && ! $tfcGrievanceId) {
-            $grievance = \App\Models\Tfc\TfcGrievanceTicket::where('phone', $cleanPhone)
-                ->orWhere('phone', substr($cleanPhone, 2))
-                ->latest()
-                ->first();
-            if ($grievance) {
-                $tfcGrievanceId = $grievance->id;
-                if (! $contactName) {
-                    $contactName = $grievance->consumer_name;
-                }
-            }
-        }
 
         if (! $conversation) {
             // Check if there is an existing User with this phone
@@ -177,8 +138,6 @@ class WhatsAppConversation extends Model
                 'contact_name' => $contactName ?: ($user?->name ?: 'Customer ' . substr($cleanPhone, -4)),
                 'user_id' => $user?->id,
                 'channel' => $channel,
-                'tfc_inquiry_id' => $tfcInquiryId,
-                'tfc_grievance_id' => $tfcGrievanceId,
                 'status' => 'active',
                 'unread_count' => 0,
             ]);
@@ -190,12 +149,6 @@ class WhatsAppConversation extends Model
             }
             if ($waId && empty($conversation->wa_id)) {
                 $updates['wa_id'] = $waId;
-            }
-            if ($tfcInquiryId && empty($conversation->tfc_inquiry_id)) {
-                $updates['tfc_inquiry_id'] = $tfcInquiryId;
-            }
-            if ($tfcGrievanceId && empty($conversation->tfc_grievance_id)) {
-                $updates['tfc_grievance_id'] = $tfcGrievanceId;
             }
             if (! $conversation->user_id) {
                 $user = User::where('phone', $cleanPhone)->orWhere('phone', substr($cleanPhone, 2))->first();

@@ -19,7 +19,7 @@ class WhatsAppChatService
 
     protected function apiForChannel(?string $channel): WhatsAppCloudApiService
     {
-        return ($channel === 'tfc') ? $this->apiService->forChannel('tfc') : $this->apiService;
+        return $this->apiService;
     }
 
     /**
@@ -418,9 +418,7 @@ class WhatsAppChatService
         ]);
 
         // Auto-respond via WhatsApp Chatbot ONLY if explicitly enabled by admin in settings
-        $botEnabled = ($conversation->channel === 'tfc')
-            ? (bool) (function_exists('tfc_setting') ? tfc_setting('whatsapp_bot_auto_reply_enabled', false) : false)
-            : (bool) setting('whatsapp_bot_auto_reply_enabled', false);
+        $botEnabled = (bool) setting('whatsapp_bot_auto_reply_enabled', false);
 
         if ($body && $botEnabled) {
             try {

@@ -99,13 +99,6 @@
             </select>
         </div>
         <div class="col-6 col-md-2">
-            <select name="channel" class="form-select form-select-sm">
-                <option value="">All Platforms</option>
-                <option value="vanriti" {{ request('channel') === 'vanriti' ? 'selected' : '' }}>VANRITI Store</option>
-                <option value="tfc" {{ request('channel') === 'tfc' ? 'selected' : '' }}>TFC Marketing</option>
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
             <select name="status" class="form-select form-select-sm">
                 <option value="">All Statuses</option>
                 <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>

@@ -14,17 +14,7 @@ class WhatsAppCloudApiService
 
     public function forChannel(string $channel): self
     {
-        $clone = clone $this;
-        if ($channel === 'tfc') {
-            $tfcPhoneId = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_phone_number_id', '') : '');
-            $tfcToken = (string) (function_exists('tfc_secret_setting') ? tfc_secret_setting('whatsapp_access_token', '') : '');
-            $tfcWaba = (string) (function_exists('tfc_setting') ? tfc_setting('whatsapp_waba_id', '') : '');
-
-            $clone->overridePhoneNumberId = $tfcPhoneId ?: (string) setting('tfc_whatsapp_phone_number_id', '');
-            $clone->overrideAccessToken = $tfcToken ?: (string) secret_setting('tfc_whatsapp_access_token', secret_setting('whatsapp_access_token', ''));
-            $clone->overrideWabaId = $tfcWaba ?: (string) setting('tfc_whatsapp_waba_id', '');
-        }
-        return $clone;
+        return $this;
     }
 
     public function accessToken(): string
@@ -67,15 +57,11 @@ class WhatsAppCloudApiService
             return $this->overrideWabaId;
         }
 
-        // If this instance is scoped to a specific channel/phone number (e.g. TFC)
+        // If this instance is scoped to a specific phone number
         if (! empty($this->overridePhoneNumberId)) {
-            // Attempt to dynamically resolve the WABA ID linked to this phone number from Meta
             $discoveredWaba = $this->fetchWabaIdForPhoneNumber($this->overridePhoneNumberId);
             if (! empty($discoveredWaba)) {
                 $this->overrideWabaId = $discoveredWaba;
-                if (class_exists(\App\Models\Tfc\TfcSetting::class)) {
-                    \App\Models\Tfc\TfcSetting::set('whatsapp_waba_id', $discoveredWaba);
-                }
                 return $discoveredWaba;
             }
             return '';

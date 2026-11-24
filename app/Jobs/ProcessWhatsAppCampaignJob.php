@@ -30,10 +30,6 @@ class ProcessWhatsAppCampaignJob implements ShouldQueue
             return;
         }
 
-        if (($campaign->channel ?? 'vanriti') === 'tfc') {
-            $apiService = $apiService->forChannel('tfc');
-        }
-
         $campaign->update(['status' => 'processing']);
 
         $pendingRecipients = $campaign->recipients()->where('status', 'pending')->get();
